@@ -742,8 +742,7 @@ int delta_peer_advertised_wire_matches(const unsigned char *reserved, int size, 
 	{
 		return -1;
 	}
-	/* (Arena Evolved: its range is its wire alone, and its 0.3.5's own wire
-	ae-32a joined as its own: ae_delta_wire.h) */
+	/* (Arena Evolved: its range is its wire alone: ae_delta_wire.h) */
 	return ae_delta_wire_decide(delta_compat_decide(reserved, size, DELTA_MAJOR, DELTA_WIRE, theirs, theirs_size), reserved, size, DELTA_MAJOR, DELTA_WIRE, theirs, theirs_size); /* AE hook */
 }
 

@@ -3,7 +3,7 @@ NETWORK_GAME_LAYOUT.H
 
 The game settings record (struct network_game, source/networking/
 network_game_manager.h) between the PC builds' layout (128 machines, 128
-players: 13,120 bytes) and the console's (16 and 16: 1,920 bytes), byte for
+players: 13,136 bytes) and the console's (16 and 16: 1,936 bytes), byte for
 byte (docs/cross-play.md). The record is slot-indexed: machines[i] is the
 machine in slot i (its machine_index, i, or NONE), players[i] the player in
 slot i (player_list_index i, or NONE). Folding to fewer slots is exact only
@@ -31,7 +31,7 @@ game_engine_slayer.c).
 #define NETWORK_GAME_LAYOUT_MACHINES_OFFSET 0x114
 #define NETWORK_GAME_LAYOUT_MACHINE_SIZE 0x44
 #define NETWORK_GAME_LAYOUT_PLAYER_SIZE 0x20
-#define NETWORK_GAME_LAYOUT_TAIL_SIZE 0x2A
+#define NETWORK_GAME_LAYOUT_TAIL_SIZE 0x3A
 /* (in the header) */
 #define NETWORK_GAME_LAYOUT_MAXIMUM_PLAYERS_OFFSET 0x10E
 #define NETWORK_GAME_LAYOUT_MACHINE_COUNT_OFFSET 0x112

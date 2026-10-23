@@ -87,6 +87,7 @@ symbols in this file:
 #include "saved games/playlist_display_name.h"
 #include "tag_files/files.h"
 #include "game/game_engine_playlist.h"
+#include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "text/text_group.h"
 #include "tag_files/tag_groups.h"
 #ifdef HALO_GAME_BROWSER
@@ -106,7 +107,9 @@ enum
 	which do not pass. */
 	PLAYLIST_PROFILE_OPTIONS_OFFSET = 0x100,
 	PLAYLIST_PROFILE_OPTIONS_MAGIC = 0x4F565047, /* 'GPVO' little-endian */
-	PLAYLIST_PROFILE_OPTIONS_VERSION = 1,
+	/* port: version 2 adds OpenCE's gametypes' options (game_engine.h's
+	struct game_variant_options from mode on); version 1's are read too */
+	PLAYLIST_PROFILE_OPTIONS_VERSION = 2,
 	MAXIMUM_GAME_VARIANT_NAME_LENGTH = 12,
 	NUMBER_OF_DEFAULT_PLAYLIST_PROFILES = 26,
 };
@@ -135,6 +138,10 @@ struct playlist_profile_data
 };
 #ifndef HALO_64BIT
 #pragma pack(pop)
+
+/* port: OpenCE's gametypes follow the Xbox's (game_modes.h) */
+typedef char verify_game_modes_first_default_playlist_profile[
+	GAME_MODES_FIRST_DEFAULT_PLAYLIST_PROFILE == NUMBER_OF_DEFAULT_PLAYLIST_PROFILES ? 1 : -1];
 
 typedef char verify_playlist_profile_building_functions_size[
 	sizeof(((struct playlist_profile_data *)0)->
@@ -201,10 +208,19 @@ static boolean playlist_profile_options_from_block(
 static void playlist_profile_options_to_block(
 	byte *block,
 	struct game_variant_options const *options);
+static void playlist_profile_options_to_block_version(
+	byte *block,
+	struct game_variant_options const *options,
+	word version);
 static void playlist_profile_block_build(
 	byte *block,
 	struct game_variant const *variant,
 	struct game_variant_options const *options);
+static void playlist_profile_block_build_version(
+	byte *block,
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	word version);
 
 /* ---------- globals */
 
@@ -272,6 +288,12 @@ static struct
 #define NUMBER_OF_PORT_DEFAULT_PLAYLIST_PROFILES 0
 #endif
 
+/* port: OpenCE's gametypes (game_modes.c) after the map's 26 and the port's
+own (Arena Evolved: ChupathingyCE's Bomb, Grifball, Open Pitch keep 26 to
+28, their places before OpenCE's gametypes came) */
+#define FIRST_GAME_MODES_PLAYLIST_PROFILE \
+	(NUMBER_OF_DEFAULT_PLAYLIST_PROFILES + NUMBER_OF_PORT_DEFAULT_PLAYLIST_PROFILES)
+
 /* port: a default gametype's name: the map's string list's, else the
 port's own (NULL for none) */
 wchar_t const *playlist_profile_default_name(
@@ -285,6 +307,11 @@ wchar_t const *playlist_profile_default_name(
 		return playlist_profile_port_defaults[profile_index - NUMBER_OF_DEFAULT_PLAYLIST_PROFILES].name;
 	}
 #endif
+	if (profile_index >= FIRST_GAME_MODES_PLAYLIST_PROFILE &&
+		profile_index < FIRST_GAME_MODES_PLAYLIST_PROFILE + game_modes_gametype_count())
+	{
+		return game_modes_gametype_name((short)(profile_index - FIRST_GAME_MODES_PLAYLIST_PROFILE));
+	}
 	if (profile_index < 0 || profile_index >= NUMBER_OF_DEFAULT_PLAYLIST_PROFILES || string_list_index == NONE)
 		return NULL;
 	return unicode_string_list_get_string(string_list_index, profile_index);
@@ -651,6 +678,21 @@ boolean playlist_profile_matches(
 	{
 		return FALSE;
 	}
+	/* (a file an older build wrote, its 'GPVO' block version 1's: as that
+	build would have written it, when it could have: AE 0.3.8 and before) */
+	{
+		/* (the header's magic and version: playlist_profile_options_header) */
+		unsigned long magic;
+		word version;
+
+		csmemcpy(&magic, block + PLAYLIST_PROFILE_OPTIONS_OFFSET, sizeof(magic));
+		csmemcpy(&version, block + PLAYLIST_PROFILE_OPTIONS_OFFSET + sizeof(magic), sizeof(version));
+		if (magic == PLAYLIST_PROFILE_OPTIONS_MAGIC && version == 1 &&
+			playlist_profile_expected_block_version(variant, options, 1, expected))
+		{
+			return !csmemcmp(expected, block, sizeof(block));
+		}
+	}
 	playlist_profile_expected_block(variant, options, expected);
 	return !csmemcmp(expected, block, sizeof(block));
 }
@@ -661,11 +703,35 @@ void playlist_profile_expected_block(
 	struct game_variant_options const *options,
 	unsigned char *block)
 {
+	playlist_profile_expected_block_version(variant, options, PLAYLIST_PROFILE_OPTIONS_VERSION, block);
+}
+
+boolean playlist_profile_expected_block_version(
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	short version,
+	unsigned char *block)
+{
 	struct game_variant saved = *variant;
 
+	/* (version 1 holds no OpenCE gametype's options: only options whose own
+	are their defaults were ever written so) */
+	if (version == 1)
+	{
+		struct game_variant_options defaults = *options;
+
+		game_modes_options_default(&defaults);
+		if (csmemcmp(&defaults, options, sizeof(defaults)))
+			return FALSE;
+	}
+	else if (version != PLAYLIST_PROFILE_OPTIONS_VERSION)
+	{
+		return FALSE;
+	}
 	/* (as a save cleans it up before it is written) */
 	game_engine_variant_cleanup(&saved);
-	playlist_profile_block_build(block, &saved, options);
+	playlist_profile_block_build_version(block, &saved, options, (word)version);
+	return TRUE;
 }
 
 /* port: a gametype's own display name (the 'AEDN' block): TRUE, and the name
@@ -821,13 +887,21 @@ static void playlist_profile_create_default_profiles_on_disk(
 	{
 		long profile_index;
 
+		/* port: then OpenCE's gametypes (game_modes.c), with their options */
 		for (profile_index = 0;
-			profile_index < NUMBER_OF_DEFAULT_PLAYLIST_PROFILES + NUMBER_OF_PORT_DEFAULT_PLAYLIST_PROFILES;
+			profile_index < FIRST_GAME_MODES_PLAYLIST_PROFILE + game_modes_gametype_count();
 			profile_index++)
 		{
 			wchar_t const *display_name;
 			boolean file_written = FALSE;
+			struct game_variant_options options;
 
+			if (profile_index >= FIRST_GAME_MODES_PLAYLIST_PROFILE)
+			{
+				game_modes_gametype((short)(profile_index - FIRST_GAME_MODES_PLAYLIST_PROFILE), &variant,
+					&options);
+			}
+			else
 #ifdef HALO_GAME_BROWSER
 			if (profile_index >= NUMBER_OF_DEFAULT_PLAYLIST_PROFILES)
 			{
@@ -842,22 +916,29 @@ static void playlist_profile_create_default_profiles_on_disk(
 			display_name = playlist_profile_default_name((short)profile_index, string_list_index);
 
 			/* port: cleared, so the bytes past the checksum are the same
-			every start (they were stack leftovers) */
+			every start (they were stack leftovers), and the options' place
+			unless written below */
 			csmemset(block, 0, sizeof(block));
 			csmemcpy(
 				block,
 				&variant,
 				sizeof(struct game_variant));
-			ustrncpy(
-				(wchar_t *)block,
-				display_name,
-				MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1);
+			/* port: (OpenCE's have their own short names: game_modes.c) */
+			if (profile_index < FIRST_GAME_MODES_PLAYLIST_PROFILE && display_name)
+			{
+				ustrncpy(
+					(wchar_t *)block,
+					display_name,
+					MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1);
+			}
 			((struct game_variant *)block)->human_readable_game_description[MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1] = 0;
 			((struct game_variant *)block)->flags |= (short)(profile_index << 8);
 			saved_game_file_generate_checksum(
 				block,
 				PLAYLIST_PROFILE_CHECKSUM_DATA_SIZE,
 				(XCALCSIG_SIGNATURE *)(block + PLAYLIST_PROFILE_CHECKSUM_DATA_SIZE));
+			if (profile_index >= FIRST_GAME_MODES_PLAYLIST_PROFILE)
+				playlist_profile_options_to_block(block, &options);
 
 			_snprintf(path, MAXIMUM_FILENAME_LENGTH, "z:\\saved\\playlists\\default_playlist\\%02d\\blam.lst", profile_index);
 			path[MAXIMUM_FILENAME_LENGTH] = 0;
@@ -1197,15 +1278,20 @@ static boolean playlist_profile_options_from_block(
 	XCALCSIG_SIGNATURE checksum;
 
 	csmemcpy(&header, data, sizeof(header));
-	if (header.magic != PLAYLIST_PROFILE_OPTIONS_MAGIC || header.version != PLAYLIST_PROFILE_OPTIONS_VERSION ||
-		header.size != sizeof(*options))
+	if (header.magic != PLAYLIST_PROFILE_OPTIONS_MAGIC ||
+		(!(header.version == PLAYLIST_PROFILE_OPTIONS_VERSION && header.size == sizeof(*options)) &&
+		!(header.version == 1 && header.size == GAME_VARIANT_OPTIONS_V1_SIZE)))
 	{
 		return FALSE;
 	}
+	size = sizeof(header) + header.size;
 	saved_game_file_generate_checksum((byte *)data, size, &checksum);
 	if (csmemcmp(&checksum, data + size, sizeof(checksum)))
 		return FALSE;
-	csmemcpy(options, data + sizeof(header), sizeof(*options));
+	/* (version 1's: none of OpenCE's gametypes, their options the defaults) */
+	game_modes_options_default(options);
+	csmemcpy(options, data + sizeof(header), header.size);
+	game_modes_options_sanitize(options);
 	options->friendly_fire = (short)PIN(options->friendly_fire, 0, NUMBER_OF_FRIENDLY_FIRE_MODES - 1);
 	options->radar_players = (byte)PIN(options->radar_players, 0, NUMBER_OF_RADAR_PLAYERS - 1);
 	options->loadout = (byte)PIN(options->loadout, 0, NUMBER_OF_LOADOUTS - 1);
@@ -1223,15 +1309,28 @@ static void playlist_profile_options_to_block(
 	byte *block,
 	struct game_variant_options const *options)
 {
+	playlist_profile_options_to_block_version(block, options, PLAYLIST_PROFILE_OPTIONS_VERSION);
+}
+
+/* port: (Arena Evolved) the 'GPVO' block in the version given: this build's,
+or version 1 (the first GAME_VARIANT_OPTIONS_V1_SIZE bytes of the options,
+as builds before OpenCE's gametypes wrote it): what a file of an older build
+holds, for arena_gametypes.c's tests of a seeded gametype not changed since */
+static void playlist_profile_options_to_block_version(
+	byte *block,
+	struct game_variant_options const *options,
+	word version)
+{
 	struct playlist_profile_options_header header;
 	byte *data = block + PLAYLIST_PROFILE_OPTIONS_OFFSET;
-	unsigned long size = sizeof(header) + sizeof(*options);
+	word options_size = version == 1 ? GAME_VARIANT_OPTIONS_V1_SIZE : sizeof(*options);
+	unsigned long size = sizeof(header) + options_size;
 
 	header.magic = PLAYLIST_PROFILE_OPTIONS_MAGIC;
-	header.version = PLAYLIST_PROFILE_OPTIONS_VERSION;
-	header.size = sizeof(*options);
+	header.version = version;
+	header.size = options_size;
 	csmemcpy(data, &header, sizeof(header));
-	csmemcpy(data + sizeof(header), options, sizeof(*options));
+	csmemcpy(data + sizeof(header), options, options_size);
 	saved_game_file_generate_checksum(data, size, (XCALCSIG_SIGNATURE *)(data + size));
 }
 
@@ -1242,6 +1341,15 @@ static void playlist_profile_block_build(
 	struct game_variant const *variant,
 	struct game_variant_options const *options)
 {
+	playlist_profile_block_build_version(block, variant, options, PLAYLIST_PROFILE_OPTIONS_VERSION);
+}
+
+static void playlist_profile_block_build_version(
+	byte *block,
+	struct game_variant const *variant,
+	struct game_variant_options const *options,
+	word version)
+{
 	csmemset(block, 0, SAVED_GAME_FILE_BLOCK_SIZE);
 	csmemcpy(
 		block,
@@ -1251,7 +1359,7 @@ static void playlist_profile_block_build(
 		block,
 		sizeof(struct game_variant),
 		(struct _XCALCSIG_SIGNATURE *)(block + sizeof(struct game_variant)));
-	playlist_profile_options_to_block(block, options);
+	playlist_profile_options_to_block_version(block, options, version);
 }
 
 /* (the display name block starts after GPVO's end: upstream's options struct growing would run

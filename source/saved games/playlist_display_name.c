@@ -6,7 +6,11 @@ header). At PLAYLIST_DISPLAY_NAME_OFFSET: magic 'AEDN', version, size (the
 name's bytes), 32 UTF-16 little-endian units (NUL-filled), and a signature
 of those bytes as the saved game files' own (saved_game_file_generate_checksum).
 Builds before it never read or write these bytes (their zeros are not a
-block). The first 0x68 bytes and the 'GPVO' block are not touched.
+block). The first 0x68 bytes and the 'GPVO' block are not touched. Arena
+Evolved 0.3.8 and before wrote the block at PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET,
+which is read when the newer place holds none (a version 2 'GPVO' block, OpenCE's
+network 35, runs over its first 8 bytes, so it is then none: never written
+there again).
 */
 
 #include "cseries/cseries.h"
@@ -22,6 +26,8 @@ struct playlist_display_name_header
 	word size;
 };
 
+typedef char verify_playlist_display_name_after_options[
+	PLAYLIST_DISPLAY_NAME_OFFSET >= 0x100 + 8 + 0x2C + 20 ? 1 : -1];
 typedef char verify_playlist_display_name_fits[
 	PLAYLIST_DISPLAY_NAME_OFFSET + PLAYLIST_DISPLAY_NAME_BLOCK_SIZE <= SAVED_GAME_FILE_BLOCK_SIZE ? 1 : -1];
 typedef char verify_playlist_display_name_header_size[
@@ -38,11 +44,12 @@ static boolean playlist_display_name_unit_ends_name(
 		unit == 0xFFFE || unit == 0xFFFF;
 }
 
-boolean playlist_display_name_from_block(
+static boolean playlist_display_name_from_offset(
 	byte const *block,
+	long offset,
 	wchar_t *name)
 {
-	byte const *data = block + PLAYLIST_DISPLAY_NAME_OFFSET;
+	byte const *data = block + offset;
 	struct playlist_display_name_header header;
 	unsigned long size = sizeof(header) + 2 * UNITS;
 	XCALCSIG_SIGNATURE checksum;
@@ -70,6 +77,14 @@ boolean playlist_display_name_from_block(
 	}
 	name[length] = 0;
 	return length > 0;
+}
+
+boolean playlist_display_name_from_block(
+	byte const *block,
+	wchar_t *name)
+{
+	return playlist_display_name_from_offset(block, PLAYLIST_DISPLAY_NAME_OFFSET, name) ||
+		playlist_display_name_from_offset(block, PLAYLIST_DISPLAY_NAME_LEGACY_OFFSET, name);
 }
 
 void playlist_display_name_to_block(

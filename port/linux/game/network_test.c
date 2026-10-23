@@ -78,6 +78,7 @@ network_test_update, which does nothing there */
 #ifndef HALO_CONSOLE_NO_NETWORK_TEST
 
 #include "cseries.h"
+#include "game_modes.h"
 #include "main/main.h"
 #include "bink/bink_playback.h"
 #include "interface/player_ui.h"
@@ -2162,11 +2163,14 @@ void network_test_update(
 					struct game_variant_options options;
 					/* debug.network_test_gametype: a saved gametype and its PC
 					options, as picking it in the menus does; else (and when it
-					is not there) the variant, as picking the game settings does */
+					is not there) one of OpenCE's gametypes by its name
+					(game_modes.c); else the variant, as picking the game settings
+					does */
 					boolean saved = network_test_saved_gametype(&variant, &options);
+					boolean opence = !saved && game_modes_gametype_by_name(variant_name, &variant, &options);
 
 					network_game_server_change_map_name(global_network_game_server_get(), path);
-					if (!saved)
+					if (!saved && !opence)
 						variant = *game_engine_get_variant_by_name(&variant, variant_name);
 					platform_log("network test: game %d, %s", network_test.variant_index + 1,
 						saved ? network_test.saved_gametype : variant_name);
@@ -2195,10 +2199,10 @@ void network_test_update(
 					player_ui_set_game_variant(&variant);
 					/* debug.network_test_time_limit: the gametype's PC option
 					(MATCH CLOCK's time left, its headings) */
-					if (saved || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
+					if (saved || opence || network_test.time_limit > 0 || network_test.loadout_primary != NONE ||
 						network_test.auto_balance || network_test.pack_loadout)
 					{
-						if (!saved)
+						if (!saved && !opence)
 							game_variant_options_default(&variant, &options);
 						if (network_test.time_limit > 0)
 							options.time_limit = (short)network_test.time_limit;
