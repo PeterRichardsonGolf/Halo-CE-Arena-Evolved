@@ -23,8 +23,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 	{ "VIEW", "What you see in first person, and your shields. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
 	{ "AUDIO", "Volume, speakers and voice. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "HUD", "Your HUD, names, scoreboard and training aids. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
-	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. Chat is yours; the filter is this PC's.",
-		AE_SETTINGS_PLAYER, 0 },
+	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 1 },
 	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
@@ -160,6 +159,13 @@ static const char *const menu_size_texts[] = { "90 %", "100 %", "115 %", "130 %"
 static const char *const menu_size_values[] = { "90", "100", "115", "130" };
 static const char *const language_texts[] = { "ENGLISH", "DEUTSCH", "FRANCAIS", "ESPANOL", "ITALIANO", "JAPANESE" };
 static const char *const language_values[] = { "", "de", "fr", "es", "it", "ja" };
+
+/* (phase B) CHAT AND STREAMING */
+static const char *const show_texts[] = { "SHOW", "HIDE" };
+static const char *const chat_style_texts[] = { "COLORS", "WHITE" };
+static const char *const chat_style_values[] = { "colors", "white" };
+static const char *const censor_texts[] = { "OFF", "SEVERE", "STRONG AND WORSE", "MILD AND WORSE" };
+static const char *const censor_values[] = { "off", "severe", "strong", "mild" };
 
 /* (the long numeric lists: made once) */
 enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11,
@@ -568,6 +574,25 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_ACCESSIBILITY, "IN THE GAME", "WAYPOINT SIZE", AE_SETTINGS_LINK, "display.waypoint_size",
 		waypoint_size_texts, waypoint_size_values, WAYPOINT_STEPS, AE_SETTINGS_ALWAYS,
 		"The same setting as in HUD. A goes there.", 0 },
+	/* CHAT AND STREAMING (this PC's: the text chat's two are config.toml's, one for every player here, as the classic
+	MULTIPLAYER HUD and STREAMER MODE screens write them) */
+	{ AE_SETTINGS_CHAT, "CHAT", "TEXT CHAT", AE_SETTINGS_TOGGLE, "display.text_chat", show_texts, on_off_values,
+		COUNT(show_texts), AE_SETTINGS_ALWAYS, "Show other players' chat. HIDE shows none, and its keys open nothing.",
+		0 },
+	{ AE_SETTINGS_CHAT, "CHAT", "CHAT TEXT", AE_SETTINGS_SPINNER, "display.chat_style",
+		VALUES(chat_style_texts, chat_style_values), AE_SETTINGS_ALWAYS,
+		"Chat in team and player colours, or all white.", 0 },
+	{ AE_SETTINGS_CHAT, "STREAMER MODE", "STREAMER MODE", AE_SETTINGS_TOGGLE, "streamer.enabled", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Hides chosen words in names and chat on this PC.", 0 },
+	{ AE_SETTINGS_CHAT, "STREAMER MODE", "CENSOR SLURS", AE_SETTINGS_SPINNER, "streamer.slurs",
+		VALUES(censor_texts, censor_values), AE_SETTINGS_WHEN_STREAMER,
+		"Slurs about race, sexuality, gender and disability.", 0 },
+	{ AE_SETTINGS_CHAT, "STREAMER MODE", "CENSOR SWEARING", AE_SETTINGS_SPINNER, "streamer.swearing",
+		VALUES(censor_texts, censor_values), AE_SETTINGS_WHEN_STREAMER,
+		"Swearing and sexual words. STRONG AND WORSE leaves the mildest showing.", 0 },
+	{ AE_SETTINGS_CHAT, "STREAMER MODE", "CENSOR INSULTS", AE_SETTINGS_SPINNER, "streamer.insults",
+		VALUES(censor_texts, censor_values), AE_SETTINGS_WHEN_STREAMER, "Name-calling and insults that are not slurs.",
+		0 },
 	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",

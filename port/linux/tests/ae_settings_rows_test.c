@@ -249,6 +249,18 @@ int main(void)
 			!strcmp(ae_settings_row(entries_here[6])->key, "display.player_name_scale"));
 	}
 
+	/* CHAT AND STREAMING (6, this PC's: the text chat is config.toml's for every player): the CENSOR rows with
+	STREAMER MODE on */
+	set("streamer.enabled", "true");
+	CHECK(ae_settings_group(AE_SETTINGS_CHAT)->whose == AE_SETTINGS_PC && rows_of(AE_SETTINGS_CHAT, &pad) == 6);
+	set("streamer.enabled", "false");
+	CHECK(rows_of(AE_SETTINGS_CHAT, &pad) == 3 && !has_label(AE_SETTINGS_CHAT, &pad, "CENSOR SLURS"));
+	CHECK(!strcmp(ae_settings_value_text(ae_settings_row(ae_settings_row_of("streamer.swearing")), 2),
+		"STRONG AND WORSE"));
+	/* every group built (phase B) */
+	for (index = 0; index < AE_SETTINGS_GROUPS; index++)
+		CHECK(ae_settings_group(index)->built);
+
 	/* the dialogs */
 	{
 		static const char *const labels[] = { "LOOK SENSITIVITY", "ZOOM", "VIBRATION", "LEGS", "FOV" };

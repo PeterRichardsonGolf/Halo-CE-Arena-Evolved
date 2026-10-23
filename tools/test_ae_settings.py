@@ -95,6 +95,12 @@ CASES = (
     ("accessibility-link", 35, ACCESSIBILITY, 1, "1920x1080", 100, ("pad:down",) * 4 + ("pad:a", "wait")),
     ("language-restart", 34, 0, 1, "1920x1080", 100, ("pad:down",) * 7 + ("pad:a", "pad:down", "pad:down", "pad:right",
                                                                          "pad:b", "pad:a", "wait", "pad:b", "wait")),
+    # CHAT AND STREAMING: STREAMER MODE (down 2, left: ON, the CENSOR rows show), then RESTORE DEFAULTS (Y, down, A)
+    ("chat", 35, CHAT, 1, "1920x1080", 100, ()),
+    ("chat-130", 35, CHAT, 1, "1920x1080", 130, ()),
+    ("chat-streamer", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left")),
+    ("chat-defaults", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left", "pad:y", "pad:down",
+                                                      "pad:a")),
 )
 
 
@@ -243,6 +249,12 @@ def test_accessibility(runs):
     assert len(rest) == 2
     said = lines(rest[1], "ae settings: ")
     assert said[:1] == ["closed ACCESSIBILITY (1 changed)"] and "restart asked" in said, said
+
+
+def test_chat_and_streaming(runs):
+    said = lines(runs["chat-streamer"][1], "ae settings: ")
+    assert "set STREAMER MODE ON" in said, said
+    assert lines(runs["chat-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
 
 
 if __name__ == "__main__":
