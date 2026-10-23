@@ -50,6 +50,7 @@ extern unsigned char network_aim_assist_block_mouse(void);
 #include "ae_seats.h" /* AE hook */
 #include "ae_config_players.h" /* AE hook */
 #include "ae_ds5.h" /* AE hook */
+#include "ae_gyro.h" /* AE hook */
 
 #include <SDL3/SDL.h>
 #include <math.h>
@@ -1551,7 +1552,7 @@ static void merge_button(XINPUT_GAMEPAD *pad, int analog_index, BOOL down)
 		pad->bAnalogButtons[analog_index] = 0xff;
 }
 
-#ifdef HALO_SWITCH_CONSOLE
+#if defined(HALO_SWITCH_CONSOLE) || !defined(HALO_ANDROID) /* AE hook */
 /* ---------- gyro aiming (the Switch)
 
 The controller's gyroscope turns the view as well as the stick, each local
@@ -1617,7 +1618,11 @@ int halo_linux_gyro_look(short gamepad_index, float *yaw, float *pitch)
 	gamepad = port_gamepad(gamepads, count, gamepad_index);
 	if (!gamepad)
 		return FALSE;
+#ifdef HALO_SWITCH_CONSOLE /* AE hook */
 	host_sdl_gamepad_gyro((unsigned int)(uintptr_t)gamepad, &turn_yaw, &turn_pitch);
+#else /* AE hook */
+	ae_gyro_turn(gamepad, &turn_yaw, &turn_pitch); /* AE hook */
+#endif /* AE hook */
 	*yaw = (gyro.invert_horizontal ? -turn_yaw : turn_yaw) * gyro.sensitivity_horizontal;
 	*pitch = (gyro.invert_vertical ? -turn_pitch : turn_pitch) * gyro.sensitivity_vertical;
 	return *yaw != 0.0f || *pitch != 0.0f;

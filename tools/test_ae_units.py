@@ -76,6 +76,9 @@ UNITS = {
                                   ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_pad_ports_test.c": ([SRC / "ae_pad_ports.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),
+    # (gyro aiming on PC: a pad's rate and the time since its last read to a turn; drift at rest, long pauses)
+    "ae_gyro_rules_test.c": ([SRC / "ae_gyro_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                          "-fno-sanitize-recover=all"], ["-lm"]),
     # (the DualSense's profiles, weapon states, powerups, trigger effect bytes, report framing and CRC)
     "ae_ds5_rules_test.c": ([SRC / "ae_ds5_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),

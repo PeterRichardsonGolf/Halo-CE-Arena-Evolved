@@ -645,25 +645,25 @@ static const struct config_setting config_settings[] =
 		"controller's (input.zoom_hold_time)." },
 	/* gyro aiming (port/linux/src/xinput_sdl.c): the controller's gyroscope,
 	each local player from their own */
-	{ "input.gyro_aim", _config_string, "\"false\"", "HALO_GYRO_AIM", _environment_value, _platform_android,
+	{ "input.gyro_aim", _config_string, "\"false\"", "HALO_GYRO_AIM", _environment_value, _platform_all, /* AE hook */
 		"Aim with the controller's gyroscope, each local player from their own (a\n"
-		"Pro Controller, the console held in the hands, or one Joy-Con; of two,\n"
-		"the right one): \"true\" always, \"zoom\" only while zoomed in (a scope),\n"
-		"\"false\" never. Gamepads, Gyro Aim, or here. Changes at once." },
+		"DualSense, a DualShock 4, a Pro Controller, a Joy-Con; on the Switch the\n"
+		"console held in the hands): \"true\" always, \"zoom\" only while zoomed in\n"
+		"(a scope), \"false\" never. SETTINGS > CONTROLS > GYRO. Changes at once." },
 	{ "input.gyro_invert_horizontal", _config_boolean, "false", "HALO_GYRO_INVERT_HORIZONTAL",
-		_environment_value, _platform_android,
+		_environment_value, _platform_all, /* AE hook */
 		"Invert the gyroscope's yaw. false: turning the controller right looks\n"
 		"right. true: turning it right looks left. The stick's invert is its own." },
 	{ "input.gyro_invert_vertical", _config_boolean, "false", "HALO_GYRO_INVERT_VERTICAL",
-		_environment_value, _platform_android,
+		_environment_value, _platform_all, /* AE hook */
 		"Invert the gyroscope's pitch. false: tilting the controller up looks up.\n"
 		"true: tilting it up looks down. The stick's invert is its own." },
 	{ "input.gyro_sensitivity_horizontal", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_HORIZONTAL",
-		_environment_value, _platform_android,
+		_environment_value, _platform_all, /* AE hook */
 		"How far the view turns left and right for the gyroscope, when\n"
 		"input.gyro_aim is on. 1 is the sensor's own turn. 0.25 to 10." },
 	{ "input.gyro_sensitivity_vertical", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_VERTICAL",
-		_environment_value, _platform_android,
+		_environment_value, _platform_all, /* AE hook */
 		"How far the view turns up and down for the gyroscope, when\n"
 		"input.gyro_aim is on. 1 is the sensor's own turn. 0.25 to 10." },
 
