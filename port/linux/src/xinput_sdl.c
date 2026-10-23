@@ -1481,7 +1481,18 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 			used = SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)button);
 		if (used)
 		{
-			last_input_scheme = scheme_of(gamepad);
+			int scheme = scheme_of(gamepad);
+
+			/* (logged when it changes: which family the button prompts follow, and the pad that set it) */
+			if (!last_input_seen || scheme != last_input_scheme)
+			{
+				const char *name = SDL_GetGamepadName(gamepad);
+
+				platform_log("input: button prompts now follow %s (%s, SDL type %s)",
+					scheme == 2 ? "a PlayStation pad" : scheme == 3 ? "a Nintendo pad" : "an Xbox-like pad",
+					name ? name : "unnamed", SDL_GetGamepadStringForType(SDL_GetGamepadType(gamepad)));
+			}
+			last_input_scheme = scheme;
 			last_input_seen = TRUE;
 			ae_platform_note_pad_used(); /* AE hook */
 		}
