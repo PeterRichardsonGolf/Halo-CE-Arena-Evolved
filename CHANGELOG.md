@@ -42,6 +42,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files. Internet play with OpenCE build-256 and ChupathingyCE
   works both ways (network version 32).
+- Internet play: ChupathingyCE's own broker, mqtt.chupathingy.org, joins the list (brokers.txt), so Arena Evolved
+  meets both OpenCE and ChupathingyCE players on a broker of their own; the game now uses up to 5 brokers.
 
 ## 0.3.8-beta - 2026-10-22
 
