@@ -96,6 +96,34 @@ long ae_hud_message_flow_fit(const struct ae_hud_message_flow *flow, const wchar
 	return best;
 }
 
+long ae_hud_message_flow_clean(const wchar_t *source, wchar_t *text, long maximum)
+{
+	long length = 0;
+
+	if (!text || maximum <= 0)
+		return 0;
+	while (source && *source && length < maximum - 1)
+	{
+		if (source[0] == L'|' && source[1] == L'n')
+		{
+			text[length++] = L'\n';
+			source += 2;
+		}
+		else if (source[0] == L'\r')
+		{
+			text[length++] = L'\n';
+			source += source[1] == L'\n' ? 2 : 1;
+		}
+		else
+		{
+			text[length++] = *source == L'\t' ? L' ' : *source;
+			source++;
+		}
+	}
+	text[length] = 0;
+	return length;
+}
+
 boolean ae_hud_message_flow_picture(struct ae_hud_message_flow *flow, real width, real gap, real *x)
 {
 	boolean broke = FALSE;
