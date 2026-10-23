@@ -2112,7 +2112,7 @@ boolean network_game_client_add_player_to_game(
 
 						game_engine_player_added(player_index);
 					}
-					if (player->machine_index == client->machine_index)
+					if (player->machine_index == client->machine_index && !ae_lan_bots_network_player(player)) /* AE hook */
 					{
 						local_player_set_player_index(
 							player->controller_index,
