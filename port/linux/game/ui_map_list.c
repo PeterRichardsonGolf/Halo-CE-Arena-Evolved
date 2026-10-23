@@ -1476,7 +1476,7 @@ void ui_map_list_map_name(
 	wchar_t *name,
 	long size)
 {
-	char file[MAP_NAME_LENGTH];
+	char file[64]; /* (MAP_NAME_LENGTH, which is the map list's) */
 	short family = map_family_parse_listed(map, file, sizeof(file));
 
 	ui_map_list_family_name(family, file, name, size);
