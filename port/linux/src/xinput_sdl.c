@@ -1482,15 +1482,24 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 		if (used)
 		{
 			int scheme = scheme_of(gamepad);
+			static SDL_JoystickID logged[16];
+			static int logged_count;
+			SDL_JoystickID id = SDL_GetGamepadID(gamepad);
+			int seen;
 
-			/* (logged when it changes: which family the button prompts follow, and the pad that set it) */
-			if (!last_input_seen || scheme != last_input_scheme)
+			/* (logged once per pad: which family the button prompts follow with it, and the pad; not on every
+			change, which flips each poll while a keyboard player and a pad player, or two families of pad, play) */
+			for (seen = 0; seen < logged_count && logged[seen] != id; seen++)
+				;
+			if (seen == logged_count && logged_count < (int)(sizeof(logged) / sizeof(logged[0])))
 			{
 				const char *name = SDL_GetGamepadName(gamepad);
+				const char *type = SDL_GetGamepadStringForType(SDL_GetGamepadType(gamepad));
 
-				platform_log("input: button prompts now follow %s (%s, SDL type %s)",
+				logged[logged_count++] = id;
+				platform_log("input: button prompts follow %s with this pad (%s, SDL type %s)",
 					scheme == 2 ? "a PlayStation pad" : scheme == 3 ? "a Nintendo pad" : "an Xbox-like pad",
-					name ? name : "unnamed", SDL_GetGamepadStringForType(SDL_GetGamepadType(gamepad)));
+					name ? name : "unnamed", type ? type : "unknown");
 			}
 			last_input_scheme = scheme;
 			last_input_seen = TRUE;
