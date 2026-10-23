@@ -4,6 +4,45 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## 0.3.9-beta - 2026-10-23
+
+- CREATE GAME is one screen with its lobby: MULTIPLAYER > CREATE GAME opens a live lobby at once (invite only), START
+  GAME is the blue button, and X or the LOBBY row opens LOBBY SETUP (NETWORK, PUBLIC, MAX PLAYERS). Players who join see
+  the same screen as LOBBY, read only.
+- GAME OPTIONS > WEAPON PACKS: a sub-screen for the packs and the start weapons. Every pack that is on can be a start
+  weapon, not only the first two.
+- AE GRIFBALL and AE BOMB (seed revision 24, in AE ACTION SACK): Bomb, the game type Bungie cut, on AE's rules.
+  Grifball is melee only, one hit kills, rounds of 3 minutes, first to 3; AE BOMB plays on any map with two CTF bases
+  (pistol and assault rifle, arm in 3 seconds, first to 3 rounds). CHANGE GAMETYPE has a BOMB filter and GAME OPTIONS
+  edits Bomb's rules. Bomb is played between Arena Evolved and ChupathingyCE machines only (stock OpenCE players are
+  refused), and bots don't play it.
+- VEHICLES DESTRUCTIBLE, a new gametype rule (seed revision 23: ON in every AE gametype with vehicles): vehicles are
+  destroyed the Halo 2 way, by explosives only (a warthog takes two rockets, a ghost or banshee one), can't be destroyed
+  while someone rides them, and their wrecks clear after 10 seconds.
+- TEST: the VEHICLE DAMAGE PACK (packs/ae_vehicle_damage.aepack; CMT's TSC:E damage and wrecks, credits CMT and the
+  Evolved team). With VEHICLES DESTRUCTIBLE on, damaged warthogs, ghosts and banshees smoke and burn, explode as in
+  TSC:E and leave burning wrecks. Each machine shows the look it has; nothing of it goes over the network. A test
+  feature: tell us if a shot doesn't count in a game with it.
+- Weapon packs on Custom Edition maps: every pack (and the vehicle damage pack) plays on the Gearbox maps and the custom
+  maps built on the stock tags. A map without the stock assault rifle's tags plays its own weapons and the log says why.
+- EXPERIMENTAL: gyro aiming on PC (SETTINGS > CONTROLS > GYRO, OFF by default) for the DualSense, DualShock 4, Pro
+  Controller and Joy-Con: always, or only zoomed in, with its own turn and tilt sensitivity.
+- HUD STYLE AE in the campaign: help text keeps its line breaks (the tutorial's stick and button pictures drew over its
+  words), and CAMPAIGN TIMER shows the corner clock in AE's digits.
+- SETTINGS > ACCESSIBILITY > LOADING SCREEN: the least time the campaign's and multiplayer's loading screens stay up.
+- Menus: left and right go round past a row's ends, as in MCC. CALLOUTS, CALLOUT DETAIL and CALLOUT VOICE moved from
+  HUD to AUDIO. SETTINGS > CONTROLS changes the profile's rows before any game.
+- Gametype files: read at each start (a seeded AE or NHE gametype is never read from or written to a file), and
+  SETTINGS > SYSTEM > OPEN GAMETYPES FOLDER opens the folder.
+- Callouts: the words of a call join to the frame through the game's resampler; on 5.1 they play from the front pair.
+- Voices: Cori is a new voice (a Qwen3-TTS clone of Cori Samuel's LibriVox reading, public domain), and six new callout
+  packs come in every download: Helljumper, Corporal, Aurora, Bastion, Selene and Solace.
+- Bots: in a network game in progress, bots fill up to BOTS (new bot machines join too);
+  the classic Game Options BOTS row goes up to 31.
+- ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
+  FFmpeg on every platform, Grifball and Bomb, game type files. Internet play with OpenCE build-256 and ChupathingyCE
+  works both ways (network version 32).
+
 ## 0.3.8-beta - 2026-10-22
 
 - SETTINGS is finished: VIDEO, AUDIO, ONLINE, ACCESSIBILITY and CHAT AND STREAMING work in Arena Evolved's menus (they
