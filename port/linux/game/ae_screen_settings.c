@@ -1939,7 +1939,9 @@ int ae_screen_settings_open_group(short group_number, short local_player)
 /* ---------- the debug screens (debug.ae_test_screen 34 / 35) */
 
 /* a local player on a profile of their own: the profile named so, made when this PC has none of that name */
-static void test_profile(short player, const char *name)
+/* the test's profile, made if this PC lacks it, and played with (use: else left on the PC unchosen, as after a
+launch to AE's menus) */
+static void test_profile(short player, const char *name, int use)
 {
 	static struct ae_profile_summary profiles[AE_PROFILES_MAXIMUM];
 	short count = 0, index;
@@ -1957,20 +1959,22 @@ static void test_profile(short player, const char *name)
 	}
 	if (found < 0 && !ae_profile_new(name, &found).ok)
 		return;
-	ae_profile_switch(player, found);
+	if (use)
+		ae_profile_switch(player, found);
 }
 
 int ae_screen_settings_test_open(int group_screen, int group_number, int players)
 {
 	short player;
 
-	test_profile(0, "Tester");
+	/* ($HALO_AE_TEST_SETTINGS_NO_ACTIVE: player 1 has none chosen, as AE's menus right after a launch) */
+	test_profile(0, "Tester", !getenv("HALO_AE_TEST_SETTINGS_NO_ACTIVE"));
 	for (player = 1; player < players && player < PLAYERS; player++)
 	{
 		char name[16];
 
 		snprintf(name, sizeof(name), "Tester %d", player + 1);
-		test_profile(player, name);
+		test_profile(player, name, 1);
 	}
 	if (!(group_screen ? ae_screen_settings_open_group((short)group_number, 0) : ae_screen_settings_open(0)))
 		return 0;

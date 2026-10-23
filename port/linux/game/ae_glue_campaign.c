@@ -58,26 +58,19 @@ static int player1_profile(struct player_profile *profile, long *index, int make
 
 	if (profile_index == NONE || !player_profile_get(profile_index, profile))
 	{
-		profile_index = player_ui_get_player1_last_used_profile_index();
-		if (profile_index == NONE || !player_profile_get(profile_index, profile))
+		profile_index = ae_profile_player1_fallback(profile);
+		if (profile_index == NONE)
 		{
-			word count = 1;
+			/* (no profile on this PC at all: one made, "Player", as a first run would; PROFILES renames it) */
+			int made = -1;
 
-			profile_index = NONE;
-			player_profiles_enumerate_available_to_local_player_index(NONE, &count, &profile_index, FALSE);
-			if ((short)count <= 0 || profile_index == NONE || !player_profile_get(profile_index, profile))
-			{
-				/* (no profile on this PC at all: one made, "Player", as a first run would; PROFILES renames it) */
-				int made = -1;
-
-				/* (the API's int is the index's 32 bits: -1 is NONE, as ae_glue_profiles.c's file_index) */
-				if (!make || !ae_profile_new("Player", &made).ok || made == -1)
-					return 0;
-				profile_index = (long)(unsigned int)made;
-				if (!player_profile_get(profile_index, profile))
-					return 0;
-				platform_log("ae campaign: no profile on this PC: made 'Player'");
-			}
+			/* (the API's int is the index's 32 bits: -1 is NONE, as ae_glue_profiles.c's file_index) */
+			if (!make || !ae_profile_new("Player", &made).ok || made == -1)
+				return 0;
+			profile_index = (long)(unsigned int)made;
+			if (!player_profile_get(profile_index, profile))
+				return 0;
+			platform_log("ae campaign: no profile on this PC: made 'Player'");
 		}
 	}
 	player_ui_set_active_player_profile(0, profile_index, profile);

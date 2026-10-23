@@ -42,6 +42,9 @@ CASES = (
     ("hud-130", 35, HUD, 1, "1920x1080", 130, ()),
     # (BUTTON LAYOUT one right: SWAP TRIGGERS; down twice to LOOK SENSITIVITY, one right: 4)
     ("changed", 35, CONTROLS, 1, "1920x1080", 100, ("pad:right", "pad:down", "pad:down", "pad:right")),
+    # (the same with no profile chosen yet, as AE's menus right after a launch: player 1 takes the one used last, else
+    # the first; 0.3.8 refused every CONTROLS profile row there, "BUTTON LAYOUT 1 not set")
+    ("changed-fresh", 35, CONTROLS, 1, "1920x1080", 100, ("pad:right", "pad:down", "pad:down", "pad:right")),
     # (a change, then B: KEEP / UNDO, shown)
     ("keep-dialog", 35, CONTROLS, 1, "1920x1080", 100, ("pad:right", "pad:b")),
     # (KEEP: back to nothing; UNDO: down once, A)
@@ -107,6 +110,8 @@ CASES = (
 def play(cfg, out, name, screen, group, players, presses, window, scale):
     env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_SETTINGS_GROUP": str(group),
            "HALO_AE_TEST_SETTINGS_PLAYERS": str(players)}
+    if name.endswith("-fresh"):
+        env["HALO_AE_TEST_SETTINGS_NO_ACTIVE"] = "1"
     # (a long run of presses gets the time it needs: the lead-in, one a second, a few seconds after)
     exit_after = max(EXIT_AFTER, menus.LEAD_IN + len(presses) + 6)
     return menus.play(cfg, out, name, views=screen, window=window, env=env, shots=8, exit_after=exit_after,
@@ -169,6 +174,16 @@ def test_a_step_is_in_use_and_saved(runs):
     assert "BUTTON LAYOUT SWAP TRIGGERS" in said and "LOOK SENSITIVITY 4" in said, said
     assert "ae profiles: controls 1 " in text
     assert lines(text, "ae settings: closed CONTROLS ")[-1:] != ["(0 changed)"]
+
+
+def test_a_step_without_a_chosen_profile(runs):
+    """right after a launch (no profile chosen): player 1 takes one, and CONTROLS' profile rows change and save"""
+    _, text, _ = runs["changed-fresh"]
+    assert "ae profiles: player 1 had no profile: " in text
+    said = lines(text, "ae settings: set ")
+    assert "BUTTON LAYOUT SWAP TRIGGERS" in said and "LOOK SENSITIVITY 4" in said, said
+    assert " not set" not in "\n".join(lines(text, "ae settings: "))
+    assert "ae profiles: controls 1 " in text
 
 
 def test_keep_and_undo(runs):
