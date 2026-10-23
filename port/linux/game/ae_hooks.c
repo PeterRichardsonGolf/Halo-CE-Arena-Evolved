@@ -153,6 +153,27 @@ static boolean main_menu_ready(
 	return TRUE;
 }
 
+/* a start was asked from AE's screens at this time (ms), 0 none: see ae_ui_game_starting */
+static unsigned long game_starting_since = 0;
+/* the longest the main menu stays out for a start that never leaves the main menu */
+#define GAME_STARTING_HOLD_MS 8000
+
+void ae_ui_game_starting(
+	void)
+{
+	game_starting_since = system_milliseconds();
+	if (!game_starting_since)
+		game_starting_since = 1;
+}
+
+static boolean game_starting(
+	unsigned long now)
+{
+	if (game_starting_since && now - game_starting_since > GAME_STARTING_HOLD_MS)
+		game_starting_since = 0;
+	return game_starting_since != 0;
+}
+
 boolean ae_ui_takes_pointer(
 	void)
 {
@@ -332,7 +353,7 @@ boolean ae_ui_process(
 	}
 	/* (the 0.3.7 menus: AE's main menu takes the game's main menu's place, whenever no AE screen is up there) */
 	if (test_screen_checked && !test_screen && ae_draw_available() && main_menu_is_active() && !ae_ui_depth() &&
-		!server_browser_up() && !virtual_keyboard_active())
+		!server_browser_up() && !virtual_keyboard_active() && !game_starting(now))
 	{
 		/* (once the game's main menu is there to be replaced) */
 		if (main_menu_ready(now))
@@ -343,6 +364,7 @@ boolean ae_ui_process(
 	else if (!main_menu_is_active())
 	{
 		ae_screen_main_menu_close();
+		game_starting_since = 0;
 		/* (the next main menu waits for the game's again) */
 		game_main_menu_loaded = FALSE;
 	}

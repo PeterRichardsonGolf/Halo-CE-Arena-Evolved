@@ -36,6 +36,9 @@ void ae_ui_replace_menus(void);
 /* the game loaded its main menu (main_screen_shell_load, through ae_community_main_menu_loaded): AE's main menu may
 take its place (ae_hooks.c) */
 void ae_ui_game_main_menu_loaded(void);
+/* a level or game was just started from AE's screens (CAMPAIGN): the main menu stays closed while the game still
+shows its main menu for a frame or more, until it leaves it (or a few seconds pass) */
+void ae_ui_game_starting(void);
 /* (M2, ui_widget.c network_game_reset_to_pregame_ui, preflight P19) TRUE when AE shows its own lobby for its own
 session back from a game, instead of upstream's pregame / SELECT MAP screens (ae_glue_lobby.c) */
 boolean ae_lobby_take_pregame_ui(void);

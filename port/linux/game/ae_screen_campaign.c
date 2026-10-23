@@ -149,7 +149,9 @@ static void accept(short row)
 		ae_campaign_start(&screen.campaign, screen.level_of_row[row], screen.difficulty))
 	{
 		ae_sound_request(AE_SOUND_FORWARD, 0);
-		/* (the level loads: no AE screen over it; AE's main menu comes back at the main menu) */
+		/* (the level loads: no AE screen over it, and the main menu does not open again in the frames before the
+		game leaves its own; AE's main menu comes back at the main menu) */
+		ae_ui_game_starting();
 		while (ae_ui_depth() && ae_ui_top())
 		{
 			if (!ae_ui_top()->data || !ae_ui_remove(ae_ui_top()->data))
