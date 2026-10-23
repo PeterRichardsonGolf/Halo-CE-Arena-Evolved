@@ -1580,3 +1580,17 @@ boolean game_engine_oddball_read_network_state(
 }
 
 long ae_strip_oddball_ball_count(long player_index) { return player_index == NONE ? 0 : player_ball_count(player_index); } /* AE hook */
+
+#ifdef HALO_BIG_ENDIAN
+/* port: (game_engine.h) the state in the wire's byte order, either way */
+void game_engine_oddball_network_state_byte_swap(
+	byte *buffer,
+	long size)
+{
+	struct oddball_network_state *state = (struct oddball_network_state *)buffer;
+
+	if (size != (long)sizeof(*state))
+		return;
+	GAME_ENGINE_NETWORK_STATE_SWAP(state, team_score, ball_spawn_timer, sizeof(long));
+}
+#endif

@@ -1704,3 +1704,19 @@ long ae_strip_race_flags_touched(long player_index) { return player_index == NON
 long ae_strip_race_flag_count(void) { return count_bits_32(race_globals.lap_completed_value); } /* AE hook */
 long ae_strip_race_rally_flag(void) { return race_globals.rally_flag; } /* AE hook */
 boolean ae_bots_race_can_touch(long player_index, long order) { return player_index != NONE && DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) < MULTIPLAYER_MAXIMUM_PLAYERS && order >= 0 && can_touch_team(player_index, order); } /* AE hook */
+
+#ifdef HALO_BIG_ENDIAN
+/* port: (game_engine.h) the state in the wire's byte order, either way */
+void game_engine_race_network_state_byte_swap(
+	byte *buffer,
+	long size)
+{
+	struct race_network_state *state = (struct race_network_state *)buffer;
+
+	if (size != (long)sizeof(*state))
+		return;
+	GAME_ENGINE_NETWORK_STATE_SWAP(state, globals.lap_completed_value, globals.persistent_team_score, sizeof(long));
+	/* (the events are bytes) */
+	GAME_ENGINE_NETWORK_STATE_SWAP(state, last_lap_times, laps_completed, sizeof(short));
+}
+#endif
