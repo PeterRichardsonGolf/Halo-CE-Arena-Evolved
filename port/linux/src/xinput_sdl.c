@@ -1678,7 +1678,29 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 			used = SDL_GetGamepadButton(gamepad, (SDL_GamepadButton)button);
 		if (used)
 		{
-			last_input_scheme = scheme_of(gamepad);
+			int scheme = scheme_of(gamepad);
+#ifndef HALO_ANDROID
+			static SDL_JoystickID logged[16];
+			static int logged_count;
+			SDL_JoystickID id = SDL_GetGamepadID(gamepad);
+			int seen;
+
+			/* (logged once per pad: which family the button prompts follow with it, and the pad; not on every
+			change, which flips each poll while a keyboard player and a pad player, or two families of pad, play) */
+			for (seen = 0; seen < logged_count && logged[seen] != id; seen++)
+				;
+			if (seen == logged_count && logged_count < (int)(sizeof(logged) / sizeof(logged[0])))
+			{
+				const char *name = SDL_GetGamepadName(gamepad);
+				const char *type = SDL_GetGamepadStringForType(SDL_GetGamepadType(gamepad));
+
+				logged[logged_count++] = id;
+				platform_log("input: button prompts follow %s with this pad (%s, SDL type %s)",
+					scheme == 2 ? "a PlayStation pad" : scheme == 3 ? "a Nintendo pad" : "an Xbox-like pad",
+					name ? name : "unnamed", type ? type : "unknown");
+			}
+#endif
+			last_input_scheme = scheme;
 			last_pad_scheme = last_input_scheme;
 			last_input_seen = TRUE;
 			ae_platform_note_pad_used(); /* AE hook */

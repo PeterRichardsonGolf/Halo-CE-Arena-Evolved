@@ -50,6 +50,8 @@ enum
 #define TITLE_U 60.0f
 #define CRUMB_U 20.0f
 #define CRUMB_TRACKING 0.09f
+#define CRUMB_ABOVE_U 16.0f
+#define CRUMB_CHEVRON_GAP_U 12.0f
 #define RULE_U 1.0f
 #define RAIL_PITCH_U 44.0f
 #define RAIL_GAP_U 4.0f
@@ -83,9 +85,20 @@ static struct
 	struct ae_field_edit name_edit;
 	int typing, keyboard_open;
 	unsigned long caret_since;
-	int dialog;                          /* 0 none, 1 DEFAULTS, 2 saved / failed, 3 leaving with changes */
+	int dialog;                          /* 0 none, 1 DEFAULTS, 2 saved / failed, 3 leaving with changes,
+	                                        4 WEAPON PACKS' DEFAULTS */
 	float logged_width, logged_scale;
+	char packs_summary[32];              /* WEAPON PACKS' value as last drawn */
 } screen;
+
+/* the open picker's values when a row offers only some of its own (PRIMARY / SECONDARY): their texts and their
+indexes in the row (static: the picker and its ghost read them after the pick) */
+static struct
+{
+	const char *texts[24];
+	short indexes[24], count;
+	int mapped;
+} picker_map;
 
 static struct ae_screen_class const options_class;
 
@@ -312,7 +325,8 @@ static void value_step(short option, short direction)
 		ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
 	}
-	next = ae_value_step(row->value_count, (short)current, direction);
+	/* (PRIMARY / SECONDARY: the stock weapons and the packs that can start; WEAPON PACKS has one value: it opens) */
+	next = ae_setup_value_step(&screen.access, option, (short)current, direction);
 	if (next == current)
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
@@ -331,9 +345,54 @@ static void picked(short index, void *context)
 {
 	short option = (short)(intptr_t)context;
 
+	if (picker_map.mapped)
+	{
+		if (index < 0 || index >= picker_map.count)
+			return;
+		index = picker_map.indexes[index];
+	}
 	ae_setup_edit_set(option, index);
 	screen.tick_option = -1;
 	refresh();
+}
+
+static int packs_open(void);
+
+/* the picker's values: the row's own, or (a row that offers only some) the offered ones through picker_map */
+static void picker_values(short option, struct ae_picker_spec *spec)
+{
+	struct ae_setup_row const *row = ae_setup_row(option);
+	short current = (short)screen.access.get(screen.access.context, option), index;
+
+	picker_map.mapped = 0;
+	spec->values = row->values;
+	spec->count = row->value_count;
+	spec->current = current;
+	if (option != AE_SO_PRIMARY && option != AE_SO_SECONDARY)
+		return;
+	picker_map.count = ae_setup_offered_values(&screen.access, option, picker_map.indexes,
+		(short)(sizeof(picker_map.indexes) / sizeof(picker_map.indexes[0])));
+	spec->current = 0;
+	for (index = 0; index < picker_map.count; index++)
+	{
+		picker_map.texts[index] = row->values[picker_map.indexes[index]];
+		if (picker_map.indexes[index] == current)
+			spec->current = index;
+	}
+	picker_map.mapped = 1;
+	spec->values = picker_map.texts;
+	spec->count = picker_map.count;
+	/* (the log: what the list offers, for the tests) */
+	{
+		char offered[400];
+		size_t length = 0;
+
+		offered[0] = 0;
+		for (index = 0; index < picker_map.count && length < sizeof(offered); index++)
+			length += (size_t)snprintf(offered + length, sizeof(offered) - length, "%s%s", index ? "," : "",
+				picker_map.texts[index]);
+		platform_log("ae game options: offered %s %s", row->label, offered);
+	}
 }
 
 static void picker_open(short option)
@@ -348,16 +407,20 @@ static void picker_open(short option)
 		name_begin();
 		return;
 	}
+	if (option == AE_SO_WEAPON_PACKS)
+	{
+		if (packs_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		return;
+	}
 	if (ae_setup_edit_reason(option))
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
 	}
 	memset(&spec, 0, sizeof(spec));
-	/* (the row's own static texts: they outlive the picker and its ghost) */
-	spec.values = row->values;
-	spec.count = row->value_count;
-	spec.current = (short)screen.access.get(screen.access.context, option);
+	/* (the row's own static texts, or picker_map's: they outlive the picker and its ghost) */
+	picker_values(option, &spec);
 	spec.row = screen.focus_row;
 	spec.bounds = screen.frame.rect;
 	spec.density = screen.density;
@@ -427,6 +490,12 @@ static void dialog_picked(short choice, void *context)
 	if (kind == 1 && choice == 1)
 	{
 		ae_setup_edit_defaults();
+		screen.tick_option = -1;
+		refresh();
+	}
+	else if (kind == 4 && choice == 1)
+	{
+		ae_setup_edit_defaults_packs();
 		screen.tick_option = -1;
 		refresh();
 	}
@@ -535,6 +604,20 @@ static int leave_or_ask(void)
 
 struct item_context { struct ae_density const *density; };
 
+/* a row of the WEAPON PACKS screen differs from where the edit started (PRIMARY / SECONDARY are in the list too) */
+static int packs_changed(void)
+{
+	int option;
+
+	for (option = AE_SO_PACK_FIRST; option < AE_SO_PACK_FIRST + AE_SETUP_PACKS; option++)
+	{
+		if (ae_setup_applies(&screen.access, option) && screen.access.changed(screen.access.context, option))
+			return 1;
+	}
+	return ae_setup_applies(&screen.access, AE_SO_PACKS_ON_MAP) &&
+		screen.access.changed(screen.access.context, AE_SO_PACKS_ON_MAP);
+}
+
 static void list_item(void *context, short item, float x, float y, float width, float height, unsigned int flags)
 {
 	struct item_context const *list = context;
@@ -571,6 +654,16 @@ static void list_item(void *context, short item, float x, float y, float width, 
 		widget.flags |= AE_ROW_DISABLED;
 		widget.reason = ae_setup_edit_reason(entry);
 	}
+	/* (WEAPON PACKS: what is on, a chevron; changed when a row of its screen is) */
+	if (entry == AE_SO_WEAPON_PACKS)
+	{
+		ae_setup_packs_summary(&screen.access, screen.packs_summary, sizeof(screen.packs_summary));
+		widget.value = screen.packs_summary;
+		widget.flags |= AE_ROW_SUBSCREEN;
+		widget.base_value = NULL;
+		if (packs_changed())
+			widget.flags |= AE_ROW_CHANGED;
+	}
 	if (entry == screen.tick_option)
 	{
 		widget.tick = &screen.tick;
@@ -600,7 +693,23 @@ static void list_item(void *context, short item, float x, float y, float width, 
 	ae_widget_row(list->density, x, y, width, &widget, HIT_LIST, item);
 }
 
-static void draw_header(void)
+/* (a sub-screen) the crumb above the title, small tracked capitals: GAME OPTIONS > the sub-screen's name (a line
+under the title has no room at 130 %: the mockup's finding) */
+static void draw_crumb(const char *tail, float title_top)
+{
+	float size = u(CRUMB_U), cap = ae_draw_cap_height(AE_FONT_BODY, size);
+	float top = title_top - u(CRUMB_ABOVE_U) - cap, middle = top + cap * 0.5f, x = left_x(), half = cap * 0.32f;
+
+	x += ae_draw_text_tracked(AE_FONT_BODY, size, CRUMB_TRACKING, x, top, AE_ALIGN_LEFT, AE_COLOR_MUTED,
+		"GAME OPTIONS") + u(CRUMB_CHEVRON_GAP_U);
+	/* (a drawn chevron, the row's own, not a glyph) */
+	ae_draw_line(x, middle - half, x + half, middle, u(2.0f), AE_COLOR_MUTED);
+	ae_draw_line(x + half, middle, x, middle + half, u(2.0f), AE_COLOR_MUTED);
+	x += half + u(CRUMB_CHEVRON_GAP_U);
+	ae_draw_text_tracked(AE_FONT_BODY, size, CRUMB_TRACKING, x, top, AE_ALIGN_LEFT, AE_COLOR_TEXT, tail);
+}
+
+static void draw_header(const char *crumb_tail)
 {
 	char changed[32];
 	float size = u(TITLE_U), top = frame_y(TITLE_Y), crumb = u(CRUMB_U), x = right_x(), middle, width;
@@ -609,6 +718,8 @@ static void draw_header(void)
 
 	middle = top + ae_draw_cap_height(AE_FONT_TITLE, size) * 0.5f;
 	ae_draw_text(AE_FONT_TITLE, size, left_x(), top, AE_ALIGN_LEFT, AE_COLOR_TITLE, "GAME OPTIONS");
+	if (crumb_tail)
+		draw_crumb(crumb_tail, top);
 	if (changes)
 		snprintf(changed, sizeof(changed), "%d CHANGED", changes);
 	else
@@ -657,26 +768,31 @@ static void draw_rail(float x, float y, float width)
 	}
 }
 
-static void draw_help(float x, float y, float width)
+static void draw_help_text(float x, float y, float width, const char *text)
 {
 	char lines[HELP_LINES][160];
-	short option = screen.focus_option;
 	float body = u(screen.density.metrics->body), line = u(screen.density.metrics->body_line);
 	int count, index;
 
-	if (option < 0)
-		return;
-	count = ae_wrap_text(AE_FONT_BODY, body, ae_setup_help(option, screen.access.get(screen.access.context, option)),
-		width, lines, HELP_LINES);
+	count = ae_wrap_text(AE_FONT_BODY, body, text, width, lines, HELP_LINES);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
+}
+
+static void draw_help(float x, float y, float width)
+{
+	short option = screen.focus_option;
+
+	if (option >= 0)
+		draw_help_text(x, y, width, ae_setup_help(option, screen.access.get(screen.access.context, option)));
 }
 
 static void draw_footer(void)
 {
 	short count = 0;
 
-	screen.prompts[count++] = prompt_of(AE_BUTTON_A, ae_string(AE_STR_ALL_VALUES), AE_ACTION_ACCEPT);
+	screen.prompts[count++] = prompt_of(AE_BUTTON_A, screen.focus_option == AE_SO_WEAPON_PACKS ? "Open" :
+		ae_string(AE_STR_ALL_VALUES), AE_ACTION_ACCEPT);
 	screen.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_DONE), AE_ACTION_BACK);
 	screen.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Group", AE_ACTION_TAB_PREVIOUS);
 	screen.prompts[count++] = prompt_of(AE_BUTTON_RIGHT_SHOULDER, "Group", AE_ACTION_TAB_NEXT);
@@ -695,7 +811,7 @@ static void options_draw(struct ae_screen *instance)
 	(void)instance;
 	full_density();
 	refresh();
-	draw_header();
+	draw_header(NULL);
 	top = frame_y(CONTENT_Y);
 	bottom = screen.frame.rect.height - u(FOOTER_ABOVE_U) - u(FOOTER_ROOM_U);
 	line = u(screen.density.metrics->body_line);
@@ -846,6 +962,487 @@ static struct ae_screen_class const options_class =
 	.name = "game options", .leave = options_leave, .handle = options_handle, .draw = options_draw,
 	.pointer = options_pointer, .update = options_update,
 };
+
+/* ---------- the WEAPON PACKS screen (EQUIPMENT > WEAPON PACKS; owner 2026-10-22, the mockups' option B)
+
+The same frame: the crumb GAME OPTIONS > WEAPON PACKS above the title, the rail (EQUIPMENT lit), one list: PACKS (the
+five packs and PACK WEAPONS ON MAP, each a switch; an ON pack a CAN START or MAP ONLY capsule: only the first two
+packs on, in slot order, can be start weapons; a pack not installed here and off, NOT INSTALLED) and START WEAPONS
+(PRIMARY and SECONDARY, the same rows as EQUIPMENT's). A or left / right toggles a switch, A opens a start weapon's
+values; Y DEFAULTS this screen's rows only (the gametype's own, after asking); B back to EQUIPMENT on WEAPON PACKS.
+Log: "ae game options: weapon packs open (N rows, on: ...)", "packs focus <label>", the glue's "set ...",
+"weapon packs closed (on: ...)". */
+
+enum { PACKS_ENTRIES = 16, HIT_PACKS_LIST = OPTIONS_HIT + 8, HIT_PACKS_PROMPTS };
+
+/* the switch and the capsule (u; the mockup's 52 x 28 pill) */
+#define SWITCH_WIDTH_U 52.0f
+#define SWITCH_HEIGHT_U 28.0f
+#define SWITCH_INSET_U 4.0f
+#define SWITCH_TEXT_GAP_U 14.0f
+#define CAPSULE_GAP_U 12.0f
+#define CAPSULE_PAD_U 10.0f
+#define CAPSULE_HEIGHT_U 22.0f
+#define CAPSULE_LINE_U 1.5f
+#define CAPSULE_TRACKING 0.12f
+#define SWITCH_MS 120
+/* menu blue (40,148,254): the switch's on fill; its off track the rule's colour at .25 (the slider's) */
+#define SWITCH_ON 0x2894FEFFu
+#define SWITCH_TRACK_OFF 0xC8D6E040u
+#define SWITCH_TRACK_OFF_ON_BAR 0x0F171E40u
+#define SWITCH_KNOB 0xFFFFFFFFu
+#define SWITCH_KNOB_OFF 0xC8D6E0FFu
+#define SWITCH_KNOB_OFF_ON_BAR 0x84939FFFu
+
+static struct
+{
+	short entries[PACKS_ENTRIES], count;
+	struct ae_list_view list;
+	struct ae_rect focus_row;
+	short focus_option, logged_focus;
+	struct ae_prompt prompts[PROMPTS];
+	short prompt_count;
+	/* the knob of the switch flipped last, sliding */
+	struct ae_motion knob;
+	short knob_option;
+	char help[320], summary[32];
+} packs;
+
+static struct ae_screen_class const packs_class;
+
+static unsigned int with_alpha(unsigned int rgba, float factor)
+{
+	unsigned int alpha = (unsigned int)((float)(rgba & 0xFFu) * (factor < 0.0f ? 0.0f : factor > 1.0f ? 1.0f : factor));
+
+	return (rgba & 0xFFFFFF00u) | alpha;
+}
+
+static int packs_is_switch(short option)
+{
+	return (option >= AE_SO_PACK_FIRST && option < AE_SO_PACK_FIRST + AE_SETUP_PACKS) || option == AE_SO_PACKS_ON_MAP;
+}
+
+static int packs_loadout_custom(void)
+{
+	return screen.access.get(screen.access.context, AE_SO_LOADOUT) == AE_SETUP_LOADOUT_CUSTOM;
+}
+
+static short packs_focused(void)
+{
+	short focus = packs.list.list.focus;
+
+	return focus >= 0 && focus < packs.count && !ae_setup_entry_is_header(packs.entries[focus]) ?
+		packs.entries[focus] : -1;
+}
+
+static void packs_refresh(void)
+{
+	short option = packs_focused(), count = ae_setup_packs_entries(&screen.access, packs.entries, PACKS_ENTRIES);
+
+	if (count != packs.count)
+	{
+		short index;
+
+		packs.count = count;
+		ae_list_set_count(&packs.list.list, count);
+		for (index = 0; index < count; index++)
+		{
+			if (packs.entries[index] == option)
+				ae_list_set_focus(&packs.list.list, index);
+		}
+	}
+	if (packs.list.list.focus >= 0 && packs.list.list.focus < packs.count &&
+		ae_setup_entry_is_header(packs.entries[packs.list.list.focus]))
+		ae_list_set_focus(&packs.list.list, ae_setup_row_step(packs.entries, packs.count, packs.list.list.focus, 1));
+	packs.focus_option = packs_focused();
+	if (packs.focus_option != packs.logged_focus)
+	{
+		packs.logged_focus = packs.focus_option;
+		if (packs.focus_option >= 0)
+			platform_log("ae game options: packs focus %s", ae_setup_label(&screen.access, packs.focus_option));
+	}
+}
+
+static void packs_skip_headers(short direction)
+{
+	short focus = packs.list.list.focus;
+
+	if (focus < 0 || focus >= packs.count || !ae_setup_entry_is_header(packs.entries[focus]))
+		return;
+	ae_list_set_focus(&packs.list.list, ae_setup_row_step(packs.entries, packs.count, focus, direction));
+	if (ae_setup_entry_is_header(packs.entries[packs.list.list.focus]))
+		ae_list_set_focus(&packs.list.list, ae_setup_row_step(packs.entries, packs.count, packs.list.list.focus,
+			(short)-direction));
+}
+
+/* a switch flipped (A, left or right, a click): a pack not installed here (and off) can't be */
+static void packs_toggle(short option)
+{
+	int current = screen.access.get(screen.access.context, option);
+
+	if (current < 0 || ae_setup_edit_reason(option))
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_motion_start(&packs.knob, current ? 1.0f : 0.0f, current ? 0.0f : 1.0f, SWITCH_MS);
+	packs.knob_option = option;
+	ae_setup_edit_set(option, current ? 0 : 1);
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	screen.tick_option = -1;
+	refresh();
+	packs_refresh();
+}
+
+/* A or a click on a row: a switch flips, a start weapon's values open (only with a CUSTOM loadout) */
+static void packs_activate(short option)
+{
+	if (packs_is_switch(option))
+	{
+		packs_toggle(option);
+		return;
+	}
+	if (!packs_loadout_custom())
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	screen.focus_row = packs.focus_row;
+	picker_open(option);
+}
+
+static void packs_step(short option, short direction)
+{
+	if (packs_is_switch(option))
+		packs_toggle(option);
+	else if (packs_loadout_custom())
+		value_step(option, direction);
+	else
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+}
+
+/* this screen's changed rows (the DEFAULTS dialog's count) */
+static short packs_changes(void)
+{
+	short changes = 0, index;
+
+	for (index = 0; index < packs.count; index++)
+	{
+		short option = packs.entries[index];
+
+		if (!ae_setup_entry_is_header(option) && screen.access.changed(screen.access.context, option))
+			changes++;
+	}
+	return changes;
+}
+
+static void packs_defaults_ask(void)
+{
+	char body[200];
+	short changes = packs_changes();
+
+	if (!changes)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	snprintf(body, sizeof(body), "The packs and start weapons go back to %s's own: %d change%s undone.", screen.name,
+		changes, changes == 1 ? "" : "s");
+	screen.dialog = 4;
+	dialog_open(AE_DIALOG_CONFIRM, "Back to defaults?", body, ae_string(AE_STR_CANCEL_CAPS), "DEFAULTS");
+}
+
+/* a switch row's right block: the switch (its knob sliding for SWITCH_MS after a flip), ON / OFF left of it, and an
+ON pack's capsule left of that; a pack not installed here: NOT INSTALLED, grey (never amber: the OG theme) */
+static void packs_switch_block(short option, float x, float y, float width, float height, int on_bar, int disabled)
+{
+	struct ae_density const *density = &screen.density;
+	float pad = u(density->metrics->pad), center = y + height * 0.5f, right = x + width - pad;
+	float text = ae_size_text(density), sw = u(SWITCH_WIDTH_U), sh = u(SWITCH_HEIGHT_U), inset = u(SWITCH_INSET_U);
+	float knob = sh - 2.0f * inset, sx = right - sw, sy = center - sh * 0.5f, t, text_x, said;
+	int on = screen.access.get(screen.access.context, option) == 1;
+	int slot = option - AE_SO_PACK_FIRST + 1;
+
+	if (disabled)
+	{
+		ae_draw_text(AE_FONT_ROW, text, right, cap_top(AE_FONT_ROW, text, center), AE_ALIGN_RIGHT,
+			on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_MUTED, "NOT INSTALLED");
+		return;
+	}
+	t = on ? 1.0f : 0.0f;
+	if (packs.knob_option == option && ae_motion_running(&packs.knob))
+		t = ae_motion_value(&packs.knob);
+	ae_draw_rect(sx, sy, sw, sh, sh * 0.5f, on_bar ? SWITCH_TRACK_OFF_ON_BAR : SWITCH_TRACK_OFF);
+	if (t > 0.0f)
+		ae_draw_rect(sx, sy, sw, sh, sh * 0.5f, with_alpha(SWITCH_ON, t));
+	ae_draw_rect(sx + inset + t * (sw - 2.0f * inset - knob), sy + inset, knob, knob, knob * 0.5f,
+		t >= 0.5f ? SWITCH_KNOB : on_bar ? SWITCH_KNOB_OFF_ON_BAR : SWITCH_KNOB_OFF);
+	text_x = sx - u(SWITCH_TEXT_GAP_U);
+	said = ae_draw_text(AE_FONT_ROW, text, text_x, cap_top(AE_FONT_ROW, text, center), AE_ALIGN_RIGHT,
+		on_bar ? AE_COLOR_SELECTION_TEXT : on ? AE_COLOR_ACCENT : AE_COLOR_MUTED, on ? "ON" : "OFF");
+	/* (an ON pack: CAN START, or MAP ONLY when two packs before it hold the start weapons' places) */
+	if (on && slot >= 1 && slot <= AE_SETUP_PACKS)
+	{
+		int can = ae_setup_pack_source(&screen.access, slot) != 0;
+		const char *label = can ? "CAN START" : "MAP ONLY";
+		float size = u(density->metrics->badge), ch = u(CAPSULE_HEIGHT_U);
+		float tw = ae_draw_text_tracked_width(AE_FONT_BODY, size, CAPSULE_TRACKING, label);
+		float cw = tw + 2.0f * u(CAPSULE_PAD_U), cx = text_x - said - u(CAPSULE_GAP_U) - cw;
+		unsigned int color = on_bar ? AE_COLOR_SELECTION_TEXT : can ? AE_COLOR_TEXT : AE_COLOR_MUTED;
+
+		ae_draw_outline(cx, center - ch * 0.5f, cw, ch, ch * 0.5f, u(CAPSULE_LINE_U), color);
+		ae_draw_text_tracked(AE_FONT_BODY, size, CAPSULE_TRACKING, cx + (cw - tw) * 0.5f, cap_top(AE_FONT_BODY, size,
+			center), AE_ALIGN_LEFT, color, label);
+	}
+}
+
+static void packs_item(void *context, short item, float x, float y, float width, float height, unsigned int flags)
+{
+	struct item_context const *list = context;
+	struct ae_row widget;
+	short entry = packs.entries[item];
+	int value, on_bar;
+
+	if (ae_setup_entry_is_header(entry))
+	{
+		float group = list->density->metrics->group_height * list->density->unit;
+
+		ae_widget_group(list->density, x, y + height - group, width,
+			ae_setup_section_name(&screen.access, ae_setup_entry_group(entry)));
+		return;
+	}
+	value = screen.access.get(screen.access.context, entry);
+	memset(&widget, 0, sizeof(widget));
+	widget.label = ae_setup_label(&screen.access, entry);
+	widget.flags = flags;
+	on_bar = (flags & AE_ROW_ON_BAR) || ((flags & AE_ROW_FOCUSED) && !(flags & AE_ROW_BAR_BY_LIST));
+	if (screen.access.changed(screen.access.context, entry))
+		widget.flags |= AE_ROW_CHANGED;
+	if (flags & AE_ROW_FOCUSED)
+	{
+		packs.focus_row.x = x;
+		packs.focus_row.y = y;
+		packs.focus_row.width = width;
+		packs.focus_row.height = height;
+	}
+	if (packs_is_switch(entry))
+	{
+		int disabled = ae_setup_edit_reason(entry) != NULL;
+
+		/* (the value is the switch, drawn after the row: no text, no arrows; a pack not installed is dimmed, but on
+		the selection bar its label stays readable, its reason on the help line) */
+		if (disabled && !on_bar)
+			widget.flags |= AE_ROW_DISABLED;
+		ae_widget_row(list->density, x, y, width, &widget, HIT_PACKS_LIST, item);
+		packs_switch_block(entry, x, y, width, height, on_bar, disabled);
+		return;
+	}
+	/* (PRIMARY / SECONDARY: as EQUIPMENT's; read only, grey, while the loadout follows the weapon set) */
+	if (!packs_loadout_custom())
+	{
+		float text = ae_size_minor(list->density);
+
+		widget.flags = (widget.flags | AE_ROW_DISABLED) & ~(unsigned int)AE_ROW_CHANGED;
+		ae_widget_row(list->density, x, y, width, &widget, HIT_PACKS_LIST, item);
+		ae_draw_text(AE_FONT_ROW, text, x + width - u(list->density->metrics->pad), cap_top(AE_FONT_ROW, text,
+			y + height * 0.5f), AE_ALIGN_RIGHT, on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_MUTED, "LOADOUT: CATEGORY");
+		return;
+	}
+	widget.value = ae_setup_value_text(entry, value);
+	if (widget.flags & AE_ROW_CHANGED)
+		widget.base_value = ae_setup_value_text(entry, ae_setup_edit_base(entry));
+	if (entry == screen.tick_option)
+	{
+		widget.tick = &screen.tick;
+		widget.tick_side = screen.tick_side;
+		widget.old_value = screen.tick_old;
+	}
+	ae_widget_row(list->density, x, y, width, &widget, HIT_PACKS_LIST, item);
+}
+
+static const char *packs_help(void)
+{
+	short option = packs.focus_option;
+	const char *text;
+
+	if (option < 0)
+		return "";
+	text = ae_setup_pack_help(&screen.access, option, ae_setup_edit_reason(option) == NULL, packs.help,
+		sizeof(packs.help));
+	if (text)
+		return text;
+	if ((option == AE_SO_PRIMARY || option == AE_SO_SECONDARY) && !packs_loadout_custom())
+		return "The weapon set picks the start weapons. Set LOADOUT to CUSTOM in EQUIPMENT to choose them here.";
+	return ae_setup_help(option, screen.access.get(screen.access.context, option));
+}
+
+static void packs_footer(void)
+{
+	short count = 0;
+	int start_row = packs.focus_option == AE_SO_PRIMARY || packs.focus_option == AE_SO_SECONDARY;
+
+	packs.prompts[count++] = prompt_of(AE_BUTTON_A, start_row ? ae_string(AE_STR_ALL_VALUES) : "Toggle",
+		AE_ACTION_ACCEPT);
+	packs.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
+	packs.prompts[count++] = prompt_of(AE_BUTTON_Y, "Defaults", AE_ACTION_Y);
+	packs.prompt_count = count;
+	ae_widget_prompts(&screen.density, left_x(), screen.frame.rect.height - u(FOOTER_ABOVE_U), packs.prompts, count,
+		NULL, right_x(), -1, HIT_PACKS_PROMPTS);
+}
+
+static void packs_draw(struct ae_screen *instance)
+{
+	struct item_context context;
+	float top, bottom, rail_width, list_x, list_width, help_y, line;
+
+	(void)instance;
+	full_density();
+	refresh();
+	packs_refresh();
+	draw_header("WEAPON PACKS");
+	top = frame_y(CONTENT_Y);
+	bottom = screen.frame.rect.height - u(FOOTER_ABOVE_U) - u(FOOTER_ROOM_U);
+	line = u(screen.density.metrics->body_line);
+	help_y = bottom - line * (float)HELP_LINES;
+	rail_width = screen.frame.rect.width * RAIL_WIDTH;
+	list_x = left_x() + rail_width + u(LIST_GAP_U);
+	list_width = right_x() - list_x;
+	/* (the rail as GAME OPTIONS': EQUIPMENT lit, its focus is on WEAPON PACKS) */
+	draw_rail(left_x(), top, rail_width);
+	context.density = &screen.density;
+	ae_widget_list(&screen.density, &packs.list, list_x, top, list_width, help_y - u(HELP_GAP_U) - top, packs_item,
+		&context, HIT_PACKS_LIST);
+	ae_draw_rect(list_x, help_y - u(HELP_GAP_U) * 0.5f, list_width, u(RULE_U), 0.0f, AE_COLOR_RULE);
+	draw_help_text(list_x, help_y, list_width, packs_help());
+	packs_footer();
+}
+
+static int packs_handle(struct ae_screen *instance, struct ae_event const *event)
+{
+	short option;
+
+	(void)instance;
+	refresh();
+	packs_refresh();
+	option = packs.focus_option;
+	switch (event->action)
+	{
+	case AE_ACTION_BACK:
+		/* (0: the screen pops, back to EQUIPMENT on WEAPON PACKS) */
+		return 0;
+	case AE_ACTION_LEFT:
+	case AE_ACTION_RIGHT:
+		if (option >= 0)
+			packs_step(option, event->action == AE_ACTION_RIGHT ? 1 : -1);
+		return 1;
+	case AE_ACTION_ACCEPT:
+		if (option >= 0)
+			packs_activate(option);
+		return 1;
+	case AE_ACTION_Y:
+		packs_defaults_ask();
+		return 1;
+	case AE_ACTION_TAB_PREVIOUS:
+	case AE_ACTION_TAB_NEXT:
+	case AE_ACTION_X:
+		return 1;
+	default:
+		break;
+	}
+	{
+		short direction = event->action == AE_ACTION_UP || event->action == AE_ACTION_PAGE_UP ? -1 : 1;
+
+		if (ae_list_view_event(&packs.list, event))
+		{
+			packs_skip_headers(direction);
+			packs_refresh();
+		}
+	}
+	return 1;
+}
+
+static void packs_pointer(struct ae_screen *instance, struct ae_pointer const *pointer)
+{
+	struct ae_event event;
+	struct ae_hit hit;
+	short item;
+
+	if (ae_prompts_pointer(packs.prompts, packs.prompt_count, pointer, HIT_PACKS_PROMPTS, &event))
+	{
+		if (event.action == AE_ACTION_BACK)
+		{
+			ae_sound_request(AE_SOUND_BACK, 0);
+			ae_ui_pop();
+		}
+		else
+			packs_handle(instance, &event);
+		return;
+	}
+	if (pointer->left_clicks && ae_hit_at(pointer->x, pointer->y, 0, &hit))
+	{
+		/* (the rail: back to GAME OPTIONS on that group) */
+		if (hit.id == HIT_RAIL)
+		{
+			short first = ae_setup_group_first_row(screen.entries, screen.count, hit.index);
+
+			ae_sound_request(AE_SOUND_BACK, 0);
+			ae_ui_pop();
+			if (first >= 0)
+			{
+				show_group_row(first);
+				platform_log("ae game options: group %s", ae_setup_group_name(&screen.access, hit.index));
+				refresh();
+			}
+			return;
+		}
+		if (hit.id == HIT_PACKS_LIST && (hit.part == AE_PART_ARROW_LEFT || hit.part == AE_PART_ARROW_RIGHT) &&
+			hit.index >= 0 && hit.index < packs.count && !ae_setup_entry_is_header(packs.entries[hit.index]))
+		{
+			ae_list_set_focus(&packs.list.list, hit.index);
+			packs_refresh();
+			packs_step(packs.entries[hit.index], hit.part == AE_PART_ARROW_RIGHT ? 1 : -1);
+			return;
+		}
+	}
+	item = ae_list_view_pointer(&packs.list, pointer, HIT_PACKS_LIST);
+	packs_skip_headers(1);
+	packs_refresh();
+	if (item >= 0 && item < packs.count && !ae_setup_entry_is_header(packs.entries[item]))
+		packs_activate(packs.entries[item]);
+}
+
+static void packs_leave(struct ae_screen *instance)
+{
+	(void)instance;
+	ae_setup_packs_summary(&screen.access, packs.summary, sizeof(packs.summary));
+	platform_log("ae game options: weapon packs closed (on: %s)", packs.summary);
+}
+
+static struct ae_screen_class const packs_class =
+{
+	.name = "weapon packs", .leave = packs_leave, .handle = packs_handle, .draw = packs_draw,
+	.pointer = packs_pointer,
+};
+
+static int packs_open(void)
+{
+	memset(&packs, 0, sizeof(packs));
+	packs.logged_focus = -1;
+	packs.knob_option = -1;
+	refresh();
+	packs.count = ae_setup_packs_entries(&screen.access, packs.entries, PACKS_ENTRIES);
+	if (packs.count < 2)
+		return 0;
+	ae_list_view_init(&packs.list, packs.count, 10);
+	/* (the first pack, under PACKS' header) */
+	ae_list_set_focus(&packs.list.list, 1);
+	packs.list.previous_focus = 1;
+	if (!ae_ui_push(&packs_class, AE_OWNER_ANY, &packs))
+		return 0;
+	ae_setup_packs_summary(&screen.access, packs.summary, sizeof(packs.summary));
+	platform_log("ae game options: weapon packs open (%d rows, on: %s)", packs.count, packs.summary);
+	return 1;
+}
 
 /* the tests' hooks (the harness types no text): HALO_AE_TEST_SET "LABEL=index;LABEL=index" sets rows by value index,
 HALO_AE_TEST_NAME renames the copy, HALO_AE_TEST_SAVE saves it as new and opens the new file again (the rules read

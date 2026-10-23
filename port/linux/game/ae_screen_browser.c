@@ -665,7 +665,7 @@ static void browser_draw(struct ae_screen *instance)
 	else
 		snprintf(crumb, sizeof(crumb), "%d GAME%s%s", screen.count, screen.count == 1 ? "" : "S",
 			screen.kind == AE_BROWSER_LAN ? " ON YOUR NETWORK" : " \xE2\x80\xA2 REFRESHED IN PLACE");
-	ae_flow_title(flow, screen.kind == AE_BROWSER_LAN ? "LAN GAMES" : "SERVER BROWSER", crumb);
+	ae_flow_title(flow, screen.kind == AE_BROWSER_LAN ? "JOIN LAN GAMES" : "SERVER BROWSER", crumb);
 	top = ae_frame_y(&flow->frame, AE_FLOW_CONTENT_Y);
 	if (screen.kind == AE_BROWSER_INTERNET)
 		top = draw_filters(top);

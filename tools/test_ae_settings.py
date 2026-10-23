@@ -7,7 +7,10 @@ the ae_test harness (tools/ae_test), in tools/test_ae_game_options.py's pattern 
 - Y RESTORE DEFAULTS: CANCEL first, then RESTORE DEFAULTS changes the shown rows back;
 - the picker (A), LB / RB sections;
 - two players on this PC: X switches player, a change is the second player's own;
-- every profile gets its ae.toml seeded on first use.
+- every profile gets its ae.toml seeded on first use;
+- (phase B) VIDEO, AUDIO, ONLINE, ACCESSIBILITY and CHAT AND STREAMING (this PC's: config.toml, beside each game's own
+  binary in the harness): each opened at 100 % and 130 %, a row changed, KEEP / UNDO, RESTORE DEFAULTS; a display row's
+  timed KEEP / UNDO; ACCESSIBILITY's LANGUAGE (a RESTART row) asking to restart as SETTINGS closes.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s:
 
@@ -26,7 +29,8 @@ menus = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(menus)
 
 EXIT_AFTER = 30
-CONTROLS, VIEW, HUD = 0, 2, 4
+CONTROLS, VIDEO, VIEW, AUDIO, HUD, CHAT, ONLINE, ACCESSIBILITY = 0, 1, 2, 3, 4, 5, 6, 7
+GROUP_NAMES = ("CONTROLS", "VIDEO", "VIEW", "AUDIO", "HUD", "CHAT AND STREAMING", "ONLINE", "ACCESSIBILITY", "SYSTEM")
 # name, screen (34 top, 35 a group), group, players, window, UI SCALE, the presses (after the lead-in: one a second)
 CASES = (
     ("top", 34, 0, 1, "1920x1080", 100, ()),
@@ -56,13 +60,56 @@ CASES = (
     ("top-seat", 34, 0, 2, "1920x1080", 100, ("pad:x",)),
     # (a change for player 1, then X: KEEP / UNDO first; KEEP, then player 2)
     ("seat-keep", 35, CONTROLS, 2, "1920x1080", 100, ("pad:right", "pad:x", "pad:a")),
+    # (SYSTEM from the top level (the ninth group); MENUS, a RESTART row, stepped as the owner did (CLASSIC, back, again,
+    # then picked from its values); B, KEEP: back on the top level, still open; its B asks RESTART NOW / LATER)
+    ("restart", 34, 0, 1, "1920x1080", 100, ("pad:down",) * 8 + ("pad:a", "pad:right", "pad:left", "pad:right",
+                                                                 "pad:a", "pad:a", "pad:b", "pad:a", "wait", "wait",
+                                                                 "pad:b", "wait")),
+    # (the same by the mouse: the prompts' Back, KEEP CHANGES, the top level's Back)
+    ("restart-mouse", 34, 0, 1, "1920x1080", 100, ("down",) * 8 + ("a", "right", "click:53:452", "wait",
+                                                                    "click:218:234", "wait", "wait", "click:40:452",
+                                                                    "wait", "wait")),
+    # (phase B) VIDEO: RB twice to PERFORMANCE, one right (FPS: POSITION shows), B: KEEP / UNDO, UNDO (down, A)
+    ("video", 35, VIDEO, 1, "1920x1080", 100, ()),
+    ("video-130", 35, VIDEO, 1, "1920x1080", 130, ()),
+    ("video-changed", 35, VIDEO, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right")),
+    ("video-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
+    # (DISPLAY MODE one left (the hidden window is WINDOWED, the last value): the timed KEEP / UNDO, shown; B undoes it)
+    ("video-display", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait")),
+    ("video-display-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait", "pad:b", "wait")),
+    # AUDIO: MASTER VOLUME one left (9), B: KEEP; RESTORE DEFAULTS puts it back (down, A)
+    ("audio", 35, AUDIO, 1, "1920x1080", 100, ()),
+    ("audio-130", 35, AUDIO, 1, "1920x1080", 130, ()),
+    ("audio-keep", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:b", "pad:a")),
+    ("audio-defaults", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:y", "pad:down", "pad:a")),
+    # ONLINE: RB to MAPS, DOWNLOAD MAPS one right (OFF: INTERNET DOWNLOADS goes), B, UNDO (down, A)
+    ("online", 35, ONLINE, 1, "1920x1080", 100, ()),
+    ("online-130", 35, ONLINE, 1, "1920x1080", 130, ()),
+    ("online-changed", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right")),
+    ("online-undo", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
+    # ACCESSIBILITY: MENU SIZE one right (115 %, the screen laid out again at once); the link PLAYER NAME SIZE (down 4,
+    # A: HUD's row); LANGUAGE (a RESTART row) from the top level: DEUTSCH, B, KEEP, B asks RESTART NOW / LATER
+    ("accessibility", 35, ACCESSIBILITY, 1, "1920x1080", 100, ()),
+    ("accessibility-130", 35, ACCESSIBILITY, 1, "1920x1080", 130, ()),
+    ("accessibility-size", 35, ACCESSIBILITY, 1, "1920x1080", 100, ("pad:right",)),
+    ("accessibility-link", 35, ACCESSIBILITY, 1, "1920x1080", 100, ("pad:down",) * 4 + ("pad:a", "wait")),
+    ("language-restart", 34, 0, 1, "1920x1080", 100, ("pad:down",) * 7 + ("pad:a", "pad:down", "pad:down", "pad:right",
+                                                                         "pad:b", "pad:a", "wait", "pad:b", "wait")),
+    # CHAT AND STREAMING: STREAMER MODE (down 2, left: ON, the CENSOR rows show), then RESTORE DEFAULTS (Y, down, A)
+    ("chat", 35, CHAT, 1, "1920x1080", 100, ()),
+    ("chat-130", 35, CHAT, 1, "1920x1080", 130, ()),
+    ("chat-streamer", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left")),
+    ("chat-defaults", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left", "pad:y", "pad:down",
+                                                      "pad:a")),
 )
 
 
 def play(cfg, out, name, screen, group, players, presses, window, scale):
     env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_SETTINGS_GROUP": str(group),
            "HALO_AE_TEST_SETTINGS_PLAYERS": str(players)}
-    return menus.play(cfg, out, name, views=screen, window=window, env=env, shots=8, exit_after=EXIT_AFTER,
+    # (a long run of presses gets the time it needs: the lead-in, one a second, a few seconds after)
+    exit_after = max(EXIT_AFTER, menus.LEAD_IN + len(presses) + 6)
+    return menus.play(cfg, out, name, views=screen, window=window, env=env, shots=8, exit_after=exit_after,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
 
@@ -106,7 +153,7 @@ def test_screens_open(runs):
             assert lines(text, "ae settings: open player "), name
         else:
             opened = lines(text, "ae settings: group ")
-            assert opened and opened[0].startswith(("CONTROLS", "VIDEO", "VIEW", "AUDIO", "HUD")[group]), (name, opened)
+            assert opened and opened[0].startswith(GROUP_NAMES[group]), (name, opened)
 
 
 def test_profiles_seeded(runs):
@@ -133,6 +180,18 @@ def test_keep_and_undo(runs):
     assert lines(back, "ae settings: closed VIEW ") == ["(0 changed)"] and "Keep your changes?" not in back
 
 
+def test_restart_asked_after_keep(runs):
+    """a RESTART row (MENUS) changed and kept: SETTINGS stays open on its top level, and leaving it asks RESTART NOW /
+    LATER (0.3.7.1: the owner saw SETTINGS close after KEEP CHANGES; not reproduced here, this pins the flow)"""
+    for name in ("restart", "restart-mouse"):
+        text = runs[name][1]
+        rest = text.split("ae settings: keep", 1)
+        assert len(rest) == 2, name
+        said = lines(rest[1], "ae settings: ")
+        assert said[:1] == ["closed SYSTEM (1 changed)"] and "restart asked" in said, (name, said)
+        assert "closed SETTINGS" not in said and "restart later" not in said, (name, said)
+
+
 def test_restore_defaults(runs):
     said = lines(runs["defaults"][1], "ae settings: defaults ")
     assert said == ["(2 rows)"], said
@@ -154,6 +213,48 @@ def test_the_second_players_own(runs):
     # (X with a change asks first: KEEP, then the next player)
     said = lines(runs["seat-keep"][1], "ae settings: ")
     assert "keep" in said and "player 2" in said and said.index("keep") < said.index("player 2"), said
+
+
+def test_video(runs):
+    said = lines(runs["video-changed"][1], "ae settings: ")
+    assert "set PERFORMANCE FPS" in said, said
+    assert lines(runs["video-undo"][1], "ae settings: undo ") == ["(1 rows)"]
+    # (a display row: asked with its countdown; B is UNDO, the old mode back)
+    assert lines(runs["video-display"][1], "ae settings: display asked ")
+    said = lines(runs["video-display-undo"][1], "ae settings: ")
+    assert any(line.startswith("display undo (DISPLAY MODE ") for line in said), said
+
+
+def test_audio(runs):
+    said = lines(runs["audio-keep"][1], "ae settings: ")
+    assert "set MASTER VOLUME 9" in said and "keep" in said and "closed AUDIO (1 changed)" in said, said
+    assert lines(runs["audio-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
+
+
+def test_online(runs):
+    said = lines(runs["online-changed"][1], "ae settings: ")
+    assert "set DOWNLOAD MAPS OFF" in said, said
+    said = lines(runs["online-undo"][1], "ae settings: ")
+    assert "undo (1 rows)" in said and "closed ONLINE (0 changed)" in said, said
+
+
+def test_accessibility(runs):
+    said = lines(runs["accessibility-size"][1], "ae settings: ")
+    assert "set MENU SIZE 115 %" in said, said
+    assert "ae menus: settings: scale 1.15" in runs["accessibility-size"][1]
+    said = lines(runs["accessibility-link"][1], "ae settings: ")
+    assert "link to HUD PLAYER NAME SIZE" in said and any(line.startswith("group HUD ") for line in said), said
+    text = runs["language-restart"][1]
+    rest = text.split("ae settings: keep", 1)
+    assert len(rest) == 2
+    said = lines(rest[1], "ae settings: ")
+    assert said[:1] == ["closed ACCESSIBILITY (1 changed)"] and "restart asked" in said, said
+
+
+def test_chat_and_streaming(runs):
+    said = lines(runs["chat-streamer"][1], "ae settings: ")
+    assert "set STREAMER MODE ON" in said, said
+    assert lines(runs["chat-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
 
 
 if __name__ == "__main__":

@@ -94,7 +94,7 @@ static void rows_multiplayer(void)
 	flow->rows[count++] = (struct ae_flow_row){ ROW_BROWSER, -1, "SERVER BROWSER", NULL,
 		"The internet's games, refreshed in place.",
 		ae_screen_browser_available(AE_BROWSER_INTERNET) ? NULL : "NOT IN THIS BUILD" };
-	flow->rows[count++] = (struct ae_flow_row){ ROW_LAN, -1, "LAN GAMES", NULL,
+	flow->rows[count++] = (struct ae_flow_row){ ROW_LAN, -1, "JOIN LAN GAMES", NULL,
 		"Games on your network, no internet needed.", NULL };
 	flow->count = count;
 }

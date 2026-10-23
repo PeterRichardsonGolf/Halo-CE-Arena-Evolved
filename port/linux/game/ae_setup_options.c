@@ -9,6 +9,7 @@ values (ae_glue_setup_options.c), which are menu_functions.c's gametype_options[
 */
 
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include "ae_setup_options.h"
 
@@ -126,10 +127,13 @@ static const char *const loadout_help[] = { "The weapons follow the weapon set."
 static const char *const loadout_weapon_values[] = { "NONE", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN",
 	"SNIPER RIFLE", "ROCKET LAUNCHER", "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER", "BATTLE RIFLE", "SMG", "SILENCED SMG",
 	"CARBINE", "SILENCED AR" };
-static const char *const primary_help[] = { "The weapon everyone spawns with in hand, where the map has it. A pack "
-	"weapon turns its pack on; where the pack is not loaded, its stock weapon is played." };
-static const char *const secondary_help[] = { "The weapon everyone spawns with on their back, where the map has it. A "
-	"pack weapon turns its pack on; where the pack is not loaded, its stock weapon is played." };
+static const char *const primary_help[] = { "The weapon everyone spawns with in hand. Lists the stock weapons and "
+	"the packs that are on and can start (WEAPON PACKS)." };
+static const char *const secondary_help[] = { "The weapon everyone spawns with on their back. Lists the stock weapons "
+	"and the packs that are on and can start (WEAPON PACKS)." };
+static const char *const weapon_packs_values[] = { "NONE" };
+static const char *const weapon_packs_help[] = { "Choose which weapon packs the game adds, and which can be start "
+	"weapons." };
 static const char *const name_values[] = { "" };
 static const char *const name_help[] = { "The gametype's name, up to eleven characters. SAVE AS NEW keeps it." };
 static const char *const pack_help_br[] = { "The battle rifle is not added to the map.",
@@ -281,6 +285,9 @@ static const char *const nhe_extras_help[] = { "Stock teams and camera.", "As Ha
 #define ROW(label, group, engines, team_only, ae, values, helps) \
 	{ label, group, engines, team_only, ae, VALUES(values), VALUES(helps) }
 #define VEHICLE_COUNT(label, team_only) ROW(label, AE_SG_VEHICLES, 0, team_only, 0, count_values, count_help)
+/* (a row of the WEAPON PACKS screen, or of both screens) */
+#define PAGE_ROW(label, page, values, helps) \
+	{ label, AE_SG_EQUIPMENT, 0, 0, 1, VALUES(values), VALUES(helps), page }
 
 static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 {
@@ -320,17 +327,22 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_WEAPON_SET] = ROW("WEAPON SET", AE_SG_EQUIPMENT, 0, 0, 0, weapon_set_values, weapon_set_help),
 	[AE_SO_MAP_WEAPONS] = ROW("MAP WEAPONS", AE_SG_EQUIPMENT, 0, 0, 0, yes_no, map_weapons_help),
 	[AE_SO_GRENADES_ON_MAP] = ROW("GRENADES ON MAP", AE_SG_EQUIPMENT, 0, 0, 1, yes_no, map_grenades_help),
-	[AE_SO_PACK_BATTLE_RIFLE] = ROW("BATTLE RIFLE PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_br),
-	[AE_SO_PACK_SMG] = ROW("SMG PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_smg),
-	[AE_SO_PACK_SMG_SILENCED] = ROW("SILENCED SMG PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_smg_silenced),
-	[AE_SO_PACK_CARBINE] = ROW("CARBINE PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_carbine),
-	[AE_SO_PACK_AR_SILENCED] = ROW("SILENCED AR PACK", AE_SG_EQUIPMENT, 0, 0, 1, off_on, pack_help_ar_silenced),
-	[AE_SO_PACKS_ON_MAP] = ROW("PACK WEAPONS ON MAP", AE_SG_EQUIPMENT, 0, 0, 1, off_on, packs_on_map_help),
+	[AE_SO_WEAPON_PACKS] = ROW("WEAPON PACKS", AE_SG_EQUIPMENT, 0, 0, 1, weapon_packs_values, weapon_packs_help),
+	[AE_SO_PACK_BATTLE_RIFLE] = PAGE_ROW("BATTLE RIFLE PACK", AE_SETUP_PAGE_PACKS, off_on, pack_help_br),
+	[AE_SO_PACK_SMG] = PAGE_ROW("SMG PACK", AE_SETUP_PAGE_PACKS, off_on, pack_help_smg),
+	[AE_SO_PACK_SMG_SILENCED] = PAGE_ROW("SILENCED SMG PACK", AE_SETUP_PAGE_PACKS, off_on,
+		pack_help_smg_silenced),
+	[AE_SO_PACK_CARBINE] = PAGE_ROW("CARBINE PACK", AE_SETUP_PAGE_PACKS, off_on, pack_help_carbine),
+	[AE_SO_PACK_AR_SILENCED] = PAGE_ROW("SILENCED AR PACK", AE_SETUP_PAGE_PACKS, off_on,
+		pack_help_ar_silenced),
+	[AE_SO_PACKS_ON_MAP] = PAGE_ROW("PACK WEAPONS ON MAP", AE_SETUP_PAGE_PACKS, off_on, packs_on_map_help),
 	[AE_SO_STARTING_EQUIPMENT] = ROW("STARTING EQUIPMENT", AE_SG_EQUIPMENT, 0, 0, 0, equipment_values, equipment_help),
 	[AE_SO_STARTING_GRENADES] = ROW("STARTING GRENADES", AE_SG_EQUIPMENT, 0, 0, 1, frags_values, frags_help),
 	[AE_SO_LOADOUT] = ROW("LOADOUT", AE_SG_EQUIPMENT, 0, 0, 0, loadout_values, loadout_help),
-	[AE_SO_PRIMARY] = ROW("PRIMARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, loadout_weapon_values, primary_help),
-	[AE_SO_SECONDARY] = ROW("SECONDARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, loadout_weapon_values, secondary_help),
+	[AE_SO_PRIMARY] = { "PRIMARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, VALUES(loadout_weapon_values), VALUES(primary_help),
+		AE_SETUP_PAGE_BOTH },
+	[AE_SO_SECONDARY] = { "SECONDARY WEAPON", AE_SG_EQUIPMENT, 0, 0, 0, VALUES(loadout_weapon_values),
+		VALUES(secondary_help), AE_SETUP_PAGE_BOTH },
 	[AE_SO_INFINITE_GRENADES] = ROW("INFINITE GRENADES", AE_SG_EQUIPMENT, 0, 0, 0, on_off, grenades_help),
 	[AE_SO_INFINITE_AMMO] = ROW("INFINITE AMMO", AE_SG_EQUIPMENT, 0, 0, 1, off_on, ammo_help),
 	[AE_SO_BOTTOMLESS_CLIP] = ROW("BOTTOMLESS CLIP", AE_SG_EQUIPMENT, 0, 0, 1, off_on, bottomless_help),
@@ -525,6 +537,18 @@ int ae_setup_visible(struct ae_setup_access const *access, int option)
 		return !value_is(access, AE_SO_LOADOUT, AE_SETUP_LOADOUT_CUSTOM) || access->ae_rules;
 	if (option == AE_SO_PRIMARY || option == AE_SO_SECONDARY)
 		return value_is(access, AE_SO_LOADOUT, AE_SETUP_LOADOUT_CUSTOM);
+	/* (WEAPON PACKS: while the gametype has a pack row to open it on) */
+	if (option == AE_SO_WEAPON_PACKS)
+	{
+		int slot;
+
+		for (slot = 1; slot <= AE_SETUP_PACKS; slot++)
+		{
+			if (ae_setup_applies(access, AE_SO_PACK_FIRST + slot - 1))
+				return 1;
+		}
+		return ae_setup_applies(access, AE_SO_PACKS_ON_MAP);
+	}
 	return 1;
 }
 
@@ -543,7 +567,8 @@ short ae_setup_entries(struct ae_setup_access const *access, short *entries, sho
 
 		for (option = 0; option < AE_SETUP_OPTIONS; option++)
 		{
-			if (rows[option].group != group || !ae_setup_visible(access, option))
+			if (rows[option].group != group || rows[option].page == AE_SETUP_PAGE_PACKS ||
+				!ae_setup_visible(access, option))
 				continue;
 			if (!headed)
 			{
@@ -651,4 +676,187 @@ short ae_setup_changes(struct ae_setup_access const *access)
 	for (option = 0; option < AE_SETUP_OPTIONS; option++)
 		changes = (short)(changes + (ae_setup_applies(access, option) && access->changed(access->context, option)));
 	return changes;
+}
+
+/* ---------- the WEAPON PACKS screen */
+
+static const char *const section_names[] = { "PACKS", "START WEAPONS" };
+
+const char *ae_setup_section_name(struct ae_setup_access const *access, int section)
+{
+	if (section >= AE_SETUP_SECTION_PACKS && section < AE_SETUP_SECTIONS_END)
+		return section_names[section - AE_SETUP_SECTION_PACKS];
+	return ae_setup_group_name(access, section);
+}
+
+short ae_setup_packs_entries(struct ae_setup_access const *access, short *entries, short maximum)
+{
+	static const short list[] = { -1 - AE_SETUP_SECTION_PACKS, AE_SO_PACK_BATTLE_RIFLE, AE_SO_PACK_SMG,
+		AE_SO_PACK_SMG_SILENCED, AE_SO_PACK_CARBINE, AE_SO_PACK_AR_SILENCED, AE_SO_PACKS_ON_MAP,
+		-1 - AE_SETUP_SECTION_START, AE_SO_PRIMARY, AE_SO_SECONDARY };
+	short written = 0, index, header = -1;
+
+	if (!access || !entries || maximum <= 0)
+		return 0;
+	for (index = 0; index < COUNT(list); index++)
+	{
+		/* (a section's header is written with its first row, when both have room) */
+		if (ae_setup_entry_is_header(list[index]))
+		{
+			header = list[index];
+			continue;
+		}
+		if (!ae_setup_applies(access, list[index]))
+			continue;
+		if (header != -1)
+		{
+			if (written + 2 > maximum)
+				break;
+			entries[written++] = header;
+			header = -1;
+		}
+		else if (written + 1 > maximum)
+			break;
+		entries[written++] = list[index];
+	}
+	return written;
+}
+
+int ae_setup_pack_on(struct ae_setup_access const *access, int slot)
+{
+	return access && slot >= 1 && slot <= AE_SETUP_PACKS && value_is(access, AE_SO_PACK_FIRST + slot - 1, 1);
+}
+
+int ae_setup_pack_source(struct ae_setup_access const *access, int slot)
+{
+	int below = 0, other;
+
+	if (!ae_setup_pack_on(access, slot))
+		return 0;
+	for (other = 1; other < slot; other++)
+		below += ae_setup_pack_on(access, other);
+	return below < 2 ? below + 1 : 0;
+}
+
+/* the packs' names as the summary and the help say them */
+static const char *const pack_names[AE_SETUP_PACKS] = { "BATTLE RIFLE", "SMG", "SILENCED SMG", "CARBINE",
+	"SILENCED AR" };
+static const char *const pack_lower[AE_SETUP_PACKS] = { "battle rifle", "SMG", "silenced SMG", "carbine",
+	"silenced AR" };
+static const char *const pack_facts[AE_SETUP_PACKS] = {
+	"Battle rifle: three-round bursts, 3x zoom.",
+	"SMG: fast and close range, 60 rounds a magazine.",
+	"Silenced SMG: quiet, tight grouping; it loses damage past 9 units.",
+	"Carbine: single shots, 3x zoom, 18 rounds a magazine.",
+	"Silenced AR: a quiet, steady rifle for range." };
+enum { SUMMARY_NAMES_MAXIMUM = 14 };
+
+void ae_setup_packs_summary(struct ae_setup_access const *access, char *text, int size)
+{
+	int slot, on = 0;
+	size_t length = 0;
+	char names[96];
+
+	if (!text || size <= 0)
+		return;
+	names[0] = 0;
+	for (slot = 1; slot <= AE_SETUP_PACKS; slot++)
+	{
+		if (!ae_setup_pack_on(access, slot))
+			continue;
+		length += (size_t)snprintf(names + length, sizeof(names) - length, "%s%s", on ? ", " : "",
+			pack_names[slot - 1]);
+		if (length >= sizeof(names))
+			length = sizeof(names) - 1;
+		on++;
+	}
+	if (!on)
+		snprintf(text, (size_t)size, "NONE");
+	else if (strlen(names) > SUMMARY_NAMES_MAXIMUM)
+		snprintf(text, (size_t)size, "%d ON", on);
+	else
+		snprintf(text, (size_t)size, "%s", names);
+}
+
+const char *ae_setup_pack_help(struct ae_setup_access const *access, int option, int installed, char *text, int size)
+{
+	int slot = option - AE_SO_PACK_FIRST + 1, other, first = 0, second = 0;
+
+	if (!text || size <= 0 || slot < 1 || slot > AE_SETUP_PACKS)
+		return NULL;
+	if (!ae_setup_pack_on(access, slot) && !installed)
+	{
+		snprintf(text, (size_t)size, "Not installed on this PC. Copy its .aepack into the packs folder next to the "
+			"game and restart.");
+		return text;
+	}
+	if (!ae_setup_pack_on(access, slot))
+	{
+		snprintf(text, (size_t)size, "%s A or left / right turns the pack on.", pack_facts[slot - 1]);
+		return text;
+	}
+	if (ae_setup_pack_source(access, slot))
+	{
+		snprintf(text, (size_t)size, "%s On the map; it can also be a start weapon.", pack_facts[slot - 1]);
+		return text;
+	}
+	/* (on the map only: the two packs on before it hold the start weapons' two places) */
+	for (other = 1; other < slot; other++)
+	{
+		if (!ae_setup_pack_on(access, other))
+			continue;
+		if (!first)
+			first = other;
+		else if (!second)
+			second = other;
+	}
+	snprintf(text, (size_t)size, "The %s pack is on the map, but only the first two packs on can be start weapons "
+		"(%s and %s). Turn one of those off to start with the %s.", pack_lower[slot - 1],
+		first ? pack_lower[first - 1] : "?", second ? pack_lower[second - 1] : "?", pack_lower[slot - 1]);
+	return text;
+}
+
+int ae_setup_value_offered(struct ae_setup_access const *access, int option, int value_index)
+{
+	struct ae_setup_row const *row = ae_setup_row(option);
+
+	if (!row || value_index < 0 || value_index >= row->value_count)
+		return 0;
+	if ((option != AE_SO_PRIMARY && option != AE_SO_SECONDARY) || value_index < AE_SETUP_WEAPON_STOCK || !access)
+		return 1;
+	if (access->get(access->context, option) == value_index)
+		return 1;
+	return ae_setup_pack_source(access, value_index - AE_SETUP_WEAPON_PACK_FIRST + 1) != 0;
+}
+
+short ae_setup_value_step(struct ae_setup_access const *access, int option, short current, short direction)
+{
+	struct ae_setup_row const *row = ae_setup_row(option);
+	short next = current;
+
+	if (!row)
+		return current;
+	for (;;)
+	{
+		next = (short)(next + (direction < 0 ? -1 : 1));
+		if (next < 0 || next >= row->value_count)
+			return current;
+		if (ae_setup_value_offered(access, option, next))
+			return next;
+	}
+}
+
+short ae_setup_offered_values(struct ae_setup_access const *access, int option, short *indexes, short maximum)
+{
+	struct ae_setup_row const *row = ae_setup_row(option);
+	short count = 0, index;
+
+	if (!row || !indexes)
+		return 0;
+	for (index = 0; index < row->value_count && count < maximum; index++)
+	{
+		if (ae_setup_value_offered(access, option, index))
+			indexes[count++] = index;
+	}
+	return count;
 }

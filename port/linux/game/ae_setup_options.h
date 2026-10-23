@@ -33,6 +33,7 @@ enum ae_setup_option
 	AE_SO_TEAM_PLAY, AE_SO_FRIENDLY_FIRE, AE_SO_BETRAYAL_PENALTY, AE_SO_FORCE_EVEN_TEAMS, AE_SO_FRIENDS_ON_SCREEN,
 	/* EQUIPMENT */
 	AE_SO_WEAPON_SET, AE_SO_MAP_WEAPONS, AE_SO_GRENADES_ON_MAP,
+	AE_SO_WEAPON_PACKS,                                        /* opens the WEAPON PACKS screen: the rows below it */
 	AE_SO_PACK_BATTLE_RIFLE, AE_SO_PACK_SMG, AE_SO_PACK_SMG_SILENCED, AE_SO_PACK_CARBINE, AE_SO_PACK_AR_SILENCED,
 	AE_SO_PACKS_ON_MAP, AE_SO_STARTING_EQUIPMENT, AE_SO_STARTING_GRENADES, AE_SO_LOADOUT,
 	AE_SO_PRIMARY, AE_SO_SECONDARY, AE_SO_INFINITE_GRENADES, AE_SO_INFINITE_AMMO, AE_SO_BOTTOMLESS_CLIP,
@@ -65,6 +66,12 @@ enum { AE_SETUP_PACKS = 5 };
 /* PRIMARY / SECONDARY: values 0-9 are the game's weapons, then one per pack slot (AE_SETUP_WEAPON_PACK_FIRST + slot - 1) */
 enum { AE_SETUP_WEAPON_STOCK = 10, AE_SETUP_WEAPON_PACK_FIRST = 10 };
 
+/* the screen a row is on: GAME OPTIONS' list, the WEAPON PACKS screen (EQUIPMENT > WEAPON PACKS: the five packs and
+PACK WEAPONS ON MAP), or both (PRIMARY / SECONDARY, mirrored) */
+enum { AE_SETUP_PAGE_MAIN = 0, AE_SETUP_PAGE_PACKS = 1, AE_SETUP_PAGE_BOTH = 2 };
+/* the WEAPON PACKS screen's two sections, as headers in its list (an entry -1 - section, past the groups) */
+enum { AE_SETUP_SECTION_PACKS = AE_SETUP_GROUPS, AE_SETUP_SECTION_START, AE_SETUP_SECTIONS_END };
+
 /* the engines as game_engine.h numbers them (the glue checks): ctf 1, slayer 2, oddball 3, king 4, race 5 */
 enum { AE_SETUP_ENGINE_CTF = 1, AE_SETUP_ENGINE_SLAYER = 2, AE_SETUP_ENGINE_ODDBALL = 3, AE_SETUP_ENGINE_KING = 4,
 	AE_SETUP_ENGINE_RACE = 5 };
@@ -93,6 +100,7 @@ struct ae_setup_row
 	short value_count;
 	const char *const *helps;          /* one per value, or one for every value (help_count 1) */
 	short help_count;
+	short page;                        /* AE_SETUP_PAGE_* */
 };
 
 /* NULL for a number out of range */
@@ -117,6 +125,32 @@ int ae_setup_team(struct ae_setup_access const *access);
 short ae_setup_entries(struct ae_setup_access const *access, short *entries, short maximum);
 static inline int ae_setup_entry_is_header(short entry) { return entry < 0; }
 static inline int ae_setup_entry_group(short entry) { return -1 - entry; }
+
+/* the WEAPON PACKS screen's list: PACKS' header, the five packs and PACK WEAPONS ON MAP, START WEAPONS' header,
+PRIMARY and SECONDARY (the rows the gametype has). Returns the entries written (at most maximum) */
+short ae_setup_packs_entries(struct ae_setup_access const *access, short *entries, short maximum);
+/* a section's header ("PACKS", "START WEAPONS"; a group's name below AE_SETUP_SECTION_PACKS; "" past them) */
+const char *ae_setup_section_name(struct ae_setup_access const *access, int section);
+
+/* the packs (slot 1-5, ae_weapon_slots.h's order): on in the gametype, and the source (1, 2) that makes it a start
+weapon: only the first two packs on, in slot order, can be (pack_loadout's two bits a loadout slot); 0: off, or on
+the map only */
+int ae_setup_pack_on(struct ae_setup_access const *access, int slot);
+int ae_setup_pack_source(struct ae_setup_access const *access, int slot);
+/* WEAPON PACKS' value: the packs on by name ("SMG, CARBINE"), "N ON" past 14 characters, "NONE" */
+void ae_setup_packs_summary(struct ae_setup_access const *access, char *text, int size);
+/* a pack row's help on the WEAPON PACKS screen (its fact, then what on / off / map only / not installed means),
+NULL for another row */
+const char *ae_setup_pack_help(struct ae_setup_access const *access, int option, int installed, char *text, int size);
+
+/* the values a row offers now: PRIMARY / SECONDARY offer the ten stock weapons and the weapons of the packs that
+are on and can start, and always the value it has (a saved gametype's pack weapon is never reset silently); other
+rows every value */
+int ae_setup_value_offered(struct ae_setup_access const *access, int option, int value_index);
+/* the next offered value from current (direction -1 / 1, no wrapping), current at an end */
+short ae_setup_value_step(struct ae_setup_access const *access, int option, short current, short direction);
+/* the offered values' indexes in order (at most maximum); returns their count */
+short ae_setup_offered_values(struct ae_setup_access const *access, int option, short *indexes, short maximum);
 
 /* the rail: per group, its header's entry (-1 none shown), its visible rows and its changed rows (shown or not) */
 struct ae_setup_group_info { short header, rows, changed; };

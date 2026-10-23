@@ -19,6 +19,7 @@ least 8 px at 1080p (the clearance rule).
 #include "tag_files/tag_groups.h"
 
 #include "ae_community_screen.h"
+#include "ae_hooks.h"
 #include "../src/ae_community.h"
 #include "../src/ae_draw.h"
 
@@ -79,6 +80,8 @@ void ae_community_main_menu_loaded(
 	struct ae_community_context context;
 	long main_menu;
 
+	/* (AE's main menu takes the game's place only once it is there: ae_hooks.c) */
+	ae_ui_game_main_menu_loaded();
 	context.state = ae_community_state();
 	if (context.state != AE_COMMUNITY_ASK)
 		return;

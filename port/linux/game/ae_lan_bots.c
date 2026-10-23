@@ -248,6 +248,15 @@ static void lan_forget(void)
 	}
 	for (index = 0; index < LAN_MACHINES; index++)
 		lan.machines[index] = NONE;
+	/* (a seat left naming a bot that is not active, or a machine slot this call never saw, would hand a later game
+	a bot that is not there: every seat is let go, whatever the bots say) */
+	for (index = 0; index < LAN_MACHINE_SLOTS; index++)
+	{
+		short controller;
+
+		for (controller = 0; controller < AE_LAN_BOTS_CONTROLLERS; controller++)
+			lan.seats[index][controller] = NONE;
+	}
 }
 
 /* the bot on a machine's controller slot (the host's or a virtual machine), NONE for none */

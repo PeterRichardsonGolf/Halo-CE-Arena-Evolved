@@ -25,6 +25,8 @@ _spec.loader.exec_module(menus)
 
 EXIT_AFTER = 30
 SCREEN = 30
+# EQUIPMENT (RB three times), down to WEAPON PACKS (after WEAPON SET, MAP WEAPONS, GRENADES ON MAP), A
+PACKS_OPEN = ("pad:rb",) * 3 + ("pad:down",) * 3 + ("pad:a",)
 # name, gametype, window, UI SCALE, the presses (after the lead-in: one a second)
 CASES = (
     ("slay-match", "AE TEAM SLY", "1920x1080", 100, ()),
@@ -49,7 +51,28 @@ CASES = (
     ("equip-foot-130", "AE TEAM SLY", "1920x1080", 130, ("pad:rb",) * 3 + ("pad:down",) * 17),
     # (MATCH, down to NAME, A: AE's keyboard on a pad)
     ("name-keyboard", "AE TEAM SLY", "1920x1080", 100, ("pad:down",) * 3 + ("pad:a",)),
+    # (EQUIPMENT > WEAPON PACKS: the row is the fourth of EQUIPMENT; A opens the sub-screen)
+    ("packs-open", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN),
+    ("packs-open-130", "AE TEAM SLY", "1920x1080", 130, PACKS_OPEN),
+    # (the SMG and the carbine on (the test hook: the harness's data has the BR's pack only), then A: the BR on too;
+    # down to the carbine, now the third pack on: MAP ONLY, its two-line help)
+    ("packs-third", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN + ("pad:a",) + ("pad:down",) * 3),
+    ("packs-third-130", "AE TEAM SLY", "1920x1080", 130, PACKS_OPEN + ("pad:a",) + ("pad:down",) * 3),
+    # (a pack not installed here: focused, A does nothing)
+    ("packs-not-installed", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN + ("pad:down", "pad:a")),
+    # (the SMG on (hook), A: the BR on; down to PRIMARY WEAPON, A: its values, the stock ten, the BR and the SMG; then
+    # B, B: back to EQUIPMENT, the sub-screen closed with both on)
+    ("packs-primary", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN + ("pad:a",) + ("pad:down",) * 6 + ("pad:a",)),
+    ("packs-back", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN + ("pad:a",) + ("pad:down",) * 6 +
+     ("pad:a", "pad:b", "pad:b")),
+    # (the BR on, then Y: DEFAULTS of this screen only, confirmed)
+    ("packs-defaults", "AE TEAM SLY", "1920x1080", 100, PACKS_OPEN + ("pad:a", "pad:y", "pad:down", "pad:a")),
 )
+# (the environment a case adds: the loadout CUSTOM for the start weapons' list)
+CASE_ENV = {"packs-third": {"HALO_AE_TEST_SET": "SMG PACK=1;CARBINE PACK=1"},
+            "packs-third-130": {"HALO_AE_TEST_SET": "SMG PACK=1;CARBINE PACK=1"},
+            "packs-primary": {"HALO_AE_TEST_SET": "LOADOUT=1;SMG PACK=1"},
+            "packs-back": {"HALO_AE_TEST_SET": "LOADOUT=1;SMG PACK=1"}}
 
 # the rows set by value index, the copy renamed, saved as new and read back from the file (the tests' hooks in
 # ae_screen_game_options.c; the harness types no text): name, SET, NAME, what the file must hold
@@ -74,7 +97,7 @@ SAVES = (
 
 
 def play(cfg, out, name, gametype, presses, window, scale):
-    env = {"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": gametype}
+    env = dict({"HALO_ARENA_MENUS_SCALE": str(scale), "HALO_AE_TEST_GAMETYPE": gametype}, **CASE_ENV.get(name, {}))
     return menus.play(cfg, out, name, views=SCREEN, window=window, env=env, shots=8, exit_after=EXIT_AFTER,
                       test_input=menus.menu_input(*presses) if presses else menus.menu_input("wait"))
 
@@ -189,6 +212,54 @@ def test_new_rows_survive_save_as_new(saves, name):
     got = values(text)
     for label, index in expected.items():
         assert got.get(label) == index, (name, label, got.get(label), index)
+
+
+def test_weapon_packs_opens(runs):
+    # (EQUIPMENT's WEAPON PACKS row opens the sub-screen on its first pack; nothing on in AE TEAM SLY)
+    for name in ("packs-open", "packs-open-130"):
+        _, text, _ = runs[name]
+        assert "WEAPON PACKS" in lines(text, "ae game options: focus "), name
+        assert lines(text, "ae game options: weapon packs open ") == ["(10 rows, on: NONE)"], name
+        assert lines(text, "ae game options: packs focus ")[:1] == ["BATTLE RIFLE PACK"], name
+
+
+def test_weapon_packs_third_pack(runs):
+    for name in ("packs-third", "packs-third-130"):
+        _, text, _ = runs[name]
+        sets = lines(text, "ae game options: set ")
+        assert sets == ["SMG PACK ON", "CARBINE PACK ON", "BATTLE RIFLE PACK ON"], (name, sets)
+        assert lines(text, "ae game options: packs focus ")[-1] == "CARBINE PACK", name
+
+
+def test_weapon_packs_not_installed_does_not_turn_on(runs):
+    _, text, _ = runs["packs-not-installed"]
+    assert lines(text, "ae game options: packs focus ")[-1] == "SMG PACK"
+    assert not lines(text, "ae game options: set ")
+
+
+def test_weapon_packs_primary_lists_only_packs_that_can_start(runs):
+    _, text, _ = runs["packs-primary"]
+    assert "BATTLE RIFLE PACK ON" in lines(text, "ae game options: set ")
+    offered = lines(text, "ae game options: offered PRIMARY WEAPON ")
+    assert offered, lines(text, "ae game options: ")[-8:]
+    names = offered[-1].split(",")
+    assert names[:10] == ["NONE", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN", "SNIPER RIFLE", "ROCKET LAUNCHER",
+                          "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER"], names
+    assert names[10:] == ["BATTLE RIFLE", "SMG"], names
+
+
+def test_weapon_packs_back_to_equipment(runs):
+    # (B closes the picker, B the sub-screen: back on EQUIPMENT, GAME OPTIONS still open)
+    _, text, _ = runs["packs-back"]
+    assert lines(text, "ae game options: weapon packs closed ") == ["(on: 2 ON)"]
+    assert not lines(text, "ae game options: closed ")
+
+
+def test_weapon_packs_defaults_this_screen_only(runs):
+    _, text, _ = runs["packs-defaults"]
+    assert "BATTLE RIFLE PACK ON" in lines(text, "ae game options: set ")
+    assert lines(text, "ae game options: defaults ") == ["(weapon packs)"]
+    assert not [line for line in text.splitlines() if line.rstrip().endswith("ae game options: defaults")]
 
 
 def test_the_pack_rows_and_name_are_in_the_table(runs):

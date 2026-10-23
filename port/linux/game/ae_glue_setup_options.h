@@ -31,6 +31,8 @@ void ae_setup_edit_set(int option, int value_index);
 int ae_setup_edit_base(int option);
 /* every rule back to the gametype the edit started from */
 void ae_setup_edit_defaults(void);
+/* the WEAPON PACKS screen's rows only (the packs, PACK WEAPONS ON MAP, PRIMARY, SECONDARY) back to the base's */
+void ae_setup_edit_defaults_packs(void);
 /* the copy's stored name (11 characters), as ASCII */
 void ae_setup_edit_name(char *name, int size);
 /* the copy renamed (printable ASCII, 11 characters at most; nothing typed keeps the original name) */

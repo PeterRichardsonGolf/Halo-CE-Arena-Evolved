@@ -34,6 +34,10 @@ window pixels each side (horizontal ink can sit 1-2 px outside the advance box).
 #define SLIDER_GAP_U 16.0f
 #define CHEVRON_U 7.0f
 #define CHEVRON_GAP_U 10.0f
+/* (phase B) a key row's cap: its text, height and the room around the text */
+#define KEY_CAP_TEXT_U 15.0f
+#define KEY_CAP_HEIGHT_U 30.0f
+#define KEY_CAP_PAD_U 18.0f
 #define GROUP_INSET_U 10.0f
 #define GROUP_TRACKING 0.09f
 #define TRACK_PAD_U 6.0f
@@ -365,8 +369,9 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	int focused = (row->flags & AE_ROW_FOCUSED) != 0, disabled = (row->flags & AE_ROW_DISABLED) != 0;
 	int changed = (row->flags & AE_ROW_CHANGED) && !disabled, badge = (row->flags & AE_ROW_AE) != 0;
 	int slider = (row->flags & AE_ROW_SLIDER) && !disabled;
-	int quiet = (row->flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS)) != 0;
+	int quiet = (row->flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS | AE_ROW_LINK | AE_ROW_KEY)) != 0;
 	int arrows = focused && row->value && !disabled && !quiet;
+	int key = (row->flags & AE_ROW_KEY) && !disabled;
 	const char *shown = disabled ? row->reason : row->value;
 	int index;
 
@@ -375,13 +380,15 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	layout->arrow_cell = units(density, ARROW_CELL_U);
 	/* (a disabled row's reason and a sub-screen's summary at the minor size, as the mockups: 04, 25; settings 3) */
 	value_size = disabled || (row->flags & AE_ROW_SUBSCREEN) ? minor_size(density) : text;
+	if (key)
+		value_size = units(density, KEY_CAP_TEXT_U);
 	/* the right block first: arrow, value (or reason), arrow (a slider's track), the sub-screen's chevron */
 	if (arrows)
 	{
 		right -= layout->arrow_cell;
 		layout->arrow_right_x = right;
 	}
-	if (row->flags & AE_ROW_SUBSCREEN)
+	if (row->flags & (AE_ROW_SUBSCREEN | AE_ROW_LINK))
 	{
 		layout->chevron_x = right - units(density, CHEVRON_U);
 		right = layout->chevron_x - units(density, CHEVRON_GAP_U);
@@ -390,6 +397,8 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	{
 		snprintf(layout->value, sizeof(layout->value), "%s", shown);
 		layout->value_width = ae_draw_text_width(AE_FONT_ROW, value_size, shown);
+		if (key)
+			layout->value_width += units(density, KEY_CAP_PAD_U);
 	}
 	/* the label's whole width and what follows it (the dot, the badges) are reserved before anything on the left of
 	the value: the label never gives way while the struck base or the value could (settings spec 3) */
@@ -417,7 +426,7 @@ void ae_row_layout(struct ae_density const *density, float width, struct ae_row 
 	layout->label_x = pad;
 	gap = shown || arrows || changed ? units(density, LABEL_GAP_U) : 0.0f;
 	/* the value cut ("…") only as far as the label needs, never under a third of its own width */
-	if (shown && !slider)
+	if (shown && !slider && !key)
 	{
 		float needed = layout->label_x + label_full + extras + gap + (arrows ? layout->arrow_cell : 0.0f);
 		float left = right - layout->value_width;
@@ -541,7 +550,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 	int badges;
 
 	ae_row_layout(density, width, row, &layout);
-	arrows = focused && row->value && !disabled && !(flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS));
+	arrows = focused && row->value && !disabled && !(flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS | AE_ROW_LINK | AE_ROW_KEY));
 	shown = (disabled ? row->reason : row->value) ? layout.value : NULL;
 	center_y = y + layout.height * 0.5f;
 	allowance = CLIP_ALLOWANCE_PIXELS * density->pixel;
@@ -628,7 +637,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 			ae_draw_rect(x + layout.track_x, center_y - height * 0.5f, layout.track_width * fill, height, height * 0.5f,
 				on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT);
 	}
-	if (flags & AE_ROW_SUBSCREEN)
+	if (flags & (AE_ROW_SUBSCREEN | AE_ROW_LINK))
 	{
 		float size = units(density, CHEVRON_U), thickness = units(density, 2.0f);
 		unsigned int color = on_bar ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT;
@@ -656,6 +665,18 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 		{
 			ae_draw_text(AE_FONT_BODY, minor_size(density), right, text_top(AE_FONT_BODY, minor_size(density), center_y),
 				AE_ALIGN_RIGHT, color, shown);
+			shown = NULL;
+		}
+		/* (a key: its cap, light on the row, navy on the selection bar, the text the other of the two) */
+		else if ((flags & AE_ROW_KEY) && !disabled)
+		{
+			float cap = units(density, KEY_CAP_HEIGHT_U), size = units(density, KEY_CAP_TEXT_U);
+
+			ae_draw_rect(x + layout.value_x, center_y - cap * 0.5f, layout.value_width, cap, units(density, 3.0f),
+				on_bar ? AE_COLOR_KEY_CAP_TEXT : AE_COLOR_KEY_CAP);
+			ae_draw_text(AE_FONT_ROW, size, x + layout.value_x + layout.value_width * 0.5f,
+				text_top(AE_FONT_ROW, size, center_y), AE_ALIGN_CENTER, on_bar ? AE_COLOR_TITLE : AE_COLOR_KEY_CAP_TEXT,
+				shown);
 			shown = NULL;
 		}
 	}

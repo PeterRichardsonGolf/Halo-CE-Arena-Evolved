@@ -109,6 +109,76 @@ static boolean ae_ui_up(
 	return TRUE;
 }
 
+/* how long AE's main menu waits for the game's (ms): past it, AE's opens on its own, so the main menu is never empty */
+#define MAIN_MENU_WAIT_MS 3000
+
+/* the game loaded its main menu (main_screen_shell_load) since the main menu began: AE's may take its place */
+static boolean game_main_menu_loaded = FALSE;
+
+void ae_ui_game_main_menu_loaded(
+	void)
+{
+	game_main_menu_loaded = TRUE;
+}
+
+/* whether AE's main menu may take the game's main menu's place now: once the game has loaded its main menu, so the
+replacing closes it. At the start that is the case at once; back from a game the ui scenario (main_menu_is_active)
+comes a little before the game loads its main menu, which then drew under AE's (0.3.7.1). Nothing of the game's
+there for MAIN_MENU_WAIT_MS: AE's opens anyway */
+static boolean main_menu_ready(
+	unsigned long now)
+{
+	static boolean waiting = FALSE;
+	static unsigned long since = 0, last = 0;
+
+	/* (a wait left off more than a moment ago, while AE's screens were up: starts over) */
+	if (waiting && now - last > 250)
+		waiting = FALSE;
+	last = now;
+	if (game_main_menu_loaded)
+	{
+		waiting = FALSE;
+		return TRUE;
+	}
+	if (!waiting)
+	{
+		waiting = TRUE;
+		since = now;
+		return FALSE;
+	}
+	if (now - since < MAIN_MENU_WAIT_MS)
+		return FALSE;
+	waiting = FALSE;
+	platform_log("ae menus: the game's main menu did not load: AE's opens without it");
+	return TRUE;
+}
+
+/* a start was asked from AE's screens at this time (ms), 0 none: see ae_ui_game_starting */
+static unsigned long game_starting_since = 0;
+/* the longest the main menu stays out for a start that never leaves the main menu */
+#define GAME_STARTING_HOLD_MS 8000
+
+void ae_ui_game_starting(
+	void)
+{
+	game_starting_since = system_milliseconds();
+	if (!game_starting_since)
+		game_starting_since = 1;
+}
+
+static boolean game_starting(
+	unsigned long now)
+{
+	if (game_starting_since && now - game_starting_since > GAME_STARTING_HOLD_MS)
+	{
+		/* (the level never took the game out of its main menu: AE's opens again) */
+		platform_log("ae menus: the game did not start within %d s: the main menu opens again",
+			GAME_STARTING_HOLD_MS / 1000);
+		game_starting_since = 0;
+	}
+	return game_starting_since != 0;
+}
+
 boolean ae_ui_takes_pointer(
 	void)
 {
@@ -288,12 +358,21 @@ boolean ae_ui_process(
 	}
 	/* (the 0.3.7 menus: AE's main menu takes the game's main menu's place, whenever no AE screen is up there) */
 	if (test_screen_checked && !test_screen && ae_draw_available() && main_menu_is_active() && !ae_ui_depth() &&
-		!server_browser_up() && !virtual_keyboard_active())
-		ae_screen_main_menu_open();
+		!server_browser_up() && !virtual_keyboard_active() && !game_starting(now))
+	{
+		/* (once the game's main menu is there to be replaced) */
+		if (main_menu_ready(now))
+			ae_screen_main_menu_open();
+	}
 	/* (and never outside it: CAMPAIGN's level loads a frame or more after its screens closed, and the main menu can
 	open again in between, over the level) */
 	else if (!main_menu_is_active())
+	{
 		ae_screen_main_menu_close();
+		game_starting_since = 0;
+		/* (the next main menu waits for the game's again) */
+		game_main_menu_loaded = FALSE;
+	}
 	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
 	ae_dialog_tick();
 	/* (the lobby glue's join going on, its session's owner checked; the lobby drives: in the menus and in the game) */

@@ -4,6 +4,20 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## 0.3.8-beta - 2026-10-22
+
+- SETTINGS is finished: VIDEO, AUDIO, ONLINE, ACCESSIBILITY and CHAT AND STREAMING work in Arena Evolved's menus (they
+  showed COMING SOON) and write the same settings as the classic menus. A display change (DISPLAY MODE, RESOLUTION,
+  WINDOW SIZE, RESOLUTION SCALING) asks to keep it and goes back by itself after 10 seconds; SPEAKERS, LANGUAGE and HDR
+  DISPLAY ask to restart; MENU SIZE applies at once; PLAYER NAME SIZE and WAYPOINT SIZE take you to their HUD rows.
+- Back from a game, the game's own old main menu (and its video) no longer draws under Arena Evolved's main menu.
+- Starting a campaign level no longer shows the main menu again for a moment before the level loads.
+- Windows: the blue menu cursor shows (it was never loaded there; the system arrow showed).
+- The LAN entry and its screen read JOIN LAN GAMES.
+- LAN bots: leaving a game lets go of every bot seat, not only the active bots'.
+- Logs: a player's controls that cannot be read are logged once ("Profile not found" filled the log every frame), the
+  restart question of SETTINGS > SYSTEM > MENUS is logged, and the button prompt family is logged once per pad.
+
 ## 0.3.7-beta - 2026-10-22
 
 - ARENA EVOLVED'S OWN MENUS are now the front end (`display.arena_menus`, on by default): MAIN MENU and MULTIPLAYER;
