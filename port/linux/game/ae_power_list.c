@@ -44,9 +44,11 @@ void hud_item_timers_ae_record(real x0, real y0, real x1, real y1);
 #define AE_LIST_LINES 4
 #define AE_LIST_MAXIMUM 32
 #define AE_LIST_LINE_LENGTH 128
+#define AE_LIST_CLOCK_GLOW_ALPHA 0.85f  /* the strip's (AE_STRIP_GLOW_ALPHA) */
 
 static const real white_rgb[3] = { 229.0f / 255.0f, 240.0f / 255.0f, 1.0f };
 static const real grey_rgb[3] = { 188.0f / 255.0f, 198.0f / 255.0f, 212.0f / 255.0f };
+static const real clock_rgb[3] = { 232.0f / 255.0f, 236.0f / 255.0f, 242.0f / 255.0f };  /* the strip's clock */
 static const real red_rgb[3] = { 1.0f, 0.3f, 0.3f };       /* hud_item_timers_side_color */
 static const real blue_rgb[3] = { 0.35f, 0.55f, 1.0f };
 
@@ -435,6 +437,32 @@ boolean ae_power_list_draw(long font_index)
 		draw_top_left(view);
 	else
 		draw_column(view);
+	return TRUE;
+}
+
+/* CAMPAIGN TIMER in HUD STYLE AE (display.campaign_timer; owner 10-23: the corner clock as today, in AE's look; a
+campaign HUD with scoring is later): the time played in AE's digits, the score strip clock's size, colour and glow,
+right-aligned on the right-hand column at the power list's foot, where multiplayer's corner clock sits. FALSE in HUD
+STYLE CE (hud_item_timers.c draws its own) */
+boolean ae_power_list_campaign_clock(short view, long ticks)
+{
+	real s, ppu, cap, width, right, foot;
+	real_argb_color color;
+	wchar_t text[32];
+
+	if (!valid_view(view) || !ae_hud_style_is_ae())
+		return FALSE;
+	s = view_scale();
+	ppu = ae_hud_pixels_per_unit();
+	cap = ae_strip_digits_px(AE_STRIP_CLOCK_CAP, s);
+	game_engine_format_clock(ticks, FALSE, text, NUMBEROF(text));
+	width = ae_hud_digits_measure(text, cap);
+	right = ae_power_list_right_x(view);
+	foot = ae_score_strip_shared_line_y(view) - AE_LIST_LIFT * s;
+	set_color(clock_rgb, 1.0f, &color);
+	ae_hud_digits_draw(view, right - width, foot, text, cap, &color, AE_LIST_CLOCK_GLOW_ALPHA);
+	/* (for the HUD's messages and TRAINING's labels to keep clear of, in the HUD's units) */
+	hud_item_timers_ae_record((right - width) / ppu, (foot - cap) / ppu, right / ppu, (foot + 2.0f) / ppu);
 	return TRUE;
 }
 

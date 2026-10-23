@@ -1626,6 +1626,7 @@ void hud_draw_campaign_timer(
 	if (font_index == NONE)
 		return;
 	game_engine_format_clock(hud_campaign_timer_ticks, FALSE, clock, NUMBEROF(clock));
+	if (!ae_power_list_campaign_clock(render.local_player_index, hud_campaign_timer_ticks)) /* AE hook */
 	hud_item_timers_draw_clock(font_index, clock, NULL, NULL, NULL);
 
 	return;

@@ -1298,3 +1298,5 @@ source/game/game_engine.c	ae_vehicle_death_log_rules(flags); /* AE hook */
 # and the network test's primary3-5 / secondary3-5
 source/game/game_engine.h	_game_variant_pack_start_later_first_bit = 12, /* AE hook */
 port/linux/game/network_test.c	#include "ae_weapon_slots.h" /* AE hook */
+# CAMPAIGN TIMER in HUD STYLE AE (0.3.9; owner 10-23: the corner clock in AE's look; ae_power_list.c)
+source/interface/hud_item_timers.c	if (!ae_power_list_campaign_clock(render.local_player_index, hud_campaign_timer_ticks)) /* AE hook */
