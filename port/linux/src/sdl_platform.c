@@ -1667,6 +1667,10 @@ has its own) */
 			platform_log("cannot set the window's icon: %s", SDL_GetError());
 		SDL_DestroySurface(icon);
 	}
+#endif
+#ifndef HALO_GLES
+	/* (AE) The icon is not Windows', the cursor is, as on every desktop: it sat inside the icon's test, so the
+	blue arrow never loaded there and the system's showed. */
 	/* the pointer the menus show (platform_ui_pointer_set_active), in place
 	of the system's, at the window's size */
 	if (platform_menu_cursor_size && !menu_cursor_picture)
