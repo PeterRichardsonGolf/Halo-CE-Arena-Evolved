@@ -27,12 +27,17 @@ static void test_missing(void)
 	AE_CHECK(ae_mode_guard_missing(AE_MODE_GUARD_ODDBALL, &full) == NULL);
 	AE_CHECK(ae_mode_guard_missing(AE_MODE_GUARD_KING, &full) == NULL);
 	AE_CHECK(ae_mode_guard_missing(AE_MODE_GUARD_RACE, &full) == NULL);
+	/* (Bomb: its goals are both teams' CTF flags) */
+	AE_CHECK(strcmp(ae_mode_guard_missing(AE_MODE_GUARD_BOMB, &none), "red CTF flag") == 0);
+	AE_CHECK(strcmp(ae_mode_guard_missing(AE_MODE_GUARD_BOMB, &red_only), "blue CTF flag") == 0);
+	AE_CHECK(ae_mode_guard_missing(AE_MODE_GUARD_BOMB, &full) == NULL);
 }
 
 static void test_names_and_spawns(void)
 {
 	AE_CHECK(strcmp(ae_mode_guard_mode_name(AE_MODE_GUARD_CTF), "CTF") == 0);
 	AE_CHECK(strcmp(ae_mode_guard_mode_name(AE_MODE_GUARD_KING), "KING OF THE HILL") == 0);
+	AE_CHECK(strcmp(ae_mode_guard_mode_name(AE_MODE_GUARD_BOMB), "BOMB") == 0);
 	AE_CHECK(strcmp(ae_mode_guard_mode_name(99), "") == 0);
 	/* (Gemini in CTF: 16 spawns, none CTF's) */
 	AE_CHECK(ae_mode_guard_spawn_anywhere(0, 16));

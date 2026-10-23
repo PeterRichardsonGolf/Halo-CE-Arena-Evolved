@@ -36,7 +36,7 @@ word network_game_server_get_state(struct network_game_server *server, short *su
 typedef char verify_vehicle_kinds[AE_SETUP_VEHICLE_KINDS == NUMBER_OF_VARIANT_VEHICLES ? 1 : -1];
 typedef char verify_engines[AE_SETUP_ENGINE_CTF == game_engine_ctf && AE_SETUP_ENGINE_SLAYER == game_engine_slayer &&
 	AE_SETUP_ENGINE_ODDBALL == game_engine_oddball && AE_SETUP_ENGINE_KING == game_engine_king &&
-	AE_SETUP_ENGINE_RACE == game_engine_race ? 1 : -1];
+	AE_SETUP_ENGINE_RACE == game_engine_race && AE_SETUP_ENGINE_BOMB == game_engine_bomb ? 1 : -1];
 
 enum
 {
@@ -61,7 +61,10 @@ enum
 	_encoding_pack_slot,        /* a weapon pack slot in the variant's weapon_pack mask (argument: the slot's bit) */
 	_encoding_loadout_slot,     /* PRIMARY / SECONDARY: the game's weapons, then a pack slot's (argument: the slot) */
 	_encoding_frags,            /* the variant's starting_frags: 0 the game's own, 255 none, 1-4 */
-	_encoding_summary           /* a row that opens a screen (WEAPON PACKS): one value, nothing stored, never changed */
+	_encoding_summary,          /* a row that opens a screen (WEAPON PACKS): one value, nothing stored, never changed */
+	_encoding_byte_value,       /* a byte of the variant, its value itself */
+	_encoding_byte_bit,         /* a bit of a byte of the variant (argument: its mask), its value 1 when set */
+	_encoding_melee_only        /* Bomb's MELEE ONLY bit, and the PC options it goes with (game_variant_options_default) */
 };
 
 struct encoding { short kind; short offset; unsigned long argument; short count; long values[20]; };
@@ -75,6 +78,7 @@ struct encoding { short kind; short offset; unsigned long argument; short count;
 #define SHORT(field, count, ...) { _encoding_short, OPTIONS_FIELD(field), 0, count, { __VA_ARGS__ } }
 #define OPTION_BYTE(field, count, ...) { _encoding_option_byte, OPTIONS_FIELD(field), 0, count, { __VA_ARGS__ } }
 #define SCORE(count, ...) LONG(universal_variant.score_to_win, count, __VA_ARGS__)
+#define BOMB_FIELD(field) VARIANT_FIELD(game_engine_variant.bomb.field)
 #define HEALTH_STYLE(style) ((unsigned long)(style) << _game_variant_health_style_first_bit)
 #define DROP(drop) ((unsigned long)(drop) << _game_variant_drop_secondary_first_bit)
 #define SET_VALUES { 0, 1, 2, 3, 4, 5, 6, 7, VARIANT_VEHICLE_SET_PC, VARIANT_VEHICLE_SET_CUSTOM }
@@ -89,6 +93,7 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_HILL_SCORE] = SCORE(5, 1, 2, 5, 10, 15),
 	[AE_SO_BALL_SCORE] = SCORE(5, 1, 2, 5, 10, 15),
 	[AE_SO_LAPS_TO_WIN] = SCORE(6, 1, 3, 5, 10, 15, 25),
+	[AE_SO_ROUNDS_TO_WIN] = SCORE(7, 1, 2, 3, 4, 5, 7, 10),
 	/* (ARENA OPTIONS' finer TIME LIMIT, minutes) */
 	[AE_SO_TIME_LIMIT] = SHORT(time_limit, 18, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 15, 20, 25, 30, 45, 60),
 	[AE_SO_COUNTDOWN] = BIT(_game_variant_pregame_countdown_bit, 0, 1),
@@ -179,6 +184,14 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_BALL_MELEE] = { _encoding_ball_melee, VARIANT_FIELD(universal_variant.ball_melee), 0, 2, { 0, 1 } },
 	[AE_SO_RACE_TYPE] = LONG(game_engine_variant.race.race_type, 3, 0, 1, 2),
 	[AE_SO_TEAM_SCORING] = LONG(game_engine_variant.race.team_scoring, 3, 0, 1, 2),
+	/* (Bomb's, seconds: game_engine_variant_cleanup's ranges) */
+	[AE_SO_BOMB_ARM_TIME] = LONG(game_engine_variant.bomb.arm_time, 5, 0, 1, 3, 5, 10),
+	[AE_SO_BOMB_RESET_TIME] = LONG(game_engine_variant.bomb.reset_time, 5, 0, 10, 15, 30, 60),
+	[AE_SO_BOMB_ROUND_TIME] = LONG(game_engine_variant.bomb.round_time, 6, 0, 60, 120, 180, 300, 600),
+	[AE_SO_BOMB_NEW_ROUND] = { _encoding_byte_bit, BOMB_FIELD(flags), FLAG(_bomb_new_round_on_score_bit), 2, { 1, 0 } },
+	[AE_SO_BOMB_MELEE_ONLY] = { _encoding_melee_only, BOMB_FIELD(flags), FLAG(_bomb_melee_only_bit), 2, { 1, 0 } },
+	[AE_SO_BOMB_TRAITS] = { _encoding_byte_value, BOMB_FIELD(traits), 0, NUMBER_OF_BOMB_TRAITS,
+		{ _bomb_traits_none, _bomb_traits_grifball, _bomb_traits_open_pitch } },
 	[AE_SO_OBJECTIVES] = { _encoding_goal_radar, 0, 0, 4, { 0, 1, 2, 3 } },
 
 	[AE_SO_HEALTH] = BITS(GAME_VARIANT_HEALTH_STYLE_MASK, 4, HEALTH_STYLE(_health_style_classic),
@@ -277,6 +290,8 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 	case _encoding_sound_preset: return split_screen(rules);
 	case _encoding_name: return 0;
 	case _encoding_summary: return 0;
+	case _encoding_byte_value: return v[encoding->offset];
+	case _encoding_byte_bit: case _encoding_melee_only: return (v[encoding->offset] & encoding->argument) != 0;
 	case _encoding_pack_slot: return (ae_weapon_slots_mask(variant->universal_variant.weapon_pack) & encoding->argument) != 0;
 	case _encoding_loadout_slot:
 	{
@@ -442,6 +457,32 @@ static void raw_set(struct encoding const *encoding, long value, struct rules *r
 			platform_log("ae game options: no source reaches that pack weapon (two packs at most)");
 		break;
 	case _encoding_frags: variant->universal_variant.starting_frags = (byte)value; break;
+	case _encoding_byte_value: v[encoding->offset] = (byte)value; break;
+	case _encoding_byte_bit:
+	case _encoding_melee_only:
+		if (value)
+			v[encoding->offset] |= (byte)encoding->argument;
+		else
+			v[encoding->offset] &= (byte)~encoding->argument;
+		/* (MELEE ONLY on: no start weapons and none on the map, as a new melee-only gametype has them; off: the
+		weapon set's start and the map's weapons again, where the start was melee only's none + none) */
+		if (encoding->kind == _encoding_melee_only)
+		{
+			if (value)
+			{
+				options->loadout = _loadout_custom;
+				options->primary_weapon = _loadout_weapon_none;
+				options->secondary_weapon = _loadout_weapon_none;
+				options->no_map_weapons = TRUE;
+			}
+			else if (options->loadout == _loadout_custom && options->primary_weapon == _loadout_weapon_none &&
+				options->secondary_weapon == _loadout_weapon_none)
+			{
+				options->loadout = _loadout_category;
+				options->no_map_weapons = FALSE;
+			}
+		}
+		break;
 	}
 }
 

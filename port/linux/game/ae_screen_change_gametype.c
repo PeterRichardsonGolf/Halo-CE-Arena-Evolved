@@ -758,7 +758,8 @@ static const char *mode_words(int engine)
 {
 	switch (engine)
 	{
-	case AE_SETUP_ENGINE_CTF: return "CTF flags";
+	/* (Bomb's goals are the CTF flags) */
+	case AE_SETUP_ENGINE_CTF: case AE_SETUP_ENGINE_BOMB: return "CTF flags";
 	case AE_SETUP_ENGINE_KING: return "hills";
 	case AE_SETUP_ENGINE_ODDBALL: return "ball spawns";
 	case AE_SETUP_ENGINE_SLAYER: return "slayer spawns";

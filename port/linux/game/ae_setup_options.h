@@ -24,7 +24,7 @@ enum ae_setup_option
 {
 	/* MATCH (the score to win is the mode's: one row per engine) */
 	AE_SO_KILLS_TO_WIN, AE_SO_CAPTURES_TO_WIN, AE_SO_HILL_SCORE, AE_SO_BALL_SCORE, AE_SO_LAPS_TO_WIN,
-	AE_SO_TIME_LIMIT, AE_SO_COUNTDOWN, AE_SO_NAME,
+	AE_SO_ROUNDS_TO_WIN, AE_SO_TIME_LIMIT, AE_SO_COUNTDOWN, AE_SO_NAME,
 	/* PLAYERS */
 	AE_SO_LIVES, AE_SO_RESPAWN_TIME, AE_SO_RESPAWN_GROWTH, AE_SO_SUICIDE_PENALTY, AE_SO_SHIELDS,
 	AE_SO_MAXIMUM_HEALTH, AE_SO_ACTIVE_CAMO, AE_SO_MOTION_SENSOR, AE_SO_SENSOR_RANGE, AE_SO_ODD_MAN_OUT,
@@ -49,6 +49,9 @@ enum ae_setup_option
 	AE_SO_TRAIT_WITH_BALL, AE_SO_TRAIT_WITHOUT_BALL, AE_SO_SPEED_WITH_BALL, AE_SO_BALL_TYPE, AE_SO_RANDOM_START,
 	AE_SO_BALL_COUNT, AE_SO_BALL_MELEE,
 	AE_SO_RACE_TYPE, AE_SO_TEAM_SCORING,
+	/* (Bomb's: game_engine.h's struct bomb_variant) */
+	AE_SO_BOMB_ARM_TIME, AE_SO_BOMB_RESET_TIME, AE_SO_BOMB_ROUND_TIME, AE_SO_BOMB_NEW_ROUND, AE_SO_BOMB_MELEE_ONLY,
+	AE_SO_BOMB_TRAITS,
 	AE_SO_OBJECTIVES,
 	/* ARENA */
 	AE_SO_HEALTH, AE_SO_FALL_DAMAGE, AE_SO_NO_SPREAD, AE_SO_COMBAT_FEEDBACK, AE_SO_DROP_SECONDARY, AE_SO_PRACTICE,
@@ -72,12 +75,13 @@ enum { AE_SETUP_PAGE_MAIN = 0, AE_SETUP_PAGE_PACKS = 1, AE_SETUP_PAGE_BOTH = 2 }
 /* the WEAPON PACKS screen's two sections, as headers in its list (an entry -1 - section, past the groups) */
 enum { AE_SETUP_SECTION_PACKS = AE_SETUP_GROUPS, AE_SETUP_SECTION_START, AE_SETUP_SECTIONS_END };
 
-/* the engines as game_engine.h numbers them (the glue checks): ctf 1, slayer 2, oddball 3, king 4, race 5 */
+/* the engines as game_engine.h numbers them (the glue checks): ctf 1, slayer 2, oddball 3, king 4, race 5, bomb 6 (the
+builds with Bomb: game_engine_bomb.c; Grifball is a Bomb gametype) */
 enum { AE_SETUP_ENGINE_CTF = 1, AE_SETUP_ENGINE_SLAYER = 2, AE_SETUP_ENGINE_ODDBALL = 3, AE_SETUP_ENGINE_KING = 4,
-	AE_SETUP_ENGINE_RACE = 5 };
+	AE_SETUP_ENGINE_RACE = 5, AE_SETUP_ENGINE_BOMB = 6 };
 /* value indexes the model reads to decide what shows */
 enum { AE_SETUP_TEAM_PLAY_YES = 0, AE_SETUP_LOADOUT_CUSTOM = 1, AE_SETUP_VEHICLE_SET_CUSTOM = 9,
-	AE_SETUP_SOUND_SPLIT_SCREEN = 1 };
+	AE_SETUP_SOUND_SPLIT_SCREEN = 1, AE_SETUP_BOMB_MELEE_ONLY_YES = 0 };
 
 /* the gametype being edited, as the glue gives it (tests: a fake) */
 struct ae_setup_access

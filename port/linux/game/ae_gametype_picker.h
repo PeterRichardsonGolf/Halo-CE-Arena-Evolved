@@ -14,7 +14,7 @@ gametype files and the names table (arena_gametype_names.c).
   shows one of the two (the other the row's value, toggled left / right), its label the name without the BR word.
 - A row's label drops TEAM / FFA from the name unless two rows would then read the same.
 - Filters by the engine's mode: ALL, SLAYER, CTF, KING, ODDBALL (juggernaut, reverse tag, accumulation and stalker
-  run on the oddball engine), RACE.
+  run on the oddball engine), RACE, BOMB (Bomb and Grifball, in the builds with Bomb).
 - Search: a flat list of the rows whose label or full name holds the query (letters' case aside), each with its
   folder; the filters' counts follow it.
 */
@@ -37,7 +37,8 @@ enum ae_gtp_folder
 	/* (the folders a gametype lives in: the rest are views of them) */
 	AE_GTP_FOLDER_FIRST_HOME = AE_GTP_FOLDER_MINE
 };
-enum ae_gtp_filter { AE_GTF_ALL, AE_GTF_SLAYER, AE_GTF_CTF, AE_GTF_KING, AE_GTF_ODDBALL, AE_GTF_RACE, AE_GTP_FILTERS };
+enum ae_gtp_filter { AE_GTF_ALL, AE_GTF_SLAYER, AE_GTF_CTF, AE_GTF_KING, AE_GTF_ODDBALL, AE_GTF_RACE, AE_GTF_BOMB,
+	AE_GTP_FILTERS };
 
 /* a gametype's start weapon as the model names it (game_engine.h's _loadout_weapon_* order) */
 enum ae_gtp_weapon { AE_GTW_NONE, AE_GTW_RANDOM, AE_GTW_ASSAULT_RIFLE, AE_GTW_PISTOL, AE_GTW_SHOTGUN, AE_GTW_SNIPER,
@@ -81,7 +82,7 @@ struct ae_gtp_row { short folder, gametype; };
 
 /* "RECENT", "FAVOURITES", "MY GAMETYPES", "AE FFA" ... "STOCK"; "" out of range */
 const char *ae_gtp_folder_name(int folder);
-/* "ALL", "SLAYER", "CTF", "KING", "ODDBALL", "RACE"; "" out of range */
+/* "ALL", "SLAYER", "CTF", "KING", "ODDBALL", "RACE", "BOMB"; "" out of range */
 const char *ae_gtp_filter_name(int filter);
 /* the filter of an engine (AE_SETUP_ENGINE_*), ALL for none */
 int ae_gtp_filter_of_engine(int engine);

@@ -17,7 +17,9 @@ enum
 	AE_MODE_GUARD_SLAYER = 2,
 	AE_MODE_GUARD_ODDBALL = 3,
 	AE_MODE_GUARD_KING = 4,
-	AE_MODE_GUARD_RACE = 5
+	AE_MODE_GUARD_RACE = 5,
+	/* (Bomb, the builds with it: its goals are the CTF flags of both teams, game_engine_bomb.c) */
+	AE_MODE_GUARD_BOMB = 6
 };
 
 /* what a map has: its netgame flags of each kind (the CTF flags per team) */

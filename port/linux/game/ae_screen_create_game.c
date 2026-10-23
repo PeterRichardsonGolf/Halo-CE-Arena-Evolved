@@ -221,6 +221,7 @@ static short score_option(int engine)
 	case AE_SETUP_ENGINE_KING: return AE_SO_HILL_SCORE;
 	case AE_SETUP_ENGINE_ODDBALL: return AE_SO_BALL_SCORE;
 	case AE_SETUP_ENGINE_RACE: return AE_SO_LAPS_TO_WIN;
+	case AE_SETUP_ENGINE_BOMB: return AE_SO_ROUNDS_TO_WIN;
 	}
 	return AE_SO_KILLS_TO_WIN;
 }
@@ -235,7 +236,8 @@ static int map_filter(void)
 	case AE_SETUP_ENGINE_SLAYER: return ae_setup_team(&access) ? AE_MF_TEAM_SLAYER : AE_MF_FFA_SLAYER;
 	case AE_SETUP_ENGINE_KING: return AE_MF_KING;
 	case AE_SETUP_ENGINE_ODDBALL: return AE_MF_BALL;
-	case AE_SETUP_ENGINE_CTF: return AE_MF_CTF;
+	/* (Bomb's goals are the CTF flags) */
+	case AE_SETUP_ENGINE_CTF: case AE_SETUP_ENGINE_BOMB: return AE_MF_CTF;
 	}
 	return AE_MF_ALL;
 }

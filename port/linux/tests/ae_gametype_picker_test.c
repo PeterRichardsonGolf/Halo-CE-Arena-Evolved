@@ -73,6 +73,9 @@ int main(void)
 	CHECK(!strcmp(ae_gtp_filter_name(AE_GTF_ODDBALL), "ODDBALL"));
 	CHECK(ae_gtp_filter_of_engine(AE_SETUP_ENGINE_ODDBALL) == AE_GTF_ODDBALL &&
 		ae_gtp_filter_of_engine(0) == AE_GTF_ALL);
+	/* (Bomb, engine 6: AE GRIFBALL and AE BOMB, the stock Bomb / Grifball / Open Pitch) */
+	CHECK(!strcmp(ae_gtp_filter_name(AE_GTF_BOMB), "BOMB") && AE_GTF_BOMB == AE_GTP_FILTERS - 1 &&
+		ae_gtp_filter_of_engine(AE_SETUP_ENGINE_BOMB) == AE_GTF_BOMB && !ae_gtp_filter_name(AE_GTP_FILTERS)[0]);
 
 	/* the gametypes: a pair in AE FFA and one in AE 4V4 whose labels would clash, a 2v2 pair given BR first, the
 	OCTAGON drills (their BR is no pair's), an NHE one, a stock one, the player's own */

@@ -13,6 +13,7 @@ const char *ae_mode_guard_missing(long mode, struct ae_mode_guard_map const *map
 	switch (mode)
 	{
 	case AE_MODE_GUARD_CTF:
+	case AE_MODE_GUARD_BOMB:
 		if (map->ctf_flags[0] <= 0)
 			return "red CTF flag";
 		if (map->ctf_flags[1] <= 0)
@@ -43,6 +44,8 @@ const char *ae_mode_guard_mode_name(long mode)
 		return "KING OF THE HILL";
 	case AE_MODE_GUARD_RACE:
 		return "RACE";
+	case AE_MODE_GUARD_BOMB:
+		return "BOMB";
 	default:
 		return "";
 	}

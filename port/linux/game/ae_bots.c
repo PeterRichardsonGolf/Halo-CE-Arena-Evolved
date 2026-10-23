@@ -120,7 +120,7 @@ void ae_bots_lobby_check(boolean local_pregame, long game_engine_index, wchar_t 
 	char name[16];
 	short index;
 
-	static char const *const engines[] = { "none", "CTF", "Slayer", "Oddball", "King of the Hill", "Race" };
+	static char const *const engines[] = { "none", "CTF", "Slayer", "Oddball", "King of the Hill", "Race", "Bomb" };
 
 	/* (none: the lobby before its gametype is set) */
 	if (!local_pregame || config_integer("bots.count") <= 0 || ae_bots_engine_played(game_engine_index) ||

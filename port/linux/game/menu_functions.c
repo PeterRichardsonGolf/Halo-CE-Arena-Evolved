@@ -3100,7 +3100,7 @@ void platform_text_field(int typing, int password);
 int config_boolean(char const *name);
 void ui_widget_port_post_button(short controller_index, short button_index);
 
-static wchar_t const *const engine_names[] = { L"", L"CTF", L"SLAYER", L"ODDBALL", L"KING OF THE HILL", L"RACE" };
+static wchar_t const *const engine_names[] = { L"", L"CTF", L"SLAYER", L"ODDBALL", L"KING OF THE HILL", L"RACE", L"BOMB" }; /* AE hook */
 static short const maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
 
 static struct
@@ -3693,7 +3693,7 @@ static void gametype_list_update(struct widget_instance *list)
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (variant)
 		{
-			long engine = PIN(variant->game_engine_index, 0, 5);
+			long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
 
 			if ((widget = named(description, "gametype_right_pic", 0)) != NULL)
 				widget->animation.current_frame_index = (short)engine;
@@ -4258,7 +4258,7 @@ static short campaign_level_of(char const *map_name)
 CO-OP for one with none (network co-op: ui_widget_port_cooperative_level_choose) */
 static wchar_t const *game_type_name(long engine_type)
 {
-	return engine_type == 0 ? L"CO-OP" : engine_names[PIN(engine_type, 0, 5)];
+	return engine_type == 0 ? L"CO-OP" : engine_names[PIN(engine_type, 0, 6)]; /* AE hook */
 }
 
 /* a map's name as the menus show it (a campaign level's too, hosted as
@@ -4708,7 +4708,7 @@ static void lobby_browser_listed_map(struct browser_game const *game, char *map,
 static void lobby_browser_add_listed(void)
 {
 	/* (its gametypes as a listing names them) */
-	static char const *const gametypes[] = { "Game", "CTF", "Slayer", "Oddball", "King", "Race" };
+	static char const *const gametypes[] = { "Game", "CTF", "Slayer", "Oddball", "King", "Race", "Bomb" }; /* AE hook */
 	short index, kept;
 
 	lobby_browser_listed.count = 0;
@@ -4974,7 +4974,7 @@ static void lobby_browser_rules_text(struct p2p_listing const *game, wchar_t *te
 	a game list's game, its host as the list says) */
 	lobby_browser_host_text(game, host, NUMBEROF(host));
 	lobby_browser_map_mark(game, family, TRUE, mark, NUMBEROF(mark));
-	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 5)],
+	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 6)], /* AE hook */
 		score, map, mark,
 		game->dedicated && !host[0] ? L" (DEDICATED)" : L"", host,
 		!game->open ? L": full or starting" : game->in_progress ? L": under way" : L"",
@@ -6270,7 +6270,7 @@ static void lobby_update(struct widget_instance *list)
 			arena_gametype_display_name(stored_name, gametype, NUMBEROF(gametype));
 		gametype_panel_name(gametype, NUMBEROF(gametype));
 		usnprintf(text, NUMBEROF(text) - 1, L"%s\r\n%s\r\n%d of %d players\r\n\r\n%s", gametype,
-			engine_names[PIN(game->variant.game_engine_index, 0, 5)], lobby_player_count, game->maximum_players,
+			engine_names[PIN(game->variant.game_engine_index, 0, 6)], lobby_player_count, game->maximum_players, /* AE hook */
 			/* (a host starts with its own players alone: one is enough) */
 			seconds > 0 ? L"Starting in:" :
 				game->machine_count < 2 && lobby_player_count < 1 ? L"Waiting for players" : L"");
@@ -7121,7 +7121,7 @@ static void gametype_setup_type(wchar_t *text)
 		return;
 	}
 	usnprintf(text, ROW_TEXT_LENGTH - 1, L"%s (%s%s)", name,
-		engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 5)],
+		engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 6)], /* AE hook */
 		gametype_edit.setup_variant.universal_variant.teams ? L", TEAMS" : L"");
 	text[ROW_TEXT_LENGTH - 1] = 0;
 }
@@ -7193,7 +7193,7 @@ static void gametype_edit_list_update(struct widget_instance *list)
 		text_set(named(description, "gametype_right_name", 0), text);
 		if (variant)
 		{
-			long engine = PIN(variant->game_engine_index, 0, 5);
+			long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
 
 			if ((widget = named(description, "gametype_right_pic", 0)) != NULL)
 				widget->animation.current_frame_index = (short)engine;

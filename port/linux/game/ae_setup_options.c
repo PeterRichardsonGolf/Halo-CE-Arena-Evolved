@@ -16,7 +16,8 @@ values (ae_glue_setup_options.c), which are menu_functions.c's gametype_options[
 #define COUNT(list) ((short)(sizeof(list) / sizeof((list)[0])))
 #define ENGINE(engine) (short)(1 << (engine))
 #define ALL_BUT_SLAYER (short)(ENGINE(AE_SETUP_ENGINE_CTF) | ENGINE(AE_SETUP_ENGINE_ODDBALL) | \
-	ENGINE(AE_SETUP_ENGINE_KING) | ENGINE(AE_SETUP_ENGINE_RACE))
+	ENGINE(AE_SETUP_ENGINE_KING) | ENGINE(AE_SETUP_ENGINE_RACE) | ENGINE(AE_SETUP_ENGINE_BOMB))
+#define BOMB ENGINE(AE_SETUP_ENGINE_BOMB)
 #define TEAM_ENGINES (short)(ENGINE(AE_SETUP_ENGINE_SLAYER) | ENGINE(AE_SETUP_ENGINE_ODDBALL) | \
 	ENGINE(AE_SETUP_ENGINE_KING) | ENGINE(AE_SETUP_ENGINE_RACE))
 
@@ -36,6 +37,8 @@ static const char *const ball_score_help[] = { "Minutes with the ball, or as It,
 	"instead." };
 static const char *const laps_values[] = { "1", "3", "5", "10", "15", "25" };
 static const char *const laps_help[] = { "The laps a player or team needs to win." };
+static const char *const rounds_values[] = { "1", "2", "3", "4", "5", "7", "10" };
+static const char *const rounds_help[] = { "The rounds a team needs to win: a goal wins a round." };
 static const char *const time_values[] = { "NONE", "1 MINUTE", "2 MINUTES", "3 MINUTES", "4 MINUTES", "5 MINUTES",
 	"6 MINUTES", "7 MINUTES", "8 MINUTES", "9 MINUTES", "10 MINUTES", "12 MINUTES", "15 MINUTES", "20 MINUTES",
 	"25 MINUTES", "30 MINUTES", "45 MINUTES", "60 MINUTES" };
@@ -224,6 +227,34 @@ static const char *const race_type_help[] = { "You reach all the flags in order 
 static const char *const team_scoring_values[] = { "MINIMUM", "MAXIMUM", "SUM" };
 static const char *const team_scoring_help[] = { "A team is ranked by its lowest-scoring member.",
 	"A team's score is its highest-scoring member's.", "A team's score is the sum of its members' scores." };
+static const char *const arm_time_values[] = { "ON CONTACT", "1 SECOND", "3 SECONDS", "5 SECONDS", "10 SECONDS" };
+static const char *const arm_time_help[] = { "The bomb scores the moment its carrier reaches the goal, as in Grifball.",
+	"The carrier stands in the goal for a second to arm the bomb; leaving the goal starts it over.",
+	"The carrier stands in the goal for three seconds to arm the bomb; leaving the goal starts it over.",
+	"The carrier stands in the goal for five seconds to arm the bomb; leaving the goal starts it over.",
+	"The carrier stands in the goal for ten seconds to arm the bomb; leaving the goal starts it over." };
+static const char *const reset_time_values[] = { "NEVER", "10 SECONDS", "15 SECONDS", "30 SECONDS", "60 SECONDS" };
+static const char *const reset_time_help[] = { "A dropped bomb lies where it fell until someone picks it up.",
+	"A dropped bomb nobody touches for 10 seconds goes back to its spawn.",
+	"A dropped bomb nobody touches for 15 seconds goes back to its spawn.",
+	"A dropped bomb nobody touches for 30 seconds goes back to its spawn.",
+	"A dropped bomb nobody touches for a minute goes back to its spawn." };
+static const char *const round_time_values[] = { "NONE", "1 MINUTE", "2 MINUTES", "3 MINUTES", "5 MINUTES",
+	"10 MINUTES" };
+static const char *const round_time_help[] = { "A round lasts until a team scores.",
+	"A round ends after a minute without a score, and a new one starts.",
+	"A round ends after two minutes without a score, and a new one starts.",
+	"A round ends after three minutes without a score, and a new one starts.",
+	"A round ends after five minutes without a score, and a new one starts.",
+	"A round ends after ten minutes without a score, and a new one starts." };
+static const char *const new_round_help[] = { "After a goal everyone goes back to their own end, whole again, and a new "
+	"round starts.", "After a goal the bomb goes back to its spawn and play goes on." };
+static const char *const melee_only_help[] = { "No guns, grenades or powerups: a sword where the map has one, else "
+	"fists. The start weapons are set to none.", "The start weapons and the map's weapons as set in EQUIPMENT." };
+static const char *const bomb_traits_values[] = { "NONE", "GRIFBALL", "OPEN PITCH" };
+static const char *const bomb_traits_help[] = { "Everyone plays as usual; the carrier is highlighted.",
+	"One hit kills (10% health, double damage, no shields); the carrier is faster and has an overshield.",
+	"Grifball's, everyone 175% fast and the carrier 200%: for a big map." };
 static const char *const objectives_values[] = { "MOTION SENSOR", "NAV POINTS", "NONE", "LINE OF SIGHT" };
 static const char *const objectives_help[] = { "The objectives (hills, flags, balls) show on your motion sensor.",
 	"The objectives have markers on screen.", "The objectives show neither on the motion sensor nor on screen.",
@@ -301,6 +332,7 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_BALL_SCORE] = ROW("SCORE TO WIN", AE_SG_MATCH, ENGINE(AE_SETUP_ENGINE_ODDBALL), 0, 0, minutes_score_values,
 		ball_score_help),
 	[AE_SO_LAPS_TO_WIN] = ROW("LAPS TO WIN", AE_SG_MATCH, ENGINE(AE_SETUP_ENGINE_RACE), 0, 0, laps_values, laps_help),
+	[AE_SO_ROUNDS_TO_WIN] = ROW("ROUNDS TO WIN", AE_SG_MATCH, BOMB, 0, 0, rounds_values, rounds_help),
 	[AE_SO_TIME_LIMIT] = ROW("TIME LIMIT", AE_SG_MATCH, 0, 0, 0, time_values, time_help),
 	[AE_SO_COUNTDOWN] = ROW("PRE-GAME COUNTDOWN", AE_SG_MATCH, 0, 0, 1, off_on, countdown_help),
 
@@ -399,6 +431,12 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 		race_type_help),
 	[AE_SO_TEAM_SCORING] = ROW("TEAM SCORING", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_RACE), 1, 0, team_scoring_values,
 		team_scoring_help),
+	[AE_SO_BOMB_ARM_TIME] = ROW("ARM TIME", AE_SG_MODE, BOMB, 0, 0, arm_time_values, arm_time_help),
+	[AE_SO_BOMB_RESET_TIME] = ROW("BOMB RESET TIME", AE_SG_MODE, BOMB, 0, 0, reset_time_values, reset_time_help),
+	[AE_SO_BOMB_ROUND_TIME] = ROW("ROUND TIME LIMIT", AE_SG_MODE, BOMB, 0, 0, round_time_values, round_time_help),
+	[AE_SO_BOMB_NEW_ROUND] = ROW("NEW ROUND ON SCORE", AE_SG_MODE, BOMB, 0, 0, yes_no, new_round_help),
+	[AE_SO_BOMB_MELEE_ONLY] = ROW("MELEE ONLY", AE_SG_MODE, BOMB, 0, 0, yes_no, melee_only_help),
+	[AE_SO_BOMB_TRAITS] = ROW("PLAYER TRAITS", AE_SG_MODE, BOMB, 0, 0, bomb_traits_values, bomb_traits_help),
 	[AE_SO_OBJECTIVES] = ROW("OBJECTIVES", AE_SG_MODE, ALL_BUT_SLAYER, 0, 0, objectives_values, objectives_help),
 
 	[AE_SO_HEALTH] = ROW("HEALTH", AE_SG_ARENA, 0, 0, 1, health_values, health_help),
@@ -487,6 +525,7 @@ const char *ae_setup_group_name(struct ae_setup_access const *access, int group)
 		case AE_SETUP_ENGINE_ODDBALL: return "ODDBALL";
 		case AE_SETUP_ENGINE_KING: return "KING OF THE HILL";
 		case AE_SETUP_ENGINE_RACE: return "RACE";
+		case AE_SETUP_ENGINE_BOMB: return "BOMB";
 		}
 	}
 	return group_names[group];
@@ -503,7 +542,8 @@ int ae_setup_team(struct ae_setup_access const *access)
 {
 	if (!access)
 		return 0;
-	if (access->engine == AE_SETUP_ENGINE_CTF)
+	/* (CTF and Bomb are team games only) */
+	if (access->engine == AE_SETUP_ENGINE_CTF || access->engine == AE_SETUP_ENGINE_BOMB)
 		return 1;
 	return value_is(access, AE_SO_TEAM_PLAY, AE_SETUP_TEAM_PLAY_YES);
 }

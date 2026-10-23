@@ -164,6 +164,7 @@ static void look(struct discord_activity_game *game)
 			long engine = variant->game_engine_index;
 
 			game->mode = engine >= game_engine_ctf && engine <= game_engine_race ? (int)engine : DISCORD_MODE_NONE;
+			if (engine == game_engine_bomb) game->mode = variant->game_engine_variant.bomb.traits != _bomb_traits_none ? DISCORD_MODE_GRIFBALL : DISCORD_MODE_BOMB; /* AE hook */
 			game->teams = variant->universal_variant.teams ? 1 : 0;
 			team_score(game);
 		}

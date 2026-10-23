@@ -320,6 +320,37 @@ int main(void)
 	for (group = 0; group < AE_SETUP_GROUPS; group++)
 		CHECK(ae_setup_group_first_row(entries, count, group) > 0);
 
+	/* a Bomb gametype (AE GRIFBALL, AE BOMB): its score as ROUNDS TO WIN, its own rules under BOMB, OBJECTIVES; a
+	team game whatever TEAM PLAY reads, which it never shows; no other engine's rows */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_BOMB);
+	count = ae_setup_entries(&access, entries, 160);
+	CHECK(ae_setup_team(&access) && !has(entries, count, AE_SO_TEAM_PLAY));
+	CHECK(has(entries, count, AE_SO_ROUNDS_TO_WIN) && !has(entries, count, AE_SO_KILLS_TO_WIN) &&
+		!has(entries, count, AE_SO_CAPTURES_TO_WIN) && !has(entries, count, AE_SO_LAPS_TO_WIN));
+	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "BOMB"));
+	first = ae_setup_group_first_row(entries, count, AE_SG_MODE);
+	CHECK(first > 0 && entries[first] == AE_SO_BOMB_ARM_TIME);
+	for (option = AE_SO_BOMB_ARM_TIME; option <= AE_SO_BOMB_TRAITS; option++)
+		CHECK(entries[first + option - AE_SO_BOMB_ARM_TIME] == option);
+	CHECK(entries[first + AE_SO_BOMB_TRAITS - AE_SO_BOMB_ARM_TIME + 1] == AE_SO_OBJECTIVES);
+	CHECK(!has(entries, count, AE_SO_ASSAULT) && !has(entries, count, AE_SO_BALL_MELEE) &&
+		!has(entries, count, AE_SO_DEATH_BONUS));
+	/* (the team rows shown: FRIENDLY FIRE, BLUE VEHICLES) */
+	CHECK(has(entries, count, AE_SO_FRIENDLY_FIRE) && has(entries, count, AE_SO_VEHICLE_SET_BLUE));
+	CHECK(!strcmp(ae_setup_value_text(AE_SO_ROUNDS_TO_WIN, 2), "3") &&
+		!strcmp(ae_setup_value_text(AE_SO_BOMB_ARM_TIME, 0), "ON CONTACT") &&
+		!strcmp(ae_setup_value_text(AE_SO_BOMB_TRAITS, 1), "GRIFBALL"));
+	CHECK(ae_setup_row(AE_SO_BOMB_RESET_TIME)->help_count == ae_setup_row(AE_SO_BOMB_RESET_TIME)->value_count &&
+		ae_setup_help(AE_SO_BOMB_ROUND_TIME, 5)[0]);
+	/* (and no Bomb row in another engine's game) */
+	fake_init(&fake, &access, AE_SETUP_ENGINE_CTF);
+	count = ae_setup_entries(&access, entries, 160);
+	for (option = AE_SO_BOMB_ARM_TIME; option <= AE_SO_BOMB_TRAITS; option++)
+		CHECK(!has(entries, count, option));
+	CHECK(!has(entries, count, AE_SO_ROUNDS_TO_WIN));
+	fake_init(&fake, &access, AE_SETUP_ENGINE_ODDBALL);
+	count = ae_setup_entries(&access, entries, 160);
+
 	/* a list too short for everything: no header without its row */
 	count = ae_setup_entries(&access, entries, 4);
 	CHECK(count == 4 && entries[0] == -1 - AE_SG_MATCH && entries[3] != -1 - AE_SG_PLAYERS);

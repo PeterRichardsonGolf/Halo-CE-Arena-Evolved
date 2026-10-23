@@ -1310,3 +1310,14 @@ port/linux/src/port_config.c	{ "input.gyro_sensitivity_horizontal", _config_real
 port/linux/src/port_config.c	{ "input.gyro_sensitivity_vertical", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_VERTICAL",\n_environment_value, _platform_all, /* AE hook */
 # CAMPAIGN TIMER in HUD STYLE AE (0.3.9; owner 10-23: the corner clock in AE's look; ae_power_list.c)
 source/interface/hud_item_timers.c	if (!ae_power_list_campaign_clock(render.local_player_index, hud_campaign_timer_ticks)) /* AE hook */
+# Bomb (engine 6, Chupa's game_engine_bomb.c) named in the classic menus' lists, not shown as RACE (0.3.9, seed
+# revision 24's AE GRIFBALL and AE BOMB); its Discord presence Bomb or Grifball
+port/linux/game/menu_functions.c	static wchar_t const *const engine_names[] = { L"", L"CTF", L"SLAYER", L"ODDBALL", L"KING OF THE HILL", L"RACE", L"BOMB" }; /* AE hook */
+port/linux/game/menu_functions.c	long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
+port/linux/game/menu_functions.c	return engine_type == 0 ? L"CO-OP" : engine_names[PIN(engine_type, 0, 6)]; /* AE hook */
+port/linux/game/menu_functions.c	usnprintf(text, size - 1, L"%s%s on %s%s%s%s%s%s", gametype[0] ? gametype : engine_names[PIN(game->engine_type, 0, 6)], /* AE hook */
+port/linux/game/menu_functions.c	engine_names[PIN(game->variant.game_engine_index, 0, 6)], lobby_player_count, game->maximum_players, /* AE hook */
+port/linux/game/menu_functions.c	engine_names[PIN(gametype_edit.setup_variant.game_engine_index, 0, 6)], /* AE hook */
+port/linux/game/menu_functions.c	long engine = PIN(variant->game_engine_index, 0, 6); /* AE hook */
+port/linux/game/menu_functions.c	static char const *const gametypes[] = { "Game", "CTF", "Slayer", "Oddball", "King", "Race", "Bomb" }; /* AE hook */
+port/linux/game/discord_game.c	if (engine == game_engine_bomb) game->mode = variant->game_engine_variant.bomb.traits != _bomb_traits_none ? DISCORD_MODE_GRIFBALL : DISCORD_MODE_BOMB; /* AE hook */

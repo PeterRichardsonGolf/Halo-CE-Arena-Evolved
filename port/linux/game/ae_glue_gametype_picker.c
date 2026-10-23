@@ -116,6 +116,13 @@ static void weapons(struct game_variant const *variant, struct game_variant_opti
 	else
 		snprintf(gametype->weapons, sizeof(gametype->weapons), "THE MAP'S, AS %s",
 			ae_gtp_weapon_name(ae_gtp_weapon_in_set(AE_GTW_ASSAULT_RIFLE, set)));
+	/* (a melee-only Bomb gametype, Grifball's: the map's sword or the unseen fists, whatever the loadout reads) */
+	if (variant->game_engine_index == game_engine_bomb &&
+		TEST_FLAG(variant->game_engine_variant.bomb.flags, _bomb_melee_only_bit))
+	{
+		snprintf(gametype->start, sizeof(gametype->start), "MELEE ONLY");
+		snprintf(gametype->weapons, sizeof(gametype->weapons), "MELEE ONLY: SWORD OR FISTS");
+	}
 }
 
 static void plural(char *text, int size, long count, const char *one, const char *many)
@@ -146,6 +153,9 @@ static void facts(long profile, struct game_variant const *variant, struct game_
 		break;
 	case AE_SETUP_ENGINE_RACE:
 		plural(gametype->score, sizeof(gametype->score), score, "LAP", "LAPS");
+		break;
+	case AE_SETUP_ENGINE_BOMB:
+		plural(gametype->score, sizeof(gametype->score), score, "ROUND", "ROUNDS");
 		break;
 	default:
 		plural(gametype->score, sizeof(gametype->score), score, "KILL", "KILLS");

@@ -145,10 +145,11 @@ static void map_name(char const *map, char *text, size_t size)
 
 static void type_name(short engine, int teams, char *text, size_t size)
 {
-	static char const *const engines[] = { "", "CTF", "SLAYER", "ODDBALL", "KING", "RACE" };
+	static char const *const engines[] = { "", "CTF", "SLAYER", "ODDBALL", "KING", "RACE", "BOMB" };
 	char const *name = engine >= 0 && engine < (short)NUMBEROF(engines) ? engines[engine] : "";
 
-	snprintf(text, size, "%s%s", teams && engine != 1 && name[0] ? "TEAM " : "", name[0] ? name : "-");
+	/* (CTF and Bomb are team games only: no TEAM before them) */
+	snprintf(text, size, "%s%s", teams && engine != 1 && engine != 6 && name[0] ? "TEAM " : "", name[0] ? name : "-");
 }
 
 /* the map's part of a game's state: missing and not downloadable blocks it; downloadable says so */

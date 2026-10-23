@@ -12,7 +12,7 @@ CHANGE GAMETYPE's model. See ae_gametype_picker.h.
 
 static const char *const folder_names[AE_GTP_FOLDERS] = { "RECENT", "FAVOURITES", "MY GAMETYPES", "AE FFA", "AE 2V2",
 	"AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
-static const char *const filter_names[AE_GTP_FILTERS] = { "ALL", "SLAYER", "CTF", "KING", "ODDBALL", "RACE" };
+static const char *const filter_names[AE_GTP_FILTERS] = { "ALL", "SLAYER", "CTF", "KING", "ODDBALL", "RACE", "BOMB" };
 static const char *const weapon_names[AE_GTP_WEAPONS] = { "NO WEAPON", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN",
 	"SNIPER RIFLE", "ROCKET LAUNCHER", "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER" };
 /* (a start's short words: the assault rifle is AR, the sniper rifle SNIPER, ...) */
@@ -47,6 +47,7 @@ int ae_gtp_filter_of_engine(int engine)
 	case AE_SETUP_ENGINE_KING: return AE_GTF_KING;
 	case AE_SETUP_ENGINE_ODDBALL: return AE_GTF_ODDBALL;
 	case AE_SETUP_ENGINE_RACE: return AE_GTF_RACE;
+	case AE_SETUP_ENGINE_BOMB: return AE_GTF_BOMB;
 	}
 	return AE_GTF_ALL;
 }
@@ -456,6 +457,8 @@ static int engine_mode(int engine)
 	case AE_SETUP_ENGINE_CTF: return AE_SETUP_MODE_CTF;
 	case AE_SETUP_ENGINE_KING: return AE_SETUP_MODE_KING;
 	case AE_SETUP_ENGINE_ODDBALL: return AE_SETUP_MODE_ODDBALL;
+	/* (Bomb's goals are the CTF flags, its bomb placed between them) */
+	case AE_SETUP_ENGINE_BOMB: return AE_SETUP_MODE_CTF;
 	}
 	return 0;
 }
