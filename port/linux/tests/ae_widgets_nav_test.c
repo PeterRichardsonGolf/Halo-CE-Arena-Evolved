@@ -671,8 +671,8 @@ static void fixes(void)
 	strip.active = -1;
 	CHECK(ae_tabs_step(&strip, 1) == 1 && ae_tabs_step(&strip, -1) == 2);
 	CHECK(ae_page_step(5, -1, 1) == 0 && ae_page_step(5, 9, -1) == 4);
-	/* (the value picker's in-place step: the same helper, no wrapping) */
-	CHECK(ae_value_step(5, 4, 1) == 4 && ae_value_step(5, 0, -1) == 0 && ae_value_step(5, 2, 1) == 3 &&
+	/* (the value picker's in-place step: the same helper, round past the ends) */
+	CHECK(ae_value_step(5, 4, 1) == 0 && ae_value_step(5, 0, -1) == 4 && ae_value_step(5, 2, 1) == 3 &&
 		ae_value_step(5, 2, -1) == 1 && ae_value_step(0, 0, 1) == 0);
 	CHECK(!ae_stub_overflowed());
 }

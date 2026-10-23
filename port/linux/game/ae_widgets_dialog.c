@@ -441,10 +441,10 @@ static int dialog_handle(struct ae_screen *screen, struct ae_event const *event)
 	switch (event->action)
 	{
 	case AE_ACTION_UP:
-		state->focus = ae_value_step(state->spec.choice_count, state->focus, -1);
+		state->focus = ae_choice_step(state->spec.choice_count, state->focus, -1);
 		break;
 	case AE_ACTION_DOWN:
-		state->focus = ae_value_step(state->spec.choice_count, state->focus, 1);
+		state->focus = ae_choice_step(state->spec.choice_count, state->focus, 1);
 		break;
 	case AE_ACTION_ACCEPT:
 		if (dialog_choice_valid(state, state->focus))

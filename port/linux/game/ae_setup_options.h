@@ -146,7 +146,7 @@ const char *ae_setup_pack_help(struct ae_setup_access const *access, int option,
 are on and can start, and always the value it has (a saved gametype's pack weapon is never reset silently); other
 rows every value */
 int ae_setup_value_offered(struct ae_setup_access const *access, int option, int value_index);
-/* the next offered value from current (direction -1 / 1, no wrapping), current at an end */
+/* the next offered value from current (direction -1 / 1), round past the ends; current when it is the only one */
 short ae_setup_value_step(struct ae_setup_access const *access, int option, short current, short direction);
 /* the offered values' indexes in order (at most maximum); returns their count */
 short ae_setup_offered_values(struct ae_setup_access const *access, int option, short *indexes, short maximum);

@@ -3,7 +3,7 @@ chips, the help / preview panel. No engine includes.
 
 Spec 4.5 (value picker), 4.6 (chips), 4.7 (help panel). A popover's spec is in layout units of the whole frame, with
 the view it draws in (preflight P12: a VIEW popover draws in the player's own view, inside its panel). The in-place
-value step is ae_value_step (ae_widgets_nav.c: the shared step, no wrapping). Text is placed by its capitals' middle;
+value step is ae_value_step (ae_widgets_nav.c: the shared step, round past the ends). Text is placed by its capitals' middle;
 2 px of horizontal ink are allowed. */
 
 #include <stdio.h>

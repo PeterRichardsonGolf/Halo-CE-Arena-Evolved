@@ -817,18 +817,20 @@ int ae_setup_value_offered(struct ae_setup_access const *access, int option, int
 short ae_setup_value_step(struct ae_setup_access const *access, int option, short current, short direction)
 {
 	struct ae_setup_row const *row = ae_setup_row(option);
-	short next = current;
+	short next = current, tries;
 
-	if (!row)
+	if (!row || row->value_count <= 0)
 		return current;
-	for (;;)
+	/* (round past the ends, the values not offered skipped: owner 2026-10-23) */
+	for (tries = 0; tries < row->value_count; tries++)
 	{
-		next = (short)(next + (direction < 0 ? -1 : 1));
-		if (next < 0 || next >= row->value_count)
-			return current;
+		next = (short)((next + (direction < 0 ? -1 : 1) + row->value_count) % row->value_count);
+		if (next == current)
+			break;
 		if (ae_setup_value_offered(access, option, next))
 			return next;
 	}
+	return current;
 }
 
 short ae_setup_offered_values(struct ae_setup_access const *access, int option, short *indexes, short maximum)

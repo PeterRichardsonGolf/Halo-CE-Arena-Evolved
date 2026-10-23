@@ -246,10 +246,10 @@ int main(void)
 		offered_count = ae_setup_offered_values(&access, AE_SO_PRIMARY, offered, 24);
 		CHECK(offered_count == 11 && offered[9] == 9 && offered[10] == AE_SETUP_WEAPON_PACK_FIRST + 2);
 		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, 9, 1) == AE_SETUP_WEAPON_PACK_FIRST + 2);
-		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 2, 1) ==
-			AE_SETUP_WEAPON_PACK_FIRST + 2);
+		/* (round past the ends: the last offered's right is the first) */
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 2, 1) == 0);
 		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, AE_SETUP_WEAPON_PACK_FIRST + 2, -1) == 9);
-		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, 0, -1) == 0);
+		CHECK(ae_setup_value_step(&access, AE_SO_PRIMARY, 0, -1) == AE_SETUP_WEAPON_PACK_FIRST + 2);
 		/* (a saved gametype's pack weapon whose pack is off still shows: never reset silently) */
 		fake.now[AE_SO_SECONDARY] = AE_SETUP_WEAPON_PACK_FIRST + 3;
 		CHECK(ae_setup_value_offered(&access, AE_SO_SECONDARY, AE_SETUP_WEAPON_PACK_FIRST + 3) &&

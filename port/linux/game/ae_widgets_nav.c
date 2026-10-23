@@ -399,9 +399,15 @@ short ae_page_step(short count, short current, short direction)
 	return step(count, current, direction, 1, NULL, NULL);
 }
 
-short ae_value_step(short count, short current, short direction)
+short ae_choice_step(short count, short current, short direction)
 {
 	return step(count, current, direction, 0, NULL, NULL);
+}
+
+short ae_value_step(short count, short current, short direction)
+{
+	/* (round past the ends, as MCC's: owner 2026-10-23) */
+	return step(count, current, direction, 1, NULL, NULL);
 }
 
 /* the dots' row's height (its ends included), for the panel's layout */

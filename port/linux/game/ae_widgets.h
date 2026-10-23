@@ -161,8 +161,11 @@ int ae_tabs_pointer(struct ae_tabs *tabs, struct ae_pointer const *pointer, shor
 void ae_widget_page_dots(struct ae_density const *density, float center_x, float y, const char *page_title,
 	short count, short current, unsigned int current_color, short hit_id);
 short ae_page_step(short count, short current, short direction);   /* wraps */
-/* in place (left / right on a row): the new index, wrapping off; the caller starts the value tick */
+/* in place (left / right on a row): the new index, round past the ends (the last's right is the first); the caller
+starts the value tick */
 short ae_value_step(short count, short current, short direction);
+/* a dialog's choices (up / down): the new index, an end stays the end */
+short ae_choice_step(short count, short current, short direction);
 
 /* pair: the next button's mark too, before the one label ("LB RB Filter", "LT RT Folder", d-pad left / right): a click
 on that second mark sends the next action (TAB_PREVIOUS / TAB_NEXT, PAGE_UP / PAGE_DOWN, LEFT / RIGHT) */
