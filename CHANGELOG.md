@@ -30,6 +30,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - HUD STYLE AE in the campaign: help text keeps its line breaks (the tutorial's stick and button pictures drew over its
   words), and CAMPAIGN TIMER shows the corner clock in AE's digits.
 - SETTINGS > ACCESSIBILITY > LOADING SCREEN: the least time the campaign's and multiplayer's loading screens stay up.
+- SETTINGS has the settings only the classic menus had: AUDIO > SOUND; ONLINE > MAPS > INTERNET SHARING (your maps to
+  internet joiners); SYSTEM > FILES > WEAPON PACKS, MODDED DISC (restarts) and MCC FILES; and SYSTEM > CAMPAIGN with
+  FALL DAMAGE and HEALTH (HALO CE, REACH, HALO 2, HALO 3). CALLOUT VOICE lists the voices when AUDIO opens.
 - Menus: left and right go round past a row's ends, as in MCC. CALLOUTS, CALLOUT DETAIL and CALLOUT VOICE moved from
   HUD to AUDIO. SETTINGS > CONTROLS changes the profile's rows before any game.
 - Gametype files: read at each start (a seeded AE or NHE gametype is never read from or written to a file), and
