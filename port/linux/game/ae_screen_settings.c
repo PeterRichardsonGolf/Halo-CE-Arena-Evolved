@@ -436,11 +436,15 @@ static void facts_of(short player, struct ae_settings_facts *facts)
 	facts->dualsense = ae_ds5_port_active(player) != 0;
 	facts->value = fact_value;
 	facts->context = NULL;
+#ifndef HALO_ANDROID
 	{
 		float white, headroom;
 
 		facts->hdr_display = platform_video_hdr(&white, &headroom) != 0;
 	}
+#else
+	facts->hdr_display = 0;
+#endif
 }
 
 /* (phase B) the run-time rows' values: VIDEO's display sizes (NATIVE first) and window sizes, AUDIO's devices

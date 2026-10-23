@@ -1482,6 +1482,7 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 		if (used)
 		{
 			int scheme = scheme_of(gamepad);
+#ifndef HALO_ANDROID
 			static SDL_JoystickID logged[16];
 			static int logged_count;
 			SDL_JoystickID id = SDL_GetGamepadID(gamepad);
@@ -1501,6 +1502,7 @@ static void sdl_gamepad_state(SDL_Gamepad *gamepad, XINPUT_GAMEPAD *pad)
 					scheme == 2 ? "a PlayStation pad" : scheme == 3 ? "a Nintendo pad" : "an Xbox-like pad",
 					name ? name : "unnamed", type ? type : "unknown");
 			}
+#endif
 			last_input_scheme = scheme;
 			last_input_seen = TRUE;
 			ae_platform_note_pad_used(); /* AE hook */
