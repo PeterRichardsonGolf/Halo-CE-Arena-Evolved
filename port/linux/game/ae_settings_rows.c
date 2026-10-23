@@ -26,7 +26,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. Chat is yours; the filter is this PC's.",
 		AE_SETTINGS_PLAYER, 0 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
-	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 0 },
+	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 1 },
 	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 };
 
@@ -154,6 +154,12 @@ static const char *const discord_texts[] = { "FULL", "MINIMAL", "OFF" };
 static const char *const discord_values[] = { "full", "minimal", "off" };
 static const char *const protocol_texts[] = { "AUTO", "OPENCE", "DELTA" };
 static const char *const protocol_values[] = { "auto", "opence", "delta" };
+
+/* (phase B) ACCESSIBILITY */
+static const char *const menu_size_texts[] = { "90 %", "100 %", "115 %", "130 %" };
+static const char *const menu_size_values[] = { "90", "100", "115", "130" };
+static const char *const language_texts[] = { "ENGLISH", "DEUTSCH", "FRANCAIS", "ESPANOL", "ITALIANO", "JAPANESE" };
+static const char *const language_values[] = { "", "de", "fr", "es", "it", "ja" };
 
 /* (the long numeric lists: made once) */
 enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11,
@@ -545,6 +551,23 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_ONLINE, "ADVANCED", "PROTOCOL", AE_SETTINGS_SPINNER, "network.protocol",
 		VALUES(protocol_texts, protocol_values), AE_SETTINGS_ALWAYS,
 		"How this PC talks to other machines. AUTO picks the best both have.", 0 },
+	/* ACCESSIBILITY (the menus' rows this PC's, the rest the player's own; the two links are HUD's rows) */
+	{ AE_SETTINGS_ACCESSIBILITY, "MENUS", "MENU SIZE", AE_SETTINGS_SPINNER, "display.arena_menus_scale",
+		VALUES(menu_size_texts, menu_size_values), AE_SETTINGS_ALWAYS, "The size of the AE menus' text and rows.",
+		AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_ACCESSIBILITY, "MENUS", "REDUCE MOTION", AE_SETTINGS_TOGGLE, "display.arena_menus_reduce_motion",
+		ON_OFF, AE_SETTINGS_ALWAYS, "Menus cut between screens instead of sliding.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_ACCESSIBILITY, "MENUS", "LANGUAGE", AE_SETTINGS_SPINNER, "game.language",
+		VALUES(language_texts, language_values), AE_SETTINGS_ALWAYS,
+		"The game's text and voices, when the maps hold that language. The game restarts to change it.",
+		AE_SETTINGS_RESTART | AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_ACCESSIBILITY, "IN THE GAME", "IN-GAME HELP", AE_SETTINGS_TOGGLE, "profile.ingame_help", ON_OFF,
+		AE_SETTINGS_ALWAYS, "The campaign's hints about buttons.", 0 },
+	{ AE_SETTINGS_ACCESSIBILITY, "IN THE GAME", "PLAYER NAME SIZE", AE_SETTINGS_LINK, "display.player_name_scale",
+		VALUES(name_size_texts, name_size_values), AE_SETTINGS_ALWAYS, "The same setting as in HUD. A goes there.", 0 },
+	{ AE_SETTINGS_ACCESSIBILITY, "IN THE GAME", "WAYPOINT SIZE", AE_SETTINGS_LINK, "display.waypoint_size",
+		waypoint_size_texts, waypoint_size_values, WAYPOINT_STEPS, AE_SETTINGS_ALWAYS,
+		"The same setting as in HUD. A goes there.", 0 },
 	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",

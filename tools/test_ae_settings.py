@@ -87,6 +87,14 @@ CASES = (
     ("online-130", 35, ONLINE, 1, "1920x1080", 130, ()),
     ("online-changed", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right")),
     ("online-undo", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
+    # ACCESSIBILITY: MENU SIZE one right (115 %, the screen laid out again at once); the link PLAYER NAME SIZE (down 4,
+    # A: HUD's row); LANGUAGE (a RESTART row) from the top level: DEUTSCH, B, KEEP, B asks RESTART NOW / LATER
+    ("accessibility", 35, ACCESSIBILITY, 1, "1920x1080", 100, ()),
+    ("accessibility-130", 35, ACCESSIBILITY, 1, "1920x1080", 130, ()),
+    ("accessibility-size", 35, ACCESSIBILITY, 1, "1920x1080", 100, ("pad:right",)),
+    ("accessibility-link", 35, ACCESSIBILITY, 1, "1920x1080", 100, ("pad:down",) * 4 + ("pad:a", "wait")),
+    ("language-restart", 34, 0, 1, "1920x1080", 100, ("pad:down",) * 7 + ("pad:a", "pad:down", "pad:down", "pad:right",
+                                                                         "pad:b", "pad:a", "wait", "pad:b", "wait")),
 )
 
 
@@ -222,6 +230,19 @@ def test_online(runs):
     assert "set DOWNLOAD MAPS OFF" in said, said
     said = lines(runs["online-undo"][1], "ae settings: ")
     assert "undo (1 rows)" in said and "closed ONLINE (0 changed)" in said, said
+
+
+def test_accessibility(runs):
+    said = lines(runs["accessibility-size"][1], "ae settings: ")
+    assert "set MENU SIZE 115 %" in said, said
+    assert "ae menus: settings: scale 1.15" in runs["accessibility-size"][1]
+    said = lines(runs["accessibility-link"][1], "ae settings: ")
+    assert "link to HUD PLAYER NAME SIZE" in said and any(line.startswith("group HUD ") for line in said), said
+    text = runs["language-restart"][1]
+    rest = text.split("ae settings: keep", 1)
+    assert len(rest) == 2
+    said = lines(rest[1], "ae settings: ")
+    assert said[:1] == ["closed ACCESSIBILITY (1 changed)"] and "restart asked" in said, said
 
 
 if __name__ == "__main__":

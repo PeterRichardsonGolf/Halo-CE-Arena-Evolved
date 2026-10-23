@@ -233,6 +233,22 @@ int main(void)
 		CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("network.map_seed_upload")), "300") == 2);
 	}
 
+	/* ACCESSIBILITY (6): the menus' rows this PC's (LANGUAGE needs a restart; English is the empty value), the links
+	the HUD rows' own settings (row_of finds HUD's: where A goes) */
+	{
+		struct ae_settings_row const *language = ae_settings_row(ae_settings_row_of("game.language"));
+		short entries_here[AE_SETTINGS_ENTRIES], here = ae_settings_entries(AE_SETTINGS_ACCESSIBILITY, &pad, entries_here,
+			AE_SETTINGS_ENTRIES);
+
+		CHECK(rows_of(AE_SETTINGS_ACCESSIBILITY, &pad) == 6 && here == 8);
+		CHECK((language->flags & AE_SETTINGS_RESTART) && (language->flags & AE_SETTINGS_THIS_PC));
+		CHECK(ae_settings_row_takes_empty(language) && ae_settings_value_index(language, "") == 0 &&
+			ae_settings_value_index(language, "ja") == 5);
+		CHECK(ae_settings_row(ae_settings_row_of("display.waypoint_size"))->group == AE_SETTINGS_HUD);
+		CHECK(ae_settings_row(entries_here[6])->kind == AE_SETTINGS_LINK &&
+			!strcmp(ae_settings_row(entries_here[6])->key, "display.player_name_scale"));
+	}
+
 	/* the dialogs */
 	{
 		static const char *const labels[] = { "LOOK SENSITIVITY", "ZOOM", "VIBRATION", "LEGS", "FOV" };
