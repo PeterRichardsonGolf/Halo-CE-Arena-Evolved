@@ -118,6 +118,9 @@ def fields(text):
     # (and its MOUSE AIM ASSIST: "AE mouse aim assist: off")
     mm = re.search(r"AE mouse aim assist: (off|allowed)\s", text)
     if mm: out["mouse aim assist"] = mm[1]
+    # (revision 23's VEHICLES DESTRUCTIBLE: "AE vehicles destructible: on")
+    mm = re.search(r"AE vehicles destructible: (on|off)", text)
+    if mm: out["vehicles destructible"] = mm[1]
     m = re.search(r"player rules: (.*)", text)
     for key, name in [("lives", "lives"), ("health%", "health"), ("respawn growth", "respawn growth"),
                       ("odd man out", "odd man out"), ("friend indicators", "friend indicators"),
@@ -304,6 +307,9 @@ for _name, (_want, _, _) in ROWS.items():
 # MOUSE AIM ASSIST (bit 10 of the variant's flags): ALLOWED in every gametype before revision 22 (no seed had the bit)
 for _name, (_want, _, _) in ROWS.items():
     _want["mouse aim assist"] = "allowed"
+# VEHICLES DESTRUCTIBLE (bit 11 of the variant's flags): OFF in every gametype before revision 23 (no seed had the bit)
+for _name, (_want, _, _) in ROWS.items():
+    _want["vehicles destructible"] = "off"
 
 # revision 21 (tools/ae_gametype_change.py): CONTROLLER CROUCH STAYS DOWN in every AE gametype: a controller's held
 # crouch keeps you down at full stick; the NHE set keeps HALO CE

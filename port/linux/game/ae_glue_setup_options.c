@@ -143,6 +143,8 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_BOTTOMLESS_CLIP] = { _encoding_pack_bit, 0, AE_WEAPON_BOTTOMLESS_CLIP_BIT, 2, { 0, 1 } },
 
 	[AE_SO_VEHICLE_RESPAWN] = SHORT(vehicle_respawn_time, 7, 0, 30, 60, 90, 120, 180, 300),
+	/* (VEHICLES DESTRUCTIBLE: bit 11, ae_vehicle_death_rules.h; ON sets it, OFF, every gametype from before, has 0) */
+	[AE_SO_VEHICLES_DESTRUCTIBLE] = BIT(_game_variant_vehicles_destructible_bit, 1, 0),
 	[AE_SO_VEHICLE_SET_RED] = VEHICLE_SET(0),
 	[AE_SO_VEHICLE_COUNT_RED + 0] = VEHICLE_COUNT(0, 0),
 	[AE_SO_VEHICLE_COUNT_RED + 1] = VEHICLE_COUNT(0, 1),

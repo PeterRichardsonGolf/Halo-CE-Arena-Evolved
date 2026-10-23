@@ -33,6 +33,7 @@ enum
 	_game_variant_controller_crouch_bit = 8, /* AE hook */
 	_game_variant_melee_unzoom_bit = 9, /* AE hook */
 	_game_variant_block_mouse_aim_assist_bit = 10, /* AE hook */
+	_game_variant_vehicles_destructible_bit = 11, /* AE hook */
 	/* port: a player's landing does no damage, from any height (pits and
 	kill volumes still kill); the port's own bits from 16, clear of the
 	game's */
