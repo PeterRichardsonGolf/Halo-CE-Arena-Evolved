@@ -193,6 +193,52 @@ def test_os_strip_refusals():
         os_strip.strip("weapon", tag_file(b"weap", bytes(2000)))
 
 
+def particle_system_with_extension(extension_path=b"a\\b"):
+    """a particle_system file in the stock kit's layout: the root (a point physics path), one particle type with one
+    state and one particle state; the particle state's Open Sauce block (at 0xE8) holds one 48-byte element with a
+    bitmap reference and its path, between the state's point physics path and its secondary map's"""
+    root = bytearray(104)
+    root[56:60] = b"pphy"
+    struct.pack_into(">iI", root, 56 + 8, 4, 0xFFFFFFFF)
+    struct.pack_into(">i", root, 92, 1)                     # one particle type
+    kind = bytearray(128)
+    struct.pack_into(">i", kind, 92, 1)                     # one physics constant
+    struct.pack_into(">i", kind, 104, 1)                    # one state
+    struct.pack_into(">i", kind, 116, 1)                    # one particle state
+    state = bytearray(192)
+    struct.pack_into(">i", state, 180, 2)                   # two physics constants
+    particle = bytearray(376)
+    for offset, path in ((48, b"bits"), (132, b""), (244, b"second")):
+        particle[offset:offset + 4] = b"bitm"
+        struct.pack_into(">iI", particle, offset + 8, len(path), 0xFFFFFFFF)
+    struct.pack_into(">iII", particle, 0xE8, 1, 0x1234, 0x5678)
+    extension = bytearray(48)
+    extension[0:4] = b"bitm"
+    struct.pack_into(">iI", extension, 8, len(extension_path), 0xFFFFFFFF)
+    cut = bytes(extension) + (extension_path + b"\0" if extension_path else b"")
+    body = (bytes(root) + b"phys\0" + bytes(kind) + bytes(4) + bytes(state) + bytes(8) + bytes(particle) +
+            b"bits\0" + cut + b"second\0")
+    return tag_file(b"pctl", body), cut
+
+
+def test_os_strip_cuts_a_particle_systems_blocks():
+    tag, cut = particle_system_with_extension()
+    out, removed, elements = os_strip.strip("particle_system", tag)
+    assert (removed, elements) == (len(cut), 1)
+    assert len(out) == len(tag) - len(cut) and out.endswith(b"bits\0second\0")
+    assert cut not in out
+    # (the block's count, address and definition cleared; a second strip finds nothing)
+    assert os_strip.strip("particle_system", out) == (out, 0, 0)
+
+
+def test_os_strip_refuses_a_particle_system_that_does_not_end_where_its_layout_does():
+    tag, _ = particle_system_with_extension()
+    with pytest.raises(hek.Refused, match="ends at"):
+        os_strip.strip("particle_system", tag + b"x")
+    with pytest.raises(hek.Refused):
+        os_strip.strip("particle_system", tag[:-3])
+
+
 # ---------- multipurpose_to_xbox.py
 
 def test_multipurpose_dxt1_moves_blue_to_red_exactly():

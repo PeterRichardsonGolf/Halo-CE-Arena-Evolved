@@ -24,7 +24,7 @@ enum
 	many bytes there are room for) */
 	AE_PACK_BUILDER_TAG_CACHE_ADDRESS = 0x803A6000,
 	AE_PACK_BUILDER_TAG_CACHE_SIZE = 0x1600000,
-	AE_PACK_BUILDER_MAXIMUM_ROOTS = 16,
+	AE_PACK_BUILDER_MAXIMUM_ROOTS = 64,
 	AE_PACK_BUILDER_MAXIMUM_SMOOTH = 32,
 };
 
@@ -53,7 +53,8 @@ struct ae_pack_builder_options
 	char const *donor_name; /* for the validator's messages */
 
 	/* what the pack holds: the weapon (a 'weap' tag of the donor's, by name) and every tag it leads to, then each
-	other root's; the first 'itmc' root is the weapon's item collection */
+	other root's; the first 'itmc' root is the weapon's item collection. No weapon (NULL): a pack of tags only
+	(AE_PACK_FLAG_NO_WEAPONS), its roots' tags, and the weapon entry's options below are not used */
 	char const *weapon_name;
 	struct ae_pack_builder_name const *roots;
 	unsigned int root_count;

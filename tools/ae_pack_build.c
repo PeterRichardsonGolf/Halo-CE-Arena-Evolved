@@ -67,6 +67,9 @@ enum
 	"           --display <name> --weapon-key <key> --labels <label>[,<fallback>...]\n" \
 	"           [--behaviour 0|1] [--replaces 0|2..9] [--texts <file>] [--icon <bitmap>:<sequence>]\n" \
 	"           [--smooth <bitmap>[:coverage]]... [--credits <file>] [--verbose] --out <pack>\n" \
+	"       ae_pack_build --donor <map> --root <group>:<name> [--root ...]... --external-names <file>\n" \
+	"           --prefix <name prefix> --id <pack id> --revision <n> --display <name>\n" \
+	"           [--smooth <bitmap>[:coverage]]... [--credits <file>] [--verbose] --out <pack>   (tags only)\n" \
 	"       ae_pack_build --list-names [--out <file>] <map>...\n"
 
 /* ---------- the game's C library names (port/linux/include/stdio.h, cseries.h), which its objects call */
@@ -751,8 +754,16 @@ int main(int argc, char **argv)
 	/* every value checked before anything is read */
 	if (!donor)
 		usage_error("--donor is needed");
-	if (!options.weapon_name || !printable(options.weapon_name, 1, AE_PACK_MAXIMUM_NAME))
-		usage_error("--weapon is needed (a tag name)");
+	/* (no --weapon: a pack of tags only, its roots' tags, which the game finds by name: no weapon entry and none
+	of the weapon's options) */
+	if (options.weapon_name && !printable(options.weapon_name, 1, AE_PACK_MAXIMUM_NAME))
+		usage_error("--weapon: a tag name");
+	if (!options.weapon_name && (!options.root_count || options.weapon_key || label_list || texts ||
+		options.icon_name || options.behaviour || options.replaces))
+	{
+		usage_error("--weapon is needed (a tag name), or for a pack of tags only --root and none of --weapon-key, "
+			"--labels, --texts, --icon, --behaviour, --replaces");
+	}
 	if (!externals)
 		usage_error("--external-names is needed (ae_pack_build --list-names writes them)");
 	if (!options.prefix || !printable(options.prefix, 1, MAXIMUM_PREFIX) ||
@@ -767,10 +778,11 @@ int main(int argc, char **argv)
 	options.pack_revision = (unsigned int)number(revision, 1, 0xFFFFFFFFLL);
 	if (!options.display_name || !printable(options.display_name, 1, AE_PACK_DISPLAY_NAME_SIZE - 1))
 		usage_error("--display is needed: printable ASCII, 1 to 31 characters");
-	if (!options.weapon_key || !key_valid(options.weapon_key))
+	if (options.weapon_name && (!options.weapon_key || !key_valid(options.weapon_key)))
 		usage_error("--weapon-key is needed: [a-z0-9_], 1 to 31 characters");
-	if (!label_list)
+	if (options.weapon_name && !label_list)
 		usage_error("--labels is needed: <label>[,<fallback>[,<fallback>]]");
+	if (label_list)
 	{
 		char *copy = strdup(label_list);
 		char *cursor = copy;
@@ -791,7 +803,7 @@ int main(int argc, char **argv)
 	}
 	if (!out)
 		usage_error("--out is needed");
-	options.label = labels[0];
+	options.label = label_count ? labels[0] : NULL;
 	options.fallback_labels[0] = label_count > 1 ? labels[1] : NULL;
 	options.fallback_labels[1] = label_count > 2 ? labels[2] : NULL;
 	options.menu_name = options.display_name;
@@ -852,7 +864,8 @@ int main(int argc, char **argv)
 			refuse("%s cannot be read back", out);
 		}
 		fclose(file);
-		printf("donor %s: weapon %s, %u corrections\n", donor, options.weapon_name, summary.corrections);
+		printf("donor %s: %s %s, %u corrections\n", donor, options.weapon_name ? "weapon" : "tags only, roots",
+			options.weapon_name ? options.weapon_name : roots[0].name, summary.corrections);
 		printf("pack %s: %u tags (%u own, %u external: %u required), %u fixups, %u model parts, %u resources; "
 			"tag bytes %u, geometry %u, resources %u; %ld bytes, sha256 ", out, summary.tag_count, summary.own_count,
 			summary.external_count, summary.required_count, summary.fixup_count, summary.part_count,

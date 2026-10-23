@@ -76,6 +76,15 @@ enum
 	AE_PACK_ZLIB = 1,
 };
 
+/* header flags */
+enum
+{
+	/* a pack of tags only (no weapon entries): the vehicle damage pack (ae_vehicle_pack.c), whose tags the
+	game finds by name; a weapon slot never takes one, and every pack with this bit clear has weapons */
+	AE_PACK_FLAG_NO_WEAPONS = 1,
+	AE_PACK_KNOWN_HEADER_FLAGS = 1,
+};
+
 /* tag kinds and flags (R9) */
 enum
 {
@@ -164,7 +173,7 @@ struct ae_pack_header
 	char magic[8];
 	unsigned int format_version;
 	unsigned int header_size;
-	unsigned int flags;
+	unsigned int flags; /* AE_PACK_FLAG_* */
 	char pack_id[AE_PACK_ID_SIZE]; /* [a-z0-9_]{1,31}, NUL-padded */
 	unsigned int pack_revision;
 	char display_name[AE_PACK_DISPLAY_NAME_SIZE]; /* printable ASCII {1,31}, NUL-padded */
@@ -369,7 +378,7 @@ struct ae_pack_build_data
 	struct ae_pack_build_tag const *tags; /* in the order they are written (breadth-first from the roots) */
 	unsigned int tag_count;
 	struct ae_pack_build_weapon const *weapons;
-	unsigned int weapon_count;
+	unsigned int weapon_count; /* 0: a pack of tags only (AE_PACK_FLAG_NO_WEAPONS) */
 	char const *credits; /* NULL: none */
 };
 

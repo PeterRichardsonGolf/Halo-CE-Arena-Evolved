@@ -554,7 +554,7 @@ static int header_check(
 			(unsigned int)AE_PACK_FORMAT_VERSION);
 	if (header->header_size != AE_PACK_HEADER_SIZE)
 		return refuse(problem, "bad header size %u", header->header_size);
-	if (header->flags)
+	if (header->flags & ~AE_PACK_KNOWN_HEADER_FLAGS)
 		return refuse(problem, "unknown header flags 0x%x", header->flags);
 	if (!padded_field_valid(header->pack_id, AE_PACK_ID_SIZE, AE_PACK_MAXIMUM_KEY, 1))
 		return refuse(problem, "bad pack id");
@@ -1162,8 +1162,16 @@ static int contents_check(
 		return refuse(problem, "STRINGS not terminated");
 	if (!pack->tag_count)
 		return refuse(problem, "no tags");
-	if (!pack->weapon_count)
+	/* (a pack of tags only says so in its header; every other pack has weapons) */
+	if (pack->header.flags & AE_PACK_FLAG_NO_WEAPONS)
+	{
+		if (pack->weapon_count)
+			return refuse(problem, "header flags say tags only, but it has weapons");
+	}
+	else if (!pack->weapon_count)
+	{
 		return refuse(problem, "no weapons");
+	}
 	if (!tags_check(pack, problem))
 		return 0;
 	pack->resources_size = 0;
@@ -1757,6 +1765,7 @@ int ae_pack_write(
 	memcpy(header.magic, AE_PACK_MAGIC, sizeof(header.magic));
 	header.format_version = AE_PACK_FORMAT_VERSION;
 	header.header_size = AE_PACK_HEADER_SIZE;
+	header.flags = data->weapon_count ? 0 : AE_PACK_FLAG_NO_WEAPONS;
 	header_text(header.pack_id, sizeof(header.pack_id), data->pack_id);
 	header.pack_revision = data->pack_revision;
 	header_text(header.display_name, sizeof(header.display_name), data->display_name);

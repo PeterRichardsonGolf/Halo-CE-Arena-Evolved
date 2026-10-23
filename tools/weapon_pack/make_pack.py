@@ -273,6 +273,16 @@ def builder_arguments(recipe, donor, names, out, recipe_folder):
     """ae_pack_build's arguments for the recipe's pack (its icon only when the recipe names one: a pack weapon whose
     HUD is the map's has the map's weapons' icon)"""
     pack = recipe["pack"]
+    if "weapon" not in pack:
+        # (a pack of tags only, the vehicle damage pack's: its roots, "<group>:<name>", which the game finds by
+        # name; no weapon entry)
+        arguments = ["--donor", str(donor), "--external-names", str(names), "--prefix", pack["prefix"],
+                     "--id", pack["id"], "--revision", str(pack["revision"]), "--display", pack["display"]]
+        for root in pack["roots"]:
+            arguments += ["--root", root]
+        for bitmap in pack.get("smooth", ()):
+            arguments += ["--smooth", bitmap]
+        return arguments + ["--credits", str(Path(recipe_folder) / pack["credits"]), "--verbose", "--out", str(out)]
     arguments = ["--donor", str(donor), "--weapon", pack["weapon"], "--external-names", str(names),
                  "--prefix", pack["prefix"], "--id", pack["id"], "--revision", str(pack["revision"]),
                  "--display", pack["display"], "--weapon-key", pack["weapon_key"], "--labels", pack["labels"],
@@ -1028,7 +1038,7 @@ class Run:
         problems = audit_problems([{"pack_name": row[0], "source": row[1], "group": row[2], "size": row[3],
                                     "inputs": row[6].split("; ") if row[6] else []} for row in audit],
                                   set(recipe["source"]["allowlist"]), scripts(),
-                                  set(recipe["pack"]["stock_derived"]))
+                                  set(recipe["pack"].get("stock_derived", {})))
         # externals: each the stock map's own tag, unchanged, and on every stock multiplayer map
         fingerprints = {key: sha256_file(path) for key, (_, path) in build.items()
                         if key in {(group, name.lower()) for group, name, _ in externals}}

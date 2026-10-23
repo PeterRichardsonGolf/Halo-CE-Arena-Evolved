@@ -1212,17 +1212,25 @@ int ae_pack_builder_build(
 	for (index = 0; index < builder->instance_count; index++)
 		builder->pack_indices[index] = NONE;
 
-	/* the roots: the weapon, then the others, in order */
-	weapon_tag = donor_tag_find(builder, PACK_WEAPON_GROUP, options->weapon_name);
-	if (weapon_tag == NONE)
+	/* the roots: the weapon, then the others, in order (no weapon: a pack of tags only, its roots') */
+	if (!options->weapon_name && !options->root_count)
 	{
-		builder_refuse(builder, "the donor has no weapon named %s", options->weapon_name);
+		builder_refuse(builder, "a pack of tags only needs a root");
 		goto done;
 	}
-	if (pack_tag_of(builder, weapon_tag) != 0 || builder->pack_tags[0].kind != AE_PACK_TAG_OWN)
+	if (options->weapon_name)
 	{
-		builder_refuse(builder, "the weapon %s is a map's own tag (in the external names)", options->weapon_name);
-		goto done;
+		weapon_tag = donor_tag_find(builder, PACK_WEAPON_GROUP, options->weapon_name);
+		if (weapon_tag == NONE)
+		{
+			builder_refuse(builder, "the donor has no weapon named %s", options->weapon_name);
+			goto done;
+		}
+		if (pack_tag_of(builder, weapon_tag) != 0 || builder->pack_tags[0].kind != AE_PACK_TAG_OWN)
+		{
+			builder_refuse(builder, "the weapon %s is a map's own tag (in the external names)", options->weapon_name);
+			goto done;
+		}
 	}
 	for (index = 0; index < (long)options->root_count && !builder->failed; index++)
 	{
@@ -1261,7 +1269,7 @@ int ae_pack_builder_build(
 		root = instance->base_address;
 		if (!group || !group->definition)
 		{
-			builder_refuse(builder, "the weapon leads to a tag of a group the pack cannot copy (no schema): %s %s",
+			builder_refuse(builder, "the roots lead to a tag of a group the pack cannot copy (no schema): %s %s",
 				group_text(tag->group_tag, text), tag->source_path);
 			break;
 		}
@@ -1398,8 +1406,8 @@ int ae_pack_builder_build(
 	data.display_name = options->display_name;
 	data.tags = build_tags;
 	data.tag_count = (unsigned int)builder->tag_count;
-	data.weapons = &weapon;
-	data.weapon_count = 1;
+	data.weapons = options->weapon_name ? &weapon : NULL;
+	data.weapon_count = options->weapon_name ? 1 : 0;
 	data.credits = options->credits;
 	written = ae_pack_write(path, &data, problem);
 	if (!written)

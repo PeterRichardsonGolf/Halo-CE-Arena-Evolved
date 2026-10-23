@@ -39,7 +39,7 @@ Little-endian throughout. Every offset is from the start of the file unless said
 | 0x00 | magic, char[8] | `AEWPACK\0` |
 | 0x08 | format_version, u32 | 1 |
 | 0x0C | header_size, u32 | 0x100 |
-| 0x10 | flags, u32 | 0 |
+| 0x10 | flags, u32 | 0, or 1 (`NO_WEAPONS`): a pack of tags only, with no weapon entry (the vehicle damage pack) |
 | 0x14 | pack_id, char[32] | ASCII `[a-z0-9_]`, 1 to 31 characters, zero-padded (`ae_battle_rifle`) |
 | 0x34 | pack_revision, u32 | 1, 2, ... |
 | 0x38 | display_name, char[32] | printable ASCII, 1 to 31 characters, zero-padded (`BATTLE RIFLE`) |
@@ -157,7 +157,8 @@ In this order; the first failure refuses the pack, with its reason:
 4. The SHA-256 equal to the header's.
 5. The resident sections read; a zlib one inflated to exactly its inflated size (the stream ended, nothing
    after it); sizes are checked before anything is allocated or inflated.
-6. STRINGS ends with a terminator; at least one tag and one weapon.
+6. STRINGS ends with a terminator; at least one tag, and at least one weapon unless the header's flags say the
+   pack is one of tags only (`NO_WEAPONS`, then no weapon at all); no other flag bit.
 7. Each tag: its name and source path valid strings; its group not 0 or NONE; kind 0 or 1, pad 0; no unknown
    flag bit, flags on own bitmaps only; an own tag not required, its bytes 1 byte to 4 MiB inside TAG_BYTES,
    after the previous own tag's (no two own tags share or overlap bytes); an external tag without bytes, fixups, parts or resources; its fixups, parts and resources inside their
@@ -302,6 +303,19 @@ file is hashed once, at start: if it is rewritten while the game runs, later rea
 memory. The reads are counted in the line logged when the map's tags are let go: `weapon pack: let go from
 <map>: N tags; B bitmap and S sound reads (bytes) were served from the pack, F could not be`.
 
+### The vehicle damage pack (a pack of tags only)
+
+`packs/ae_vehicle_damage.aepack` (pack id `ae_vehicle_damage`, header flag `NO_WEAPONS`) holds CMT's TSC:E vehicle
+damage effects and wrecks for VEHICLES DESTRUCTIBLE (`port/linux/game/ae_vehicle_pack_rules.h`). It has no slot of
+the mask: it is read at start beside the weapon packs (one line, `vehicle pack: ...`; a weapon slot refuses a pack
+of tags only), and added after them to a multiplayer map whose scenario places vehicles when the game about to be
+played has VEHICLES DESTRUCTIBLE on (the pending variant's flags bit 11), checked and refused alone as a weapon
+pack is (`vehicle pack: added to <map>: ...`, `vehicle pack: refused for <map>: ...`). Its tags come after every
+weapon pack's, so the weapon packs' tag indices (their fingerprints) are the same on a machine without it. The game
+finds its tags by name (`ae\packs\vehicle_damage\` and CMT's name without `cmt\`: `ae_vehicle_pack.c`). Nothing
+of it is sent over the network (effects and scenery are each machine's own): a machine without it plays the core's
+basic death, the game the same.
+
 ## Building a pack
 
 `build/linux/ae_pack_build` (built by `ninja linux`; tools/ae_pack_build.c with the game's objects of the tag
@@ -318,6 +332,9 @@ of a DONOR map, an Xbox map of the game's build:
 - The donor is read (at most 256 MiB, inflated as the game inflates a map, exactly its header's length) and its
   tags are put where the game reads a map's and checked by the tag validator as a map's are (a mod's map may
   share bytes); a donor the validator refuses is refused.
+- A pack of tags only: no `--weapon` (and none of `--weapon-key`, `--labels`, `--texts`, `--icon`,
+  `--behaviour`, `--replaces`), one `--root` at least (64 at most): the pack has no weapon entry and its header's
+  `NO_WEAPONS` flag.
 - From the weapon (a `'weap'` tag of that name, ASCII case aside), then each `--root` in order, every tag they
   lead to is walked through the schema, breadth-first: a tag's root, then its blocks and data, each pointer,
   tag reference and tag index a fixup (the bytes keep no address and no tag index of the donor's: references'
@@ -424,6 +441,22 @@ stock assault rifle's numbers, silent to the AI's hearing, one 2x zoom) but for 
 casing at the marker `primary trigger`, the silencer's tip, and now makes it at `primary ejection`, as the stock
 assault rifle's does (the brass left the barrel). No art of ours, no icon: its HUD is the stock assault rifle's.
 tools/test_weapon_pack_ar_silenced.py holds the recipe to this.
+
+**The vehicle damage pack's recipe** (`tools/weapon_pack/vehicle_damage/`, `ae_vehicle_damage`, a pack of tags
+only): its `pack` names `roots` (`effe:` and `scen:` names) and no weapon, and has no art. The donor is Blood Gulch's
+scenario without vehicles, the two wrecks (sceneries) and two holders in its scenery palette: the holders are stock
+sceneries whose attachments (8 at most) are the pack's effects, in the donor only (no root leads to them). CMT's
+warthog, ghost and banshee damage effects (the damage, its loop, the glass, the hood and the wings coming off, the
+explosions) and the warthog's and the banshee's burning wrecks, with four changes the recipe names: Open Sauce's
+blocks are cut from particle systems' particle states too (`os_strip.py particle_system`, which walks the stock
+kit's layout and refuses a file that does not end where it does); the parts that name campaign tags no
+multiplayer map has are left out (underwater bubbles, panel debris and its impact, the banshee wreck's
+damaged-engine sound, the warthog wreck's lights) and so is the warthog's thrown wheel (a vehicle, which a network
+game would send to machines without the pack); the death explosions deal no damage of their own (the map's
+explosion, the core's, deals it, with the pack or without); the effects that play on the map's own vehicles have
+their places moved from CMT's markers to ones the stock models have (the wreck's model has CMT's own). The
+warthog wreck's smoke is scaled by nothing (a wreck carried by the dead vehicle runs no functions of its own).
+`tools/test_weapon_pack_vehicle_damage.py` holds the recipe to this.
 
 **The approved donor and the departures from it.** The rifle the owner approved was a prototype's donor map
 ("v6e", SHA-256 0aa3ffcb..., `approved_reference` in the recipe). The recipe reproduces that donor's 96 fix tags

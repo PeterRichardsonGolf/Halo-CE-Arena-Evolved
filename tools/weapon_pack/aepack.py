@@ -35,6 +35,10 @@ SECTION_NAMES = {STRINGS: "STRINGS", TAGS: "TAGS", TAG_BYTES: "TAG_BYTES", FIXUP
 # compressions
 STORED, ZLIB = 0, 1
 
+# header flags: a pack of tags only (no weapon entries: the vehicle damage pack, found by name)
+FLAG_NO_WEAPONS = 1
+KNOWN_HEADER_FLAGS = FLAG_NO_WEAPONS
+
 # tag kinds, flags (R9)
 OWN, EXTERNAL = 0, 1
 FLAG_SMOOTH = 1
@@ -284,7 +288,9 @@ def build(pack: Pack) -> bytes:
         entries.append((kind, offset, len(stored), len(inflated), compression))
     pack_id = pack.pack_id.encode("ascii")
     display_name = pack.display_name.encode("ascii")
-    image[:HEADER_SIZE] = HEADER.pack(MAGIC, pack.format_version, pack.header_size, pack.flags, pack_id,
+    # (as ae_pack_write: a pack with no weapons is one of tags only, and says so)
+    flags = pack.flags | (0 if pack.weapons else FLAG_NO_WEAPONS)
+    image[:HEADER_SIZE] = HEADER.pack(MAGIC, pack.format_version, pack.header_size, flags, pack_id,
                                       pack.pack_revision, display_name, pack.tag_layout, b"\0" * 32, len(entries),
                                       b"\0" * 128)
     for index, entry in enumerate(entries):
@@ -412,7 +418,7 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
         raise Refused(f"format version {format_version}")
     if header_size != HEADER_SIZE:
         raise Refused("bad header size")
-    if flags:
+    if flags & ~KNOWN_HEADER_FLAGS:
         raise Refused("unknown header flags")
     _check_padded(pack_id, MAXIMUM_KEY, _is_key_character, "pack id")
     if pack_revision < 1:
@@ -486,7 +492,11 @@ def read(image: bytes, verify_resources: bool = True) -> Parsed:
     geometry = sections[GEOMETRY]
     if not tags:
         raise Refused("no tags")
-    if not weapons:
+    # (a pack of tags only says so in its header; every other pack has weapons)
+    if flags & FLAG_NO_WEAPONS:
+        if weapons:
+            raise Refused("header flags say tags only, but it has weapons")
+    elif not weapons:
         raise Refused("no weapons")
     if len(tags) > MAXIMUM_TAGS:
         raise Refused("too many tags")

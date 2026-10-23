@@ -576,11 +576,38 @@ static int writer_check(char const *out)
 	REFUSED("replaces random", weapon.replaces = 1, weapon.replaces = 2);
 	REFUSED("a resource past 8 MiB", resource.size = AE_PACK_MAXIMUM_RESOURCE_SIZE + 1, resource.size = 100);
 	REFUSED("1025 tags", data.tag_count = AE_PACK_MAXIMUM_TAGS + 1, data.tag_count = 2);
-	REFUSED("no weapons", data.weapon_count = 0, data.weapon_count = 1);
 	REFUSED("a bad pack id", data.pack_id = "AE CHECK", data.pack_id = "ae_check");
 	REFUSED("revision 0", data.pack_revision = 0, data.pack_revision = 3);
 	REFUSED("bad UTF-8 credits", data.credits = "\xC0\xAF", data.credits = "made by the check");
 #undef REFUSED
+
+	/* a pack of tags only (no weapon entries): written with AE_PACK_FLAG_NO_WEAPONS, read back with no weapons */
+	{
+		struct ae_pack *tags_only = NULL;
+
+		remove(out);
+		data.weapon_count = 0;
+		if (!ae_pack_write(out, &data, &problem))
+		{
+			printf("FAIL: a pack of tags only was not written: %s\n", problem.text);
+			failures++;
+		}
+		else if (!ae_pack_open(out, &tags_only, &problem))
+		{
+			printf("FAIL: a pack of tags only was not read: %s\n", problem.text);
+			failures++;
+		}
+		else if (!(tags_only->header.flags & AE_PACK_FLAG_NO_WEAPONS) || tags_only->weapon_count)
+		{
+			printf("FAIL: a pack of tags only: flags 0x%x, %u weapons\n", tags_only->header.flags,
+				tags_only->weapon_count);
+			failures++;
+		}
+		if (tags_only)
+			ae_pack_close(tags_only);
+		data.weapon_count = 1;
+		remove(out);
+	}
 
 	/* a write that fails (its temporary file cannot be made) leaves the pack already there as it was */
 	{

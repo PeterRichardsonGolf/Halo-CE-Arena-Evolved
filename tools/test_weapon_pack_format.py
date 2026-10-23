@@ -179,6 +179,27 @@ def test_python_reader_takes_the_sample():
     assert aepack.digest(image) == image[aepack.SHA256_OFFSET:aepack.SHA256_OFFSET + 32]
 
 
+def test_a_pack_of_tags_only():
+    """the vehicle damage pack's kind: no weapon entry, said in the header (AE_PACK_FLAG_NO_WEAPONS); a pack with
+    weapons may not say it, and one with neither is refused"""
+    image = aepack.build(sample_pack(weapons=[]))
+    assert struct.unpack_from("<I", image, 16)[0] == aepack.FLAG_NO_WEAPONS
+    parsed = aepack.read(image)
+    assert parsed.weapons == [] and len(parsed.tags) == 7
+    with pytest.raises(aepack.Refused, match="no weapons"):
+        aepack.read(_header_field(16, "<I", 0)(image))
+    with pytest.raises(aepack.Refused, match="flags"):
+        aepack.read(_header_field(16, "<I", 2)(image))
+
+
+def test_a_pack_of_tags_only_is_taken_by_the_checker(checker, tmp_path):
+    path = tmp_path / "tags_only.aepack"
+    path.write_bytes(aepack.build(sample_pack(weapons=[])))
+    result = run(checker, path)
+    assert result.returncode == 0, result.stdout
+    assert "flags 1 " in result.stdout
+
+
 def test_valid_pack_is_accepted_and_printed(checker, tmp_path):
     image = aepack.build(sample_pack())
     path = tmp_path / "valid.aepack"
