@@ -149,7 +149,7 @@ class Checks(add.Game):
 class NoRealPack(Checks):
     def test_no_pack_here_falls_back(self):
         self.play("nopack", "--no-packs", "--pack-loadout", "primary",
-                  "--expect-line", UNAVAILABLE.format(map="bloodgulch", reason="this machine has no battle rifle pack"),
+                  "--expect-line", UNAVAILABLE.format(map="bloodgulch", reason="this machine has no battle_rifle pack"),
                   "--expect-line", STOCK_FIRST_SPAWN, "--expect-no-line", add.ANY_ADDED)
 
     def test_custom_edition_map_checks_the_pack(self):
