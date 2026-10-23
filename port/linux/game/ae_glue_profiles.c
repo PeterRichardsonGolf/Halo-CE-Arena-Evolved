@@ -351,6 +351,20 @@ long ae_profile_player1_fallback(struct player_profile *profile)
 	return index;
 }
 
+void ae_profile_player1_ensure(void)
+{
+	struct player_profile profile;
+	long index;
+
+	if (player_ui_get_active_player_profile_index(0) != NONE || ae_profile_is_guest(0))
+		return;
+	index = ae_profile_player1_fallback(&profile);
+	if (index == NONE)
+		return;
+	player_ui_set_active_player_profile(0, index, &profile);
+	platform_log("ae profiles: player 1 had no profile: %08lX, the one used last (or the first)", (unsigned long)index);
+}
+
 /* the player's profile: its index and the game's copy of it; FALSE (the reason logged, unless call is NULL) for a
 player with neither a profile nor a guest's settings */
 static boolean active_profile(const char *call, short local_player, long *index, struct player_profile *profile,
@@ -361,19 +375,11 @@ static boolean active_profile(const char *call, short local_player, long *index,
 		*failure = failed(call, AE_STR_ERR_PROFILE);
 		return FALSE;
 	}
-	*index = player_ui_get_active_player_profile_index(local_player);
 	/* (player 1 with none yet, in AE's menus before any game: the one CAMPAIGN would take, made player 1's, so
 	that SETTINGS edits the profile the next game plays with) */
-	if (*index == NONE && local_player == 0 && !ae_profile_is_guest(local_player))
-	{
-		*index = ae_profile_player1_fallback(profile);
-		if (*index != NONE)
-		{
-			player_ui_set_active_player_profile(0, *index, profile);
-			platform_log("ae profiles: player 1 had no profile: %08lX, the one used last (or the first)",
-				(unsigned long)*index);
-		}
-	}
+	if (local_player == 0)
+		ae_profile_player1_ensure();
+	*index = player_ui_get_active_player_profile_index(local_player);
 	if (*index == NONE && !ae_profile_is_guest(local_player))
 	{
 		*failure = failed(call, AE_STR_ERR_PROFILE);

@@ -31,6 +31,7 @@ there (ae_lobby_take_pregame_ui) shows AE's pregame screen instead.
 #include "../src/p2p.h"
 #include "halo_port_limits.h"
 #include "ae_glue_lobby.h"
+#include "ae_glue_profiles.h"
 #include "ae_invite_rules.h"
 #include "ae_lan_bots.h"
 #include "bots.h"
@@ -194,6 +195,9 @@ struct ae_result ae_lobby_add_local_player(short controller)
 	if (!global_network_game_client_get() ||
 		network_game_client_get_state(global_network_game_client_get(), NULL) < AE_CLIENT_STATE_PREGAME)
 		return failed("add local player", AE_STR_ERR_NO_GAME, NULL);
+	/* (player 1's name and colour come from its profile: none is active until CAMPAIGN or SETTINGS takes one) */
+	if (controller == 0)
+		ae_profile_player1_ensure();
 	if (controller < 0 || controller > 3 || !network_game_client_add_player(global_network_game_client_get(), controller))
 		return failed("add local player", AE_STR_ERR_LOBBY_FULL, NULL);
 	platform_log("ae lobby: local player added (controller %d)", controller + 1);

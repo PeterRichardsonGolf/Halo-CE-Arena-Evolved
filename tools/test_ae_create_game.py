@@ -131,6 +131,8 @@ def test_the_lobby_starts_the_game(runs):
     text = runs["play"][1]
     assert "lobby: start" in lines(text, "ae create game: ")
     assert "starting" in lines(text, "ae lobby: ")
+    # (player 1 plays with a profile, not as "Player": the lobby gives it the one used last before adding it)
+    assert "player 1 has no active player profile assigned" not in text
     # (the gametype's PC options reach the game, not the defaults: AE TEAM SLY's motion sensor shows enemies only
     # and it has a time limit)
     rules = lines(text, "game rules: ")

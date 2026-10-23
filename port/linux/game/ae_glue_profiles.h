@@ -50,6 +50,9 @@ struct ae_result ae_profile_new(const char *name, int *profile_index);
 the one used last, else the first on this PC, read into profile; its index, NONE for none on this PC */
 struct player_profile;
 long ae_profile_player1_fallback(struct player_profile *profile);
+/* player 1 takes that profile when none is active and it isn't a guest (before SETTINGS edits it, and before a
+lobby adds player 1, whose name and colour the game reads from it) */
+void ae_profile_player1_ensure(void);
 /* plays without a profile: settings apply to this session only (never saved) */
 struct ae_result ae_profile_guest(short local_player);
 int ae_profile_is_guest(short local_player);
