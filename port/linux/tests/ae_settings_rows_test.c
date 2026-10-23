@@ -12,6 +12,8 @@ static int failures;
 /* a player's settings as a test has them */
 static const char *mouse_style = "classic", *zoom_mode = "toggle", *mouse_zoom = "toggle", *clock = "down",
 	*glow = "false", *panel = "true", *callouts = "off";
+enum { SETS = 32 };
+static struct { const char *key, *value; } sets[SETS];
 
 static const char *value(void *context, const char *key)
 {
@@ -30,7 +32,32 @@ static const char *value(void *context, const char *key)
 		return panel;
 	if (!strcmp(key, "game.callouts"))
 		return callouts;
+	{
+		int index;
+
+		for (index = 0; index < SETS && sets[index].key; index++)
+		{
+			if (!strcmp(key, sets[index].key))
+				return sets[index].value;
+		}
+	}
 	return "";
+}
+
+/* (phase B) any other setting a test sets */
+static void set(const char *key, const char *now)
+{
+	int index;
+
+	for (index = 0; index < SETS; index++)
+	{
+		if (!sets[index].key || !strcmp(sets[index].key, key))
+		{
+			sets[index].key = key;
+			sets[index].value = now;
+			return;
+		}
+	}
 }
 
 static short rows_of(short group, struct ae_settings_facts const *facts)
@@ -57,17 +84,19 @@ static int has_label(short group, struct ae_settings_facts const *facts, const c
 
 int main(void)
 {
-	struct ae_settings_facts pad = { 0, 0, value, NULL }, keyboard = { 1, 0, value, NULL }, both = { 1, 1, value, NULL };
+	struct ae_settings_facts pad = { 0, 0, value, NULL, 0 }, keyboard = { 1, 0, value, NULL, 0 },
+		both = { 1, 1, value, NULL, 0 };
 	struct ae_settings_section sections[AE_SETTINGS_SECTIONS];
 	short entries[AE_SETTINGS_ENTRIES], count, found, index;
 	char text[400];
 
-	/* the nine groups, in the top level's order; phase A builds CONTROLS, VIEW and HUD */
+	/* the nine groups, in the top level's order; phase A built CONTROLS, VIEW, HUD and SYSTEM's MENUS, phase B the
+	rest */
 	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_CONTROLS)->name, "CONTROLS"));
 	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_SYSTEM)->name, "SYSTEM"));
 	CHECK(!ae_settings_group(AE_SETTINGS_GROUPS) && !ae_settings_group(-1));
 	CHECK(ae_settings_group(AE_SETTINGS_CONTROLS)->built && ae_settings_group(AE_SETTINGS_VIEW)->built &&
-		ae_settings_group(AE_SETTINGS_HUD)->built && !ae_settings_group(AE_SETTINGS_VIDEO)->built);
+		ae_settings_group(AE_SETTINGS_HUD)->built && ae_settings_group(AE_SETTINGS_VIDEO)->built);
 	/* (0.3.7: SYSTEM holds MENUS alone, the way back to the classic menus; it needs a restart) */
 	CHECK(ae_settings_group(AE_SETTINGS_SYSTEM)->built && ae_settings_row_of("display.arena_menus") >= 0 &&
 		ae_settings_row(ae_settings_row_of("display.arena_menus"))->group == AE_SETTINGS_SYSTEM &&
@@ -141,6 +170,30 @@ int main(void)
 		CHECK(ae_settings_value_count(voice) == 2);
 		CHECK(!strcmp(ae_settings_value_text(voice, 1), "NHE") && !strcmp(ae_settings_value_of(voice, 1), "nhe"));
 		CHECK(ae_settings_value_index(voice, "cori") == 0);
+	}
+
+	/* VIDEO (rows.md: 24 with everything shown): WINDOW SIZE in RESOLUTION's place when WINDOWED, POSITION with
+	PERFORMANCE on, the HDR rows with HDR on, HDR DISPLAY on an HDR display only */
+	{
+		struct ae_settings_facts hdr = { 0, 0, value, NULL, 1 };
+		struct ae_settings_row const *resolution = ae_settings_row(ae_settings_row_of("display.resolution"));
+		static const char *const texts[] = { "NATIVE", "1920 X 1080" }, *const values[] = { "native", "1920x1080" };
+
+		set("display.performance", "off");
+		CHECK(rows_of(AE_SETTINGS_VIDEO, &pad) == 19);
+		CHECK(has_label(AE_SETTINGS_VIDEO, &pad, "RESOLUTION") && !has_label(AE_SETTINGS_VIDEO, &pad, "WINDOW SIZE"));
+		set("display.mode", "windowed");
+		set("display.performance", "fps");
+		set("display.hdr", "true");
+		CHECK(!has_label(AE_SETTINGS_VIDEO, &pad, "RESOLUTION") && has_label(AE_SETTINGS_VIDEO, &pad, "WINDOW SIZE"));
+		CHECK(rows_of(AE_SETTINGS_VIDEO, &pad) == 22 && rows_of(AE_SETTINGS_VIDEO, &hdr) == 23);
+		set("display.mode", "fullscreen");
+		CHECK(ae_settings_value_count(resolution) == 0);
+		CHECK(ae_settings_set_values("display.resolution", texts, values, 2) && ae_settings_value_count(resolution) == 2);
+		CHECK(!strcmp(ae_settings_value_text(resolution, 1), "1920 X 1080") && ae_settings_value_index(resolution,
+			"1920x1080") == 1);
+		CHECK(!ae_settings_set_values("display.fov", texts, values, 2));
+		CHECK(!ae_settings_row_takes_empty(resolution));
 	}
 
 	/* the dialogs */

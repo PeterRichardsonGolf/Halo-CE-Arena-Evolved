@@ -34,7 +34,9 @@ struct ae_profile_summary { int index; char name[48]; unsigned int color; short 
 profile's own step, 0-9: the game's 1-10), invert (look), vibration (1 on) */
 struct ae_profile_controls { short layout; short look_sensitivity; int invert; int vibration;
 	/* (0.3.7 SETTINGS) the stick layout (player_profile.h's _joystick_preset_*), INVERT FLIGHT, AUTO-CENTER LOOK */
-	short stick; int invert_flight; int autocenter; };
+	short stick; int invert_flight; int autocenter;
+	/* (0.3.7 SETTINGS phase B) IN-GAME HELP: the campaign's hints (stored as ingame_help_disabled) */
+	int help; };
 
 /* the profiles on this PC (not the game's two default profiles), in the save files' order; up to maximum */
 struct ae_result ae_profiles_list(struct ae_profile_summary *profiles, short maximum, short *count);

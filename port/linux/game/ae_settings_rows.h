@@ -2,7 +2,8 @@
 AE_SETTINGS_ROWS.H
 
 The 0.3.7 menus' SETTINGS model (ae_settings_rows.c; the design: the mockups' SPEC.md and rows.md): the nine groups,
-every row of the groups built so far (CONTROLS, VIEW, HUD: each player's own), what each shows and when, its values
+every row of every group (CONTROLS, VIEW, HUD: each player's own; VIDEO, AUDIO, ONLINE, CHAT AND STREAMING, SYSTEM:
+this PC's; ACCESSIBILITY: both), what each shows and when, its values
 (as shown and as the setting's text), the sections, and the texts of the KEEP / UNDO and RESTORE DEFAULTS dialogs.
 The screens (ae_screen_settings.c) read and write the values through the glue. Pure: no engine includes (unit test:
 port/linux/tests/ae_settings_rows_test.c).
@@ -28,17 +29,24 @@ struct ae_settings_group_info
 	const char *name;
 	const char *line;          /* the top level's line, the panel's text and the help */
 	short whose;
-	int built;                 /* its rows are here (phase A: CONTROLS, VIEW, HUD); the others are listed only */
+	int built;                 /* its rows are here (0: listed only, "COMING SOON") */
 };
 struct ae_settings_group_info const *ae_settings_group(short group);
 
-enum { AE_SETTINGS_SPINNER, AE_SETTINGS_TOGGLE, AE_SETTINGS_SLIDER, AE_SETTINGS_SUBSCREEN };
+/* (phase B) LINK: the same setting as another group's row (A goes there, left / right step it here too); KEY: a key
+cap, read only for now (PUSH TO TALK: KEY BINDINGS sets it) */
+enum { AE_SETTINGS_SPINNER, AE_SETTINGS_TOGGLE, AE_SETTINGS_SLIDER, AE_SETTINGS_SUBSCREEN, AE_SETTINGS_LINK,
+	AE_SETTINGS_KEY };
 /* when a row shows (rows.md's "shown when") */
 enum
 {
 	AE_SETTINGS_ALWAYS, AE_SETTINGS_WHEN_DUALSENSE, AE_SETTINGS_WHEN_KEYBOARD, AE_SETTINGS_WHEN_MOUSE_CLASSIC,
 	AE_SETTINGS_WHEN_MOUSE_MCC, AE_SETTINGS_WHEN_ZOOM_BOTH, AE_SETTINGS_WHEN_MOUSE_ZOOM_BOTH, AE_SETTINGS_WHEN_CLOCK,
-	AE_SETTINGS_WHEN_GLOW, AE_SETTINGS_WHEN_PANEL, AE_SETTINGS_WHEN_CALLOUTS
+	AE_SETTINGS_WHEN_GLOW, AE_SETTINGS_WHEN_PANEL, AE_SETTINGS_WHEN_CALLOUTS,
+	/* (phase B) */
+	AE_SETTINGS_WHEN_WINDOWED, AE_SETTINGS_WHEN_NOT_WINDOWED, AE_SETTINGS_WHEN_PERFORMANCE, AE_SETTINGS_WHEN_HDR,
+	AE_SETTINGS_WHEN_HDR_DISPLAY, AE_SETTINGS_WHEN_VOICE, AE_SETTINGS_WHEN_PUSH_TO_TALK, AE_SETTINGS_WHEN_MAP_DOWNLOAD,
+	AE_SETTINGS_WHEN_MAP_SEED, AE_SETTINGS_WHEN_DISCORD, AE_SETTINGS_WHEN_STREAMER
 };
 struct ae_settings_row
 {
@@ -49,11 +57,12 @@ struct ae_settings_row
 	const char *key;
 	const char *const *texts;  /* as shown */
 	const char *const *values; /* as the setting has them */
-	short count;               /* 0: the values are set at run time (CALLOUT VOICE: ae_settings_set_voices) */
+	short count;               /* 0: the values are set at run time (ae_settings_set_values: CALLOUT VOICE, RESOLUTION,
+	                              WINDOW SIZE, OUTPUT DEVICE, INPUT DEVICE) */
 	short when;
 	const char *help;
 	/* AE_SETTINGS_RESTART: needs a restart (its RESTART badge; leaving SETTINGS asks); AE_SETTINGS_THIS_PC: a PC row in
-	a player's group (its THIS PC badge while 2+ players are joined). (Phase B's rows: none of CONTROLS, VIEW, HUD) */
+	a player's group (its THIS PC badge while 2+ players are joined) */
 	short flags;
 };
 enum { AE_SETTINGS_RESTART = 1, AE_SETTINGS_THIS_PC = 2 };
@@ -67,6 +76,11 @@ const char *ae_settings_value_text(struct ae_settings_row const *row, short inde
 const char *ae_settings_value_of(struct ae_settings_row const *row, short index);
 /* CALLOUT VOICE's values: the voices' folder names (shown upper-cased); copied, up to 32 */
 void ae_settings_set_voices(const char *const *names, short count);
+/* a run-time row's values (its key's): as shown and as the setting has them, copied (up to 64, 63 characters each);
+texts NULL: the values upper-cased. 0 when the key is not a run-time row's */
+int ae_settings_set_values(const char *key, const char *const *texts, const char *const *values, short count);
+/* a row whose values include the empty text (LANGUAGE's English): "" is a value of its own there */
+int ae_settings_row_takes_empty(struct ae_settings_row const *row);
 
 /* what the rows' "shown when" reads: the player's devices, and a setting's text as the player has it now */
 struct ae_settings_facts
@@ -75,6 +89,7 @@ struct ae_settings_facts
 	int dualsense;             /* a DualSense is this player's pad */
 	const char *(*value)(void *context, const char *key);
 	void *context;
+	int hdr_display;           /* (phase B) the display reports HDR */
 };
 int ae_settings_row_shown(struct ae_settings_row const *row, struct ae_settings_facts const *facts);
 

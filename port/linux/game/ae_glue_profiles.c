@@ -386,6 +386,7 @@ struct ae_result ae_profile_get_controls(short local_player, struct ae_profile_c
 	controls->stick = profile.controller_settings.joystick_preset;
 	controls->invert_flight = profile.controller_settings.flight_stick_aircraft_controls ? 1 : 0;
 	controls->autocenter = profile.controller_settings.autocenter ? 1 : 0;
+	controls->help = profile.controller_settings.ingame_help_disabled ? 0 : 1;
 	return succeeded();
 }
 
@@ -398,6 +399,7 @@ static void apply_controls(struct player_profile *profile, struct ae_profile_con
 	profile->controller_settings.joystick_preset = (byte)controls->stick;
 	profile->controller_settings.flight_stick_aircraft_controls = controls->invert_flight ? TRUE : FALSE;
 	profile->controller_settings.autocenter = controls->autocenter ? TRUE : FALSE;
+	profile->controller_settings.ingame_help_disabled = controls->help ? FALSE : TRUE;
 }
 
 /* the profile's file changed by change (read, changed, written: player_profile_save) and the game's copy of it, for
@@ -543,6 +545,7 @@ struct ae_result ae_profile_read(int profile_index, struct ae_profile_controls *
 		controls->stick = profile.controller_settings.joystick_preset;
 		controls->invert_flight = profile.controller_settings.flight_stick_aircraft_controls ? 1 : 0;
 		controls->autocenter = profile.controller_settings.autocenter ? 1 : 0;
+		controls->help = profile.controller_settings.ingame_help_disabled ? 0 : 1;
 	}
 	if (color)
 		*color = profile.primary_color_index;

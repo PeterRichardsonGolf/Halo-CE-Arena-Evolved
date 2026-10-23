@@ -19,7 +19,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 {
 	{ "CONTROLS", "Your buttons, sticks, mouse and keys. Every player on this PC has their own.", AE_SETTINGS_PLAYER,
 		1 },
-	{ "VIDEO", "The screen, the graphics and the frame rate. One set for this PC.", AE_SETTINGS_PC, 0 },
+	{ "VIDEO", "The screen, the graphics and the frame rate. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "VIEW", "What you see in first person, and your shields. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
 	{ "AUDIO", "Volume, speakers and voice. One set for this PC.", AE_SETTINGS_PC, 0 },
 	{ "HUD", "Your HUD, names, scoreboard and training aids. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
@@ -109,6 +109,30 @@ static const char *const callout_values[] = { "off", "items", "items_clock" };
 static const char *const detail_texts[] = { "MINIMAL", "STANDARD", "VERBOSE" };
 static const char *const detail_values[] = { "minimal", "standard", "verbose" };
 
+/* (phase B) VIDEO */
+static const char *const display_mode_texts[] = { "FULLSCREEN", "BORDERLESS", "WINDOWED" };
+static const char *const display_mode_values[] = { "fullscreen", "borderless", "windowed" };
+static const char *const scaling_texts[] = { "NATIVE", "ORIGINAL" };
+static const char *const scaling_values[] = { "native", "original" };
+static const char *const fps_texts[] = { "AUTO", "30", "60", "75", "120", "144", "165", "240", "NONE" };
+static const char *const fps_values[] = { "0", "30", "60", "75", "120", "144", "165", "240", "-1" };
+static const char *const aa_texts[] = { "OFF", "FXAA", "SMAA", "SSAA 2X", "MSAA 2X", "MSAA 4X", "MSAA 8X" };
+static const char *const aa_values[] = { "off", "fxaa", "smaa", "ssaa2x", "msaa2x", "msaa4x", "msaa8x" };
+static const char *const aniso_texts[] = { "OFF", "2X", "4X", "8X", "16X" };
+static const char *const aniso_values[] = { "off", "2x", "4x", "8x", "16x" };
+static const char *const shadow_texts[] = { "128", "256", "512", "1024" };
+static const char *const model_texts[] = { "STOCK", "NATIVE", "HIGHEST" };
+static const char *const model_values[] = { "stock", "native", "highest" };
+static const char *const distance_texts[] = { "1024", "2048", "4096", "10000" };
+static const char *const performance_texts[] = { "OFF", "FPS", "MINIMAL", "FULL" };
+static const char *const performance_values[] = { "off", "fps", "minimal", "full" };
+static const char *const corner_texts[] = { "TOP LEFT", "TOP RIGHT" };
+static const char *const corner_values[] = { "top_left", "top_right" };
+static const char *const exposure_texts[] = { "0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "2.0", "2.5", "3.0", "4.0" };
+static const char *const exposure_values[] = { "0.25", "0.5", "0.75", "1", "1.25", "1.5", "2", "2.5", "3", "4" };
+static const char *const tone_texts[] = { "NEUTRAL", "ACES", "REINHARD" };
+static const char *const tone_values[] = { "neutral", "aces", "reinhard" };
+
 /* (the long numeric lists: made once) */
 enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11 };
 static char mcc_text[MCC_STEPS][8], scale_text[SCALE_STEPS][8], hold_text[HOLD_STEPS][8], hold_value[HOLD_STEPS][8];
@@ -117,11 +141,16 @@ static char waypoint_size_text[WAYPOINT_STEPS][8], waypoint_size_value[WAYPOINT_
 static const char *mcc_texts[MCC_STEPS], *scale_texts[SCALE_STEPS], *hold_texts[HOLD_STEPS], *hold_values[HOLD_STEPS];
 static const char *fov_texts[FOV_STEPS], *fov_values[FOV_STEPS], *deadzone_texts[DEADZONE_STEPS],
 	*deadzone_values[DEADZONE_STEPS], *waypoint_size_texts[WAYPOINT_STEPS], *waypoint_size_values[WAYPOINT_STEPS];
-/* the voices (CALLOUT VOICE) */
-enum { VOICES = 32, VOICE_NAME = 48 };
-static char voice_value[VOICES][VOICE_NAME], voice_text[VOICES][VOICE_NAME];
-static const char *voice_values[VOICES], *voice_texts[VOICES];
-static short voice_count;
+/* the run-time rows' values (ae_settings_set_values): CALLOUT VOICE's voices, VIDEO's display sizes, AUDIO's devices */
+enum { RUN_LISTS = 6, RUN_VALUES = 64, RUN_TEXT = 64 };
+static const char *const run_keys[RUN_LISTS] = { "game.callout_voice", "display.resolution", "display.window_size",
+	"audio.output_device", "audio.input_device", NULL };
+static struct
+{
+	char value[RUN_VALUES][RUN_TEXT], text[RUN_VALUES][RUN_TEXT];
+	const char *values[RUN_VALUES], *texts[RUN_VALUES];
+	short count;
+} run_lists[RUN_LISTS];
 
 static void lists_build(void)
 {
@@ -346,6 +375,66 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_HUD, "CALLOUTS", "CALLOUT VOICE", AE_SETTINGS_SPINNER, "game.callout_voice", NULL, NULL, 0,
 		AE_SETTINGS_WHEN_CALLOUTS, "Whose voice calls them.", AE_SETTINGS_THIS_PC },
+	/* VIDEO (this PC's; the classic menus' Video Setup writes the same keys) */
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "DISPLAY MODE", AE_SETTINGS_SPINNER, "display.mode",
+		VALUES(display_mode_texts, display_mode_values), AE_SETTINGS_ALWAYS,
+		"How the game fills your screen. A change asks to keep it, else it goes back in 10 seconds.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "RESOLUTION", AE_SETTINGS_SPINNER, "display.resolution", NULL, NULL, 0,
+		AE_SETTINGS_WHEN_NOT_WINDOWED,
+		"The size the game draws at. A change asks to keep it, else it goes back in 10 seconds.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "WINDOW SIZE", AE_SETTINGS_SPINNER, "display.window_size", NULL, NULL, 0,
+		AE_SETTINGS_WHEN_WINDOWED, "The window's size.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "RESOLUTION SCALING", AE_SETTINGS_SPINNER, "display.resolution_scaling",
+		VALUES(scaling_texts, scaling_values), AE_SETTINGS_ALWAYS,
+		"ORIGINAL draws at Halo PC's size and stretches it, for an older look or a slow PC.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "V-SYNC", AE_SETTINGS_TOGGLE, "display.vsync", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Waits for the screen: no tearing, a little more delay.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "FRAME RATE LIMIT", AE_SETTINGS_SPINNER, "display.max_fps",
+		VALUES(fps_texts, fps_values), AE_SETTINGS_ALWAYS,
+		"With V-SYNC off, the most frames a second. AUTO is twice your screen's refresh rate.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "SMOOTH MOTION", AE_SETTINGS_TOGGLE, "display.interpolation", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Draws between the game's 30 ticks a second, so motion is smooth at high frame rates.", 0 },
+	{ AE_SETTINGS_VIDEO, "DISPLAY", "INSTANT AIM", AE_SETTINGS_TOGGLE, "display.direct_camera", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Your view turns the frame you move, not on the next tick. Less delay when you aim.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "ANTI-ALIASING", AE_SETTINGS_SPINNER, "display.anti_aliasing",
+		VALUES(aa_texts, aa_values), AE_SETTINGS_ALWAYS,
+		"Smooths jagged edges. SSAA looks best and costs the most.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "ANISOTROPIC FILTERING", AE_SETTINGS_SPINNER, "display.anisotropic",
+		VALUES(aniso_texts, aniso_values), AE_SETTINGS_ALWAYS, "Keeps floors and walls sharp at an angle.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "SHADOW RESOLUTION", AE_SETTINGS_SPINNER, "display.shadow_resolution",
+		shadow_texts, shadow_texts, COUNT(shadow_texts), AE_SETTINGS_ALWAYS,
+		"Sharper shadows under players and vehicles.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "PER-PIXEL LIGHTING", AE_SETTINGS_TOGGLE, "display.per_pixel_lighting", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Lighting worked out for each pixel: smoother highlights.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "MODEL DETAIL", AE_SETTINGS_SPINNER, "display.model_detail",
+		VALUES(model_texts, model_values), AE_SETTINGS_ALWAYS,
+		"Which level of detail far models use.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "DRAW DISTANCE", AE_SETTINGS_SPINNER, "display.far_clip_distance",
+		distance_texts, distance_texts, COUNT(distance_texts), AE_SETTINGS_ALWAYS,
+		"How far the game draws. Bigger maps can need more.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "HIGH-RES HUD", AE_SETTINGS_TOGGLE, "display.high_res_hud", ON_OFF,
+		AE_SETTINGS_ALWAYS, "The HUD in sharp, high resolution art.", 0 },
+	{ AE_SETTINGS_VIDEO, "GRAPHICS", "HIGH-RES TEXT", AE_SETTINGS_TOGGLE, "display.high_res_text", ON_OFF,
+		AE_SETTINGS_ALWAYS, "The game's text drawn sharp at any size.", 0 },
+	{ AE_SETTINGS_VIDEO, "PERFORMANCE", "PERFORMANCE", AE_SETTINGS_SPINNER, "display.performance",
+		VALUES(performance_texts, performance_values), AE_SETTINGS_ALWAYS,
+		"Shows the frame rate, and with FULL the frame time and draw count.", 0 },
+	{ AE_SETTINGS_VIDEO, "PERFORMANCE", "POSITION", AE_SETTINGS_SPINNER, "display.performance_position",
+		VALUES(corner_texts, corner_values), AE_SETTINGS_WHEN_PERFORMANCE, "Where the performance numbers sit.", 0 },
+	{ AE_SETTINGS_VIDEO, "PERFORMANCE", "VERSION WATERMARK", AE_SETTINGS_TOGGLE, "display.version_watermark", ON_OFF,
+		AE_SETTINGS_ALWAYS, "The version in a corner, for recordings and bug reports.", 0 },
+	{ AE_SETTINGS_VIDEO, "ADVANCED", "HDR", AE_SETTINGS_TOGGLE, "display.hdr", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Brighter lights and deeper darks.", 0 },
+	{ AE_SETTINGS_VIDEO, "ADVANCED", "HDR DISPLAY", AE_SETTINGS_TOGGLE, "display.hdr_output", ON_OFF,
+		AE_SETTINGS_WHEN_HDR_DISPLAY, "With HDR, send real HDR to an HDR screen. The game restarts to change it.",
+		AE_SETTINGS_RESTART },
+	{ AE_SETTINGS_VIDEO, "ADVANCED", "HDR BRIGHTNESS", AE_SETTINGS_SLIDER, "display.hdr_exposure",
+		VALUES(exposure_texts, exposure_values), AE_SETTINGS_WHEN_HDR, "The HDR picture's brightness.", 0 },
+	{ AE_SETTINGS_VIDEO, "ADVANCED", "TONE MAPPING", AE_SETTINGS_SPINNER, "display.hdr_tone_mapping",
+		VALUES(tone_texts, tone_values), AE_SETTINGS_WHEN_HDR,
+		"How HDR's bright light is fitted to your screen.", 0 },
+	{ AE_SETTINGS_VIDEO, "ADVANCED", "SHOW COORDINATES", AE_SETTINGS_TOGGLE, "display.coordinates", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Your position on the map, for map makers and layouts.", 0 },
 	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",
@@ -375,46 +464,102 @@ short ae_settings_row_of(const char *key)
 	return -1;
 }
 
-void ae_settings_set_voices(const char *const *names, short count)
+static short run_list_of(const char *key)
 {
 	short index;
+
+	for (index = 0; key && index < RUN_LISTS; index++)
+	{
+		if (run_keys[index] && !strcmp(run_keys[index], key))
+			return index;
+	}
+	return -1;
+}
+
+int ae_settings_set_values(const char *key, const char *const *texts, const char *const *values, short count)
+{
+	short list = run_list_of(key), index;
 	int at;
 
-	voice_count = 0;
-	for (index = 0; index < count && voice_count < VOICES; index++)
+	if (list < 0)
+		return 0;
+	run_lists[list].count = 0;
+	for (index = 0; index < count && run_lists[list].count < RUN_VALUES; index++)
 	{
-		if (!names[index] || !names[index][0] || strlen(names[index]) >= VOICE_NAME)
+		short place = run_lists[list].count;
+		const char *text = texts ? texts[index] : values[index];
+
+		if (!values[index] || strlen(values[index]) >= RUN_TEXT || !text)
 			continue;
-		snprintf(voice_value[voice_count], sizeof(voice_value[voice_count]), "%s", names[index]);
-		for (at = 0; names[index][at]; at++)
-			voice_text[voice_count][at] = (char)toupper((unsigned char)names[index][at]);
-		voice_text[voice_count][at] = 0;
-		voice_values[voice_count] = voice_value[voice_count];
-		voice_texts[voice_count] = voice_text[voice_count];
-		voice_count++;
+		snprintf(run_lists[list].value[place], RUN_TEXT, "%s", values[index]);
+		if (texts)
+			snprintf(run_lists[list].text[place], RUN_TEXT, "%s", text);
+		else
+		{
+			for (at = 0; text[at] && at < RUN_TEXT - 1; at++)
+				run_lists[list].text[place][at] = (char)toupper((unsigned char)text[at]);
+			run_lists[list].text[place][at] = 0;
+		}
+		run_lists[list].values[place] = run_lists[list].value[place];
+		run_lists[list].texts[place] = run_lists[list].text[place];
+		run_lists[list].count++;
 	}
+	return 1;
+}
+
+void ae_settings_set_voices(const char *const *names, short count)
+{
+	const char *kept[RUN_VALUES];
+	short index, found = 0;
+
+	/* (folder names too long for a value are left out, as before) */
+	for (index = 0; index < count && found < RUN_VALUES; index++)
+	{
+		if (names[index] && names[index][0] && strlen(names[index]) < 48)
+			kept[found++] = names[index];
+	}
+	if (found > 32)
+		found = 32;
+	ae_settings_set_values("game.callout_voice", NULL, kept, found);
 }
 
 short ae_settings_value_count(struct ae_settings_row const *row)
 {
+	short list;
+
 	if (!row)
 		return 0;
 	lists_build();
-	return row->count ? row->count : voice_count;
+	if (row->count)
+		return row->count;
+	list = run_list_of(row->key);
+	return list >= 0 ? run_lists[list].count : 0;
 }
 
 const char *ae_settings_value_text(struct ae_settings_row const *row, short index)
 {
 	if (index < 0 || index >= ae_settings_value_count(row))
 		return "";
-	return row->count ? row->texts[index] : voice_texts[index];
+	return row->count ? row->texts[index] : run_lists[run_list_of(row->key)].texts[index];
 }
 
 const char *ae_settings_value_of(struct ae_settings_row const *row, short index)
 {
 	if (index < 0 || index >= ae_settings_value_count(row))
 		return "";
-	return row->count ? row->values[index] : voice_values[index];
+	return row->count ? row->values[index] : run_lists[run_list_of(row->key)].values[index];
+}
+
+int ae_settings_row_takes_empty(struct ae_settings_row const *row)
+{
+	short index, count = ae_settings_value_count(row);
+
+	for (index = 0; index < count; index++)
+	{
+		if (!ae_settings_value_of(row, index)[0])
+			return 1;
+	}
+	return 0;
 }
 
 /* ---------- what shows */
@@ -443,6 +588,17 @@ int ae_settings_row_shown(struct ae_settings_row const *row, struct ae_settings_
 	case AE_SETTINGS_WHEN_GLOW: return value_is(facts, "display.shield_glow", "true");
 	case AE_SETTINGS_WHEN_PANEL: return value_is(facts, "display.scoreboard_background", "true");
 	case AE_SETTINGS_WHEN_CALLOUTS: return !value_is(facts, "game.callouts", "off");
+	case AE_SETTINGS_WHEN_WINDOWED: return value_is(facts, "display.mode", "windowed");
+	case AE_SETTINGS_WHEN_NOT_WINDOWED: return !value_is(facts, "display.mode", "windowed");
+	case AE_SETTINGS_WHEN_PERFORMANCE: return !value_is(facts, "display.performance", "off");
+	case AE_SETTINGS_WHEN_HDR: return value_is(facts, "display.hdr", "true");
+	case AE_SETTINGS_WHEN_HDR_DISPLAY: return facts && facts->hdr_display;
+	case AE_SETTINGS_WHEN_VOICE: return !value_is(facts, "audio.voice_chat", "off");
+	case AE_SETTINGS_WHEN_PUSH_TO_TALK: return value_is(facts, "audio.voice_chat", "push_to_talk");
+	case AE_SETTINGS_WHEN_MAP_DOWNLOAD: return value_is(facts, "network.map_download", "true");
+	case AE_SETTINGS_WHEN_MAP_SEED: return value_is(facts, "network.map_seed", "true");
+	case AE_SETTINGS_WHEN_DISCORD: return !value_is(facts, "discord.presence", "off");
+	case AE_SETTINGS_WHEN_STREAMER: return value_is(facts, "streamer.enabled", "true");
 	default: return 1;
 	}
 }

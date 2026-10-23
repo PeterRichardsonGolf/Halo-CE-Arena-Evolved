@@ -41,13 +41,21 @@ int platform_folder_list(const char *path, void (*visit)(const char *name, void 
 int platform_folder_exists(const char *path);
 int platform_restart(void);
 int config_write(const char *name, const char *value);
+int config_text(const char *name, char *text, size_t size);
+int config_default(const char *name, char *text, size_t size);
+/* (sdl_platform.c's, as menu_tags.c declares them: VIDEO's sizes and AUDIO's devices; the display taken up) */
+int platform_display_resolutions(long *widths, long *heights, int maximum);
+int platform_window_sizes(long *widths, long *heights, int maximum);
+int platform_audio_devices(int recording, char (*names)[128], int maximum);
+void platform_display_apply(void);
+int platform_video_hdr(float *sdr_white, float *headroom);
 
 enum
 {
 	SETTINGS_HIT = 0x7E00,
 	HIT_TOP_ROWS = SETTINGS_HIT + 1, HIT_TOP_PROMPTS, HIT_LIST, HIT_RAIL, HIT_PROMPTS,
 	PLAYERS = 4,
-	ROWS_MAXIMUM = 96,
+	ROWS_MAXIMUM = 192,
 	VALUE_TEXT = 64,
 	PROMPTS = 7
 };
@@ -125,7 +133,11 @@ static struct
 	char opened[ROWS_MAXIMUM][VALUE_TEXT];
 	struct ae_prompt prompts[PROMPTS];
 	short prompt_count;
-	int dialog;                          /* 0 none, 1 KEEP / UNDO, 2 RESTORE DEFAULTS, 3 already at defaults */
+	int dialog;                          /* 0 none, 1 KEEP / UNDO, 2 RESTORE DEFAULTS, 3 already at defaults,
+	                                        4 a display row's KEEP / UNDO (timed) */
+	short display_row;                   /* (4) the display row changed, and its value before */
+	char display_old[VALUE_TEXT];
+	short then_link;                     /* the KEEP / UNDO asked by a LINK row's A: its row + 1 (0 none) */
 	short dragging_row;                  /* a slider held by the pointer, -1 */
 	int then_switch;                     /* the KEEP / UNDO asked by X: the player switches after it */
 	float logged_width, logged_scale;
@@ -199,6 +211,37 @@ static int profile_read(short player, struct ae_profile_controls *controls)
 	return ae_profile_get_controls(player, controls).ok;
 }
 
+/* (this PC's rows) a setting's text as the rows show and compare it, as the classic menus read it (menu_functions.c's
+setting_text): DISPLAY MODE empty is display.fullscreen's (the default: borderless), WINDOW SIZE empty 640 x 480 times
+display.window_scale; COMMUNITY SERVICES not yet answered ("ask") is OFF */
+static void pc_text(const char *key, int default_value, char *text, int size)
+{
+	if (!strcmp(key, "display.mode") && !text[0])
+	{
+		char fullscreen[16] = "";
+
+		if (!default_value)
+			config_text("display.fullscreen", fullscreen, sizeof(fullscreen));
+		snprintf(text, (size_t)size, "%s", default_value || !strcmp(fullscreen, "true") ? "borderless" : "windowed");
+	}
+	else if (!strcmp(key, "display.window_size") && !text[0])
+	{
+		char scale_text[32] = "";
+		long scale;
+
+		if (default_value)
+			config_default("display.window_scale", scale_text, sizeof(scale_text));
+		else
+			config_text("display.window_scale", scale_text, sizeof(scale_text));
+		scale = atol(scale_text);
+		if (scale < 1)
+			scale = 1;
+		snprintf(text, (size_t)size, "%ldx%ld", 640 * scale, 480 * scale);
+	}
+	else if (!strcmp(key, "network.community_services") && !strcmp(text, "ask"))
+		snprintf(text, (size_t)size, "no");
+}
+
 /* a row's value for the player now, as its setting's text */
 static void row_value(short player, struct ae_settings_row const *row, char *text, int size)
 {
@@ -219,7 +262,8 @@ static void row_value(short player, struct ae_settings_row const *row, char *tex
 		{
 			int on = !strcmp(row->key, "profile.invert_look") ? controls.invert :
 				!strcmp(row->key, "profile.flight_inversion") ? controls.invert_flight :
-				!strcmp(row->key, "profile.autocenter") ? controls.autocenter : controls.vibration;
+				!strcmp(row->key, "profile.autocenter") ? controls.autocenter :
+				!strcmp(row->key, "profile.ingame_help") ? controls.help : controls.vibration;
 
 			snprintf(text, (size_t)size, "%s", on ? "true" : "false");
 			return;
@@ -231,6 +275,7 @@ static void row_value(short player, struct ae_settings_row const *row, char *tex
 		return;
 	if (!ae_player_setting_get(player, row->key, text, size))
 		text[0] = 0;
+	pc_text(row->key, 0, text, size);
 	/* (the mouse's zoom: "same" is the controller's) */
 	if (!strcmp(row->key, "input.mouse_zoom_mode") && (!strcmp(text, "same") || !text[0]))
 		ae_player_setting_get(player, "input.zoom_mode", text, size);
@@ -262,16 +307,29 @@ static int row_set(short player, struct ae_settings_row const *row, const char *
 			controls.invert_flight = on;
 		else if (!strcmp(row->key, "profile.autocenter"))
 			controls.autocenter = on;
+		else if (!strcmp(row->key, "profile.ingame_help"))
+			controls.help = on;
 		else
 			controls.vibration = on;
 		result = ae_profile_set_controls(player, &controls);
 		return result.ok;
 	}
-	if (row->kind == AE_SETTINGS_SUBSCREEN)
+	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 		return 0;
 	/* (a THIS PC row in a player's group: config.toml's, every player's) */
 	if (!ae_player_setting_is_own(row->key))
-		return config_write(row->key, text);
+	{
+		if (!config_write(row->key, text))
+			return 0;
+		/* (taken up at once, as the classic menus' OK does: the window and v-sync; the AE menus' own size, motion and
+		sounds, which they keep read) */
+		if (!strcmp(row->key, "display.mode") || !strcmp(row->key, "display.resolution") ||
+			!strcmp(row->key, "display.window_size") || !strcmp(row->key, "display.vsync"))
+			platform_display_apply();
+		else if (!strncmp(row->key, "display.arena_menus_", 20) || !strcmp(row->key, "audio.arena_menus_volume"))
+			ae_settings_refresh();
+		return 1;
+	}
 	return ae_player_setting_put(player, row->key, text);
 }
 
@@ -282,7 +340,7 @@ static void row_default(short player, struct ae_settings_row const *row, char *t
 	if (!strncmp(row->key, "profile.", 8))
 	{
 		snprintf(text, (size_t)size, "%s", !strcmp(row->key, "profile.look_sensitivity") ? "3" :
-			!strcmp(row->key, "profile.vibration") ? "true" :
+			!strcmp(row->key, "profile.vibration") || !strcmp(row->key, "profile.ingame_help") ? "true" :
 			!strcmp(row->key, "profile.invert_look") || !strcmp(row->key, "profile.flight_inversion") ||
 			!strcmp(row->key, "profile.autocenter") ? "false" : "0");
 		return;
@@ -292,6 +350,7 @@ static void row_default(short player, struct ae_settings_row const *row, char *t
 	(void)player;
 	if (!ae_player_setting_default(row->key, text, size))
 		text[0] = 0;
+	pc_text(row->key, 1, text, size);
 }
 
 /* a value as the row shows and compares it: the mouse's zoom "same" (or no hold time) as the controller's */
@@ -377,6 +436,90 @@ static void facts_of(short player, struct ae_settings_facts *facts)
 	facts->dualsense = ae_ds5_port_active(player) != 0;
 	facts->value = fact_value;
 	facts->context = NULL;
+	{
+		float white, headroom;
+
+		facts->hdr_display = platform_video_hdr(&white, &headroom) != 0;
+	}
+}
+
+/* (phase B) the run-time rows' values: VIDEO's display sizes (NATIVE first) and window sizes, AUDIO's devices
+(SYSTEM DEFAULT first, each by its name as SDL gives it); the value set now is always one of them */
+enum { RUN_VALUES = 64 };
+static void run_list_set(const char *key, const char *const *texts, const char *const *values, short count)
+{
+	static char extra[VALUE_TEXT], extra_text[VALUE_TEXT];
+	static const char *all_texts[RUN_VALUES + 1], *all_values[RUN_VALUES + 1];
+	struct ae_settings_row const *row = ae_settings_row(ae_settings_row_of(key));
+	char now[VALUE_TEXT];
+	short index;
+
+	for (index = 0; index < count && index < RUN_VALUES; index++)
+	{
+		all_texts[index] = texts[index];
+		all_values[index] = values[index];
+	}
+	if (row)
+	{
+		row_value(who.player, row, now, sizeof(now));
+		for (index = 0; index < count && index < RUN_VALUES && strcmp(values[index], now); index++)
+			;
+		if (index == count && now[0] && count < RUN_VALUES)
+		{
+			snprintf(extra, sizeof(extra), "%s", now);
+			upper(now, extra_text, sizeof(extra_text));
+			all_texts[count] = extra_text;
+			all_values[count] = extra;
+			count++;
+		}
+	}
+	ae_settings_set_values(key, all_texts, all_values, count < RUN_VALUES ? count : RUN_VALUES);
+}
+
+static void sizes_read(const char *key, int (*list)(long *, long *, int), int native)
+{
+	static char value[RUN_VALUES][24], text[RUN_VALUES][24];
+	const char *values[RUN_VALUES], *texts[RUN_VALUES];
+	long widths[RUN_VALUES], heights[RUN_VALUES];
+	int added, index;
+	short count = 0;
+
+	if (native)
+	{
+		values[count] = "native";
+		texts[count++] = "NATIVE";
+	}
+	added = list(widths, heights, RUN_VALUES - count);
+	for (index = 0; index < added && count < RUN_VALUES; index++)
+	{
+		snprintf(value[count], sizeof(value[count]), "%ldx%ld", widths[index], heights[index]);
+		snprintf(text[count], sizeof(text[count]), "%ld X %ld", widths[index], heights[index]);
+		values[count] = value[count];
+		texts[count] = text[count];
+		count++;
+	}
+	run_list_set(key, texts, values, count);
+}
+
+static void devices_read(const char *key, int recording)
+{
+	static char names[2][RUN_VALUES][128];
+	const char *values[RUN_VALUES], *texts[RUN_VALUES];
+	int added, index;
+	short count = 0;
+
+	values[count] = "default";
+	texts[count++] = "SYSTEM DEFAULT";
+	added = platform_audio_devices(recording, names[recording ? 1 : 0], RUN_VALUES - 1);
+	for (index = 0; index < added && count < RUN_VALUES; index++)
+	{
+		/* (a name as long as a value can be: longer ones can't be told apart, left out) */
+		if (strlen(names[recording ? 1 : 0][index]) >= VALUE_TEXT)
+			continue;
+		values[count] = texts[count] = names[recording ? 1 : 0][index];
+		count++;
+	}
+	run_list_set(key, texts, values, count);
 }
 
 /* the voices for CALLOUT VOICE: the data root's voices/ folders */
@@ -856,7 +999,7 @@ static int row_changed(short row_number)
 	struct ae_settings_row const *row = ae_settings_row(row_number);
 	char now[VALUE_TEXT];
 
-	if (!row || row->kind == AE_SETTINGS_SUBSCREEN)
+	if (!row || row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 		return 0;
 	row_value(who.player, row, now, sizeof(now));
 	return !values_same(row, now, group.opened[row_number]);
@@ -938,10 +1081,73 @@ static void snapshot(void)
 	}
 }
 
+static void dialog_picked(short choice, void *context);
+static void show_place(short place);
+
+/* the rows whose change asks to keep the display (spec 5): the window's mode and size, the drawing's scale */
+static int display_row(struct ae_settings_row const *row)
+{
+	return !strcmp(row->key, "display.mode") || !strcmp(row->key, "display.resolution") ||
+		!strcmp(row->key, "display.window_size") || !strcmp(row->key, "display.resolution_scaling");
+}
+
+/* the display after a change: "The screen is now BORDERLESS, 3440 X 1440." (or WINDOWED and the window's size; the
+scale's own row its own words); KEEP, or UNDO when the time runs out */
+static void display_ask(struct ae_settings_row const *row, const char *before)
+{
+	static const char *const choices[] = { "KEEP", "UNDO" };
+	static char body[200];
+	struct ae_dialog_spec spec;
+	char mode[VALUE_TEXT], mode_shown[VALUE_TEXT], size[VALUE_TEXT], size_shown[VALUE_TEXT];
+	struct ae_settings_row const *mode_row = ae_settings_row(ae_settings_row_of("display.mode")), *size_row;
+
+	if (group.dialog)
+		return;
+	if (!strcmp(row->key, "display.resolution_scaling"))
+	{
+		row_value(who.player, row, size, sizeof(size));
+		row_shown(who.player, row, size, size_shown, sizeof(size_shown));
+		snprintf(body, sizeof(body), "RESOLUTION SCALING is now %s.", size_shown);
+	}
+	else
+	{
+		row_value(who.player, mode_row, mode, sizeof(mode));
+		row_shown(who.player, mode_row, mode, mode_shown, sizeof(mode_shown));
+		size_row = ae_settings_row(ae_settings_row_of(strcmp(mode, "windowed") ? "display.resolution" :
+			"display.window_size"));
+		row_value(who.player, size_row, size, sizeof(size));
+		row_shown(who.player, size_row, size, size_shown, sizeof(size_shown));
+		snprintf(body, sizeof(body), "The screen is now %s, %s.", mode_shown, size_shown);
+	}
+	group.display_row = (short)(row - ae_settings_row(0));
+	snprintf(group.display_old, sizeof(group.display_old), "%s", before);
+	memset(&spec, 0, sizeof(spec));
+	spec.kind = AE_DIALOG_TIMED_REVERT;
+	spec.title = "Keep this display?";
+	spec.body = body;
+	spec.choices[0] = choices[0];
+	spec.choices[1] = choices[1];
+	spec.choice_count = 2;
+	spec.safe_choice = 0;
+	spec.cancel_choice = 1;
+	spec.timeout_choice = 1;
+	spec.has_cancel = 1;
+	spec.density = group.density;
+	spec.bounds = group.frame.rect;
+	spec.picked = dialog_picked;
+	if (ae_dialog_open(&spec, AE_OWNER_ANY))
+	{
+		group.dialog = 4;
+		platform_log("ae settings: display asked (%s)", body);
+	}
+}
+
 static void value_set(struct ae_settings_row const *row, short index)
 {
 	const char *value = ae_settings_value_of(row, index);
+	char before[VALUE_TEXT];
 
+	row_value(who.player, row, before, sizeof(before));
 	if (!row_set(who.player, row, value))
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
@@ -951,6 +1157,8 @@ static void value_set(struct ae_settings_row const *row, short index)
 	if (row->flags & AE_SETTINGS_RESTART)
 		who.restart_pending = 1;
 	platform_log("ae settings: set %s %s", row->label, ae_settings_value_text(row, index));
+	if (display_row(row) && !values_same(row, before, value))
+		display_ask(row, before);
 }
 
 static void value_step(struct ae_settings_row const *row, short direction)
@@ -958,7 +1166,7 @@ static void value_step(struct ae_settings_row const *row, short direction)
 	char now[VALUE_TEXT], shown[VALUE_TEXT];
 	short current, next;
 
-	if (row->kind == AE_SETTINGS_SUBSCREEN)
+	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
@@ -993,12 +1201,54 @@ static void picked(short index, void *context)
 	refresh();
 }
 
+static int keep_ask(void);
+
+/* (a LINK row's A) the linked row's own screen, the focus on it: this screen closed first (KEEP / UNDO asked when it
+has changes) */
+static void link_open(short target, short player)
+{
+	struct ae_settings_row const *to = ae_settings_row(target);
+	short place;
+
+	ae_ui_pop();
+	if (!to || !ae_screen_settings_open_group(to->group, player))
+		return;
+	place = place_of_row(target);
+	if (place >= 0)
+		show_place(place);
+	refresh();
+	platform_log("ae settings: link to %s %s", ae_settings_group(to->group)->name, to->label);
+}
+
+static void link_go(struct ae_settings_row const *row)
+{
+	short target = ae_settings_row_of(row->key);
+
+	if (target < 0 || ae_settings_row(target) == row)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+	if (keep_ask())
+	{
+		group.then_link = (short)(target + 1);
+		return;
+	}
+	link_open(target, who.player);
+}
+
 static void picker_open(struct ae_settings_row const *row)
 {
 	struct ae_picker_spec spec;
 	char now[VALUE_TEXT];
 
-	if (row->kind == AE_SETTINGS_SUBSCREEN || !ae_settings_value_count(row))
+	if (row->kind == AE_SETTINGS_LINK)
+	{
+		link_go(row);
+		return;
+	}
+	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY || !ae_settings_value_count(row))
 	{
 		/* (BACK PADDLES and KEY BINDINGS open their own screens: not in this pass) */
 		ae_sound_request(AE_SOUND_FAILURE, 0);
@@ -1010,10 +1260,10 @@ static void picker_open(struct ae_settings_row const *row)
 	spec.values = row->count ? row->texts : NULL;
 	if (!spec.values)
 	{
-		static const char *voices[32];
+		static const char *voices[RUN_VALUES];
 		short index;
 
-		for (index = 0; index < ae_settings_value_count(row) && index < 32; index++)
+		for (index = 0; index < ae_settings_value_count(row) && index < RUN_VALUES; index++)
 			voices[index] = ae_settings_value_text(row, index);
 		spec.values = voices;
 	}
@@ -1077,7 +1327,7 @@ static short rows_put_back(int defaults)
 		if (ae_settings_entry_is_header(entry))
 			continue;
 		row = ae_settings_row(entry);
-		if (row->kind == AE_SETTINGS_SUBSCREEN)
+		if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 			continue;
 		/* (RESTORE DEFAULTS: the player's own rows only, this PC's stay) */
 		if (defaults && (row->flags & AE_SETTINGS_THIS_PC))
@@ -1088,7 +1338,7 @@ static short rows_put_back(int defaults)
 		else
 			snprintf(wanted, sizeof(wanted), "%s", group.opened[entry]);
 		row_resolved(who.player, row, wanted, resolved, sizeof(resolved));
-		if (!wanted[0] || values_same(row, now, resolved))
+		if ((!wanted[0] && !ae_settings_row_takes_empty(row)) || values_same(row, now, resolved))
 			continue;
 		/* (the exact text, as opened or as the default: never snapped to a step) */
 		if (row_set(who.player, row, wanted))
@@ -1111,14 +1361,14 @@ static short defaults_changes(void)
 		if (ae_settings_entry_is_header(entry))
 			continue;
 		row = ae_settings_row(entry);
-		if (row->kind == AE_SETTINGS_SUBSCREEN)
+		if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 			continue;
 		if (row->flags & AE_SETTINGS_THIS_PC)
 			continue;
 		row_value(who.player, row, now, sizeof(now));
 		row_default(who.player, row, wanted, sizeof(wanted));
 		row_resolved(who.player, row, wanted, resolved, sizeof(resolved));
-		if (wanted[0] && !values_same(row, now, resolved))
+		if ((wanted[0] || ae_settings_row_takes_empty(row)) && !values_same(row, now, resolved))
 			found++;
 	}
 	return found;
@@ -1134,10 +1384,26 @@ static void group_player_switch(void);
 static void dialog_picked(short choice, void *context)
 {
 	int dialog = group.dialog, then_switch = group.then_switch;
+	short then_link = group.then_link;
 
 	(void)context;
 	group.dialog = 0;
 	group.then_switch = 0;
+	group.then_link = 0;
+	if (dialog == 4)
+	{
+		/* KEEP (0), UNDO (1: also the time running out) */
+		struct ae_settings_row const *row = ae_settings_row(group.display_row);
+
+		if (choice == 1 && row && row_set(who.player, row, group.display_old))
+			platform_log("ae settings: display undo (%s %s)", row->label, group.display_old);
+		else
+			platform_log("ae settings: display keep");
+		group.display_row = -1;
+		group.tick_row = -1;
+		refresh();
+		return;
+	}
 	if (dialog == 1)
 	{
 		/* KEEP CHANGES (0), UNDO CHANGES (1), KEEP EDITING (2); asked by X: then the next player, else back */
@@ -1157,6 +1423,8 @@ static void dialog_picked(short choice, void *context)
 		{
 			if (then_switch)
 				group_player_switch();
+			else if (then_link)
+				link_open((short)(then_link - 1), who.player);
 			else
 				ae_ui_pop();
 		}
@@ -1261,6 +1529,10 @@ static void list_item(void *context, short item, float x, float y, float width, 
 	}
 	else if (row->kind == AE_SETTINGS_SUBSCREEN)
 		widget.flags |= AE_ROW_SUBSCREEN;
+	else if (row->kind == AE_SETTINGS_LINK)
+		widget.flags |= AE_ROW_LINK;
+	else if (row->kind == AE_SETTINGS_KEY)
+		widget.flags |= AE_ROW_KEY;
 	if (row->flags & AE_SETTINGS_RESTART)
 		widget.badges[0] = "RESTART";
 	if ((row->flags & AE_SETTINGS_THIS_PC) && who.count > 1)
@@ -1360,9 +1632,24 @@ static void group_help(float x, float y, float width)
 	float body = gu(group.density.metrics->body), line = gu(group.density.metrics->body_line);
 	int count, index;
 
+	const char *help;
+	char named[240], now[VALUE_TEXT];
+
 	if (!row)
 		return;
-	count = ae_wrap_text(AE_FONT_BODY, body, row->help, width, lines, HELP_LINES);
+	help = row->help;
+	/* (a device's whole name, which its row may cut: "Where the game's sound plays: <name>. A lists every output.") */
+	if (!strcmp(row->key, "audio.output_device") || !strcmp(row->key, "audio.input_device"))
+	{
+		row_value(who.player, row, now, sizeof(now));
+		if (now[0] && strcmp(now, "default"))
+		{
+			snprintf(named, sizeof(named), !strcmp(row->key, "audio.output_device") ?
+				"Where the game's sound plays: %s. A lists every output." : "The microphone voice chat uses: %s.", now);
+			help = named;
+		}
+	}
+	count = ae_wrap_text(AE_FONT_BODY, body, help, width, lines, HELP_LINES);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }
@@ -1609,6 +1896,17 @@ int ae_screen_settings_open_group(short group_number, short local_player)
 	players_read();
 	if (group_number == AE_SETTINGS_HUD)
 		voices_read();
+	else if (group_number == AE_SETTINGS_VIDEO)
+	{
+		sizes_read("display.resolution", platform_display_resolutions, 1);
+		sizes_read("display.window_size", platform_window_sizes, 0);
+	}
+	else if (group_number == AE_SETTINGS_AUDIO)
+	{
+		devices_read("audio.output_device", 0);
+		devices_read("audio.input_device", 1);
+	}
+	group.display_row = -1;
 	snapshot();
 	{
 		struct ae_settings_facts facts;

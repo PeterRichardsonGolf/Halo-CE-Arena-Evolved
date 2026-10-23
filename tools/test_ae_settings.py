@@ -7,7 +7,10 @@ the ae_test harness (tools/ae_test), in tools/test_ae_game_options.py's pattern 
 - Y RESTORE DEFAULTS: CANCEL first, then RESTORE DEFAULTS changes the shown rows back;
 - the picker (A), LB / RB sections;
 - two players on this PC: X switches player, a change is the second player's own;
-- every profile gets its ae.toml seeded on first use.
+- every profile gets its ae.toml seeded on first use;
+- (phase B) VIDEO, AUDIO, ONLINE, ACCESSIBILITY and CHAT AND STREAMING (this PC's: config.toml, beside each game's own
+  binary in the harness): each opened at 100 % and 130 %, a row changed, KEEP / UNDO, RESTORE DEFAULTS; a display row's
+  timed KEEP / UNDO; ACCESSIBILITY's LANGUAGE (a RESTART row) asking to restart as SETTINGS closes.
 
 Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s:
 
@@ -26,7 +29,8 @@ menus = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(menus)
 
 EXIT_AFTER = 30
-CONTROLS, VIEW, HUD = 0, 2, 4
+CONTROLS, VIDEO, VIEW, AUDIO, HUD, CHAT, ONLINE, ACCESSIBILITY = 0, 1, 2, 3, 4, 5, 6, 7
+GROUP_NAMES = ("CONTROLS", "VIDEO", "VIEW", "AUDIO", "HUD", "CHAT AND STREAMING", "ONLINE", "ACCESSIBILITY", "SYSTEM")
 # name, screen (34 top, 35 a group), group, players, window, UI SCALE, the presses (after the lead-in: one a second)
 CASES = (
     ("top", 34, 0, 1, "1920x1080", 100, ()),
@@ -65,6 +69,14 @@ CASES = (
     ("restart-mouse", 34, 0, 1, "1920x1080", 100, ("down",) * 8 + ("a", "right", "click:53:452", "wait",
                                                                     "click:218:234", "wait", "wait", "click:40:452",
                                                                     "wait", "wait")),
+    # (phase B) VIDEO: RB twice to PERFORMANCE, one right (FPS: POSITION shows), B: KEEP / UNDO, UNDO (down, A)
+    ("video", 35, VIDEO, 1, "1920x1080", 100, ()),
+    ("video-130", 35, VIDEO, 1, "1920x1080", 130, ()),
+    ("video-changed", 35, VIDEO, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right")),
+    ("video-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
+    # (DISPLAY MODE one left (the hidden window is WINDOWED, the last value): the timed KEEP / UNDO, shown; B undoes it)
+    ("video-display", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait")),
+    ("video-display-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait", "pad:b", "wait")),
 )
 
 
@@ -117,7 +129,7 @@ def test_screens_open(runs):
             assert lines(text, "ae settings: open player "), name
         else:
             opened = lines(text, "ae settings: group ")
-            assert opened and opened[0].startswith(("CONTROLS", "VIDEO", "VIEW", "AUDIO", "HUD")[group]), (name, opened)
+            assert opened and opened[0].startswith(GROUP_NAMES[group]), (name, opened)
 
 
 def test_profiles_seeded(runs):
@@ -177,6 +189,16 @@ def test_the_second_players_own(runs):
     # (X with a change asks first: KEEP, then the next player)
     said = lines(runs["seat-keep"][1], "ae settings: ")
     assert "keep" in said and "player 2" in said and said.index("keep") < said.index("player 2"), said
+
+
+def test_video(runs):
+    said = lines(runs["video-changed"][1], "ae settings: ")
+    assert "set PERFORMANCE FPS" in said, said
+    assert lines(runs["video-undo"][1], "ae settings: undo ") == ["(1 rows)"]
+    # (a display row: asked with its countdown; B is UNDO, the old mode back)
+    assert lines(runs["video-display"][1], "ae settings: display asked ")
+    said = lines(runs["video-display-undo"][1], "ae settings: ")
+    assert any(line.startswith("display undo (DISPLAY MODE ") for line in said), said
 
 
 if __name__ == "__main__":
