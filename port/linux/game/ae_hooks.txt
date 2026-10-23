@@ -1294,3 +1294,7 @@ source/game/game_engine.c	ae_vehicle_death_update(); /* AE hook */
 source/game/game_engine.c	long respawn_ticks = ae_vehicle_death_respawn_ticks(game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND); /* AE hook */
 source/game/game_engine.c	waiting = dx * dx + dy * dy + dz * dz > VEHICLE_HOME_AWAY_SQUARED && game_engine_vehicle_empty(vehicle) && ae_vehicle_death_intact_returns(); /* AE hook */
 source/game/game_engine.c	ae_vehicle_death_log_rules(flags); /* AE hook */
+# any pack on can be a start weapon (0.3.9; ae_weapon_slots.h): a later pack's two flag bits a loadout slot from bit 12,
+# and the network test's primary3-5 / secondary3-5
+source/game/game_engine.h	_game_variant_pack_start_later_first_bit = 12, /* AE hook */
+port/linux/game/network_test.c	#include "ae_weapon_slots.h" /* AE hook */
