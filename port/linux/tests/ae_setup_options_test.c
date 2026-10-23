@@ -94,6 +94,15 @@ int main(void)
 	CHECK(has(entries, count, AE_SO_TEAM_PLAY) && !has(entries, count, AE_SO_FRIENDLY_FIRE));
 	CHECK(!has(entries, count, AE_SO_VEHICLE_SET_BLUE) && !has(entries, count, AE_SO_VEHICLE_COUNT_RED));
 	CHECK(!strcmp(ae_setup_label(&access, AE_SO_VEHICLE_SET_RED), "VEHICLE SET"));
+	/* (VEHICLES DESTRUCTIBLE, an AE rule, right after VEHICLE RESPAWN TIME: ON, OFF) */
+	{
+		int at = index_of(entries, count, AE_SO_VEHICLE_RESPAWN);
+
+		CHECK(at >= 0 && entries[at + 1] == AE_SO_VEHICLES_DESTRUCTIBLE);
+		CHECK(ae_setup_row(AE_SO_VEHICLES_DESTRUCTIBLE)->ae && ae_setup_row(AE_SO_VEHICLES_DESTRUCTIBLE)->group == AE_SG_VEHICLES);
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_VEHICLES_DESTRUCTIBLE, 0), "ON") &&
+			!strcmp(ae_setup_value_text(AE_SO_VEHICLES_DESTRUCTIBLE, 1), "OFF"));
+	}
 	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "SLAYER"));
 	CHECK(has(entries, count, AE_SO_WEAPON_SET) && !has(entries, count, AE_SO_PRIMARY));
 	/* groups in Halo 2's order, each header once, never two headers in a row, never one last */

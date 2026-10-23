@@ -215,6 +215,8 @@ UNITS = {
     "ae_melee_unzoom_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (MOUSE AIM ASSIST: the variant's flags bit after MELEE UNZOOMS', the host's policy for message 90)
     "ae_mouse_aim_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (VEHICLES DESTRUCTIBLE: the variant's flags bit after MOUSE AIM ASSIST's, the Halo 2 ratios, the hold)
+    "ae_vehicle_death_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_sound_test.c": ([UI / "ae_sound.c"], [], []),
     # (editing a field's text: under the sanitizers, as it takes pasted text)
     "ae_text_edit_test.c": ([UI / "ae_text_edit.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),

@@ -1276,3 +1276,21 @@ port/linux/game/menu_functions.c	ae_player_settings_menu_player(widget->local_pl
 # (0.3.7 AE SETTINGS) PASSENGER THIRD PERSON is the player's own: the camera (director, tick) and the reticle (render) read the same player's
 port/linux/game/passenger_camera.c	int ae_config_player_boolean(int player, const char *name); /* AE hook */
 port/linux/game/passenger_camera.c	!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */
+# VEHICLES DESTRUCTIBLE (0.3.9; ae_vehicle_death.c, the rule ae_vehicle_death_rules.h; seed revision 23: ON in every AE
+# gametype with vehicles, NHE and stock OFF; owner 10-22): bit 11 of the universal variant's flags. Host side (only the
+# host deals damage; a client takes the dead bit): explosives only, the table's health for a stock multiplayer
+# vehicle's tag (its 0 multipliers as 1, the banshee's "only hurt while occupied" off for it), no death while a living
+# rider sits in it (Halo 2), an explosion from the map's tags, the wreck cleared after 10 s, a destroyed one respawned
+# after 30 s where the gametype's respawn is never (an intact one stays)
+source/game/game_engine.h	_game_variant_vehicles_destructible_bit = 11, /* AE hook */
+source/objects/damage.c	#include "ae_vehicle_death.h" /* AE hook */
+source/objects/damage.c	real damage_amount = ae_vehicle_death_body_multiplier(object_index, TEST_FLAG(damage_definition->flags, _damage_detonates_explosives_bit), damage_material->body_damage_multiplier)*total_damage; /* AE hook */
+source/objects/damage.c	object->object.type == _object_type_vehicle && ae_vehicle_death_occupied_only(object_index) && /* AE hook */
+source/objects/damage.c	else if (body_vitality < 0.f && !ae_vehicle_death_held(object_index, damage)) /* AE hook */
+source/objects/damage.c	ae_vehicle_death_depleted(object_index, damage); /* AE hook */
+source/objects/damage.c	damage_effect_new_on_object(ae_vehicle_death_effect(object_index), object_index); /* AE hook */
+source/game/game_engine.c	#include "ae_vehicle_death.h" /* AE hook */
+source/game/game_engine.c	ae_vehicle_death_update(); /* AE hook */
+source/game/game_engine.c	long respawn_ticks = ae_vehicle_death_respawn_ticks(game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND); /* AE hook */
+source/game/game_engine.c	waiting = dx * dx + dy * dy + dz * dz > VEHICLE_HOME_AWAY_SQUARED && game_engine_vehicle_empty(vehicle) && ae_vehicle_death_intact_returns(); /* AE hook */
+source/game/game_engine.c	ae_vehicle_death_log_rules(flags); /* AE hook */

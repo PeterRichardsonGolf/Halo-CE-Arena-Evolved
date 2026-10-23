@@ -115,7 +115,8 @@ static struct ae_audit_column const ae_audit_columns[] =
 	FLAG_BIT("melee_unzoom", _game_variant_melee_unzoom_bit),
 	/* (bit 10: MOUSE AIM ASSIST, 1 OFF (blocked), 0 ALLOWED: ae_mouse_aim_rules.h, seed revision 22) */
 	FLAG_BIT("mouse_aim_assist_off", _game_variant_block_mouse_aim_assist_bit),
-	FLAG_BIT("bit11", 11),
+	/* (bit 11: VEHICLES DESTRUCTIBLE, 1 ON, 0 OFF: ae_vehicle_death_rules.h, seed revision 23) */
+	FLAG_BIT("vehicles_destructible", _game_variant_vehicles_destructible_bit),
 	FLAG_BIT("bit12", 12),
 	FLAG_BIT("bit13", 13),
 	FLAG_BIT("bit14", 14),

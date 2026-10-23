@@ -1169,6 +1169,16 @@ refuses a client's own moves and its hits made before the countdown ends,
 and keeps the client's player at its spawn. Refer to "PRE-GAME COUNTDOWN"
 in `NETCODE.md`.
 
+VEHICLES DESTRUCTIBLE (GAME OPTIONS > VEHICLES; bit 11 of the gametype's
+flags, `game/ae_vehicle_death.c`) is the host's: only the host deals
+damage, so it alone decides that a vehicle takes explosives' damage, holds
+at 0 while someone rides in it, dies, and is cleared 10 seconds later. A
+client's copy dies by the host's object state (its dead bit), so OpenCE
+and ChupathingyCE players see the vehicle die and the wreck go, without the
+explosion that an Arena Evolved client plays. The stock multiplayer
+vehicles get their health from a table by their tag (Halo 2's ratios:
+warthog 2 rockets, ghost, banshee and gun turret 1, scorpion 2-3).
+
 Linux, Windows and Android machines can play in the same game. Each machine
 simulates the players from the same inputs, and the host does not correct
 all of the game. Thus each machine must calculate the same floating-point

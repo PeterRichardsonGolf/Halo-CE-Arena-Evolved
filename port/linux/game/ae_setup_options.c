@@ -164,6 +164,8 @@ static const char *const vehicle_respawn_values[] = { "NEVER", "30 SECONDS", "60
 	"3 MINUTES", "5 MINUTES" };
 static const char *const vehicle_respawn_help[] = { "How long an idle vehicle waits to respawn; NEVER: vehicles "
 	"do not respawn." };
+static const char *const vehicles_destructible_help[] = { "Explosives destroy vehicles, as in Halo 2; one cannot "
+	"die while someone rides in it.", "As Halo CE: vehicles never die." };
 static const char *const vehicle_set_values[] = { "DEFAULT", "NONE", "WARTHOGS", "GHOSTS", "SCORPIONS",
 	"ROCKET WARTHOGS", "BANSHEES", "GUN TURRETS", "PC", "CUSTOM" };
 static const char *const vehicle_set_help[] = { "The map's default vehicles.", "No vehicles; you travel on foot.",
@@ -349,6 +351,8 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 
 	[AE_SO_VEHICLE_RESPAWN] = ROW("VEHICLE RESPAWN TIME", AE_SG_VEHICLES, 0, 0, 0, vehicle_respawn_values,
 		vehicle_respawn_help),
+	[AE_SO_VEHICLES_DESTRUCTIBLE] = ROW("VEHICLES DESTRUCTIBLE", AE_SG_VEHICLES, 0, 0, 1, on_off,
+		vehicles_destructible_help),
 	[AE_SO_VEHICLE_SET_RED] = ROW("RED VEHICLES", AE_SG_VEHICLES, 0, 0, 0, vehicle_set_values, vehicle_set_help),
 	[AE_SO_VEHICLE_COUNT_RED + 0] = VEHICLE_COUNT("WARTHOGS", 0),
 	[AE_SO_VEHICLE_COUNT_RED + 1] = VEHICLE_COUNT("GHOSTS", 0),

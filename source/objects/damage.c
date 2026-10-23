@@ -136,6 +136,7 @@ symbols in this file:
 #include "ae_shield_fx.h" /* AE hook */
 #include "ae_bots.h" /* AE hook */
 #include "ae_reach_health_rules.h" /* AE hook */
+#include "ae_vehicle_death.h" /* AE hook */
 static short ae_blood; /* AE hook */
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
@@ -671,6 +672,7 @@ void object_deplete_body(
 		{
 			long unit_index;
 
+			damage_effect_new_on_object(ae_vehicle_death_effect(object_index), object_index); /* AE hook */
 			unit_index = object->object.first_child_object_index;
 			while (unit_index != NONE)
 			{
@@ -1287,14 +1289,14 @@ static void object_damage_body(
 	real total_damage)
 {
 	struct object_datum *object = object_get(object_index);
-	real damage_amount = damage_material->body_damage_multiplier*total_damage;
+	real damage_amount = ae_vehicle_death_body_multiplier(object_index, TEST_FLAG(damage_definition->flags, _damage_detonates_explosives_bit), damage_material->body_damage_multiplier)*total_damage; /* AE hook */
 	boolean ignore_difficulty = FALSE;
 	real maximum_body_vitality;
 	real inverse_maximum_body_vitality;
 	real actual_damage;
 
 	if (TEST_FLAG(damage_resistance->flags, _damage_resistance_only_hurt_while_occupied_bit) &&
-		object->object.type == _object_type_vehicle &&
+		object->object.type == _object_type_vehicle && ae_vehicle_death_occupied_only(object_index) && /* AE hook */
 		unit_get(object_index)->unit.driver_object_index == NONE)
 	{
 		damage_amount = 0.f;
@@ -1469,7 +1471,7 @@ static void object_damage_body(
 				FLAG(_object_being_damaged_body_depleted_bit) |
 				FLAG(_object_being_damaged_body_destroyed_bit);
 		}
-		else if (body_vitality < 0.f)
+		else if (body_vitality < 0.f && !ae_vehicle_death_held(object_index, damage)) /* AE hook */
 		{
 			if (!TEST_FLAG(object->object.damage_flags, _object_dead_bit))
 			{
@@ -1491,6 +1493,7 @@ static void object_damage_body(
 				}
 
 				object_deplete_body(object_index);
+				ae_vehicle_death_depleted(object_index, damage); /* AE hook */
 				SET_FLAG(*being_damaged_flags, _object_being_damaged_body_depleted_bit, TRUE);
 			}
 		}

@@ -44,6 +44,9 @@ CASES = (
     ("ctf-mode", "AE CTF", "1920x1080", 100, ("pad:rb",) * 5),
     ("ball-mode", "AE FFA BALL", "1920x1080", 100, ("pad:rb",) * 5),
     ("slay-4x3", "AE TEAM SLY", "1440x1080", 100, ("pad:rb",)),
+    # (VEHICLES, down to VEHICLES DESTRUCTIBLE, the row after VEHICLE RESPAWN TIME: its help)
+    ("vehicles", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) * 4 + ("pad:down",)),
+    ("vehicles-130", "AE TEAM SLY", "1920x1080", 130, ("pad:rb",) * 4 + ("pad:down",)),
     # (EQUIPMENT of a team game, three groups on: the top of the group, then its foot with every new row)
     ("equip-top", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) * 3),
     ("equip-foot", "AE TEAM SLY", "1920x1080", 100, ("pad:rb",) * 3 + ("pad:down",) * 17),
@@ -189,6 +192,14 @@ def test_leaving_with_changes_asks(runs):
     _, text, _ = runs["slay-leave"]
     assert lines(text, "ae game options: leave: asked ") == ["(save over: no)"], lines(text, "ae game options: leave")
     assert not lines(text, "ae game options: closed ")
+
+
+def test_vehicles_destructible_row(runs):
+    # (VEHICLES' second row, after VEHICLE RESPAWN TIME, at 100 % and 130 %)
+    for name in ("vehicles", "vehicles-130"):
+        _, text, _ = runs[name]
+        assert "VEHICLES" in lines(text, "ae game options: group "), name
+        assert "VEHICLES DESTRUCTIBLE" in lines(text, "ae game options: focus "), (name, lines(text, "ae game options: focus "))
 
 
 def test_the_mode_groups(runs):

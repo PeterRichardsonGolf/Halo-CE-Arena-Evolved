@@ -625,6 +625,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_key_prompts.h" /* AE hook */
 #include "ae_weapon_slots.h" /* AE hook */
 #include "ae_pack_spawns.h" /* AE hook */
+#include "ae_vehicle_death.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -5414,7 +5415,7 @@ static long game_engine_vehicle_home_current(
 static void game_engine_update_vehicle_respawn(
 	void)
 {
-	long respawn_ticks = game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND;
+	long respawn_ticks = ae_vehicle_death_respawn_ticks(game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND); /* AE hook */
 	long now = game_time_get();
 	short index;
 
@@ -5453,7 +5454,7 @@ static void game_engine_update_vehicle_respawn(
 			real dy = vehicle->object.position.y - game_engine_vehicle_homes[index].position.y;
 			real dz = vehicle->object.position.z - game_engine_vehicle_homes[index].position.z;
 
-			waiting = dx * dx + dy * dy + dz * dz > VEHICLE_HOME_AWAY_SQUARED && game_engine_vehicle_empty(vehicle);
+			waiting = dx * dx + dy * dy + dz * dz > VEHICLE_HOME_AWAY_SQUARED && game_engine_vehicle_empty(vehicle) && ae_vehicle_death_intact_returns(); /* AE hook */
 		}
 		if (!waiting)
 			game_engine_vehicle_homes[index].idle_since = NONE;
@@ -5625,6 +5626,7 @@ void game_engine_update(
 		game_engine_update_weapons();
 		game_engine_update_item_spawn();
 		game_engine_update_vehicle_respawn();
+		ae_vehicle_death_update(); /* AE hook */
 
 		{
 			struct data_iterator player_iterator;
@@ -9503,6 +9505,7 @@ void game_engine_log_rules(
 		ae_controller_crouch_log_rules(flags); /* AE hook */
 		ae_melee_unzoom_log_rules(flags); /* AE hook */
 		ae_mouse_aim_assist_log_rules(flags); /* AE hook */
+		ae_vehicle_death_log_rules(flags); /* AE hook */
 		/* port: weapon pack: the fallback said on every machine (decision 10): a gametype that uses the pack on
 		a map that did not get it (refused there, a Custom Edition map, no pack here) plays the stock weapons
 		(the loadout's assault rifle or pistol; BATTLE RIFLE ON MAP replaces nothing), and the console says why */
