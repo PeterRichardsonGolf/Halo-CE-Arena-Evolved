@@ -1289,5 +1289,381 @@
    "AE C2V2 OB",
    "AE C2V2 TS"
   ]
+ },
+ {
+  "revision": 23,
+  "why": "VEHICLES DESTRUCTIBLE ON in every AE gametype with vehicles (vehicle set not NONE): Halo 2's way, explosives only, no death while occupied",
+  "decided": "owner, 2026-10-22",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE BTB SLY",
+   "AE BTB CTF",
+   "AE BTB KING",
+   "AE BTB BALL",
+   "AE BTB HVY",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR JUGG",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR BTB S",
+   "AE BR BTB C",
+   "AE BR BTB K",
+   "AE BR BTB B",
+   "AE BR BTB H",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.flags.vehicles_destructible",
+    "1"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB HVY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB H": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "de0430e4b099e93e1ebc6c5b4a66ff373fbc41a1",
+   "AE TEAM SLY": "a4945a40e235054cdb60ce66599b5200e1202559",
+   "AE CTF": "63f372d8e49932c19b218f9fd8471525355a3d41",
+   "AE KING": "73cd136639528fbeb690d87f35231464b330e90a",
+   "AE 2V2 SLY": "7f609722501858b4ac149a07220718f4456fa9bb",
+   "AE 2V2 CTF": "76fce9fd59706d1b0a734661db88d79fba3ee093",
+   "AE 2V2 KING": "587f805882f18fae7b8b7609ad6464a7b2bd8e40",
+   "AE PRACTICE": "f511be7c89a387448a01994006affc2b24c6ed8a",
+   "AE SNIPERS": "6053f3874e4b10fb36699a801f73143566c00723",
+   "AE SHOTSNIP": "a4983f7585f8654cb4e272aa96ff8d659906c511",
+   "AE SWAT": "30d184b61e40d3ba9390447aa8adbe726ca9bedb",
+   "AE ROCKETS": "73eb54e07cfe30f96a7f37f94e1ade335446f457",
+   "AE SHOTGUNS": "c617708dd9be34b2951c04ca393d69d19101b612",
+   "AE HEAVIES": "944e12d70cff4f99ec6e83ec8e6ab168f022d22b",
+   "AE BTB SLY": "a58a79132767857590a73f8026c027e94a0c847c",
+   "AE BTB CTF": "de63b999fcb582d0c2e140f28b43389771b66325",
+   "AE BTB KING": "1c0a838d82c34c69e5b65fb267cfd9aa0710b701",
+   "AE BTB BALL": "aff7390121986def6e69935c5fe2323e08e3d143",
+   "AE BTB HVY": "8fbd40ce92e3306ce96fcab19112787e379a1791",
+   "AE ELIM": "3b624f82187c38f9e4d4f8449a89dc115202810c",
+   "AE PHANTOMS": "ebd9d22a4f406d1b869d89ce8cc76f56deeb1c48",
+   "AE ENDURE": "867f68f4fc88cf3aba551ba493757d67cf56cc0d",
+   "AE FFA ROCK": "c656d6fd3b5d7efac72cc0890a180aedbe100cb2",
+   "AE FFA SNPR": "67325072f76c089e4eca70156ca5eb0ccd984789",
+   "AE JUGGER": "07c0efafa2daf5fbbf04d322544465e2dad2763a",
+   "AE STALKER": "0c313e475cb4c1b6da621bff0d78e3fd4f1077d7",
+   "AE FFA KING": "705cd1bf16f190b7b6ac5402402df769513a936b",
+   "AE CRAZYKNG": "bf37bc29b125c6d5b6c70e5dd8c2c9b006333a37",
+   "AE RACE": "142a5b2baeb6ec2d2801993ad0e26883d39c89d1",
+   "AE RALLY": "8e0bdb4fdc35f4a2f43cbfe2e320bc41db4c1198",
+   "AE TRAINING": "c6822e450a2d066e86af80b79007c3a866d129a4",
+   "AE BR FFA": "4cdceb05679a77b3bbc91e26306b6c700e365414",
+   "AE BR ELIM": "cb3c9e8464748650ccc112ee3be54ade4500f041",
+   "AE BR PHANT": "7d42a1220d91a5352a70e81876bcfa01846a302a",
+   "AE BR ENDUR": "1f5f76fb85dee3fab86b305c8ef83fa34f66c11c",
+   "AE BR JUGG": "25e66f3cbf11e459c8122304c1df662ab70f67cb",
+   "AE BR STALK": "145c685426078e953bd9e8882c0d30aa2a6ebc2e",
+   "AE BR FKING": "901fe461b96040a5f4a35e07f5ed1421638a6971",
+   "AE BR CKING": "c9fe8d76d3d3eb6cba01c64f49c7ba7f3b78b3c8",
+   "AE BR PRAC": "8c63b3971fb6794d7bdcb73d2f56b79259aecbef",
+   "AE BR TS": "f14ea297be59a9dacdb115f6cc64ae1fe6df8458",
+   "AE BR CTF": "2dfaeb46d0b1a137f085acaba824cf1d385590a1",
+   "AE BR KING": "d53223a6baca0f8d051259f18bfa0f1f1d032002",
+   "AE BR 2V2 S": "0565873144b43cd04bea86c1ded5a0ccf6604f42",
+   "AE BR 2V2 C": "182a03ad09a4a8db5afd75bd8b70914d75a011d9",
+   "AE BR 2V2 K": "df3068d59c19c0ac24d44c68433b6c5b0679f97e",
+   "AE BR BTB S": "39de516acf7081af11e3a6f194b0103af4f1de20",
+   "AE BR BTB C": "08f5afa0e68c45dbcf1449b57e8374c937e779f8",
+   "AE BR BTB K": "10bb0c58145dbfaeb96468690af43f525c8670b3",
+   "AE BR BTB B": "53ca79c4b50924833d1359a0b86d5704db771d1b",
+   "AE BR BTB H": "e9a9a86609baba5d7fa184f8d04982c06e77a7d9",
+   "AE OCT BR": "4d290642ebcfcd54b2c95e79efa133efd58cf185",
+   "AE OCT BRSN": "31712e1ebce2014994d923f7ed2f062ca9f11f67",
+   "AE OCT MAG": "5154b528007b8b3ecd962cc486e020c5c1321a61",
+   "AE OCT MGSN": "adcb641139383fd9fdeee317ba503efbe6148341",
+   "AE OCT TBR": "222042fb6fa6abaf51b5d1ba2d62b8ab89606405",
+   "AE OCT TBSN": "4a72930448aa42d3706fca831170790370ab4f6a",
+   "AE OCT TMAG": "38ab72148f2ab7f1c783fd3e9a885bd5a62e3164",
+   "AE OCT TMSN": "edfaf9cdeec6134709e88a869b1e400186b7ffcd"
+  },
+  "golden": "golden_seeds_rev23.json",
+  "seed_rules": {
+   "AE FFA SLAY": {
+    "vehicles destructible": "on"
+   },
+   "AE TEAM SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE KING": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 KING": {
+    "vehicles destructible": "on"
+   },
+   "AE PRACTICE": {
+    "vehicles destructible": "on"
+   },
+   "AE SNIPERS": {
+    "vehicles destructible": "on"
+   },
+   "AE SHOTSNIP": {
+    "vehicles destructible": "on"
+   },
+   "AE SWAT": {
+    "vehicles destructible": "on"
+   },
+   "AE ROCKETS": {
+    "vehicles destructible": "on"
+   },
+   "AE SHOTGUNS": {
+    "vehicles destructible": "on"
+   },
+   "AE HEAVIES": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB KING": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB BALL": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB HVY": {
+    "vehicles destructible": "on"
+   },
+   "AE ELIM": {
+    "vehicles destructible": "on"
+   },
+   "AE PHANTOMS": {
+    "vehicles destructible": "on"
+   },
+   "AE ENDURE": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA ROCK": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA SNPR": {
+    "vehicles destructible": "on"
+   },
+   "AE JUGGER": {
+    "vehicles destructible": "on"
+   },
+   "AE STALKER": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA KING": {
+    "vehicles destructible": "on"
+   },
+   "AE CRAZYKNG": {
+    "vehicles destructible": "on"
+   },
+   "AE RACE": {
+    "vehicles destructible": "on"
+   },
+   "AE RALLY": {
+    "vehicles destructible": "on"
+   },
+   "AE TRAINING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR FFA": {
+    "vehicles destructible": "on"
+   },
+   "AE BR ELIM": {
+    "vehicles destructible": "on"
+   },
+   "AE BR PHANT": {
+    "vehicles destructible": "on"
+   },
+   "AE BR ENDUR": {
+    "vehicles destructible": "on"
+   },
+   "AE BR JUGG": {
+    "vehicles destructible": "on"
+   },
+   "AE BR STALK": {
+    "vehicles destructible": "on"
+   },
+   "AE BR FKING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR CKING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR PRAC": {
+    "vehicles destructible": "on"
+   },
+   "AE BR TS": {
+    "vehicles destructible": "on"
+   },
+   "AE BR CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE BR KING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 S": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 C": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 K": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB S": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB C": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB K": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB B": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB H": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT BR": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT BRSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT MAG": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT MGSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TBR": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TBSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TMAG": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TMSN": {
+    "vehicles destructible": "on"
+   }
+  }
  }
 ]
