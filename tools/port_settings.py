@@ -498,7 +498,8 @@ SCREENS["video_settings/fov_viewmodels"] = {
 
 # (AE) Game Options' BOTS (OpenCE PR #367's bots.count, bots.skill and bots.teams: port/linux/game/bots.c): a
 # screen of its own, a category after the rows (as Video Setup's); Game Options' rows 24 px apart for its place
-BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 16)]
+# (up to 31, as the AE menus' BOTS: the games you host take them all, mid-game too; a split screen game up to 15)
+BOT_COUNTS = [("OFF", "0")] + [(str(n), str(n)) for n in range(1, 32)]
 # (AE, owner 2026-10-20: DEMON, the LEGENDARY of before, above a new LEGENDARY: ae_bots_skill.inc)
 BOT_SKILLS = [("RECRUIT", "recruit"), ("EASY", "easy"), ("NORMAL", "normal"), ("HEROIC", "heroic"), ("LEGENDARY", "legendary"),
               ("DEMON", "demon")]
@@ -515,7 +516,7 @@ SCREENS["mods_setup/bots"] = {
     "screen": "bots_settings_screen", "header": ("header_bots", None), "title": "BOTS", "spacing": 30,
     "rows": [
         ("BOTS:", "bots.count", BOT_COUNTS,
-         "How many bots, up to 15, play split screen and\nLAN or internet games you host (mid-game too).",
+         "How many bots, up to 31, play LAN or internet\ngames you host, mid-game too (split screen: 15).",
          None),
         ("BOT SKILL:", "bots.skill", BOT_SKILLS,
          "How soon the bots react, how well they aim and\nhow far they see.", None),

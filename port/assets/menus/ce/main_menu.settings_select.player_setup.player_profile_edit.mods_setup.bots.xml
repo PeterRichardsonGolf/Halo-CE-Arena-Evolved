@@ -32,7 +32,7 @@
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/count_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
 	</widget>
-	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/count_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15" setting="bots.count" values="0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/count_spinner" type="spinner" left="3" top="2" width="147" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31" setting="bots.count" values="0|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 150 19 156">
 		<on event="created" run="port setting load"/>
 	</widget>
 	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/op_skill" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
@@ -100,7 +100,7 @@
 	</strings>
 	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/help_strings">
 		<string text=""/>
-		<string text="How many bots, up to 15, play split screen and\nLAN or internet games you host (mid-game too)."/>
+		<string text="How many bots, up to 31, play LAN or internet\ngames you host, mid-game too (split screen: 15)."/>
 		<string text="How soon the bots react, how well they aim and\nhow far they see."/>
 		<string text="The bots' aim, reactions, grenades and blows:\nas BOT SKILL, or a level of their own."/>
 		<string text="The bots' strafing, jumping, crouching and\nretreating: as BOT SKILL, or a level of their own."/>
