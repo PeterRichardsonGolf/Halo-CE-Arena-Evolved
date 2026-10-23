@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, mutated, read, run  # noqa: E402
 
 SOURCE = "port/linux/src/dsound_sdl.c"
-CASES = ["reference", "impulse", "sines", "aliases", "silent-voice", "mono", "linear"]
+CASES = ["reference", "impulse", "sines", "aliases", "silent-voice", "mono", "linear", "ui-voice"]
 
 # a fault in the mixer, and the case that must catch it
 NEGATIVE_CONTROLS = {
@@ -27,6 +27,9 @@ NEGATIVE_CONTROLS = {
                            "for (phase = 0; phase <= RESAMPLER_TABLE_STEPS; phase += 2)"), "impulse"),
     "no-stretch": (("#define RESAMPLER_MAXIMUM_STRETCH 2", "#define RESAMPLER_MAXIMUM_STRETCH 1"), "aliases"),
     "linear-nearest": (("left_frames[0] + (left_frames[1] - left_frames[0]) * fraction", "left_frames[0]"), "linear"),
+    "ui-voice-stereo-only": (("output[frame * output_channels + 1] += right * gain;",
+                              "output[frame * 2 + 1] += right * gain;"), "ui-voice"),
+    "ui-voice-gap-lost": (("ui_voice.gap = gap_milliseconds * OUTPUT_RATE / 1000;", "ui_voice.gap = 0;"), "ui-voice"),
 }
 
 

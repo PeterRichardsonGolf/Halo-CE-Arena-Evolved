@@ -640,6 +640,91 @@ int main(int argc, char **argv)
 	}
 	/* audio.resampler = "linear": each frame the two source frames around
 	it, weighted by how near it is to each */
+	/* the UI voice (the callouts'): a clip at each voice rate through the
+	same low pass as a game voice, against the reference; on 5.1 in the front
+	pair alone; a clip queued after another starts the gap after it to the
+	frame */
+	CASE("ui-voice")
+	{
+		static const unsigned long clip_rates[] = { 22050, 24000, 44100, 48000, 96000 };
+		static float mixed[CHUNK * MAXIMUM_OUTPUT_CHANNELS];
+		double *signal = noise(12000);
+		short *samples = malloc(12000 * sizeof(short)), *pulse = calloc(2400, sizeof(short));
+		double *exact = malloc(12000 * sizeof(double));
+		unsigned long n, done, frame;
+
+		quantize(signal, samples, exact, 12000);
+		for (index = 0; index < sizeof(clip_rates) / sizeof(clip_rates[0]); index++)
+		{
+			double step = (double)clip_rates[index] / OUTPUT_RATE, error = 0, power = 0;
+			unsigned long outputs = (unsigned long)ceil(12000 / step);
+
+			ui_voice_play(samples, 12000, 1, clip_rates[index]);
+			for (done = 0; done < outputs; done += CHUNK)
+			{
+				unsigned long count = outputs - done < CHUNK ? outputs - done : CHUNK;
+
+				memset(mixed, 0, sizeof(mixed));
+				mix_ui_voice(mixed, count);
+				for (frame = 0; frame < count; frame++)
+				{
+					double expected = reference_frame(exact, 12000, step, done + frame);
+
+					error += (mixed[frame * 2] - expected) * (mixed[frame * 2] - expected);
+					power += expected * expected;
+					CHECK(mixed[frame * 2] == mixed[frame * 2 + 1], "a mono clip's channels differ");
+				}
+			}
+			CHECK(10.0 * log10(error / power + 1e-30) < -100.0, "a %lu Hz clip against the low pass: %.1f dB",
+				clip_rates[index], 10.0 * log10(error / power + 1e-30));
+			CHECK(!ui_voice.playing, "a %lu Hz clip still plays after its last frame", clip_rates[index]);
+		}
+
+		/* 5.1: the front pair, the rest silent */
+		output_channels = 6;
+		ui_voice_play(samples, 12000, 1, 24000);
+		memset(mixed, 0, sizeof(mixed));
+		mix_ui_voice(mixed, CHUNK);
+		for (frame = 0, n = 0; frame < CHUNK; frame++)
+		{
+			CHECK(!mixed[frame * 6 + 2] && !mixed[frame * 6 + 3] && !mixed[frame * 6 + 4] && !mixed[frame * 6 + 5],
+				"5.1: frame %lu of the clip outside the front pair", frame);
+			n += mixed[frame * 6] != 0.0f;
+		}
+		CHECK(n > CHUNK / 2, "5.1: the clip is not in the front pair");
+		output_channels = 2;
+
+		/* a 24 kHz clip of 1200 frames (2400 output frames), then a pulse
+		queued 60 ms after it: the pulse's centre 2400 + 2880 frames in */
+		pulse[0] = 30000;
+		ui_voice_play(samples, 1200, 1, 24000);
+		CHECK(ui_voice_queue(pulse, 2400, 1, 24000, 60), "nothing queued, the queue is refused");
+		CHECK(!ui_voice_queue(pulse, 2400, 1, 24000, 60), "a second clip queued over the first");
+		{
+			float *heard = calloc(12288, sizeof(float));
+			unsigned long loudest = 0;
+
+			for (done = 0; done < 12288; done += CHUNK)
+			{
+				memset(mixed, 0, sizeof(mixed));
+				mix_ui_voice(mixed, CHUNK);
+				for (frame = 0; frame < CHUNK; frame++)
+					heard[done + frame] = mixed[frame * 2];
+			}
+			for (n = 2400 + 2880 - 100; n < 12288; n++)
+				loudest = fabsf(heard[n]) > fabsf(heard[loudest]) ? n : loudest;
+			CHECK(loudest == 2400 + 2880, "the queued clip starts at frame %lu, not %d", loudest, 2400 + 2880);
+			for (n = 2400 + 24; n < 2400 + 2880 - 24; n++)
+				CHECK(heard[n] == 0.0f, "the gap is not silent at frame %lu", n);
+			free(heard);
+		}
+		CHECK(!ui_voice.playing && !ui_voice.queued, "the UI voice still busy after both clips");
+		free(signal);
+		free(samples);
+		free(pulse);
+		free(exact);
+		return 0;
+	}
 	CASE("linear")
 	{
 		double *signal = noise(30000);

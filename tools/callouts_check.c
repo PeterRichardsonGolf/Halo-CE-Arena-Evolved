@@ -208,7 +208,20 @@ int platform_callout_voice_play(int clip)
 	playing_until_ms = check_now * 1000 / TICKS_PER_SECOND + clip_milliseconds[clip];
 	return 1;
 }
-void platform_callout_voice_stop(void) { playing_until_ms = -1; }
+/* (the mixer's queue: a word follows the one playing gap ms after it ends,
+or gap ms from now if none plays, while none waits to start) */
+static long queued_start_ms = -1;
+int platform_callout_voice_queue(int clip, long gap_milliseconds)
+{
+	long now_ms = check_now * 1000 / TICKS_PER_SECOND;
+
+	if (clip < 0 || clip >= clip_count || clip_milliseconds[clip] <= 0 || queued_start_ms > now_ms)
+		return 0;
+	queued_start_ms = (playing_until_ms > now_ms ? playing_until_ms : now_ms) + gap_milliseconds;
+	playing_until_ms = queued_start_ms + clip_milliseconds[clip];
+	return 1;
+}
+void platform_callout_voice_stop(void) { playing_until_ms = -1; queued_start_ms = -1; }
 int platform_callout_voice_busy(void) { return check_now * 1000 / TICKS_PER_SECOND < playing_until_ms; }
 
 /* ---------- the log: each call said, as debug.txt has it */
@@ -241,7 +254,13 @@ void platform_log(char const *format, ...)
 	if (!strncmp(line, "callouts: ten due at tick", 25) && strstr(line, "left out"))
 		left_out_ten++;
 	memset(&call, 0, sizeof(call));
-	if (sscanf(line, "callouts: tick %ld %63s [%ld ticks] (due at tick %ld", &call.tick, call.clip, &call.ticks,
+	if (sscanf(line, "callouts: tick %ld joined %63s [%ld ticks] (due at tick %ld", &call.tick, call.clip,
+		&call.ticks, &call.due) == 4)
+	{
+		/* (a word queued to follow the one playing: at the tick it starts) */
+		call.tick = queued_start_ms * TICKS_PER_SECOND / 1000;
+	}
+	else if (sscanf(line, "callouts: tick %ld %63s [%ld ticks] (due at tick %ld", &call.tick, call.clip, &call.ticks,
 		&call.due) != 4 || !strcmp(call.clip, "dropped"))
 	{
 		return;

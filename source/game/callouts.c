@@ -213,6 +213,10 @@ clock's they could meet (a wave's start before its spawn is under this) */
 #define CALLOUT_MOVE_EARLIER_TICKS (15 * TICKS_PER_SECOND)
 /* the silence after each clip, which also covers the mixer's buffer */
 #define CALLOUT_GAP_TICKS 3
+/* the silence between the words of one call, which the mixer keeps to the
+frame (platform_callout_voice_queue): a breath, less after "and" */
+#define CALLOUT_JOIN_MILLISECONDS 60
+#define CALLOUT_JOIN_AFTER_AND_MILLISECONDS 20
 
 /* ---------- structures */
 
@@ -273,6 +277,7 @@ unsigned long config_changes(void);
 int platform_callout_voice_load(char const *pack, char const *const *names, int count);
 void platform_callout_voice_unload(void);
 int platform_callout_voice_play(int clip);
+int platform_callout_voice_queue(int clip, long gap_milliseconds);
 long platform_callout_voice_milliseconds(int clip);
 void platform_callout_voice_stop(void);
 int platform_callout_voice_busy(void);
@@ -356,6 +361,10 @@ static struct
 	boolean playing;	/* a clip was started since the last flush */
 	short planned_count;
 	struct callout plan[MAXIMUM_PLANNED_CALLOUTS];	/* by start */
+	/* the last call started or queued (when said_valid), which the next word
+	of its call follows */
+	struct callout said;
+	boolean said_valid;
 } callout_globals = { _callouts_off, _callout_detail_standard, (unsigned long)-1, "", NONE, NONE, 0, FALSE, 0 };
 
 /* ---------- private code */
@@ -446,6 +455,7 @@ static void callouts_flush(
 	callout_globals.planned_to = NONE;
 	callout_globals.last_tick = NONE;
 	callout_globals.free_at = 0;
+	callout_globals.said_valid = FALSE;
 	/* (the clip playing stops: the game is over or paused, or CALLOUTS
 	changed) */
 	if (callout_globals.playing)
@@ -1737,6 +1747,40 @@ static boolean callouts_say_up_group(
 	return TRUE;
 }
 
+/* while a word plays, the next word of its call (planned back to back with
+it, for the same moment) is queued in the mixer to follow it
+CALLOUT_JOIN_MILLISECONDS after it ends, to the frame, rather than on a tick
+after its gap; never a beep or after one */
+static void callouts_join_next(
+	long now)
+{
+	struct callout callout;
+	short index;
+
+	if (!callout_globals.said_valid || callout_globals.planned_count <= 0)
+		return;
+	callout = callout_globals.plan[0];
+	if (callout.kind == _callout_kind_item_up_group || callout.start != callout_globals.said.end ||
+		callout.due != callout_globals.said.due || callout_clip_is_beep(callout.clip) ||
+		callout_clip_is_beep(callout_globals.said.clip) || callout_dropped(&callout, now))
+	{
+		return;
+	}
+	if (!platform_callout_voice_queue(callout.clip, callout_globals.said.clip == _callout_and ?
+		CALLOUT_JOIN_AFTER_AND_MILLISECONDS : CALLOUT_JOIN_MILLISECONDS))
+	{
+		return;
+	}
+
+	callout_globals.planned_count--;
+	for (index = 0; index < callout_globals.planned_count; index++)
+		callout_globals.plan[index] = callout_globals.plan[index + 1];
+	/* (it ends a join after the one playing, inside that one's gap) */
+	callout_globals.free_at += callout_clip_ticks(callout.clip);
+	callout_globals.said = callout;
+	callout_log("joined ", &callout, now);
+}
+
 /* the next call planned by now, once the last one has been said; a call
 moved later for the one before it (start after its moment) as soon as that
 one has ended */
@@ -1774,10 +1818,14 @@ static void callouts_say_next(
 		{
 			callout_globals.playing = TRUE;
 			callout_globals.free_at = now + callout_clip_ticks(callout.clip) + CALLOUT_GAP_TICKS;
+			callout_globals.said = callout;
+			callout_globals.said_valid = TRUE;
 			callout_log("", &callout, now);
 			break;
 		}
 	}
+	if (platform_callout_voice_busy())
+		callouts_join_next(now);
 }
 
 /* ---------- public code */

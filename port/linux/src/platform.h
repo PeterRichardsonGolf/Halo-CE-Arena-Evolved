@@ -374,6 +374,10 @@ at the master and effects volumes, in place of the one playing; its samples
 must stay until it ends or is stopped */
 void platform_ui_voice_start(short const *samples, unsigned long frames, unsigned long channels,
 	unsigned long sample_rate);
+/* port: a clip to follow the one playing gap_milliseconds after it ends, to
+the frame (at once if none plays); 0 when one is queued already */
+int platform_ui_voice_queue(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate, unsigned long gap_milliseconds);
 void platform_ui_voice_stop(void);
 int platform_ui_voice_busy(void);
 
@@ -385,6 +389,9 @@ int platform_callout_voice_load(char const *pack, char const *const *names, int 
 void platform_callout_voice_unload(void);	/* frees the clips (CALLOUTS off) */
 /* clip i starts (nonzero), unless the pack has none (0) */
 int platform_callout_voice_play(int clip);
+/* clip i follows the clip playing gap_milliseconds after it ends (nonzero),
+unless the pack has none or one is queued already (0) */
+int platform_callout_voice_queue(int clip, long gap_milliseconds);
 long platform_callout_voice_milliseconds(int clip);	/* clip i's length, 0 for none */
 void platform_callout_voice_stop(void);	/* the clip playing, if any, stops */
 int platform_callout_voice_busy(void);

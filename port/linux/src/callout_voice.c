@@ -370,6 +370,14 @@ int platform_callout_voice_play(int clip)
 	return 1;
 }
 
+int platform_callout_voice_queue(int clip, long gap_milliseconds)
+{
+	if (clip < 0 || clip >= clip_count || !clips[clip].samples || gap_milliseconds < 0)
+		return 0;
+	return platform_ui_voice_queue(clips[clip].samples, clips[clip].frames, clips[clip].channels,
+		clips[clip].sample_rate, (unsigned long)gap_milliseconds);
+}
+
 long platform_callout_voice_milliseconds(int clip)
 {
 	if (clip < 0 || clip >= clip_count || !clips[clip].samples || !clips[clip].sample_rate)

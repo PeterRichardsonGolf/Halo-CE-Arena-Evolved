@@ -194,16 +194,27 @@ static struct
 static float master_volume = 1.0f;
 static float effects_volume = 1.0f;
 
-/* the UI voice's clip, under mixer_lock (its samples are the caller's until
-it ends or platform_ui_voice_stop) */
-static struct
+/* a clip the UI voice plays (its samples are the caller's until it ends or
+platform_ui_voice_stop) */
+struct ui_voice_clip
 {
 	short const *samples;	/* interleaved, its channel count */
 	unsigned long frames;
 	unsigned long channels;
 	double step;	/* source frames for each output frame */
+};
+
+/* the UI voice, under mixer_lock: the clip playing, and the one queued to
+follow it gap output frames after it ends, to the frame (the callouts' words
+of one call, which the game's ticks would space unevenly) */
+static struct
+{
+	struct ui_voice_clip clip;
 	double cursor;
 	BOOL playing;
+	struct ui_voice_clip next;
+	unsigned long gap;	/* counted down once the clip has ended */
+	BOOL queued;
 } ui_voice;
 
 /* audio.effects_volume, 0 to 1 (as sound_manager.c reads it) */
@@ -1526,38 +1537,142 @@ static void limit(float *output, unsigned long frames)
 	}
 }
 
-/* the UI voice's clip into the output, linearly interpolated (under
+/* ---------- the UI voice (the callouts', platform_ui_voice_start)
+
+A clip is resampled to the output rate as the game's voices are (the same
+windowed sinc, or linear interpolation with audio.resampler = "linear"),
+from the clip's own frames (silence either side of them), at the master and
+effects volumes, dry: on 5.1 from the front pair, as the players' voices. */
+
+/* the clip's frame at index, channel's (0 outside the clip) */
+static float ui_voice_sample(const struct ui_voice_clip *clip, long index, unsigned long channel)
+{
+	if (index < 0 || (unsigned long)index >= clip->frames)
+		return 0.0f;
+	return clip->samples[(unsigned long)index * clip->channels + (channel < clip->channels ? channel : 0)];
+}
+
+/* the clip at source time cursor, both channels (full scale 32768) */
+static void ui_voice_frame(const struct ui_voice_clip *clip, double cursor, float *left, float *right)
+{
+	long center = (long)cursor;
+	float phase = (float)(cursor - (double)center);
+	unsigned long channel, channels = clip->channels > 1 ? 2 : 1;
+	float value[2];
+
+	for (channel = 0; channel < channels; channel++)
+	{
+		if (resampler_mode == RESAMPLER_LINEAR)
+		{
+			float here = ui_voice_sample(clip, center, channel);
+
+			value[channel] = here + (ui_voice_sample(clip, center + 1, channel) - here) * phase;
+		}
+		else if (clip->step <= 1.0)
+		{
+			float frames[RESAMPLER_TAPS] RESAMPLER_ALIGNED;
+			double position = phase * RESAMPLER_TABLE_STEPS;
+			unsigned long row = (unsigned long)position, tap;
+
+			for (tap = 0; tap < RESAMPLER_TAPS; tap++)
+				frames[tap] = ui_voice_sample(clip, center + 1 - RESAMPLER_ZERO_CROSSINGS + (long)tap, channel);
+			value[channel] = resampler_dot(frames, resampler_phases[row], resampler_deltas[row],
+				(float)(position - (double)row));
+		}
+		else
+		{
+			/* (a clip faster than the output: the low pass narrowed, as a
+			voice's) */
+			float scale = 1.0f / (float)(clip->step < RESAMPLER_MAXIMUM_STRETCH ? clip->step : RESAMPLER_MAXIMUM_STRETCH);
+			long width = (long)ceilf(RESAMPLER_ZERO_CROSSINGS / scale), tap;
+			float sum = 0.0f;
+
+			for (tap = 1 - width; tap <= width; tap++)
+			{
+				sum += ui_voice_sample(clip, center + tap, channel) * scale *
+					resampler_weight(fabsf((float)tap - phase) * scale * RESAMPLER_TABLE_STEPS);
+			}
+			value[channel] = sum;
+		}
+	}
+	*left = value[0];
+	*right = channels > 1 ? value[1] : value[0];
+}
+
+/* a clip of frames frames of channels channels at sample_rate (under
 mixer_lock) */
+static struct ui_voice_clip ui_voice_clip_make(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate)
+{
+	struct ui_voice_clip clip;
+
+	clip.samples = samples;
+	clip.frames = samples && channels && sample_rate ? frames : 0;
+	clip.channels = channels;
+	clip.step = sample_rate ? (double)sample_rate / OUTPUT_RATE : 0.0;
+	return clip;
+}
+
+/* plays the clip in place of the one playing and the one queued (under
+mixer_lock) */
+static void ui_voice_play(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate)
+{
+	ui_voice.clip = ui_voice_clip_make(samples, frames, channels, sample_rate);
+	ui_voice.cursor = 0.0;
+	ui_voice.playing = ui_voice.clip.frames > 0;
+	ui_voice.queued = FALSE;
+}
+
+/* queues the clip to follow the one playing gap_milliseconds after it ends
+(at once if none plays); FALSE when one is queued already (under
+mixer_lock) */
+static BOOL ui_voice_queue(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate, unsigned long gap_milliseconds)
+{
+	struct ui_voice_clip clip = ui_voice_clip_make(samples, frames, channels, sample_rate);
+
+	if (ui_voice.queued)
+		return FALSE;
+	if (!clip.frames)
+		return TRUE;
+	ui_voice.next = clip;
+	ui_voice.gap = gap_milliseconds * OUTPUT_RATE / 1000;
+	ui_voice.queued = TRUE;
+	return TRUE;
+}
+
+/* the UI voice into the output (under mixer_lock) */
 static void mix_ui_voice(float *output, unsigned long frames)
 {
 	float gain = master_volume * effects_volume / 32768.0f;
 	unsigned long frame;
 
-	if (!ui_voice.playing)
-		return;
 	for (frame = 0; frame < frames; frame++)
 	{
-		unsigned long index = (unsigned long)ui_voice.cursor;
-		unsigned long next = index + 1 < ui_voice.frames ? index + 1 : index;
-		float fraction = (float)(ui_voice.cursor - (double)index);
-		short const *here, *there;
 		float left, right;
 
-		if (index >= ui_voice.frames)
+		if (!ui_voice.playing)
 		{
-			ui_voice.playing = FALSE;
-			break;
+			if (!ui_voice.queued)
+				break;
+			if (ui_voice.gap)
+			{
+				ui_voice.gap--;
+				continue;
+			}
+			ui_voice.clip = ui_voice.next;
+			ui_voice.cursor = 0.0;
+			ui_voice.playing = TRUE;
+			ui_voice.queued = FALSE;
 		}
-		here = ui_voice.samples + index * ui_voice.channels;
-		there = ui_voice.samples + next * ui_voice.channels;
-		left = here[0] + (there[0] - here[0]) * fraction;
-		right = ui_voice.channels > 1 ? here[1] + (there[1] - here[1]) * fraction : left;
-		output[frame * 2] += left * gain;
-		output[frame * 2 + 1] += right * gain;
-		ui_voice.cursor += ui_voice.step;
+		ui_voice_frame(&ui_voice.clip, ui_voice.cursor, &left, &right);
+		output[frame * output_channels] += left * gain;
+		output[frame * output_channels + 1] += right * gain;
+		ui_voice.cursor += ui_voice.clip.step;
+		if (ui_voice.cursor >= (double)ui_voice.clip.frames)
+			ui_voice.playing = FALSE;
 	}
-	if ((unsigned long)ui_voice.cursor >= ui_voice.frames)
-		ui_voice.playing = FALSE;
 }
 
 static void mix(float *output, unsigned long frames)
@@ -2079,27 +2194,39 @@ VOID WINAPI DirectSoundDoWork(void)
 
 /* ---------- the UI voice (port: callout_voice.c) */
 
-/* plays a clip in place of the one playing, if any; the samples must stay
-until it ends (platform_ui_voice_busy) or platform_ui_voice_stop */
+/* plays a clip in place of the one playing (and the one queued), if any; the
+samples must stay until it ends (platform_ui_voice_busy) or
+platform_ui_voice_stop */
 void platform_ui_voice_start(short const *samples, unsigned long frames, unsigned long channels,
 	unsigned long sample_rate)
 {
 	audio_start();
 	pthread_mutex_lock(&mixer_lock);
-	ui_voice.samples = samples;
-	ui_voice.frames = frames;
-	ui_voice.channels = channels;
-	ui_voice.step = (double)sample_rate / OUTPUT_RATE;
-	ui_voice.cursor = 0.0;
-	ui_voice.playing = samples && frames && channels && sample_rate;
+	ui_voice_play(samples, frames, channels, sample_rate);
 	pthread_mutex_unlock(&mixer_lock);
+}
+
+/* queues a clip to follow the one playing gap_milliseconds after it ends, to
+the frame; 0 when one is queued already */
+int platform_ui_voice_queue(short const *samples, unsigned long frames, unsigned long channels,
+	unsigned long sample_rate, unsigned long gap_milliseconds)
+{
+	BOOL queued;
+
+	audio_start();
+	pthread_mutex_lock(&mixer_lock);
+	queued = ui_voice_queue(samples, frames, channels, sample_rate, gap_milliseconds);
+	pthread_mutex_unlock(&mixer_lock);
+	return queued;
 }
 
 void platform_ui_voice_stop(void)
 {
 	pthread_mutex_lock(&mixer_lock);
 	ui_voice.playing = FALSE;
-	ui_voice.samples = NULL;
+	ui_voice.queued = FALSE;
+	ui_voice.clip.samples = NULL;
+	ui_voice.next.samples = NULL;
 	pthread_mutex_unlock(&mixer_lock);
 }
 
@@ -2108,7 +2235,7 @@ int platform_ui_voice_busy(void)
 	BOOL playing;
 
 	pthread_mutex_lock(&mixer_lock);
-	playing = ui_voice.playing;
+	playing = ui_voice.playing || ui_voice.queued;
 	pthread_mutex_unlock(&mixer_lock);
 	return playing;
 }
