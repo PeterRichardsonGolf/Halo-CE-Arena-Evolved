@@ -578,6 +578,23 @@ def test_playlist_display_name(tmp_path):
     assert "PASS" in result.stdout
 
 
+def test_gametype_layout(tmp_path):
+    """(Arena Evolved, OpenCE's network 36) a gametype's rules: OpenCE's 0x2C bytes of PC options with version 1's
+    0x1C first, Arena Evolved's rules in the variant's flags from bit 6 and its old pads, the saved gametype's 'GPVO'
+    block to 0x148 and the display name block at 0x150 (tools/ae_gametype_layout_check.c), built with the flags ninja
+    gives the game's code"""
+    if not shutil.which("clang") or not shutil.which("ninja") or not Path("build.ninja").is_file():
+        pytest.skip("needs clang, ninja and a configured build")
+    flags = _ninja_compile_flags("build/linux/obj/source/saved games/arena_gametype_names.o")
+    program = tmp_path / "ae_gametype_layout_check"
+    built = subprocess.run(["clang", *flags, "-O1", "-no-pie", "-o", str(program), "tools/ae_gametype_layout_check.c"],
+                           capture_output=True, text=True)
+    assert built.returncode == 0, built.stderr[-4000:]
+    result = subprocess.run([str(program)], capture_output=True, text=True, timeout=60)
+    assert result.returncode == 0, result.stdout[-4000:]
+    assert "PASS" in result.stdout
+
+
 def build_spawn_heat_check(tmp_path: Path, game_engine: str = "source/game/game_engine.c",
                            base: bool = False) -> Path:
     """tools/spawn_heat_check.c with source/game/spawn_heat.c, game_engine.c

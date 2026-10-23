@@ -16,6 +16,10 @@ typedef unsigned GLuint, GLenum;
 #define GL_DYNAMIC_DRAW 2
 #define SEGMENT_SIZE 0x400000u
 #define PLATFORM_CONTIGUOUS_SIZE (2 * SEGMENT_SIZE)
+/* (Arena Evolved: its mirror's tables are sized by the largest window, ChupathingyCE's platform.h) */
+#define PLATFORM_CONTIGUOUS_MAXIMUM PLATFORM_CONTIGUOUS_SIZE
+/* (and its 64-bit builds' Xbox addresses: here the CPU's own) */
+#define xbox_pointer(address) ((void *)(address))
 static unsigned char cpu[PLATFORM_CONTIGUOUS_SIZE];
 #define PLATFORM_CONTIGUOUS_BASE ((unsigned long)cpu)
 #define CHECK(x) do { if (!(x)) { fprintf(stderr, "line %d: %s\n", __LINE__, #x); exit(1); } } while (0)
