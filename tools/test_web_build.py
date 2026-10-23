@@ -127,8 +127,10 @@ def test_the_link_exports_what_the_page_calls():
 def test_the_memory_layout_agrees_with_the_sources():
     platform = (ROOT / "port/linux/src/platform.h").read_text()
     base = int(re.search(r"#define PLATFORM_CONTIGUOUS_BASE (0x[0-9A-Fa-f]+)", platform).group(1), 16)
-    sizes = re.search(r"#if defined\(HALO_ARM64_GUEST\) \|\| defined\(HALO_WEB\).*?#define PLATFORM_CONTIGUOUS_SIZE "
-                      r"(0x[0-9A-Fa-f]+)", platform, re.S)
+    # (#elif since the ChupathingyCE merge: the window-rebase builds' branch comes first, and the translated
+    # window shares the web's size)
+    sizes = re.search(r"#(?:el)?if defined\(HALO_ARM64_GUEST\) \|\| defined\(HALO_WEB\)[^\n]*\n.*?"
+                      r"#define PLATFORM_CONTIGUOUS_SIZE (0x[0-9A-Fa-f]+)", platform, re.S)
     assert sizes, "platform.h gives the web build the 128 MB window"
     assert web_build.WEB_MEMORY_BYTES == base + int(sizes.group(1), 16)
     main = (ROOT / "port/web/src/web_main.c").read_text()

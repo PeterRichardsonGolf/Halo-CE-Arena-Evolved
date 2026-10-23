@@ -48,7 +48,11 @@ enum
 	_button_preset_universal_zoom_and_shoot,
 	_button_preset_universal_bump_and_jump,
 	_button_preset_universal_green_fingers,
-	NUMBER_OF_BUTTON_PRESETS
+	NUMBER_OF_BUTTON_PRESETS,
+	/* port (ChupathingyCE): the player's own, from the Controls screen (config.toml's
+	controls.controller_layout). Arena Evolved: past the stored presets (a profile
+	holding it reads as Default), as its CUSTOM layout has no Arena Evolved screen yet */
+	_button_preset_custom = NUMBER_OF_BUTTON_PRESETS
 };
 
 enum

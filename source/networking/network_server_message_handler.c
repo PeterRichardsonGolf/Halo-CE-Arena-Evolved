@@ -436,6 +436,10 @@ struct message_server_game_advertise
 	byte join_game_token[JOIN_GAME_TOKEN_LENGTH];
 };
 
+#ifdef HALO_BIG_ENDIAN
+static void message_server_game_advertise_byte_swap(struct message_server_game_advertise *advertisement);
+#endif
+
 struct message_client_join_game_request
 {
 	wchar_t machine_name[MAXIMUM_MACHINE_NAME_LENGTH];
@@ -790,17 +794,62 @@ boolean network_game_server_send_message_to_client_machine(
 /* port: the game's settings as they go to the other machines: a Halo PC
 map's name as the game's protocol has it (custom_maps\\<name>, OpenCE's
 build-145's; halo_map_families.h), into wire, which game is then */
+#ifdef HALO_PORT_CONSOLE_LIMITS
+/* port: the console's limits: this build's record is the folded one (16 and
+17 slots), and the network's is the PC builds' 128 and 128 (the client takes
+only that, network_client_message_handler.c); the record is widened into a
+static buffer (13 KB is too much stack for the Xbox) */
+int network_game_layout_convert(const unsigned char *from, int from_machines, int from_players,
+	unsigned char *to, int to_machines, int to_players, int *clamped);
+
+static byte network_game_server_wire_buffer[HALO_PORT_WIRE_NETWORK_GAME_SIZE];
+#endif
+
+#if !defined(HALO_PORT_CONSOLE_LIMITS) || defined(HALO_BIG_ENDIAN)
+static struct network_game network_game_server_wire_record;
+#endif
+
 static void const *network_game_server_wire_game(
 	void const *game,
-	long game_size,
-	struct network_game *wire)
+	long *game_size)
 {
-	if (game_size != (long)sizeof(*wire))
+#ifdef HALO_PORT_CONSOLE_LIMITS
+	int clamped;
+	struct network_game *wire = (struct network_game *)network_game_server_wire_buffer;
+
+	if (*game_size != (long)sizeof(struct network_game))
 		return game;
-	csmemcpy(wire, game, sizeof(*wire));
+#ifdef HALO_BIG_ENDIAN
+	/* (widened by its bytes as the wire has them, little-endian) */
+	csmemcpy(&network_game_server_wire_record, game, sizeof(network_game_server_wire_record));
+	network_game_byte_swap(&network_game_server_wire_record, FALSE);
+	game = &network_game_server_wire_record;
+#endif
+	if (network_game_layout_convert((unsigned char const *)game, MAXIMUM_NETWORK_MACHINE_COUNT,
+		MAXIMUM_NUMBER_OF_PLAYERS, network_game_server_wire_buffer, HALO_PORT_WIRE_NETWORK_MACHINES,
+		HALO_PORT_WIRE_NETWORK_PLAYERS, &clamped) != 0)
+	{
+		network_event("failed to widen the game settings to the network's layout");
+		*game_size = 0;
+		return game;
+	}
+	*game_size = (long)sizeof(network_game_server_wire_buffer);
 	map_family_wire_name(((struct network_game const *)game)->map.name, wire->map.name, sizeof(wire->map.name));
 
 	return wire;
+#else
+	struct network_game *wire = &network_game_server_wire_record;
+
+	if (*game_size != (long)sizeof(*wire))
+		return game;
+	csmemcpy(wire, game, sizeof(*wire));
+	map_family_wire_name(((struct network_game const *)game)->map.name, wire->map.name, sizeof(wire->map.name));
+#ifdef HALO_BIG_ENDIAN
+	network_game_byte_swap(wire, FALSE);
+#endif
+
+	return wire;
+#endif
 }
 
 boolean network_game_server_send_game_settings_to_client_machine(
@@ -810,10 +859,11 @@ boolean network_game_server_send_game_settings_to_client_machine(
 	long game_size)
 {
 	struct message_server_game_settings_update message;
-	struct network_game wire_game;
 	long offset;
 
-	game = network_game_server_wire_game(game, game_size, &wire_game);
+	game = network_game_server_wire_game(game, &game_size);
+	if (game_size <= 0)
+		return FALSE;
 	for (offset = 0; offset < game_size; offset += sizeof(message.data))
 	{
 		void *encoded_message;
@@ -1094,7 +1144,6 @@ boolean network_game_server_send_game_settings_to_all_machines(
 	long game_size)
 {
 	struct message_server_game_settings_update message;
-	struct network_game wire_game;
 	long offset;
 	boolean result = TRUE;
 
@@ -1103,7 +1152,9 @@ boolean network_game_server_send_game_settings_to_all_machines(
 		0x1C8,
 		server);
 
-	game = network_game_server_wire_game(game, game_size, &wire_game);
+	game = network_game_server_wire_game(game, &game_size);
+	if (game_size <= 0)
+		return FALSE;
 	/* every piece goes out even if one fails for a machine: the others
 	would otherwise keep the old settings (a machine whose connection failed
 	is closed, and is skipped when the update is sent again) */
@@ -1846,6 +1897,9 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 			}
 
 			network_game_generate_join_game_token(advertisement.join_game_token);
+#ifdef HALO_BIG_ENDIAN
+			message_server_game_advertise_byte_swap(&advertisement);
+#endif
 			reply = create_network_game_message(
 				_message_server_game_advertise,
 				&advertisement,
@@ -2961,3 +3015,28 @@ static boolean network_game_server_handle_message_client_graceful_game_exit_post
 
 	return TRUE;
 }
+
+#ifdef HALO_BIG_ENDIAN
+/* port: a big-endian console: the advertisement is the raw bytes of the
+structure (message_server_game_advertise_packet), little-endian as the PCs
+and the original Xbox lay it out; between this machine's order and the
+wire's, either way. Its nonces, keys and address are bytes (the address and
+its port in network order, as the transport has them) */
+void distributed_wire_swap(void *data, long count, long size);
+
+static void message_server_game_advertise_byte_swap(
+	struct message_server_game_advertise *advertisement)
+{
+	distributed_wire_swap(&advertisement->port, 3, sizeof(word));
+	distributed_wire_swap(advertisement->game_name, NUMBEROF(advertisement->game_name), sizeof(wchar_t));
+	distributed_wire_swap(&advertisement->map.version, 1, sizeof(long));
+	/* (the engine type, the counts, the variant's setting and the flags) */
+	distributed_wire_swap(&advertisement->engine_type, 6, sizeof(short));
+}
+
+/* (the numbers turned together are side by side) */
+typedef char message_server_game_advertise_wire_assert[
+	offsetof(struct message_server_game_advertise, platform) == offsetof(struct message_server_game_advertise, port) + 4 &&
+	offsetof(struct message_server_game_advertise, flags) ==
+		offsetof(struct message_server_game_advertise, engine_type) + 10 ? 1 : -1];
+#endif

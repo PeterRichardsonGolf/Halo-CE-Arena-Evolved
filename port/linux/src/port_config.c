@@ -68,6 +68,9 @@ enum
 	_platform_windows = 4,
 	/* (the web build, which has the desktop's settings, and these) */
 	_platform_web = 8,
+	/* the original Xbox (ChupathingyCE's port/xbox): not in _platform_all, each
+	of its settings marked for it; never this build's (CONFIG_PLATFORM) */
+	_platform_xbox = 16,
 };
 
 struct config_setting
@@ -280,9 +283,9 @@ static const struct config_setting config_settings[] =
 		"Show the seconds left on your active camouflage, overshield and full\n"
 		"spectrum vision." },
 	{ "display.loading_screen_min_seconds", _config_real, "0.0", "HALO_LOADING_SCREEN_MIN_SECONDS",
-		_environment_value, _platform_all,
-		"The shortest time the loading screen stays up, up to 30 seconds; 0 for\n"
-		"no wait. Campaign and split screen only." },
+		_environment_value, _platform_none,
+		"ChupathingyCE 0.8.0's name of display.loading_screen_campaign_seconds,\n"
+		"read into it once (config_carry_over)." },
 	{ "display.scoreboard_team_layout", _config_string, "\"teams\"", "HALO_SCOREBOARD_TEAM_LAYOUT", _environment_value,
 		_platform_all,
 		"A team game's scoreboard: \"teams\" (a column for each team) or \"score\"\n"
@@ -640,6 +643,29 @@ static const struct config_setting config_settings[] =
 		_platform_all,
 		"The mouse's hold time in the \"both\" mode, 0.1 to 1 seconds; 0: the\n"
 		"controller's (input.zoom_hold_time)." },
+	/* gyro aiming (port/linux/src/xinput_sdl.c): the controller's gyroscope,
+	each local player from their own */
+	{ "input.gyro_aim", _config_string, "\"false\"", "HALO_GYRO_AIM", _environment_value, _platform_android,
+		"Aim with the controller's gyroscope, each local player from their own (a\n"
+		"Pro Controller, the console held in the hands, or one Joy-Con; of two,\n"
+		"the right one): \"true\" always, \"zoom\" only while zoomed in (a scope),\n"
+		"\"false\" never. Gamepads, Gyro Aim, or here. Changes at once." },
+	{ "input.gyro_invert_horizontal", _config_boolean, "false", "HALO_GYRO_INVERT_HORIZONTAL",
+		_environment_value, _platform_android,
+		"Invert the gyroscope's yaw. false: turning the controller right looks\n"
+		"right. true: turning it right looks left. The stick's invert is its own." },
+	{ "input.gyro_invert_vertical", _config_boolean, "false", "HALO_GYRO_INVERT_VERTICAL",
+		_environment_value, _platform_android,
+		"Invert the gyroscope's pitch. false: tilting the controller up looks up.\n"
+		"true: tilting it up looks down. The stick's invert is its own." },
+	{ "input.gyro_sensitivity_horizontal", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_HORIZONTAL",
+		_environment_value, _platform_android,
+		"How far the view turns left and right for the gyroscope, when\n"
+		"input.gyro_aim is on. 1 is the sensor's own turn. 0.25 to 10." },
+	{ "input.gyro_sensitivity_vertical", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_VERTICAL",
+		_environment_value, _platform_android,
+		"How far the view turns up and down for the gyroscope, when\n"
+		"input.gyro_aim is on. 1 is the sensor's own turn. 0.25 to 10." },
 
 	/* the keyboard and mouse's own controls (port/linux/src/xinput_sdl.c) */
 	{ "chat.enabled", _config_boolean, "false", "HALO_CHAT", _environment_value, _platform_all, /* AE hook */
@@ -727,6 +753,10 @@ static const struct config_setting config_settings[] =
 	{ "controls.chat_log", _config_string, "\"\"", "HALO_KEY_CHAT_LOG", _environment_value, _platform_all, /* AE hook */
 		"ChupathingyCE's text chat: its recent lines and its players, where M\n"
 		"mutes one for you." },
+	{ "controls.controller_layout", _config_string, "\"\"", "HALO_CONTROLLER_LAYOUT", _environment_value,
+		_platform_all,
+		"The Custom button layout, set on the Controls screen: \"action=button\"\n"
+		"pairs separated by commas (\"jump=B,melee=RB\"). Empty: the default." },
 
 	{ "game.console_log", _config_string, "\"important\"", "HALO_CONSOLE_LOG", _environment_value, _platform_all,
 		"What the console shows on screen: \"important\", \"all\" or \"none\".\n"
@@ -879,9 +909,78 @@ static const struct config_setting config_settings[] =
 		"shield's own) or a multiplayer armor color: white, black, red, blue,\n"
 		"gray, yellow, green, pink, purple, cyan, cobalt, orange, teal, sage,\n"
 		"brown, tan, maroon or salmon." },
+	{ "display.big_sprite_limit", _config_integer, "8", "HALO_BIG_SPRITE_LIMIT", _environment_value, _platform_android,
+		"The most sprites covering more than half the view drawn in a frame (the\n"
+		"Xbox's 11): each is a layer over most of the screen, and the Halo level's\n"
+		"falls have 11 sheets of mist. Changes at once." },
+	{ "display.delta_profile", _config_boolean, "true", "HALO_DELTA_PROFILE", _environment_value, _platform_all,
+		"Show Delta Profile in the menus and Online Games." },
+	{ "display.full_model_detail", _config_boolean, "false", "HALO_FULL_MODEL_DETAIL", _environment_value,
+		_platform_all,
+		"Draw every model at full detail at any distance." },
+	{ "display.loading_screen", _config_boolean, "true", "HALO_LOADING_SCREEN", _environment_value,
+		_platform_all,
+		"Keep the original loading screen up for a while when a level loads,\n"
+		"as loading from the Xbox's disc did, for the times below; false loads\n"
+		"every level as fast as it can." },
+	{ "display.loading_screen_campaign_seconds", _config_real, "0.0", "HALO_LOADING_SCREEN_CAMPAIGN_SECONDS",
+		_environment_value, _platform_all,
+		"The least seconds the loading screen stays up when a campaign level\n"
+		"loads on this machine alone, split screen co-op too (up to 30); 0 for\n"
+		"no wait. A longer load shows for as long as it takes." },
+	{ "display.loading_screen_multiplayer_seconds", _config_real, "0.0", "HALO_LOADING_SCREEN_MULTIPLAYER_SECONDS",
+		_environment_value, _platform_all,
+		"The same for every other game: split screen multiplayer, system link,\n"
+		"online and network co-op, up to 5: the network waits while the\n"
+		"loading screen is held." },
+	{ "display.profile_names", _config_boolean, "true", "HALO_PROFILE_NAMES", _environment_value, _platform_all,
+		"Show players by their shared Delta profile name in Delta games." },
 
 	{ "game.defaults_answered", _config_integer, "0", "HALO_DEFAULTS_ANSWERED", _environment_value, _platform_all,
 		"Set by the game after it asks about changed defaults. Do not edit." },
+	{ "game.bomb_arm_time", _config_real, "1.0", "HALO_BOMB_ARM_TIME", _environment_value, _platform_all,
+		"In a Bomb or Grifball game you host, the seconds the bomb arms once it\n"
+		"is planted in the enemy goal (up to 10): a defender who reaches it in\n"
+		"that time saves it (it resets, no score); else it goes off and scores.\n"
+		"0: it scores the moment it is planted." },
+	{ "game.bomb_open_pitch_carrier_health", _config_integer, "0", "HALO_BOMB_OPEN_PITCH_CARRIER_HEALTH",
+		_environment_value, _platform_all,
+		"The bomb carrier's health in a Grifball: Open Pitch game you host, in\n"
+		"percent of everyone's (10 to 400). 0: the game type's own, 400 (with\n"
+		"the resistance's 400, it lives through one melee blow, not two)." },
+	{ "game.bomb_open_pitch_carrier_resistance", _config_integer, "0",
+		"HALO_BOMB_OPEN_PITCH_CARRIER_RESISTANCE", _environment_value, _platform_all,
+		"The bomb carrier's damage resistance in a Grifball: Open Pitch game you\n"
+		"host, in percent (25 to 400; 150 takes two thirds of the damage). 0: the\n"
+		"game type's own, 400." },
+	{ "game.bomb_open_pitch_carrier_shields", _config_string, "\"none\"", "HALO_BOMB_OPEN_PITCH_CARRIER_SHIELDS",
+		_environment_value, _platform_all,
+		"The bomb carrier's shields in a Grifball: Open Pitch game you host:\n"
+		"\"none\" (everyone's: none), \"normal\" or \"overshield\"." },
+	{ "game.bomb_open_pitch_fumble", _config_boolean, "true", "HALO_BOMB_OPEN_PITCH_FUMBLE", _environment_value,
+		_platform_all,
+		"true: in a Grifball: Open Pitch game you host, a melee blow that doesn't\n"
+		"kill the bomb carrier knocks the bomb out of their hands." },
+	{ "game.bomb_open_pitch_speed", _config_integer, "0", "HALO_BOMB_OPEN_PITCH_SPEED", _environment_value,
+		_platform_all,
+		"Everyone's speed in a Grifball: Open Pitch game you host, in percent\n"
+		"(50 to 200; the carrier's 115% on top stops at 200). 0: the game\n"
+		"type's own, 175." },
+	{ "game.bomb_spawns", _config_string, "\"\"", "HALO_BOMB_SPAWNS", _environment_value, _platform_all,
+		"Where a Bomb or Grifball game you host puts the bomb on a map, for maps\n"
+		"whose spot halfway between the goals plays badly: \"<map> <x> <y> [<z>]\"\n"
+		"(the map as a playlist names it: bloodgulch, timberland@ce), entries\n"
+		"separated by commas. The bomb rests on the first ground under the point\n"
+		"(from a little over its height, when given). A map not named has the\n"
+		"game's own spot: Blood Gulch's halfway between its teleporters' exits,\n"
+		"any other map's halfway between the goals." },
+	{ "game.pack_menus", _config_string, "\"\"", "HALO_PACK_MENUS", _environment_value, _platform_all | _platform_xbox,
+		"Play with a map pack's own menus, by the pack's folder name: \"cex\" uses\n"
+		"maps_cex/ui.map (Halo CE+'s) in place of the game's; \"\" (the default)\n"
+		"keeps the game's. Takes effect after a restart." },
+	{ "game.start_with_one_player", _config_boolean, "false", "HALO_START_WITH_ONE_PLAYER", _environment_value,
+		_platform_all | _platform_xbox,
+		"Let a game you host start with only you. Others can join in progress." },
 
 	{ "paths.data", _config_string, "\"\"", "HALO_DATA_ROOT", _environment_value, _platform_desktop,
 		"The folder holding the maps folder; empty for the working folder and\n"
@@ -1163,6 +1262,13 @@ static const struct config_setting config_settings[] =
 	{ "network.events_folder", _config_string, "\"\"", "HALO_EVENTS_FOLDER", _environment_value, _platform_all,
 		"Delta Stats: a folder to keep a copy of each batch sent; empty for\n"
 		"none." },
+	{ "network.chat_legacy", _config_boolean, "true", "HALO_NET_CHAT_LEGACY", _environment_value, _platform_all,
+		"In games you host, let OpenCE players chat too (over their own\n"
+		"text chat, bridged), while network.chat is on." },
+	{ "network.copy_to_clipboard", _config_boolean, "false", "HALO_NET_COPY_TO_CLIPBOARD", _environment_value,
+		_platform_all,
+		"Put a game's invite link on the clipboard when you start to host it.\n"
+		"false: the log has it, and the Gearbox menus' Server Settings copy it." },
 #endif
 #ifndef HALO_CONSOLE_NO_DISCORD
 	/* (Arena Evolved: OpenCE's Discord application, as it had before; not
@@ -1669,7 +1775,34 @@ static const struct config_setting config_settings[] =
 	{ "debug.profile_memory", _config_integer, "256", "HALO_PROFILE_MEMORY", _environment_value, _platform_all,
 		"Megabytes a recording keeps in memory, 4 to 1024: two halves, each\n"
 		"written out as a part when it fills." },
+	{ "debug.audio_capture_seconds", _config_real, "0.0", "HALO_AUDIO_CAPTURE_SECONDS", _environment_value,
+		_platform_all | _platform_xbox,
+		"Record this many seconds of the sound of each game played (solo,\n"
+		"system link or online), with a log of the player's position and every\n"
+		"sound started, to d:\\audio_probe\\capture-<map>-<n>-* (that folder must\n"
+		"be there; port/linux/game/audio_probe.c); 0 none." },
+	{ "debug.audio_probe", _config_string, "\"\"", "HALO_AUDIO_PROBE", _environment_value, _platform_all | _platform_xbox,
+		"A probe file (port/linux/game/audio_probe.c), named as the game names\n"
+		"its files (d:\\ is the game's folder: on the desktop, the data folder):\n"
+		"the game loads its map, plays its sounds at its spots, records what it\n"
+		"plays beside the file (to compare with tools/audio_probe_compare.py),\n"
+		"and quits. Empty: none." },
 #endif
+	{ "console.debug_geometry", _config_boolean, "false", NULL, _environment_value, _platform_xbox,
+		"For development: the debug build's debug geometry (lines and triangles\n"
+		"drawn by debug commands), whose buffers take 1440 KB. Off, as the retail\n"
+		"game had none; a stock 64 MB console may not have the room." },
+	{ "console.delta", _config_string, "\"auto\"", NULL, _environment_value, _platform_xbox,
+		"Delta Peer: when joining a game whose host offers it, tell the host\n"
+		"this is an Xbox (its platform, memory and nothing else), so the stats\n"
+		"site, the scoreboard and the server show Xbox. \"auto\": on; \"off\" for\n"
+		"the legacy protocol alone. The game is the same either way." },
+	{ "console.log_flush", _config_string, "\"buffered\"", NULL, _environment_value, _platform_xbox,
+		"When debug.txt is written. \"buffered\": the game's lines wait in memory\n"
+		"and are written together, once a second, when 8 KB are waiting, and\n"
+		"at once for an assert, an exit or a crash. \"every_line\": each line is\n"
+		"written as it comes (slow, a file opened for each), for a crash hunt\n"
+		"where even the last line before the console stops must be there." },
 };
 
 #define NUMBER_OF_CONFIG_SETTINGS (sizeof(config_settings) / sizeof(config_settings[0]))
@@ -2676,6 +2809,19 @@ static void config_carry_over(void)
 			disc->string);
 	}
 	ae_config_carry_over_resampling(); /* AE hook */
+	/* (ChupathingyCE 0.8.0b's display.loading_screen_min_seconds: a campaign
+	level's least time now, unless that is set itself) */
+	{
+		const struct config_value *old = &config_values[config_setting_index("display.loading_screen_min_seconds")];
+		struct config_value *campaign = &config_values[config_setting_index("display.loading_screen_campaign_seconds")];
+
+		if (old->chosen && !campaign->chosen)
+		{
+			campaign->real = old->real;
+			platform_log("settings: display.loading_screen_min_seconds (an earlier version's setting) is %.1f: "
+				"display.loading_screen_campaign_seconds", old->real);
+		}
+	}
 	if (level->chosen && position->chosen)
 		return;
 	for (index = 0; index < sizeof(earlier) / sizeof(earlier[0]); index++)

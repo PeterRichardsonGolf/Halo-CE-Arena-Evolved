@@ -527,12 +527,18 @@ def test_normal_build_preprocesses_as_before(tmp_path):
         assert preprocessed(tree, path, flags) == preprocessed(ROOT, path, flags), path
 
 
+DELTA_PROFILE_SOURCES = ("port/linux/game/profile_screen.c", "port/linux/game/profile_names.c")
+
+
 def test_new_files_are_empty_in_a_normal_build():
     flag_sets = preprocess_flags()
     # (found, not listed: a new profile_*.c that forgets its #ifdef shows up here)
     paths = sorted(str(path.relative_to(ROOT)).replace("\\", "/")
                    for directory in ("port/linux/src", "port/linux/game")
                    for path in (ROOT / directory).glob("profile_*.c"))
+    # (ChupathingyCE's Delta Profile screen and names, profile_screen.c and profile_names.c, are a player
+    # profile's, not the profiling build's)
+    paths = [path for path in paths if path not in DELTA_PROFILE_SOURCES]
     assert set(paths) == {*PROFILE_SOURCES, "port/linux/game/profile_console.c"}, paths
     for path in paths:
         flags = flags_for(path, flag_sets)

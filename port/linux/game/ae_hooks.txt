@@ -152,7 +152,7 @@ port/linux/src/p2p_lobby.c	if (!ae_browser_pings_on()) /* AE hook */\nreturn;
 port/linux/src/p2p_lobby.c	if (!lobby.games[index].probing && ae_browser_probe_refresh_due(lobby.games[index].probed_time, p2p_now())) /* AE hook */\nlobby.games[index].probed_time = 0;
 port/linux/src/p2p.c	struct peer *peer = find_peer(p2p.join_host);\n\nif (peer && peer->probe) peer = NULL; /* AE hook */
 port/linux/src/p2p.c	peer = find_peer(peer_identifier);\nif (peer && peer->probe) peer = NULL; /* AE hook */
-port/linux/src/p2p.c	if (p2p.peers[index].used && p2p.peers[index].connected && !p2p.peers[index].probe) /* AE hook */\n{\ndatagram_send(&p2p.peers[index], source_port, port, data, size);
+port/linux/src/p2p.c	if (p2p.peers[index].used && p2p.peers[index].connected && !p2p.peers[index].probe) /* AE hook */\n{\ngame_datagram_send(&p2p.peers[index], source_port, port, data, size);
 port/linux/game/menu_functions.c	#include "../src/ae_net_pings.h" /* AE hook */
 port/linux/game/menu_functions.c	if (ae_browser_ping_text(game->ping, game->failed || !game->open, text, ROW_TEXT_LENGTH)) text_set(named(row, "server_item_ping", 0), text); /* AE hook */
 port/linux/game/menu_functions.c	float ae_rgb[3]; /* AE hook */
@@ -172,7 +172,7 @@ port/linux/game/menu_functions.c	if (!strncmp(name, "ae menus ", 9)) /* AE hook 
 source/interface/ui_widget.c	#include "ae_menus_swap.h" /* AE hook */
 # (after the pointer's targets are let go, which ui_widgets_process_mouse does at its end: the rebuild deletes the
 # widgets they point at)
-source/interface/ui_widget.c	ui_widget_port_press_controller = NONE;\n}\nae_menus_swap_update(); /* AE hook */\nif (widget_globals.initialization_thread)
+source/interface/ui_widget.c	ui_widget_port_press_controller = NONE;\n}\n#endif\nae_menus_swap_update(); /* AE hook */\nif (widget_globals.initialization_thread)
 #
 # CARRIED PATCHES (not hooks: verbatim DamnationCE v0.3.41 code in upstream files, CC0). Whoever merges OpenCE or
 # ChupathingyCE next re-checks these by hand (or drops them if upstream takes DamnationCE's own):

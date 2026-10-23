@@ -136,6 +136,8 @@ symbols in this file:
 real_rgb_color const *shield_color_colors(long unit_index, real_rgb_color const *colors);
 /* port: port/linux/game/overshield_effect.c */
 real const *overshield_effect_values(long unit_index, real const *values, boolean arms);
+#include "game/game_engine.h"
+
 
 /* ---------- constants */
 
@@ -392,11 +394,13 @@ static short first_person_weapon_index_from_weapon_index(
 static short first_person_weapon_index_from_unit_index(
 	long unit_index);
 
+#ifndef HALO_XBOX_CONSOLE
 /* port/linux/game/pal_tags.c's */
 boolean pal_tags_first_person_advance(short local_player_index, long graph_index, short animation_index,
 	short frame_index);
 real pal_tags_first_person_fraction(short local_player_index, long graph_index, short animation_index,
 	short frame_index);
+#endif
 
 /* ---------- globals */
 
@@ -480,6 +484,60 @@ long first_person_weapon_get_local_index(
 	return (local_player_index==MAXIMUM_NUMBER_OF_LOCAL_PLAYERS) ? NONE : local_player_index;
 }
 
+#ifdef HALO_GAME_BROWSER
+/* port: a melee-only Bomb game's unseen fists (game_engine_bomb.c) show the
+arms for the punch alone: the pistol's melee as far as its swing, then the
+arms held there drop out of sight; never its flip and its hold after the
+blow, and at any other time no arms at all */
+enum
+{
+	/* the pistol whip's frame where the swing ends */
+	FISTS_SWING_FRAME_INDEX= 10,
+	/* frames the arms take to drop out of sight after it */
+	FISTS_DROP_FRAME_COUNT= 5
+};
+
+/* TRUE for the fists, with the frame to show (NONE: none) and how far below
+it the arms are (world units) */
+static boolean first_person_weapon_fists_frame(
+	struct first_person_weapon const *first_person_weapon,
+	short *frame_index,
+	real *drop)
+{
+	struct weapon_datum *weapon;
+	short swing_frame_index;
+
+	*frame_index= NONE;
+	*drop= 0.0f;
+	if (first_person_weapon->weapon_index==NONE)
+		return FALSE;
+	weapon= weapon_get(first_person_weapon->weapon_index);
+	if (!game_engine_bomb_hides_weapon(weapon->definition_index))
+		return FALSE;
+	if (first_person_weapon->state!=_first_person_weapon_state_melee ||
+		first_person_weapon->state_animation.index==NONE)
+	{
+		return TRUE;
+	}
+	swing_frame_index= FISTS_SWING_FRAME_INDEX;
+	/* (the first frame is the pistol's hold) */
+	if (first_person_weapon->state_animation.frame_index==0)
+	{
+		return TRUE;
+	}
+	if (first_person_weapon->state_animation.frame_index<=swing_frame_index)
+	{
+		*frame_index= first_person_weapon->state_animation.frame_index;
+	}
+	else if (first_person_weapon->state_animation.frame_index<=swing_frame_index+FISTS_DROP_FRAME_COUNT)
+	{
+		*frame_index= swing_frame_index;
+		*drop= 0.06f*(first_person_weapon->state_animation.frame_index-swing_frame_index);
+	}
+	return TRUE;
+}
+#endif
+
 void first_person_weapon_draw(
 	void)
 {
@@ -516,6 +574,10 @@ void first_person_weapon_draw(
 					struct animation_graph *animation_graph= animation_graph_definition_get(
 						weapon_definition->weapon.interface_definition.first_person_animations.index);
 					struct render_lighting *lighting= object_get_cached_render_lighting(unit_index, FLT_MAX);
+#ifdef HALO_GAME_BROWSER
+					short fists_frame_index;
+					real fists_drop;
+#endif
 
 					model_effect.modifier_shader= NULL;
 					if (TEST_FLAG(unit->unit.flags, _unit_active_camouflaged_bit) ||
@@ -532,8 +594,14 @@ void first_person_weapon_draw(
 						model_effect.type= _render_model_effect_type_none;
 					}
 
+					/* (port: the arms alone for a melee-only Bomb game's unseen
+					fists, game_engine_bomb.c) */
 					if (first_person_weapon->weapon_node_remapping_table_valid &&
-						weapon_definition->weapon.interface_definition.first_person_model.index!=NONE)
+						weapon_definition->weapon.interface_definition.first_person_model.index!=NONE
+#ifdef HALO_GAME_BROWSER
+						&& !game_engine_bomb_hides_weapon(weapon->definition_index)
+#endif
+						)
 					{
 						model_remap_node_matrices_to_match_animation_graph(
 							weapon_definition->weapon.interface_definition.first_person_model.index,
@@ -580,8 +648,15 @@ void first_person_weapon_draw(
 						}
 					}
 
+					/* (port: the unseen fists' arms only for the punch:
+					first_person_weapon_fists_frame) */
 					if (first_person_weapon->hands_node_remapping_table_valid &&
-						first_person_interface->hands.index!=NONE)
+						first_person_interface->hands.index!=NONE
+#ifdef HALO_GAME_BROWSER
+						&& (!first_person_weapon_fists_frame(first_person_weapon, &fists_frame_index, &fists_drop) ||
+							fists_frame_index!=NONE)
+#endif
+						)
 					{
 						model_remap_node_matrices_to_match_animation_graph(
 							first_person_interface->hands.index,
@@ -1149,6 +1224,7 @@ static void first_person_weapon_build_node_matrices(
 		euler_angles2d_from_vector3d(&first_person_weapon->render_facing, &render.camera.forward);
 		first_person_weapon->render_position= render.camera.position;
 	}
+#ifndef HALO_XBOX_CONSOLE
 	/* The native ports draw several frames per tick. The turning sway
 	(first_person_weapon_update) takes the facing change since the last
 	frame as a tick's worth: move the last facing on once a tick. */
@@ -1162,6 +1238,10 @@ static void first_person_weapon_build_node_matrices(
 			last_render_ticks[local_player_index]= game_time_get();
 		}
 	}
+#else
+	first_person_weapon->last_render_facing= first_person_weapon->render_facing;
+	first_person_weapon->last_render_position= first_person_weapon->render_position;
+#endif
 	euler_angles2d_from_vector3d(&first_person_weapon->render_facing, &render.camera.forward);
 	first_person_weapon->render_position= render.camera.position;
 	first_person_weapon->render_forward= render.camera.forward;
@@ -1186,6 +1266,11 @@ static void first_person_weapon_build_node_matrices(
 			weapon_definition->weapon.interface_definition.first_person_model.index);
 		struct animation_graph *animation_graph= animation_graph_definition_get(
 			weapon_definition->weapon.interface_definition.first_person_animations.index);
+#ifdef HALO_GAME_BROWSER
+		short fists_frame_index;
+		real fists_drop;
+		boolean fists= first_person_weapon_fists_frame(first_person_weapon, &fists_frame_index, &fists_drop);
+#endif
 
 		if (animation_graph->first_person_weapon_animations.count)
 		{
@@ -1207,11 +1292,23 @@ static void first_person_weapon_build_node_matrices(
 						first_person_weapon->state_animation.index,
 						struct animation);
 
+					short frame_index= first_person_weapon->state_animation.frame_index;
+					boolean held= FALSE;
+
+#ifdef HALO_GAME_BROWSER
+					/* (port: the unseen fists' arms held at the swing's end) */
+					if (fists && fists_frame_index!=NONE && fists_frame_index!=frame_index)
+					{
+						frame_index= fists_frame_index;
+						held= TRUE;
+					}
+#endif
 					animation_get_node_orientations(
 						NULL,
 						state_animation,
-						first_person_weapon->state_animation.frame_index,
+						frame_index,
 						first_person_weapon->node_orientations);
+#ifndef HALO_XBOX_CONSOLE
 					/* port: a PAL map's animation, slowed to the NTSC maps' pace,
 					between the frame it is on and the next: held on the frame, it
 					stood still for that tick, and a reload moved in fits and starts
@@ -1223,7 +1320,7 @@ static void first_person_weapon_build_node_matrices(
 							first_person_weapon->state_animation.index,
 							first_person_weapon->state_animation.frame_index);
 
-						if (fraction>0.0f &&
+						if (fraction>0.0f && !held &&
 							first_person_weapon->state_animation.frame_index+1<state_animation->frame_count)
 						{
 							real_orientation next_node_orientations[MAXIMUM_NODES_PER_ANIMATION];
@@ -1246,6 +1343,7 @@ static void first_person_weapon_build_node_matrices(
 							}
 						}
 					}
+#endif
 				}
 				else
 				{
@@ -1449,7 +1547,13 @@ static void first_person_weapon_build_node_matrices(
 					}
 				}
 
-				if (first_person_weapon->interpolation_frame_count>0)
+				if (first_person_weapon->interpolation_frame_count>0
+#ifdef HALO_GAME_BROWSER
+					/* (port: the unseen fists' punch starts out of sight, not
+					from the pistol's pose) */
+					&& !fists
+#endif
+					)
 				{
 					interpolate_node_orientations(
 						(short)animation_graph->nodes.count,
@@ -1468,6 +1572,21 @@ static void first_person_weapon_build_node_matrices(
 			&render.camera.position,
 			&render.camera.forward,
 			&render.camera.up);
+#ifdef HALO_GAME_BROWSER
+		/* (port: the unseen fists' arms dropping out of sight after the
+		swing) */
+		if (fists && fists_drop>0.0f)
+		{
+			short node_index;
+
+			for (node_index= 0; node_index<MIN(animation_graph->nodes.count, MAXIMUM_NODES_PER_ANIMATION); node_index++)
+			{
+				point_from_line3d(&first_person_weapon->node_matrices[node_index].position, &render.camera.up,
+					-fists_drop, &first_person_weapon->node_matrices[node_index].position);
+			}
+		}
+#endif
+#ifndef HALO_XBOX_CONSOLE
 		/* the pose between the last two ticks (render_interpolation.c) */
 		/* port: no more nodes than the weapon's matrices hold (a map's count) */
 		render_interpolation_first_person(
@@ -1475,6 +1594,7 @@ static void first_person_weapon_build_node_matrices(
 			first_person_weapon->node_matrices,
 			(short)MIN(animation_graph->nodes.count, MAXIMUM_NODES_PER_ANIMATION),
 			&render.camera);
+#endif
 	}
 
 	return;
@@ -1582,6 +1702,16 @@ static void first_person_weapon_message(
 		{
 			state= (short)first_person_weapon_state_from_weapon_message(message_type);
 		}
+#ifdef HALO_GAME_BROWSER
+		/* (port: a melee-only Bomb game's unseen fists go straight to rest:
+		none of the pistol's draw or holster, game_engine_bomb.c) */
+		if ((state==_first_person_weapon_state_ready || state==_first_person_weapon_state_put_away) &&
+			first_person_weapon->weapon_index!=NONE &&
+			game_engine_bomb_hides_weapon(weapon_get(first_person_weapon->weapon_index)->definition_index))
+		{
+			state= _first_person_weapon_state_idle;
+		}
+#endif
 		if (state!=NONE)
 		{
 			first_person_weapon_set_state(local_player_index, state, TRUE);
@@ -1862,6 +1992,7 @@ static void first_person_weapon_update(
 			}
 		}
 
+#ifndef HALO_XBOX_CONSOLE
 		/* port: a PAL map's first-person animation at the NTSC maps' pace,
 		which the weapon's timing keeps (port/linux/game/pal_tags.c) */
 		if (!pal_tags_first_person_advance(local_player_index,
@@ -1872,6 +2003,7 @@ static void first_person_weapon_update(
 			sound_definition_index= NONE;
 		}
 		else
+#endif
 		animation_update_result= animation_update_render_only(
 			weapon_definition->weapon.interface_definition.first_person_animations.index,
 			&first_person_weapon->state_animation,

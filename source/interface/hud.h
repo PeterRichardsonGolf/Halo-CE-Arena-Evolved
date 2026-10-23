@@ -117,6 +117,11 @@ void hud_draw_screen(
 
 /* ---------- prototypes/HUD_NAV_POINTS.C */
 
+#ifdef HALO_GAME_BROWSER
+boolean hud_nav_point_color(
+	char const *name,
+	unsigned long *color);
+#endif
 short find_nav_point(
 	char const *name);
 short hud_nav_point_index(

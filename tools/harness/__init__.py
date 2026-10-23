@@ -54,8 +54,47 @@ def structure(source, name):
     return source[match.start():source.index(";", end) + 1]
 
 
+# the console ports' macros (ChupathingyCE's port/xbox and the rest): never defined by the desktop builds the
+# harness stands for, so a constant's console-only definition is not the one it takes
+CONSOLE_MACROS = re.compile(r"\bHALO_(?:CONSOLE_\w+|XBOX_CONSOLE|SWITCH_CONSOLE|WINDOW_REBASE|WINDOW_TRANSLATED)\b")
+
+
+def desktop_source(source):
+    """The source without the branches only a console build compiles: a conditional whose macros are all console
+    ones is taken as false (its #else as true); any other conditional keeps both its branches."""
+    out, stack = [], []
+    for line in source.splitlines(keepends=True):
+        directive = re.match(r"\s*#\s*(if|ifdef|ifndef|elif|else|endif)\b(.*)", line)
+        if directive:
+            kind, rest = directive.group(1), directive.group(2)
+            names = re.findall(r"\b[A-Za-z_]\w*\b", rest.replace("defined", " "))
+            console = bool(names) and all(CONSOLE_MACROS.fullmatch(n) or n.isdigit() for n in names)
+            if kind in ("if", "ifdef", "ifndef"):
+                # (None: undecided, both branches kept)
+                value = None if not console else (kind == "ifndef")
+                stack.append([value, value is True])
+            elif kind == "elif" and stack:
+                if stack[-1][1]:
+                    stack[-1][0] = False
+                else:
+                    stack[-1][0] = None if not console else False
+            elif kind == "else" and stack:
+                if stack[-1][0] is not None:
+                    stack[-1][0] = not stack[-1][1] and not stack[-1][0]
+            elif kind == "endif" and stack:
+                stack.pop()
+            if stack and stack[-1][0] is True:
+                stack[-1][1] = True
+            continue
+        if all(frame[0] is not False for frame in stack):
+            out.append(line)
+    return "".join(out)
+
+
 def constant(source, name):
-    """An enum constant's or #define's integer value, following a name it is set to (as the port's capacities are)."""
+    """An enum constant's or #define's integer value, following a name it is set to (as the port's capacities are),
+    as the desktop builds have it (desktop_source)."""
+    source = desktop_source(source)
     match = re.search(r"\b" + re.escape(name) + r"\s*=\s*(\w+)", source) or \
         re.search(r"#define\s+" + re.escape(name) + r"\s+(\w+)", source)
     if not match:

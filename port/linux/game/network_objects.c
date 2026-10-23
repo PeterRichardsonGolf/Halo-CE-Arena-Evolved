@@ -66,6 +66,9 @@ same datum index (identifier and all), so that any message can name one:
 #include "network_coop.h"
 #include "network_distributed.h"
 #include "profile_sections.h"
+#ifdef HALO_PORT_CONSOLE_LIMITS
+#include "cseries/errors.h"
+#endif
 
 #include <math.h>
 
@@ -499,6 +502,52 @@ static struct
 	long create_failures;
 	long own_objects_removed;
 } objects_statistics;
+
+#ifdef HALO_PORT_CONSOLE_LIMITS
+/* port: the console's limits (halo_port_limits.h): the host's object
+indices this machine was told of, against its smaller object array. A PC
+host's indices run to 8,192: one at LOCAL_OBJECTS_FIRST_INDEX or above
+takes the place of this machine's own (a projectile, an effect), one past
+MAXIMUM_TRACKED_OBJECTS is not made here at all (docs/cross-play.md, "Object
+slots"). Logged as the highest grows past each 256, and for each game */
+static struct
+{
+	long highest;
+	long logged_highest;
+	long in_own_half;
+	long past_capacity;
+} objects_cross_play;
+
+static void objects_cross_play_host_index(
+	long absolute_index)
+{
+	if (absolute_index >= MAXIMUM_TRACKED_OBJECTS)
+		objects_cross_play.past_capacity++;
+	else if (absolute_index >= LOCAL_OBJECTS_FIRST_INDEX)
+		objects_cross_play.in_own_half++;
+	if (absolute_index <= objects_cross_play.highest)
+		return;
+	objects_cross_play.highest = absolute_index;
+	if (absolute_index / 256 > objects_cross_play.logged_highest / 256)
+	{
+		objects_cross_play.logged_highest = absolute_index;
+		error(3, "cross-play: the host's objects reach index %ld (this build: its own from %d, %d in all)",
+			absolute_index, (int)LOCAL_OBJECTS_FIRST_INDEX, (int)MAXIMUM_TRACKED_OBJECTS);
+	}
+}
+
+static void objects_cross_play_new_game(
+	void)
+{
+	if (objects_cross_play.highest > 0)
+	{
+		error(3, "cross-play: last game's host objects: highest index %ld, %ld creates in this build's own half, %ld past its %d; %ld made, %ld failed",
+			objects_cross_play.highest, objects_cross_play.in_own_half, objects_cross_play.past_capacity,
+			(int)MAXIMUM_TRACKED_OBJECTS, objects_statistics.creates, objects_statistics.create_failures);
+	}
+	csmemset(&objects_cross_play, 0, sizeof(objects_cross_play));
+}
+#endif
 
 void network_distributed_item_statistics(
 	long *creates,
@@ -1680,6 +1729,13 @@ static void distributed_host_send_inventories(
 			continue;
 		/* (one carrying nothing, as it has come to for a while: its last
 		weapon out of its hands everywhere, and then no more of it) */
+		/* (a Bomb game's player, empty handed in a melee-only game, is
+		sent all the same: a client's copy of the unit starts with the unit's
+		own grenades, which the host's count of none takes away) */
+#ifdef HALO_GAME_BROWSER
+		if (unit->unit.player_index != NONE && game_engine_traits_active())
+			carries = TRUE;
+#endif
 		if (carries)
 			objects_host_inventories[absolute_index].carried_time = game_time_get();
 		else if (objects_host_inventories[absolute_index].carried_time == NONE ||
@@ -2440,6 +2496,10 @@ void network_objects_handle_changes(
 		struct distributed_object_change const *change = &changes[index];
 		long absolute_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(change->object_index);
 
+#ifdef HALO_PORT_CONSOLE_LIMITS
+		if (change->change == _object_change_create && change->object_index != NONE && absolute_index >= 0)
+			objects_cross_play_host_index(absolute_index);
+#endif
 		if (!distributed_object_index_valid(change->object_index) ||
 			absolute_index < 0 || absolute_index >= MAXIMUM_TRACKED_OBJECTS)
 		{
@@ -3334,6 +3394,9 @@ void network_objects_new_game(
 	short local_player_index;
 	short index;
 
+#ifdef HALO_PORT_CONSOLE_LIMITS
+	objects_cross_play_new_game();
+#endif
 	csmemset(objects_host_inventories, 0, sizeof(objects_host_inventories));
 	host_damage_animation_count = 0;
 	csmemset(client_damage_animations, 0, sizeof(client_damage_animations));
@@ -3387,3 +3450,173 @@ void network_objects_new_game(
 		}
 	}
 }
+
+#ifdef HALO_BIG_ENDIAN
+/* (network_distributed.h) this module's entries in the wire's order */
+boolean network_objects_wire_entries(
+	byte type,
+	byte *entries,
+	short count,
+	long size)
+{
+	short index;
+
+	switch (type)
+	{
+	case _distributed_message_object_changes:
+	{
+		struct distributed_object_change *changes = (struct distributed_object_change *)entries;
+
+		for (index = 0; index < count && (index + 1) * (long)sizeof(*changes) <= size; index++)
+		{
+			WIRE_SWAP_FIELDS(&changes[index], struct distributed_object_change, object_index, definition_index,
+				sizeof(long));
+			WIRE_SWAP_FIELDS(&changes[index], struct distributed_object_change, owner_team_index, variant_number,
+				sizeof(short));
+			/* (the position, the axes, the velocities and the colors) */
+			WIRE_SWAP_FIELDS(&changes[index], struct distributed_object_change, position, change_colors,
+				sizeof(real));
+		}
+		return TRUE;
+	}
+	case _distributed_message_object_states:
+	case _distributed_message_vehicle_prediction:
+	{
+		struct distributed_object_state *states = (struct distributed_object_state *)entries;
+
+		for (index = 0; index < count && (index + 1) * (long)sizeof(*states) <= size; index++)
+		{
+			WIRE_SWAP_FIELD(&states[index], struct distributed_object_state, object_index, sizeof(long));
+			WIRE_SWAP_FIELD(&states[index], struct distributed_object_state, time, sizeof(short));
+			WIRE_SWAP_FIELD(&states[index], struct distributed_object_state, position, sizeof(real));
+			WIRE_SWAP_FIELDS(&states[index], struct distributed_object_state, forward, angular_velocity,
+				sizeof(short));
+		}
+		return TRUE;
+	}
+	case _distributed_message_inventories:
+	{
+		struct distributed_inventory *inventories = (struct distributed_inventory *)entries;
+
+		for (index = 0; index < count && (index + 1) * (long)sizeof(*inventories) <= size; index++)
+		{
+			WIRE_SWAP_FIELD(&inventories[index], struct distributed_inventory, unit_index, sizeof(long));
+			WIRE_SWAP_FIELD(&inventories[index], struct distributed_inventory, weapon_indices, sizeof(long));
+			WIRE_SWAP_FIELDS(&inventories[index], struct distributed_inventory, rounds_total, age, sizeof(short));
+		}
+		return TRUE;
+	}
+	case _distributed_message_damage_animations:
+	{
+		struct distributed_damage_animation *animations = (struct distributed_damage_animation *)entries;
+
+		for (index = 0; index < count && (index + 1) * (long)sizeof(*animations) <= size; index++)
+		{
+			WIRE_SWAP_FIELD(&animations[index], struct distributed_damage_animation, unit_index, sizeof(long));
+			WIRE_SWAP_FIELD(&animations[index], struct distributed_damage_animation, animation_index,
+				sizeof(short));
+		}
+		return TRUE;
+	}
+	}
+	return FALSE;
+}
+#endif
+
+#if defined(HALO_BIG_ENDIAN) || defined(HALO_NETWORK_WIRE_CAPTURE)
+/* (network_distributed.h) this module's sample entries */
+word network_objects_wire_sample(
+	byte type,
+	byte *entries)
+{
+	short index;
+
+	switch (type)
+	{
+	case _distributed_message_object_changes:
+	{
+		struct distributed_object_change *changes = (struct distributed_object_change *)entries;
+
+		for (index = 0; index < 2; index++)
+		{
+			struct distributed_object_change *change = &changes[index];
+			short color;
+
+			WIRE_SAMPLE(change->change);
+			WIRE_SAMPLE(change->flags);
+			WIRE_SAMPLE(change->owner_player_index);
+			WIRE_SAMPLE(change->forced_shader_permutation_index);
+			WIRE_SAMPLE(change->object_index);
+			WIRE_SAMPLE(change->definition_index);
+			WIRE_SAMPLE(change->owner_team_index);
+			WIRE_SAMPLE(change->variant_number);
+			WIRE_SAMPLES(change->position.n);
+			WIRE_SAMPLES(change->forward.n);
+			WIRE_SAMPLES(change->up.n);
+			WIRE_SAMPLES(change->translational_velocity.n);
+			WIRE_SAMPLES(change->angular_velocity.n);
+			for (color = 0; color < NUMBER_OF_OBJECT_CHANGE_COLORS; color++)
+				WIRE_SAMPLES(change->change_colors[color].n);
+			WIRE_SAMPLES(change->region_permutations);
+		}
+		return (word)(2 * sizeof(*changes));
+	}
+	case _distributed_message_object_states:
+	case _distributed_message_vehicle_prediction:
+	{
+		struct distributed_object_state *states = (struct distributed_object_state *)entries;
+
+		for (index = 0; index < 2; index++)
+		{
+			struct distributed_object_state *state = &states[index];
+
+			WIRE_SAMPLE(state->object_index);
+			WIRE_SAMPLE(state->flags);
+			WIRE_SAMPLE(state->time);
+			WIRE_SAMPLES(state->position.n);
+			WIRE_SAMPLE_VECTOR(state->forward);
+			WIRE_SAMPLE_VECTOR(state->up);
+			WIRE_SAMPLE_VECTOR(state->translational_velocity);
+			WIRE_SAMPLE_VECTOR(state->angular_velocity);
+		}
+		return (word)(2 * sizeof(*states));
+	}
+	case _distributed_message_inventories:
+	{
+		struct distributed_inventory *inventories = (struct distributed_inventory *)entries;
+
+		for (index = 0; index < 2; index++)
+		{
+			struct distributed_inventory *inventory = &inventories[index];
+			short weapon;
+
+			WIRE_SAMPLE(inventory->unit_index);
+			WIRE_SAMPLES(inventory->grenade_counts);
+			WIRE_SAMPLE(inventory->current_weapon_index);
+			WIRE_SAMPLES(inventory->weapon_indices);
+			for (weapon = 0; weapon < MAXIMUM_WEAPONS_PER_UNIT; weapon++)
+			{
+				WIRE_SAMPLES(inventory->rounds_total[weapon]);
+				WIRE_SAMPLES(inventory->rounds_loaded[weapon]);
+			}
+			WIRE_SAMPLES(inventory->age);
+		}
+		return (word)(2 * sizeof(*inventories));
+	}
+	case _distributed_message_damage_animations:
+	{
+		struct distributed_damage_animation *animations = (struct distributed_damage_animation *)entries;
+
+		for (index = 0; index < 2; index++)
+		{
+			WIRE_SAMPLE(animations[index].unit_index);
+			WIRE_SAMPLE(animations[index].animation_index);
+			WIRE_SAMPLE(animations[index].type);
+			WIRE_SAMPLE(animations[index].number);
+		}
+		return (word)(2 * sizeof(*animations));
+	}
+	}
+	return 0;
+}
+#endif

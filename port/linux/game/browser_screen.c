@@ -43,7 +43,8 @@ halo_port_advertised_join_state) stays listed, dimmed, after the others;
 the list's footer and its details' Status give the reason, and A says it
 (the join's own refusal message) rather than join.
 
-Start opens the player's profile page in the web browser; RB (only while
+Start opens Delta Profile (profile_screen.c; the web page with
+display.delta_profile off); RB (only while
 this copy is not linked to a profile: browser_profile_linked) opens Link
 Profile over the list, for where no web browser opens: a code (and a QR
 code) to type at the game list's /connect page on another device, then the
@@ -72,6 +73,7 @@ the right button is B.
 #include "interface/ui_widget.h"
 #include "tag_files/tag_groups.h"
 #include "game/game.h"
+#include "game/game_engine.h"
 #include "interface/player_ui.h"
 #include "saved games/player_profile.h"
 #include "saved games/saved_game_files.h"
@@ -86,6 +88,12 @@ the right button is B.
 #include "halo_ui_map_list.h"
 #include "halo_ui_pointer.h"
 #include "halo_port_limits.h" /* AE */
+#ifndef HALO_CONSOLE_NO_DELTA_PROFILE
+#include "halo_profile_screen.h"
+
+boolean pc_menus_chupathingy(void);
+boolean pc_menu_delta_profile_open(void);
+#endif
 
 /* ---------- constants */
 
@@ -146,7 +154,7 @@ enum
 /* the game's engines, short (as players say them) to fit the column */
 static char const *const engine_names[] =
 {
-	"", "CTF", "Slayer", "Oddball", "King", "Race",
+	"", "CTF", "Slayer", "Oddball", "King", "Race", "Bomb",
 };
 
 /* the multiplayer maps' names in the menus */
@@ -210,6 +218,9 @@ static struct
 	char offer_file[32];
 	/* (the name the player knows it by: a hashed name's base, map_archive.h) */
 	char offer_display[32];
+	/* (a stock map's panel: heading and two lines, from map_family_stock_need) */
+	char offer_stock_first[96];
+	char offer_stock_second[160];
 	unsigned long offer_version;
 	boolean offer_dont_ask;
 	struct map_download_progress offer_progress;
@@ -258,13 +269,13 @@ static short map_file(
 	char *file,
 	long size)
 {
-	return map_family_parse(path, file, size);
+	return map_family_parse_listed(path, file, size);
 }
 
 static short map_family(
 	char const *path)
 {
-	return map_family_parse(path, NULL, 0);
+	return map_family_parse_listed(path, NULL, 0);
 }
 
 /* the campaign's levels in the menus' words, for the co-op games the list
@@ -307,7 +318,7 @@ static char const *map_display_name(
 		unsigned short characters[48];
 		long length;
 
-		ui_map_list_family_name(family, file, name, NUMBEROF(name));
+		ui_map_list_map_name(path, name, NUMBEROF(name));
 		for (length = 0; length < NUMBEROF(name) && name[length]; length++)
 			characters[length] = (unsigned short)name[length];
 		utf8_text(characters, length, text, size);
@@ -328,6 +339,22 @@ static char const *map_display_name(
 	return text;
 }
 
+/* a listed game's map as players name it: an Xbox map pack's by the name
+its host announces ("Gothra": a player without the pack has no other), any
+other as map_display_name names it */
+static char const *game_map_display_name(
+	struct browser_game const *game,
+	char *text,
+	long size)
+{
+	if (map_family(game->map) == _map_family_pack && game->map_title[0])
+	{
+		snprintf(text, (size_t)size, "%s", game->map_title);
+		return text;
+	}
+	return map_display_name(game->map, text, size);
+}
+
 /* whether a game's map can be played here: an Xbox map, or a Custom Edition
 or HaloMD map in its family's folders, missing, or on a build without them;
 the folders asked again when fresh, or for another map, or now and then */
@@ -346,7 +373,7 @@ static short ce_map_state(
 	{
 		csstrncpy(browser_screen.ce_map, game->map, sizeof(browser_screen.ce_map) - 1);
 		browser_screen.ce_map[sizeof(browser_screen.ce_map) - 1] = 0;
-		browser_screen.ce_map_answer = ui_map_list_family_present(family, file) ? _ce_map_present : _ce_map_missing;
+		browser_screen.ce_map_answer = ui_map_list_map_present(game->map) ? _ce_map_present : _ce_map_missing;
 		browser_screen.ce_map_time = system_milliseconds();
 	}
 	return browser_screen.ce_map_answer;
@@ -491,8 +518,11 @@ static void start_offered_download(
 /* one of Halo PC's own maps a game needs: its panel says to copy it from
 the player's install (never downloaded) */
 static void offer_stock(
-	char const *file)
+	char const *file,
+	unsigned long version)
 {
+	char blocker[160];
+
 	csstrncpy(browser_screen.offer_file, file, sizeof(browser_screen.offer_file) - 1);
 	browser_screen.offer_file[sizeof(browser_screen.offer_file) - 1] = 0;
 	map_archive_display_name(browser_screen.offer_file, browser_screen.offer_display,
@@ -507,6 +537,8 @@ static void offer_stock(
 				*cursor = (char)(*cursor + 32);
 		}
 	}
+	map_family_stock_need(file, version, browser_screen.offer_stock_first, sizeof(browser_screen.offer_stock_first),
+		browser_screen.offer_stock_second, sizeof(browser_screen.offer_stock_second), blocker, sizeof(blocker));
 	browser_screen.offer = _offer_stock;
 	browser_screen.offer_time = system_milliseconds();
 	browser_screen.offer_closes_screen = FALSE;
@@ -690,6 +722,7 @@ static char const *version_blocker(
 	snprintf(text, (size_t)size, format, (unsigned int)game->version);
 	return text;
 }
+static char const *game_type_blocker(struct browser_game const *game);
 
 /* a game picked: its invite joined (the tunnel to its host), then its game
 joined once advertised through it (browser_screen_process) */
@@ -726,6 +759,11 @@ static void join_selected(
 		set_status("That game is not accepting players.");
 		return;
 	}
+	if (game_type_blocker(game))
+	{
+		set_status(game_type_blocker(game));
+		return;
+	}
 	/* (a Custom Edition map's game, only with the map: a join without it
 	would fail at its loading; the list's footer says what is missing. A
 	map that may be downloaded is offered once the host advertises it:
@@ -738,7 +776,7 @@ static void join_selected(
 			char file[BROWSER_MAP_LENGTH];
 
 			map_file(game->map, file, sizeof(file));
-			offer_stock(file);
+			offer_stock(file, 0);
 		}
 		return;
 	}
@@ -801,7 +839,7 @@ static void wait_for_host(
 			if (family == _map_family_custom_edition && !ui_map_list_family_present(family, file) &&
 				map_archive_stock_name(file))
 			{
-				offer_stock(file);
+				offer_stock(file, advertisement.map_version);
 				return;
 			}
 			if (family == _map_family_custom_edition && !ui_map_list_family_present(family, file) &&
@@ -874,7 +912,7 @@ static long compare_games(
 	{
 		char a_name[64], b_name[64];
 
-		order = strcmp(map_display_name(a->map, a_name, sizeof(a_name)), map_display_name(b->map, b_name, sizeof(b_name)));
+		order = strcmp(game_map_display_name(a, a_name, sizeof(a_name)), game_map_display_name(b, b_name, sizeof(b_name)));
 		/* (an Xbox map before Halo PC's of the same name, Custom Edition's
 		before HaloMD's) */
 		if (!order)
@@ -928,6 +966,24 @@ static void fetch_games(
 	}
 }
 
+/* the game types this build plays: the Xbox's (0 is co-op), and Bomb
+(game_engine_bomb.c) in a build with it; a game of another (a newer
+build's) is listed, marked and not joined */
+static char const *game_type_blocker(
+	struct browser_game const *game)
+{
+#ifdef HALO_GAME_BROWSER
+	long last = game_engine_bomb;
+#else
+	long last = game_engine_race;
+#endif
+
+	if (game->engine >= 0 && game->engine <= last)
+		return NULL;
+	return game->engine == game_engine_bomb ? "Bomb and Grifball need a Chupathingy build with Bomb." :
+		"A game type this build does not have: update Chupathingy to join.";
+}
+
 /* what this machine lacks to join a game on a Custom Edition map, or NULL
 when nothing (ce_map_state) */
 static char const *ce_map_blocker(
@@ -944,11 +1000,23 @@ static char const *ce_map_blocker(
 		/* (a hashed name by the file the player knows: map_archive.h) */
 		map_archive_display_name(file, display, (int)sizeof(display));
 		if (ce_map_stock(game))
-			snprintf(text, (size_t)size, "%s.map comes with Halo PC: install it to join", display);
+		{
+			char first[96], second[160];
+
+			map_family_stock_need(file, 0, first, sizeof(first), second, sizeof(second), text, size);
+		}
 		else if (ce_map_downloadable(game))
 		{
 			snprintf(text, (size_t)size, "Needs %s/%s.map: join to download it", map_family_folder(family),
 				display);
+		}
+		/* (a pack's map: its pack's folder, maps_<pack>) */
+		else if (family == _map_family_pack)
+		{
+			char pack[MAP_PACK_ID_LENGTH + 1];
+
+			map_family_pack_id(game->map, pack, sizeof(pack));
+			snprintf(text, (size_t)size, "Needs maps_%s/%s.map to join", pack, file);
 		}
 		else
 			snprintf(text, (size_t)size, "Needs %s/%s.map to join", map_family_folder(family), display);
@@ -970,6 +1038,8 @@ static char const *join_blocker(
 {
 	char const *blocker = version_blocker(game, text, size);
 
+	if (!blocker)
+		blocker = game_type_blocker(game);
 	return blocker ? blocker : ce_map_blocker(game, text, size);
 }
 
@@ -1090,6 +1160,7 @@ void browser_screen_map_missing(
 	{
 		csstrncpy(browser_screen.offer_file, file, sizeof(browser_screen.offer_file) - 1);
 		browser_screen.offer_file[sizeof(browser_screen.offer_file) - 1] = 0;
+		browser_screen.offer_version = version;
 		browser_screen.stock_pending = TRUE;
 		return;
 	}
@@ -1142,7 +1213,7 @@ boolean browser_screen_open_map_offer(
 		csstrncpy(file, browser_screen.offer_file, sizeof(file) - 1);
 		file[sizeof(file) - 1] = 0;
 		browser_screen_open();
-		offer_stock(file);
+		offer_stock(file, browser_screen.offer_version);
 		browser_screen.offer_closes_screen = TRUE;
 		return TRUE;
 	}
@@ -1196,7 +1267,7 @@ boolean browser_screen_invite_game(
 			char text[64];
 
 			utf8_name(games[index].name, name, name_size);
-			snprintf(map, (size_t)map_size, "%s", map_display_name(games[index].map, text, sizeof(text)));
+			snprintf(map, (size_t)map_size, "%s", game_map_display_name(&games[index], text, sizeof(text)));
 			return TRUE;
 		}
 	}
@@ -1296,6 +1367,16 @@ offer's while it is) */
 			join_selected();
 		break;
 	case _gamepad_binary_button_start:
+#ifndef HALO_CONSOLE_NO_DELTA_PROFILE
+		/* (Delta Profile's screen: the Chupathingy menus' own, else the
+		screen of code; with display.delta_profile off, the web page) */
+		if (profile_screen_available())
+		{
+			if (pc_menus_chupathingy() ? pc_menu_delta_profile_open() : (profile_screen_open(TRUE), TRUE))
+				browser_screen.active = FALSE;
+			break;
+		}
+#endif
 		browser_open_profile();
 		set_status(ae_community_services_on() ? "Opening your profile in the web browser" : AE_COMMUNITY_OFF_TEXT); /* AE hook */
 		break;
@@ -1523,7 +1604,7 @@ static char const *type_name(
 		return text;
 	}
 	engine = game->engine >= 0 && game->engine < NUMBEROF(engine_names) && engine_names[game->engine][0] ?
-		engine_names[game->engine] : "Game";
+		engine_names[game->engine] : "New game type";
 
 	/* (Capture the Flag is played in teams alone) */
 	snprintf(text, (size_t)size, "%s%s", game->teams && game->engine != 1 ? "Team " : "", engine);
@@ -1890,19 +1971,35 @@ static void text_with_button(
 
 /* ---------- drawing: the list's pieces */
 
-/* a map's family tag (XBX, HCE, HMD, GBX: map_family_tag), size its text's
-height: its width */
+/* a game's map's tag (XBX, HCE, HMD, GBX: map_family_tag; a pack's map its
+pack's, CE+: ui_map_list_map_tag), by the map's name (NULL: the family's) */
+static char const *family_badge_tag(
+	short family,
+	char const *map)
+{
+	static char tag[16];
+	char title[64];
+
+	if (!map || family != _map_family_pack)
+		return map_family_tag(family);
+	ui_map_list_map_tag(map, tag, sizeof(tag), title, sizeof(title));
+	return tag;
+}
+
+/* a map's family tag, size its text's height: its width */
 static float family_badge_width(
 	short family,
+	char const *map,
 	float size)
 {
-	return ui_overlay_text_width(UI_FONT_MENU, size, map_family_tag(family)) + size * 1.1f;
+	return ui_overlay_text_width(UI_FONT_MENU, size, family_badge_tag(family, map)) + size * 1.1f;
 }
 
 /* the tag at x (its left), centred on text whose top is text_y and height
 text_size: a thin pill in the family's color */
 static void draw_family_badge(
 	short family,
+	char const *map,
 	float size,
 	float x,
 	float text_y,
@@ -1912,12 +2009,12 @@ static void draw_family_badge(
 	unsigned int color = (unsigned int)(map_family_color(family) << 8);
 	float height = size * 1.7f;
 	float y = text_y + text_size * 0.5f - height * 0.5f;
-	float width = family_badge_width(family, size);
+	float width = family_badge_width(family, map, size);
 
 	ui_overlay_rect(x, y, width, height, height * 0.3f, color | (dim ? 0x0C : 0x1C));
 	ui_overlay_outline(x, y, width, height, height * 0.3f, 0.75f, color | (dim ? 0x50 : 0xA8));
 	ui_overlay_text(UI_FONT_MENU, size, x + width * 0.5f, y + (height - size) * 0.5f + 0.2f, UI_ALIGN_CENTER,
-		color | (dim ? 0x80 : 0xFF), map_family_tag(family));
+		color | (dim ? 0x80 : 0xFF), family_badge_tag(family, map));
 }
 
 /* a padlock, size high, at x (its left), y (its top): a game with a
@@ -2152,8 +2249,8 @@ static void draw_map_offer(
 
 	dialog_frame(CONNECT_X, CONNECT_Y, CONNECT_WIDTH, CONNECT_HEIGHT,
 		browser_screen.offer == _offer_stock ? MAP_ARCHIVE_STOCK_TITLE : "MISSING MAP");
-	draw_family_badge(_map_family_custom_edition, BADGE_SIZE + 1.5f,
-		CONNECT_X + CONNECT_WIDTH - 22 - family_badge_width(_map_family_custom_edition, BADGE_SIZE + 1.5f), CONNECT_Y + 20,
+	draw_family_badge(_map_family_custom_edition, NULL, BADGE_SIZE + 1.5f,
+		CONNECT_X + CONNECT_WIDTH - 22 - family_badge_width(_map_family_custom_edition, NULL, BADGE_SIZE + 1.5f), CONNECT_Y + 20,
 		12.0f, FALSE);
 
 	switch (browser_screen.offer)
@@ -2232,13 +2329,19 @@ static void draw_map_offer(
 	}
 	case _offer_stock:
 	{
-		/* (map_archive_stock_message's words, a line at a time) */
-		snprintf(text, sizeof(text), "%s.map comes with Halo PC.", browser_screen.offer_display);
+		/* (map_family_stock_need's words, a line at a time) */
+		char second[sizeof(browser_screen.offer_stock_second)];
+		char *newline;
+
+		snprintf(text, sizeof(text), "%s", browser_screen.offer_stock_first);
 		ui_overlay_text_glow(UI_FONT_MENU, 15.0f, center, CONNECT_Y + 92, UI_ALIGN_CENTER, 0xFFFFFFFF, 0x3D8BFF90, text);
-		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 142, UI_ALIGN_CENTER, COLOR_DIM,
-			"Copy it from your Halo PC or Custom Edition install");
-		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 158, UI_ALIGN_CENTER, COLOR_DIM,
-			"into maps_ce, then join again.");
+		snprintf(second, sizeof(second), "%s", browser_screen.offer_stock_second);
+		newline = strchr(second, '\n');
+		if (newline)
+			*newline++ = 0;
+		ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 142, UI_ALIGN_CENTER, COLOR_DIM, second);
+		if (newline)
+			ui_overlay_text(UI_FONT_MENU_SMALL, 10.0f, center, CONNECT_Y + 158, UI_ALIGN_CENTER, COLOR_DIM, newline);
 		dialog_prompt(UI_BUTTON_B, "=CLOSE");
 		break;
 	}
@@ -2345,7 +2448,7 @@ static void draw_row(
 
 	if (unjoinable)
 		color = picked ? COLOR_ROW_DIM : COLOR_UNJOINABLE;
-	float badge_x = COLUMN_TYPE - 10 - family_badge_width(family, BADGE_SIZE);
+	float badge_x = COLUMN_TYPE - 10 - family_badge_width(family, game->map, BADGE_SIZE);
 	float size, width;
 
 	if (picked)
@@ -2367,13 +2470,13 @@ static void draw_row(
 		draw_lock(COLUMN_NAME + width + 4, text_y + 1, ROW_SIZE * 0.75f, color);
 	/* the map: a name too long for the room left of its family's tag smaller,
 	its middle where the others' is */
-	map_name = map_display_name(game->map, text, sizeof(text));
+	map_name = game_map_display_name(game, text, sizeof(text));
 	size = ROW_SIZE;
 	while (size > 8.0f && ui_overlay_text_width(UI_FONT_MENU, size, map_name) > badge_x - 4 - COLUMN_MAP)
 		size -= 0.5f;
 	ui_overlay_text_glow(UI_FONT_MENU, size, COLUMN_MAP, text_y + (ROW_SIZE - size) / 2, UI_ALIGN_LEFT, color, glow,
 		map_name);
-	draw_family_badge(family, BADGE_SIZE, badge_x, text_y, ROW_SIZE, !game->open && !picked);
+	draw_family_badge(family, game->map, BADGE_SIZE, badge_x, text_y, ROW_SIZE, !game->open && !picked);
 	ui_overlay_text_glow(UI_FONT_MENU, ROW_SIZE, COLUMN_TYPE, text_y, UI_ALIGN_LEFT, color, glow,
 		type_name(game, text, sizeof(text)));
 	snprintf(text, sizeof(text), "%d/%d", game->players, game->maximum_players);
@@ -2483,7 +2586,7 @@ static void draw_details(
 stock map's, while it loads or without one: map_art.c), else a card with
 the map's name over its family's color (a custom map's) */
 	map_file(selected->map, file, sizeof(file));
-	map_label = map_display_name(selected->map, map_name, sizeof(map_name));
+	map_label = game_map_display_name(selected, map_name, sizeof(map_name));
 	{
 		boolean drawn = FALSE;
 		char art_path[64];
@@ -2513,7 +2616,9 @@ the map's name over its family's color (a custom map's) */
 			}
 		}
 #endif
-		if (!drawn && map_art_site_path(family == _map_family_xbox, file, art_path, (int)sizeof(art_path)))
+		/* (a map pack's map has its stock file's name, not its art: a card) */
+		if (!drawn && family != _map_family_pack &&
+			map_art_site_path(family == _map_family_xbox, file, art_path, (int)sizeof(art_path)))
 		{
 			unsigned char const *pixels;
 			int width, height, serial;
@@ -2562,9 +2667,17 @@ the map's name over its family's color (a custom map's) */
 	DETAIL_LINE("Status:", text);
 	DETAIL_LINE("Map:", map_label);
 	/* (its family, spelled out beside its tag) */
-	draw_family_badge(family, BADGE_SIZE, x + 6, line_y, DETAIL_SIZE, FALSE);
-	ui_overlay_text(UI_FONT_MENU_SMALL, DETAIL_SIZE - 1.0f, x + 10 + family_badge_width(family, BADGE_SIZE), line_y + 0.5f,
-		UI_ALIGN_LEFT, COLOR_DIM, map_family_title(family));
+	draw_family_badge(family, selected->map, BADGE_SIZE, x + 6, line_y, DETAIL_SIZE, FALSE);
+	{
+		char tag[16], title[64];
+
+		ui_map_list_map_tag(selected->map, tag, sizeof(tag), title, sizeof(title));
+		/* (an Xbox map pack's as its host names it) */
+		if (family == _map_family_pack && selected->map_pack[0])
+			snprintf(title, sizeof(title), "%s", selected->map_pack);
+		ui_overlay_text(UI_FONT_MENU_SMALL, DETAIL_SIZE - 1.0f, x + 10 + family_badge_width(family, selected->map, BADGE_SIZE),
+			line_y + 0.5f, UI_ALIGN_LEFT, COLOR_DIM, title);
+	}
 	type_name(selected, text, sizeof(text));
 	if (selected->score_limit)
 		snprintf(text + strlen(text), sizeof(text) - strlen(text), " to %d", selected->score_limit);
@@ -2628,11 +2741,11 @@ static void draw_bar_prompts(
 {
 	static int const buttons[] = { UI_BUTTON_Y, UI_BUTTON_X, UI_BUTTON_B, UI_BUTTON_A };
 	static char const *const words[] = { "=CREATE GAME", "=REFRESH", "=BACK", "=JOIN" };
-	/* (A greyed for a game whose Halo PC map can't be played here, and with
-	no game to join) */
+	/* (A greyed for a game whose Halo PC map or game type can't be played
+	here, and with no game to join) */
 	boolean on[] = { TRUE, TRUE, TRUE, selected != NULL &&
 		!(ce_map_state(selected, FALSE) >= _ce_map_missing && !ce_map_downloadable(selected) && !ce_map_stock(selected)) &&
-		join_state(selected) == HALO_PORT_JOIN_OK /* AE */ };
+		join_state(selected) == HALO_PORT_JOIN_OK && !game_type_blocker(selected) /* AE */ };
 	short count = selected ? 4 : 3;
 	float width = prompts_width(count, buttons, words, PROMPT_BUTTON, PROMPT_TEXT);
 
