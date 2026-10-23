@@ -25,7 +25,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 	{ "HUD", "Your HUD, names, scoreboard and training aids. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
-	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 1 },
+	{ "ACCESSIBILITY", "Menu size, motion, help, language and loading.", AE_SETTINGS_MIXED, 1 },
 	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 };
 
@@ -159,6 +159,19 @@ static const char *const menu_size_texts[] = { "90 %", "100 %", "115 %", "130 %"
 static const char *const menu_size_values[] = { "90", "100", "115", "130" };
 static const char *const language_texts[] = { "ENGLISH", "DEUTSCH", "FRANCAIS", "ESPANOL", "ITALIANO", "JAPANESE" };
 static const char *const language_values[] = { "", "de", "fr", "es", "it", "ja" };
+/* (CONTROLS' GYRO: input.gyro_*, this PC's, each pad its own sensor; sensitivity 0.25 to 10 as port_config.c has it) */
+static const char *const gyro_texts[] = { "OFF", "ALWAYS", "ZOOMED IN" };
+static const char *const gyro_values[] = { "false", "true", "zoom" };
+static const char *const gyro_sensitivity_texts[] = { "0.25", "0.5", "0.75", "1", "1.25", "1.5", "2", "2.5", "3", "4",
+	"5", "6", "8", "10" };
+static const char *const gyro_sensitivity_values[] = { "0.25", "0.5", "0.75", "1.0", "1.25", "1.5", "2.0", "2.5", "3.0",
+	"4.0", "5.0", "6.0", "8.0", "10.0" };
+/* (the least time the loading screen stays up, seconds: display.loading_screen_*_seconds; multiplayer's at most 5, as
+port_config.c has it) */
+static const char *const campaign_loading_texts[] = { "NO WAIT", "2 S", "5 S", "10 S", "15 S", "20 S", "30 S" };
+static const char *const campaign_loading_values[] = { "0", "2", "5", "10", "15", "20", "30" };
+static const char *const multiplayer_loading_texts[] = { "NO WAIT", "1 S", "2 S", "3 S", "5 S" };
+static const char *const multiplayer_loading_values[] = { "0", "1", "2", "3", "5" };
 
 /* (phase B) CHAT AND STREAMING */
 static const char *const show_texts[] = { "SHOW", "HIDE" };
@@ -298,6 +311,19 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_CONTROLS, "DUALSENSE", "LIGHTBAR", AE_SETTINGS_SPINNER, "input.lightbar",
 		VALUES(lightbar_texts, lightbar_values), AE_SETTINGS_WHEN_DUALSENSE,
 		"The light on the controller: your armour colour, or your shield level.", 0 },
+	{ AE_SETTINGS_CONTROLS, "GYRO", "GYRO AIMING", AE_SETTINGS_SPINNER, "input.gyro_aim", VALUES(gyro_texts, gyro_values),
+		AE_SETTINGS_ALWAYS, "Aim by moving a DualSense, DualShock 4, Pro Controller or Joy-Con. ZOOMED IN: only in a scope.",
+		AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_CONTROLS, "GYRO", "TURN SENSITIVITY", AE_SETTINGS_SLIDER, "input.gyro_sensitivity_horizontal",
+		VALUES(gyro_sensitivity_texts, gyro_sensitivity_values), AE_SETTINGS_WHEN_GYRO,
+		"How far turning the controller left and right turns you. 1 is the controller's own turn.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_CONTROLS, "GYRO", "TILT SENSITIVITY", AE_SETTINGS_SLIDER, "input.gyro_sensitivity_vertical",
+		VALUES(gyro_sensitivity_texts, gyro_sensitivity_values), AE_SETTINGS_WHEN_GYRO,
+		"How far tilting the controller up and down looks up and down.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_CONTROLS, "GYRO", "INVERT TURN", AE_SETTINGS_TOGGLE, "input.gyro_invert_horizontal", ON_OFF,
+		AE_SETTINGS_WHEN_GYRO, "Turning the controller right looks left.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_CONTROLS, "GYRO", "INVERT TILT", AE_SETTINGS_TOGGLE, "input.gyro_invert_vertical", ON_OFF,
+		AE_SETTINGS_WHEN_GYRO, "Tilting the controller up looks down.", AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_CONTROLS, "MOUSE", "MOUSE STYLE", AE_SETTINGS_SPINNER, "input.mouse_style",
 		VALUES(style_texts, style_values), AE_SETTINGS_WHEN_KEYBOARD,
 		"CLASSIC is Halo PC's mouse. MCC uses one sensitivity with scales for zoom and vehicles.", 0 },
@@ -573,6 +599,12 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_ACCESSIBILITY, "IN THE GAME", "WAYPOINT SIZE", AE_SETTINGS_LINK, "display.waypoint_size",
 		waypoint_size_texts, waypoint_size_values, WAYPOINT_STEPS, AE_SETTINGS_ALWAYS,
 		"The same setting as in HUD. A goes there.", 0 },
+	{ AE_SETTINGS_ACCESSIBILITY, "LOADING SCREEN", "CAMPAIGN", AE_SETTINGS_SPINNER, "display.loading_screen_campaign_seconds",
+		VALUES(campaign_loading_texts, campaign_loading_values), AE_SETTINGS_ALWAYS,
+		"The least time a campaign level's loading screen stays up, as the Xbox's disc took.", AE_SETTINGS_THIS_PC },
+	{ AE_SETTINGS_ACCESSIBILITY, "LOADING SCREEN", "MULTIPLAYER", AE_SETTINGS_SPINNER,
+		"display.loading_screen_multiplayer_seconds", VALUES(multiplayer_loading_texts, multiplayer_loading_values),
+		AE_SETTINGS_ALWAYS, "The same for every other game. The network waits for it.", AE_SETTINGS_THIS_PC },
 	/* CHAT AND STREAMING (this PC's: the text chat's two are config.toml's, one for every player here, as the classic
 	MULTIPLAYER HUD and STREAMER MODE screens write them) */
 	{ AE_SETTINGS_CHAT, "CHAT", "TEXT CHAT", AE_SETTINGS_TOGGLE, "display.text_chat", show_texts, on_off_values,
@@ -759,6 +791,7 @@ int ae_settings_row_shown(struct ae_settings_row const *row, struct ae_settings_
 	case AE_SETTINGS_WHEN_MAP_SEED: return value_is(facts, "network.map_seed", "true");
 	case AE_SETTINGS_WHEN_DISCORD: return !value_is(facts, "discord.presence", "off");
 	case AE_SETTINGS_WHEN_STREAMER: return value_is(facts, "streamer.enabled", "true");
+	case AE_SETTINGS_WHEN_GYRO: return value_is(facts, "input.gyro_aim", "true") || value_is(facts, "input.gyro_aim", "zoom");
 	default: return 1;
 	}
 }
