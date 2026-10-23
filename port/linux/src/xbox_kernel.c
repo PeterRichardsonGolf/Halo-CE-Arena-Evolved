@@ -7,6 +7,7 @@ threads, asynchronous procedure calls, time, memory and debug output.
 
 #include "platform.h"
 #include "posix.h"
+#include "ae_frame_times.h" /* AE hook */
 
 #include <errno.h>
 #include <sched.h>
@@ -34,6 +35,7 @@ void platform_log(const char *format, ...)
 	FILE *handle;
 #endif
 
+	ae_ft_count(AE_FC_LOG_LINE); /* AE hook */
 	fputs(PLATFORM_LOG_PREFIX, stderr);
 	va_start(arguments, format);
 #ifdef HALO_64BIT

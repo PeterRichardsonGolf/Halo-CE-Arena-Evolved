@@ -1276,3 +1276,91 @@ port/linux/game/menu_functions.c	ae_player_settings_menu_player(widget->local_pl
 # (0.3.7 AE SETTINGS) PASSENGER THIRD PERSON is the player's own: the camera (director, tick) and the reticle (render) read the same player's
 port/linux/game/passenger_camera.c	int ae_config_player_boolean(int player, const char *name); /* AE hook */
 port/linux/game/passenger_camera.c	!ae_config_player_boolean(local_player_index, "display.passenger_third_person") || game_engine_running() || cinematic_in_progress() || /* AE hook */
+# the measuring build's frame timers (HALO_AE_FRAME_TIMES=1: port/linux/src/ae_frame_times.c, ae/perf-timers only)
+port/linux/src/d3d8_gl.c	#include "ae_frame_times.h" /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_D3D_PRESENT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_VISIBILITY_SEND); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_CAPTURE); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_CAPTURE); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_TO_WINDOW); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_TO_WINDOW); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_gpu_end(); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_SWAP); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_SWAP); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_VISIBILITY_READ); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_VISIBILITY_READ); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_FENCE_WAIT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_FENCE_WAIT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_enter(AE_FT_FLIP_WAIT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_FLIP_WAIT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_leave(AE_FT_D3D_PRESENT); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_frame(); /* AE hook */
+port/linux/src/d3d8_gl.c	ae_ft_gpu_begin(); /* AE hook */
+port/linux/src/gl_functions.c	void ae_gl_functions_count(void); /* AE hook */
+port/linux/src/gl_functions.c	ae_gl_functions_count(); /* AE hook */
+port/linux/src/port_config.c	AE_CONFIG_COUNT(0); /* AE hook */
+port/linux/src/port_config.c	AE_CONFIG_COUNT(4); /* AE hook */
+port/linux/src/port_config.c	AE_CONFIG_COUNT(2); /* AE hook */
+port/linux/src/sdl_platform.c	#include "ae_frame_times.h" /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_enter(AE_FT_SWAP_GL); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_leave(AE_FT_SWAP_GL); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_enter(AE_FT_SWAP_SOUND_WAIT); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_leave(AE_FT_SWAP_SOUND_WAIT); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_enter(AE_FT_LIMITER); /* AE hook */
+port/linux/src/sdl_platform.c	ae_ft_leave(AE_FT_LIMITER); /* AE hook */
+port/linux/src/xbox_kernel.c	#include "ae_frame_times.h" /* AE hook */
+port/linux/src/xbox_kernel.c	ae_ft_count(AE_FC_LOG_LINE); /* AE hook */
+source/interface/interface.c	#include "ae_frame_times.h" /* AE hook */
+source/interface/interface.c	ae_ft_enter(AE_FT_HUD); /* AE hook */
+source/interface/interface.c	ae_ft_leave(AE_FT_HUD); /* AE hook */
+source/interface/interface.c	ae_ft_enter(AE_FT_ENGINE_HUD); /* AE hook */
+source/interface/interface.c	ae_ft_leave(AE_FT_ENGINE_HUD); /* AE hook */
+source/main/main.c	#include "ae_frame_times.h" /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_INPUT); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_INPUT); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_EVENTS); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_EVENTS); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_PORT_UPDATES); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_PORT_UPDATES); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_NET_START); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_NET_START); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_UI_WIDGETS); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_UI_WIDGETS); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_PLAYER_CONTROL); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_PLAYER_CONTROL); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_NET_END); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_NET_END); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_GAME_TIME); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_GAME_TIME); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_NON_DETERMINISTIC); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_NON_DETERMINISTIC); /* AE hook */
+source/main/main.c	ae_ft_alive(local_player_get_player_index(0) != NONE && player_get(local_player_get_player_index(0))->unit_index != NONE); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_GAME_RENDER); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_GAME_RENDER); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_THROTTLE); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_THROTTLE); /* AE hook */
+source/main/main.c	ae_ft_enter(AE_FT_PRESENT_FRAME); /* AE hook */
+source/main/main.c	ae_ft_leave(AE_FT_PRESENT_FRAME); /* AE hook */
+source/render/render.c	#include "ae_frame_times.h" /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_WINDOW_BEGIN); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_WINDOW_BEGIN); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_OBJECTS); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_OBJECTS); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_SCENE); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_SCENE); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_TONE_AA); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_TONE_AA); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_INTERFACE); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_INTERFACE); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_UI_RENDER); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_UI_RENDER); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_WINDOW_END); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_WINDOW_END); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_FRAME_BEGIN); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_FRAME_BEGIN); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_PLAYER_VIEW); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_PLAYER_VIEW); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_NON_PLAYER_VIEW); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_NON_PLAYER_VIEW); /* AE hook */
+source/render/render.c	ae_ft_enter(AE_FT_FRAME_END); /* AE hook */
+source/render/render.c	ae_ft_leave(AE_FT_FRAME_END); /* AE hook */

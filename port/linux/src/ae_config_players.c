@@ -66,6 +66,7 @@ static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 a seed) */
 static __thread int now;
 static void (*writer)(int player, const char *name, const char *value);
+void (*ae_config_counter)(int what);
 
 static int slot_of(const char *name)
 {
@@ -128,6 +129,7 @@ int ae_config_player_value(const char *name, const char *environment, int type, 
 		*string = (char *)value->text;
 		break;
 	}
+	AE_CONFIG_COUNT(1);
 	return 1;
 }
 
@@ -282,6 +284,7 @@ unsigned long ae_config_player_value_changes(void)
 
 unsigned long ae_config_player_changes(void)
 {
+	AE_CONFIG_COUNT(3);
 	/* (config_changes counts the players' values too) */
 	return config_changes() * AE_CONFIG_PLAYERS + (unsigned long)ae_config_player_now();
 }

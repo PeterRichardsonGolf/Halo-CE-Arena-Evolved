@@ -36,6 +36,7 @@ Conventions carried over from the Xbox:
 #include <string.h>
 #include <time.h>
 #include "ae_draw.h" /* AE hook */
+#include "ae_frame_times.h" /* AE hook */
 #include "ae_height_fade.h" /* AE hook */
 #include "ae_texture_filter.h" /* AE hook */
 #ifdef HALO_GAME_BROWSER
@@ -6924,6 +6925,7 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 	if (screenshot_every < 0)
 		screenshot_every = config_integer("debug.screenshot_every");
 
+	ae_ft_enter(AE_FT_D3D_PRESENT); /* AE hook */
 	if (device.gl_ready)
 	{
 		struct render_target_entry *back_buffer = render_target_get(&device.back_buffer);
@@ -6936,6 +6938,7 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		ae_draw_present(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width, (int)back_buffer->target.gl_height); /* AE hook */
 #ifndef HALO_GLES
 		visibility_send_batch();
+		ae_ft_leave(AE_FT_VISIBILITY_SEND); /* AE hook */
 #endif
 		/* (and the one debug.test_input's shot asks for) */
 		if ((screenshot_every > 0 && device.frame % (unsigned long)screenshot_every == 0) || test_screenshot_requested)
@@ -6944,8 +6947,11 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 			write_screenshot(back_buffer);
 		}
 		/* the Screenshot action's PNG and F9's recording (capture.c), before the red dot */
+		ae_ft_enter(AE_FT_CAPTURE); /* AE hook */
 		capture_frame(framebuffer_get(back_buffer->target.texture, 0), (int)back_buffer->target.gl_width,
 			(int)back_buffer->target.gl_height);
+		ae_ft_leave(AE_FT_CAPTURE); /* AE hook */
+		ae_ft_enter(AE_FT_TO_WINDOW); /* AE hook */
 
 		platform_video_drawable_size(&window_width, &window_height);
 		/* letterbox to the back buffer's aspect ratio */
@@ -6994,9 +7000,15 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 #endif
 		/* the recording's red dot, over the window only */
 		capture_present_overlay(x, y, width, height);
+		ae_ft_leave(AE_FT_TO_WINDOW); /* AE hook */
+		ae_ft_gpu_end(); /* AE hook */
+		ae_ft_enter(AE_FT_SWAP); /* AE hook */
 		platform_video_swap();
+		ae_ft_leave(AE_FT_SWAP); /* AE hook */
 #ifndef HALO_GLES
+		ae_ft_enter(AE_FT_VISIBILITY_READ); /* AE hook */
 		visibility_read_batch();
+		ae_ft_leave(AE_FT_VISIBILITY_READ); /* AE hook */
 #endif
 		xgpu_gl_state_invalidate();
 		memory_watch_begin_frame();
@@ -7017,7 +7029,9 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 		}
 		host_gl_fence_frame((unsigned int)device.buffer_ring);
 		device.buffer_ring = (device.buffer_ring + 1) % STREAM_BUFFER_RING;
+		ae_ft_enter(AE_FT_FENCE_WAIT); /* AE hook */
 		host_gl_wait_frame((unsigned int)device.buffer_ring);
+		ae_ft_leave(AE_FT_FENCE_WAIT); /* AE hook */
 		if (xgpu_capabilities.atomic_counters && device.ring_test_count[device.buffer_ring])
 		{
 			unsigned long ring = device.buffer_ring;
@@ -7104,11 +7118,16 @@ void WINAPI D3DDevice_Present(CONST RECT *source_rectangle, CONST RECT *destinat
 	}
 	else
 	{
+		ae_ft_enter(AE_FT_FLIP_WAIT); /* AE hook */
 		while (pending_flips >= 2)
 			pthread_cond_wait(&vertical_blank_condition, &vertical_blank_lock);
+		ae_ft_leave(AE_FT_FLIP_WAIT); /* AE hook */
 		pending_flips++;
 	}
 	pthread_mutex_unlock(&vertical_blank_lock);
+	ae_ft_leave(AE_FT_D3D_PRESENT); /* AE hook */
+	ae_ft_frame(); /* AE hook */
+	ae_ft_gpu_begin(); /* AE hook */
 }
 
 HRESULT WINAPI D3DDevice_PersistDisplay(void)

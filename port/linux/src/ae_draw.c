@@ -45,6 +45,7 @@ What changed from ui_overlay.c:
 
 #include "ae_draw.h"
 #include "ae_font.h"
+#include "ae_frame_times.h"
 
 #ifdef HALO_GAME_BROWSER
 
@@ -1301,7 +1302,19 @@ static void frame_done(void)
 	ae.frame++;
 }
 
+static void ae_draw_present_timed(unsigned int framebuffer, int width, int height);
+
+/* (the measuring build's timer around it: ae_frame_times.h) */
 void ae_draw_present(unsigned int framebuffer, int width, int height)
+{
+	ae_ft_enter(AE_FT_AE_DRAW_PRESENT);
+	ae_draw_present_timed(framebuffer, width, height);
+	ae_ft_leave(AE_FT_AE_DRAW_PRESENT);
+	/* (d3d8_gl.c's visibility_send_batch comes next: its timer starts here, as no line goes between the two there) */
+	ae_ft_enter(AE_FT_VISIBILITY_SEND);
+}
+
+static void ae_draw_present_timed(unsigned int framebuffer, int width, int height)
 {
 	int index, count, atlas_full = 0;
 	GLint saved_vertex_array = 0, saved_array_buffer = 0, saved_program = 0, saved_active = 0;
@@ -1325,6 +1338,7 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 		frame_done();
 		return;
 	}
+	ae_ft_count(AE_FC_AE_QUADS);
 	if (ae.layout.scale != ae.last_scale)
 	{
 		/* (other sizes: the glyphs packed again) */

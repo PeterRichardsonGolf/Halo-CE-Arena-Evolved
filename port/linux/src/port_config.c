@@ -3541,6 +3541,7 @@ static const struct config_value *config_value(const char *name, enum config_typ
 	static const struct config_value none = { 0, 0, 0.0, "" };
 	long index;
 
+	AE_CONFIG_COUNT(0); /* AE hook */
 	pthread_mutex_lock(&config_lock);
 	if (!config_loaded)
 	{
@@ -3927,6 +3928,7 @@ static void config_follow_file(void)
 	looked_at = now;
 	if (!path[0])
 		config_path(path, sizeof(path));
+	AE_CONFIG_COUNT(4); /* AE hook */
 	if (posix_stat(path, &info) != 0)
 		return;
 	/* (the first look keeps the file as it was read; the size too, for a
@@ -3981,6 +3983,7 @@ static void config_follow_file(void)
 
 unsigned long config_changes(void)
 {
+	AE_CONFIG_COUNT(2); /* AE hook */
 	config_follow_file();
 	return config_change_count + ae_config_player_value_changes(); /* AE hook */
 }

@@ -412,6 +412,7 @@ symbols in this file:
 #include "ae_hud_style_draw.h" /* AE hook */
 #include "ae_steady_camera.h" /* AE hook */
 #include "ae_coordinates.h" /* AE hook */
+#include "ae_frame_times.h" /* AE hook */
 
 #if defined(HALO_WINDOWS) || defined(HALO_ANDROID) || defined(__linux__) || defined(__APPLE__)
 #define HALO_NATIVE_BUILD_INFO 1
@@ -3898,20 +3899,25 @@ static boolean main_loop_iteration(
 
 		profile_frame_start();
 		profile_scope_enter(main_input_section)
+		ae_ft_enter(AE_FT_INPUT); /* AE hook */
 		input_frame_begin();
 		input_update();
 		input_abstraction_update();
+		ae_ft_leave(AE_FT_INPUT); /* AE hook */
 		profile_scope_exit(main_input_section)
 		profile_scope_enter(main_platform_events_section)
+		ae_ft_enter(AE_FT_EVENTS); /* AE hook */
 		shell_idle();
 		event_manager_update();
 		telnet_console_process();
+		ae_ft_leave(AE_FT_EVENTS); /* AE hook */
 		profile_scope_exit(main_platform_events_section)
 
 		if (!shell_application_is_paused())
 		{
 			render_frame = TRUE;
 
+			ae_ft_enter(AE_FT_PORT_UPDATES); /* AE hook */
 			/* automated system link tests (port/linux/game/network_test.c) */
 			network_test_update(main_globals.main_menu_scenario_loaded, main_globals.seconds_elapsed);
 			/* port: voice chat, in the lobby and in game (port/linux/game/network_voice.c) */
@@ -3928,7 +3934,9 @@ static boolean main_loop_iteration(
 #endif
 			/* changing teams during a game (port/linux/game/team_change.c) */
 			team_change_update();
+			ae_ft_leave(AE_FT_PORT_UPDATES); /* AE hook */
 			profile_scope_enter(main_network_start_frame_section)
+			ae_ft_enter(AE_FT_NET_START); /* AE hook */
 			connection = main_globals.connection;
 			if (connection==_game_connection_network_client)
 			{
@@ -3959,11 +3967,14 @@ static boolean main_loop_iteration(
 				profile_scope_exit(main_network_start_frame_section)
 				break;
 			}
+			ae_ft_leave(AE_FT_NET_START); /* AE hook */
 			profile_scope_exit(main_network_start_frame_section)
 
 			profile_scope(main_update_time_section, main_update_time();)
 			profile_scope_enter(main_ui_update_section)
+			ae_ft_enter(AE_FT_UI_WIDGETS); /* AE hook */
 			process_ui_widgets();
+			ae_ft_leave(AE_FT_UI_WIDGETS); /* AE hook */
 #ifdef HALO_GAME_BROWSER
 			{
 				/* the dedicated server's director (server/src/dedicated.c); the
@@ -4011,19 +4022,25 @@ static boolean main_loop_iteration(
 					if (!network_chat_typing())
 						debug_keys_update();
 					cheats_update();
+					ae_ft_enter(AE_FT_PLAYER_CONTROL); /* AE hook */
 					player_control_update((real)main_globals.halt_time_scale*main_globals.seconds_elapsed);
+					ae_ft_leave(AE_FT_PLAYER_CONTROL); /* AE hook */
 
 					connection = main_globals.connection;
 					profile_scope_enter(main_network_end_frame_section)
+					ae_ft_enter(AE_FT_NET_END); /* AE hook */
 					if (connection>_game_connection_local && connection<=_game_connection_network_server && !network_game_client_end_frame())
 					{
 						display_error_when_main_menu_loaded(1);
 						network_game_abort();
 					}
+					ae_ft_leave(AE_FT_NET_END); /* AE hook */
 					profile_scope_exit(main_network_end_frame_section)
 
+					ae_ft_enter(AE_FT_GAME_TIME); /* AE hook */
 					profile_scope(main_game_time_update_section,
 						game_time_update((real)main_globals.halt_time_scale*main_globals.seconds_elapsed);)
+					ae_ft_leave(AE_FT_GAME_TIME); /* AE hook */
 
 					render_frame = main_globals.main_menu_scenario_loaded ||
 						(main_globals.halt_time_scale &&
@@ -4034,11 +4051,13 @@ static boolean main_loop_iteration(
 					render_frame &= !game_engine_running() || game_time_get()>=3;
 
 					profile_scope_enter(main_non_deterministic_update_section)
+					ae_ft_enter(AE_FT_NON_DETERMINISTIC); /* AE hook */
 					collision_log_continue_period(1);
 					director_update((real)main_globals.halt_time_scale*main_globals.seconds_elapsed);
 					observer_update((real)main_globals.halt_time_scale*main_globals.seconds_elapsed);
 					collision_log_end_period();
 					game_engine_update_non_deterministic((real)main_globals.halt_time_scale*main_globals.seconds_elapsed);
+					ae_ft_leave(AE_FT_NON_DETERMINISTIC); /* AE hook */
 					profile_scope_exit(main_non_deterministic_update_section)
 				}
 
@@ -4051,7 +4070,10 @@ static boolean main_loop_iteration(
 				{
 					profile_render_start();
 					render_interpolation_frame_begin();
+					ae_ft_alive(local_player_get_player_index(0) != NONE && player_get(local_player_get_player_index(0))->unit_index != NONE); /* AE hook */
+					ae_ft_enter(AE_FT_GAME_RENDER); /* AE hook */
 					main_game_render((double)main_globals.seconds_elapsed);
+					ae_ft_leave(AE_FT_GAME_RENDER); /* AE hook */
 					render_interpolation_frame_end();
 					profile_render_end();
 				}
@@ -4063,11 +4085,15 @@ static boolean main_loop_iteration(
 				profile_render_end();
 			}
 
+			ae_ft_enter(AE_FT_THROTTLE); /* AE hook */
 			profile_scope(main_throttle_section, main_rasterizer_throttle();)
+			ae_ft_leave(AE_FT_THROTTLE); /* AE hook */
 
 			if (render_frame && !debug_no_drawing)
 			{
+				ae_ft_enter(AE_FT_PRESENT_FRAME); /* AE hook */
 				profile_scope(main_present_section, main_present_frame();)
+				ae_ft_leave(AE_FT_PRESENT_FRAME); /* AE hook */
 			}
 		}
 

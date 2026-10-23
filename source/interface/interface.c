@@ -108,6 +108,7 @@ symbols in this file:
 #include "units/units.h"
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 #include "ae_glue_zoom.h" /* AE hook */
+#include "ae_frame_times.h" /* AE hook */
 #include "latency_meter.h" /* port: port/linux/game/latency_meter.c */
 
 /* ---------- constants */
@@ -750,8 +751,12 @@ void interface_draw_screen(
 		rectangle2d window_bounds;
 
 		hud_area_begin(&window_bounds);
+		ae_ft_enter(AE_FT_HUD); /* AE hook */
 		hud_draw_screen();
+		ae_ft_leave(AE_FT_HUD); /* AE hook */
+		ae_ft_enter(AE_FT_ENGINE_HUD); /* AE hook */
 		game_engine_post_rasterize();
+		ae_ft_leave(AE_FT_ENGINE_HUD); /* AE hook */
 		hud_area_end(&window_bounds);
 	}
 

@@ -15,6 +15,7 @@ and the debug keyboard that the game's console reads.
 #include "ae_platform.h" /* AE hook */
 #include "ae_gamepads.h" /* AE hook */
 #include "ae_ds5.h" /* AE hook */
+#include "ae_frame_times.h" /* AE hook */
 #include "gl.h"
 #include "port_config.h"
 #include "p2p.h"
@@ -1957,9 +1958,13 @@ void platform_video_swap(void)
 	platform_swap_interval((vsync && focused) ? 1 : 0);
 	swap_sound_begin();
 	swap_start = SDL_GetTicks();
+	ae_ft_enter(AE_FT_SWAP_GL); /* AE hook */
 	SDL_GL_SwapWindow(platform_window);
+	ae_ft_leave(AE_FT_SWAP_GL); /* AE hook */
 	swap_time = SDL_GetTicks() - swap_start;
+	ae_ft_enter(AE_FT_SWAP_SOUND_WAIT); /* AE hook */
 	swap_sound_end();
+	ae_ft_leave(AE_FT_SWAP_SOUND_WAIT); /* AE hook */
 	if (swap_time >= 2000)
 		platform_log("display: showing a frame took %.1f s in the graphics driver", (double)swap_time / 1000.0);
 #else
@@ -1989,7 +1994,9 @@ void platform_video_swap(void)
 	now = SDL_GetTicksNS();
 	if (next_frame > now)
 	{
+		ae_ft_enter(AE_FT_LIMITER); /* AE hook */
 		SDL_DelayPrecise(next_frame - now);
+		ae_ft_leave(AE_FT_LIMITER); /* AE hook */
 		now = next_frame;
 	}
 	/* (a frame more than an interval late starts the count again) */

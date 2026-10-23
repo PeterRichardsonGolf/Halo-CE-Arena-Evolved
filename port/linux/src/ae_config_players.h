@@ -62,5 +62,9 @@ unsigned long ae_config_player_changes(void);
 /* told of each config_write of a per-player setting, with the player the game works for (the old menus' rows: no
 one, player 1's) */
 void ae_config_player_set_writer(void (*writer)(int player, const char *name, const char *value));
+/* the measuring build's counter (HALO_AE_FRAME_TIMES: ae_frame_times.c sets it; NULL, none): 0 a settings lookup, 1 a
+player's own value used, 2 config_changes, 3 ae_config_player_changes, 4 config.toml looked at */
+extern void (*ae_config_counter)(int what);
+#define AE_CONFIG_COUNT(what) do { if (ae_config_counter) ae_config_counter(what); } while (0)
 
 #endif

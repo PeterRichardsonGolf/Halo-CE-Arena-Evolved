@@ -15,6 +15,7 @@ screen is open.
 #include "../src/ae_platform.h"
 #include "interface/event_manager.h"
 #include "ae_hooks.h"
+#include "ae_frame_times.h"
 #include "ae_glue_player_settings.h"
 #include "ae_screen_settings.h"
 #include "ae_input.h"
@@ -218,7 +219,7 @@ static void typing_guard(
 	}
 }
 
-boolean ae_ui_process(
+static boolean ae_ui_process_timed(
 	void)
 {
 	static boolean test_screen_checked = FALSE;
@@ -230,8 +231,12 @@ boolean ae_ui_process(
 	unsigned long now;
 
 	/* (each local player's own settings, their profile's: AE's menus on or off) */
+	ae_ft_enter(AE_FT_AE_PLAYER_SETTINGS);
 	ae_player_settings_update();
+	ae_ft_leave(AE_FT_AE_PLAYER_SETTINGS);
+	ae_ft_enter(AE_FT_AE_CE_MAP);
 	ae_ce_map_update();
+	ae_ft_leave(AE_FT_AE_CE_MAP);
 	if (!ae_menus_active())
 	{
 		/* (a timed revert left open as AE's menus went off still reverts at 10 s) */
@@ -287,6 +292,7 @@ boolean ae_ui_process(
 			platform_log("ae menus: debug.ae_test_screen %ld: no such screen (yet)", views);
 	}
 	/* (the 0.3.7 menus: AE's main menu takes the game's main menu's place, whenever no AE screen is up there) */
+	ae_ft_enter(AE_FT_AE_MAIN_MENU);
 	if (test_screen_checked && !test_screen && ae_draw_available() && main_menu_is_active() && !ae_ui_depth() &&
 		!server_browser_up() && !virtual_keyboard_active())
 		ae_screen_main_menu_open();
@@ -294,16 +300,22 @@ boolean ae_ui_process(
 	open again in between, over the level) */
 	else if (!main_menu_is_active())
 		ae_screen_main_menu_close();
+	ae_ft_leave(AE_FT_AE_MAIN_MENU);
 	/* (a timed revert counts down and reverts covered or hidden too; a waiting error opens) */
+	ae_ft_enter(AE_FT_AE_DIALOG);
 	ae_dialog_tick();
+	ae_ft_leave(AE_FT_AE_DIALOG);
 	/* (the lobby glue's join going on, its session's owner checked; the lobby drives: in the menus and in the game) */
+	ae_ft_enter(AE_FT_AE_LOBBY);
 	ae_lobby_update(now);
 	ae_screen_lobby_test_tick(now);
+	ae_ft_leave(AE_FT_AE_LOBBY);
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
 		ae_input_hold_begin();
 	if (ae_ui_up())
 	{
+		ae_ft_count(AE_FC_AE_UI_UP);
 		/* (opened since the last frame, over none: its first poll takes nothing held as a press, and nothing asked
 		before it plays) */
 		if (!was_up)
@@ -347,7 +359,19 @@ boolean ae_ui_process(
 	return FALSE;
 }
 
-void ae_ui_render(
+/* (the measuring build's timer around it: ae_frame_times.h) */
+boolean ae_ui_process(
+	void)
+{
+	boolean taken;
+
+	ae_ft_enter(AE_FT_AE_UI_PROCESS);
+	taken = ae_ui_process_timed();
+	ae_ft_leave(AE_FT_AE_UI_PROCESS);
+	return taken;
+}
+
+static void ae_ui_render_timed(
 	short local_player_index,
 	union rectangle2d const *window_bounds)
 {
@@ -396,6 +420,15 @@ void ae_ui_render(
 			platform_log("ae menus: more than %d hit rectangles in a frame: the last were dropped", AE_HITS_MAXIMUM);
 		logged = TRUE;
 	}
+}
+
+void ae_ui_render(
+	short local_player_index,
+	union rectangle2d const *window_bounds)
+{
+	ae_ft_enter(AE_FT_AE_UI_RENDER);
+	ae_ui_render_timed(local_player_index, window_bounds);
+	ae_ft_leave(AE_FT_AE_UI_RENDER);
 }
 
 boolean ae_ui_pointer(

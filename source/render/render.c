@@ -58,6 +58,7 @@ symbols in this file:
 */
 
 int ae_config_player_enter(int player); /* AE hook */
+#include "ae_frame_times.h" /* AE hook */
 void ae_config_player_leave(int previous); /* AE hook */
 
 /* ---------- headers */
@@ -343,17 +344,22 @@ static void render_window(
 	parameters.window_index = render.window_index;
 	parameters.fog = render.fog;
 
+	ae_ft_enter(AE_FT_WINDOW_BEGIN); /* AE hook */
 	structure_visibility_compute();
 	player_effect_get_screen_flash(local_player_index, &parameters.screen_flash);
 	rasterizer_window_begin(&parameters);
+	ae_ft_leave(AE_FT_WINDOW_BEGIN); /* AE hook */
 
 	if (!bink_playback_in_progress())
 	{
+		ae_ft_enter(AE_FT_OBJECTS); /* AE hook */
 		build_sprite_prepare_for_window();
 		render_sky();
 		first_person_weapon_render_update();
 		lights_preprocess_scene();
 		render_objects();
+		ae_ft_leave(AE_FT_OBJECTS); /* AE hook */
+		ae_ft_enter(AE_FT_SCENE); /* AE hook */
 		structure_render_preprocess();
 		structure_render_lightmaps();
 		rasterizer_lens_flares_submit_occlusion_tests();
@@ -430,6 +436,8 @@ static void render_window(
 		if (local_player_index != NONE)
 			render_spawn_markers(local_player_index);
 		rasterizer_lens_flares_draw();
+		ae_ft_leave(AE_FT_SCENE); /* AE hook */
+		ae_ft_enter(AE_FT_TONE_AA); /* AE hook */
 		/* port: the 3D view tone mapped (display.hdr) and antialiased
 		(display.anti_aliasing), before the HUD and menus are drawn over it */
 		if (rasterizer_target == _render_target_primary)
@@ -445,19 +453,26 @@ static void render_window(
 				rasterizer_camera->viewport_bounds.x1,
 				rasterizer_camera->viewport_bounds.y1);
 		}
+		ae_ft_leave(AE_FT_TONE_AA); /* AE hook */
+		ae_ft_enter(AE_FT_INTERFACE); /* AE hook */
 		interface_draw_screen();
+		ae_ft_leave(AE_FT_INTERFACE); /* AE hook */
 		rasterizer_screen_flash();
 		halo_screen_ui_offset(TRUE);
+		ae_ft_enter(AE_FT_UI_RENDER); /* AE hook */
 		render_ui_widgets(local_player_index, &rasterizer_camera->viewport_bounds);
+		ae_ft_leave(AE_FT_UI_RENDER); /* AE hook */
 		halo_screen_ui_offset(FALSE);
 	}
 
+	ae_ft_enter(AE_FT_WINDOW_END); /* AE hook */
 	bink_playback_render();
 	render_camera_debug_frustum(&render.camera, &render.frustum);
 	render_debug();
 	editor_render();
 	rasterizer_debug_draw();
 	rasterizer_window_end();
+	ae_ft_leave(AE_FT_WINDOW_END); /* AE hook */
 	profile_render_window_end();
 
 	return;
@@ -633,8 +648,10 @@ void render_frame(
 	memset(&parameters, 0, sizeof(parameters));
 	/* continuous between ticks (render_interpolation.c) */
 	parameters.game_time_sec = render_interpolation_game_time_sec(game_time_get());
+	ae_ft_enter(AE_FT_FRAME_BEGIN); /* AE hook */
 	rasterizer_frame_begin(&parameters);
 	rasterizer_windows_begin();
+	ae_ft_leave(AE_FT_FRAME_BEGIN); /* AE hook */
 
 	for (window_index = 0; window_index < window_count; window_index++)
 	{
@@ -657,9 +674,11 @@ void render_frame(
 			}
 
 			ae_previous_player = ae_config_player_enter(window->local_player_index); /* AE hook */
+			ae_ft_enter(AE_FT_PLAYER_VIEW); /* AE hook */
 			render_player_frame(
 				window,
 				screenshot_index != NULL ? &screenshot_combined_index : NULL);
+			ae_ft_leave(AE_FT_PLAYER_VIEW); /* AE hook */
 			ae_config_player_leave(ae_previous_player); /* AE hook */
 			continue;
 		}
@@ -668,14 +687,18 @@ void render_frame(
 			window_type = 1;
 		}
 
+		ae_ft_enter(AE_FT_NON_PLAYER_VIEW); /* AE hook */
 		render_nonplayer_frame(window, window_type);
+		ae_ft_leave(AE_FT_NON_PLAYER_VIEW); /* AE hook */
 	}
 
 	halo_screen_ui_offset(TRUE);
 	progress_bar_eachframe();
 	halo_screen_ui_offset(FALSE);
+	ae_ft_enter(AE_FT_FRAME_END); /* AE hook */
 	rasterizer_windows_end();
 	rasterizer_frame_end();
+	ae_ft_leave(AE_FT_FRAME_END); /* AE hook */
 
 	return;
 }
