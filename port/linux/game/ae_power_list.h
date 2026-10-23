@@ -22,6 +22,8 @@ quarter views), the times never under 14 px.
 boolean ae_power_list_hides_clock(short local_player_index);
 /* (hud_item_timers.c) TRUE: AE style drew the timers list (or had nothing to draw): CLASSIC's is skipped */
 boolean ae_power_list_draw(long font_index);
+/* CAMPAIGN TIMER in HUD STYLE AE: the time played (ticks) in the corner in AE's digits; FALSE in HUD STYLE CE */
+boolean ae_power_list_campaign_clock(short local_player_index, long ticks);
 /* the list's left edge in the view (screen px) this frame, for the strip's gap rule; the view's right edge when no
 list is drawn on the right */
 real ae_power_list_left_x(short local_player_index);

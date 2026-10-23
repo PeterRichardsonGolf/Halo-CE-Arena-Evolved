@@ -118,6 +118,36 @@ int main(void)
 	piece(&flow, L"one\ntwo");
 	CHECK(run_count == 2 && runs[0].line == 1 && runs[1].line == 2 && !wcscmp(runs[1].text, L"two"));
 
+	/* CE's line ends (draw_string.c's): the campaign's "|n" (a10's help text), "\r\n", a lone '\r' all one '\n'; a tab
+	a space; any other '|' is a character; the copy cut at the buffer, always ended */
+	{
+		wchar_t text[64];
+
+		CHECK(ae_hud_message_flow_clean(L"Charged|n|nPress ", text, 64) == 15 && !wcscmp(text, L"Charged\n\nPress "));
+		CHECK(ae_hud_message_flow_clean(L"a\r\nb\rc\nd\te", text, 64) == 9 && !wcscmp(text, L"a\nb\nc\nd e"));
+		CHECK(ae_hud_message_flow_clean(L"x|y|", text, 64) == 4 && !wcscmp(text, L"x|y|"));
+		CHECK(ae_hud_message_flow_clean(L"|N", text, 64) == 2 && !wcscmp(text, L"|N"));
+		CHECK(ae_hud_message_flow_clean(L"abcdef", text, 4) == 3 && !wcscmp(text, L"abc"));
+		CHECK(ae_hud_message_flow_clean(L"", text, 64) == 0 && text[0] == 0);
+		CHECK(ae_hud_message_flow_clean(L"ab", text, 0) == 0);
+
+		/* a10's look inversion question, laid out piece by piece as hud_messaging.c hands it over (text, the A
+		button, text, the B button, text): three lines and a blank one between each, never two pieces on one place */
+		ae_hud_message_flow_start(&flow, 10.0f, 200.0f, 100.0f, 20.0f);
+		run_count = 0;
+		ae_hud_message_flow_clean(L"Vertical looking is now inverted|n|nPress ", text, 64);
+		piece(&flow, text);
+		CHECK(run_count == 2 && runs[0].line == 1 && runs[1].line == 3 && !wcscmp(runs[1].text, L"Press "));
+		CHECK(!ae_hud_message_flow_picture(&flow, 8.0f, 1.0f, &x) && x == 16.0f && flow.lines == 3);
+		ae_hud_message_flow_clean(L" to try it the other way|n|nPress ", text, 64);
+		piece(&flow, text);
+		CHECK(run_count == 4 && runs[2].line == 3 && runs[2].x == 25.0f && runs[3].line == 5 && runs[3].x == 10.0f);
+		CHECK(!ae_hud_message_flow_picture(&flow, 8.0f, 1.0f, &x) && x == 16.0f && flow.lines == 5);
+		ae_hud_message_flow_clean(L" to leave it like it is", text, 64);
+		piece(&flow, text);
+		CHECK(run_count == 5 && runs[4].line == 5 && runs[4].x == 25.0f && flow.baseline == 180.0f);
+	}
+
 	/* the first new line of an unstarted flow is its first line */
 	ae_hud_message_flow_start(&flow, 3.0f, 100.0f, 40.0f, 10.0f);
 	ae_hud_message_flow_new_line(&flow);

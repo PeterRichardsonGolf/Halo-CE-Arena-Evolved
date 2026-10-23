@@ -43,6 +43,10 @@ already holds something (the caller starts a new line). On an empty line a word 
 characters (at least one). *skip_spaces: leading spaces to drop first when the line is empty (counted in neither) */
 long ae_hud_message_flow_fit(const struct ae_hud_message_flow *flow, const wchar_t *text, long length,
 	ae_hud_message_measure measure, void *context, long *skip_spaces);
+/* CE's text as the pen lays it out: every line end CE's text drawing breaks a line at (draw_string.c's
+parse_unicode_string: the "|n" of the campaign's help text, a carriage return, a "\r\n" pair) and a lone "\n" one
+'\n'; a tab a space. Up to maximum - 1 characters copied, then 0; the copy's length */
+long ae_hud_message_flow_clean(const wchar_t *source, wchar_t *text, long maximum);
 /* a picture width wide (plus gap after it): TRUE when it starts a new line first; then the pen's x is where it
 goes, and the pen moves past it */
 boolean ae_hud_message_flow_picture(struct ae_hud_message_flow *flow, real width, real gap, real *x);

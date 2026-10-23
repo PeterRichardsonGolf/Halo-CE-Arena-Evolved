@@ -1308,3 +1308,5 @@ port/linux/src/port_config.c	{ "input.gyro_invert_horizontal", _config_boolean, 
 port/linux/src/port_config.c	{ "input.gyro_invert_vertical", _config_boolean, "false", "HALO_GYRO_INVERT_VERTICAL",\n_environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "input.gyro_sensitivity_horizontal", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_HORIZONTAL",\n_environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "input.gyro_sensitivity_vertical", _config_real, "1.0", "HALO_GYRO_SENSITIVITY_VERTICAL",\n_environment_value, _platform_all, /* AE hook */
+# CAMPAIGN TIMER in HUD STYLE AE (0.3.9; owner 10-23: the corner clock in AE's look; ae_power_list.c)
+source/interface/hud_item_timers.c	if (!ae_power_list_campaign_clock(render.local_player_index, hud_campaign_timer_ticks)) /* AE hook */

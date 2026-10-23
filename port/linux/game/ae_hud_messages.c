@@ -24,6 +24,8 @@ HUD STYLE AE's CE message lines in the score strip's text style
 #include "objects/objects.h"
 #include "rasterizer/rasterizer.h"
 #include "render/render.h"
+#include "scenario/scenario.h"
+#include "scenario/scenario_definitions.h"
 #include "tag_files/tag_groups.h"
 #include "text/draw_string.h"
 #include "units/unit_definitions.h"
@@ -121,15 +123,99 @@ static long test_weapon_definition(short view)
 	return weapon_get(weapon_index)->definition_index;
 }
 
+/* the campaign's help text (hud_messaging.c's, its tag group 'hmt '): a message picked by a piece of its text, as the
+scripts' hud_set_help_text picks it by name. (The tag's own layout, as hs.c keeps it: hud_messaging.c's structures are
+its own) */
+#define AE_HUD_MESSAGE_TEXT_TAG 'hmt '
+
+struct ae_test_hud_message_text
+{
+	struct tag_data text_data;
+	struct tag_block elements;
+	struct tag_block messages;
+};
+
+struct ae_test_hud_message
+{
+	char name[32];
+	word text_start_index;
+	word element_start_index;
+	byte element_count;
+	byte pad25[3];
+	long unused28[6];
+};
+
+struct ae_test_hud_message_element
+{
+	byte type; /* 0 text (data: its length), 1 an icon */
+	byte data;
+};
+
+static short test_help_message(wchar_t const *piece)
+{
+	struct scenario *scenario = global_scenario_get();
+	struct ae_test_hud_message_text *text;
+	long piece_length = (long)wcslen(piece);
+	short i;
+
+	if (!scenario || scenario->hud_messages.index == NONE)
+		return NONE;
+	text = (struct ae_test_hud_message_text *)tag_get(AE_HUD_MESSAGE_TEXT_TAG, scenario->hud_messages.index);
+	for (i = 0; i < (short)text->messages.count; i++)
+	{
+		struct ae_test_hud_message *message = TAG_BLOCK_GET_ELEMENT(&text->messages, i, struct ae_test_hud_message);
+		long position = message->text_start_index;
+		short e;
+
+		for (e = 0; e < message->element_count; e++)
+		{
+			struct ae_test_hud_message_element *element = TAG_BLOCK_GET_ELEMENT(&text->elements,
+				message->element_start_index + e, struct ae_test_hud_message_element);
+			wchar_t const *run;
+			long j;
+
+			if (element->type != 0)
+				continue;
+			run = (wchar_t const *)tag_data_get_pointer(&text->text_data, position * (long)sizeof(wchar_t),
+				element->data * (long)sizeof(wchar_t));
+			for (j = 0; j + piece_length <= element->data; j++)
+				if (!memcmp(run + j, piece, (size_t)piece_length * sizeof(wchar_t)))
+					return i;
+			position += element->data;
+		}
+	}
+	return NONE;
+}
+
 /* the game's own messages set for the pictures and the tests, as hud.c sets them: the state line of a vehicle in
 reach ("vehicle"), of a weapon to swap for (the player's own: "swap"), or a long custom line with a button picture
-("long"); a list line now and then: an ammunition pickup ("pickup") */
+("long"); a list line now and then: an ammunition pickup ("pickup"). The campaign's help text with its line breaks
+(a10's, "|n" in the tag's text): the look inversion question ("help_invert"), the shields' "Press A to continue"
+("help_shield"), move and look ("help_move"); a custom line with the same breaks in any game ("breaks") */
 static void test_messages(short view)
 {
 	static long last_tick[MAXIMUM_LOCAL_PLAYERS] = { -1000, -1000, -1000, -1000 };
 	long tick = game_time_get();
+	wchar_t const *help = test_has("help_invert") ? L"inverted|n|nPress " :
+		test_has("help_shield") ? L"Charged|n|nPress " : test_has("help_move") ? L" to move|n|nUse " : NULL;
 
-	if (test_has("long"))
+	if (help)
+	{
+		short message = test_help_message(help);
+
+		if (message != NONE)
+		{
+			scripted_show_hud_help_text(TRUE);
+			scripted_hud_set_state_message(message);
+		}
+	}
+	else if (test_has("breaks"))
+	{
+		hud_enable_custom_state_message(view, TRUE);
+		hud_set_state_text(view, L"Vertical looking is now inverted|n|nPress %a-button to try it the other way|n|n"
+			L"Press %b-button to leave it like it is");
+	}
+	else if (test_has("long"))
 	{
 		/* (a custom line, as the game engine's "Hold BACK for score": its %icons go through
 		draw_string_and_hack_in_icons) */
@@ -321,17 +407,15 @@ static real measure_run(const wchar_t *text, long count, void *context)
 static void flow_text(wchar_t const *source)
 {
 	wchar_t text[TEXT_MAXIMUM];
-	long length = 0;
-	wchar_t const *walk;
+	long length;
 	real_argb_color color;
 	real rgb[3];
 	wchar_t *at;
 
-	/* (the text without carriage returns; tabs as spaces) */
-	for (walk = source; *walk && length < TEXT_MAXIMUM - 1; walk++)
-		if (*walk != L'\r')
-			text[length++] = *walk == L'\t' ? L' ' : *walk;
-	text[length] = 0;
+	/* (the text with CE's line ends as '\n': the campaign's help text breaks its lines with "|n". AE's text measured
+	such a piece as 0 px (a10's "Energy Shields Charged|n|nPress ") and drew only its first line, so the button and the
+	next piece started back at the line's left, over the first words) */
+	length = ae_hud_message_flow_clean(source, text, TEXT_MAXIMUM);
 	text_rgb(rgb);
 	color.alpha = block.opaque ? 1.0f : block.saved_color.alpha;
 	color.red = rgb[0];
