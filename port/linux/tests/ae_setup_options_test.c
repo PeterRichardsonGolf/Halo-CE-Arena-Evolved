@@ -207,8 +207,8 @@ int main(void)
 		CHECK(!has(entries, count, AE_SO_NAME));
 	}
 
-	/* WEAPON PACKS: the summary, which packs can start (the first two on, in slot order), what PRIMARY / SECONDARY
-	offer (the stock ten, the packs that can start, and always the value they have) */
+	/* WEAPON PACKS: the summary, each pack on's rank (every pack on can start), what PRIMARY / SECONDARY offer (the
+	stock ten, the packs on, and always the value they have) */
 	{
 		char text[64], help[320];
 		short offered[24], offered_count;
@@ -221,15 +221,14 @@ int main(void)
 		CHECK(!strcmp(text, "SMG, CARBINE"));
 		CHECK(ae_setup_pack_source(&access, 2) == 1 && ae_setup_pack_source(&access, 4) == 2 &&
 			ae_setup_pack_source(&access, 1) == 0);
-		/* (the BR on: the carbine goes to the map only) */
+		/* (the BR on: the carbine is the third, and can still start) */
 		fake.now[AE_SO_PACK_BATTLE_RIFLE] = 1;
 		ae_setup_packs_summary(&access, text, sizeof(text));
 		CHECK(!strcmp(text, "3 ON"));
 		CHECK(ae_setup_pack_source(&access, 1) == 1 && ae_setup_pack_source(&access, 2) == 2 &&
-			ae_setup_pack_source(&access, 4) == 0 && ae_setup_pack_on(&access, 4));
+			ae_setup_pack_source(&access, 4) == 3 && ae_setup_pack_on(&access, 4));
 		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_CARBINE, 1, help, sizeof(help)) &&
-			strstr(help, "only the first two packs on can be start weapons (battle rifle and SMG)") &&
-			strstr(help, "start with the carbine"));
+			strstr(help, "it can also be a start weapon"));
 		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_SMG, 1, help, sizeof(help)) &&
 			strstr(help, "it can also be a start weapon"));
 		CHECK(ae_setup_pack_help(&access, AE_SO_PACK_AR_SILENCED, 0, help, sizeof(help)) &&
@@ -259,6 +258,13 @@ int main(void)
 		/* (other rows: every value; their step as before) */
 		CHECK(ae_setup_value_offered(&access, AE_SO_LIVES, 1) && ae_setup_value_step(&access, AE_SO_LIVES, 0, 1) == 1);
 		CHECK(!ae_setup_value_offered(&access, AE_SO_LIVES, 99));
+		/* (all five on: PRIMARY offers every pack, the fifth too) */
+		for (option = AE_SO_PACK_FIRST; option < AE_SO_PACK_FIRST + AE_SETUP_PACKS; option++)
+			fake.now[option] = 1;
+		fake.now[AE_SO_PRIMARY] = 0;
+		offered_count = ae_setup_offered_values(&access, AE_SO_PRIMARY, offered, 24);
+		CHECK(offered_count == 15 && offered[14] == AE_SETUP_WEAPON_PACK_FIRST + 4);
+		CHECK(ae_setup_pack_source(&access, 5) == 5);
 		/* (no pack row in this build: no WEAPON PACKS row) */
 		fake_init(&fake, &access, AE_SETUP_ENGINE_SLAYER);
 		for (option = AE_SO_PACK_FIRST; option < AE_SO_PACK_FIRST + AE_SETUP_PACKS; option++)

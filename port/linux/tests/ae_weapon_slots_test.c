@@ -25,10 +25,12 @@ int main(void)
 	for (byte = 128; byte < 256; byte++)
 		CHECK(ae_weapon_slots_mask((unsigned char)byte) == 0);
 
-	/* the loadout's sources: 1 the lowest named slot (the BR for the BR's byte, as before), 2 the second */
+	/* the loadout's ranks: 1 the lowest named slot (the BR for the BR's byte, as before), 2 the second, ... 5 */
 	CHECK(ae_weapon_slots_loadout(BR, 1) == AE_WEAPON_SLOT_BATTLE_RIFLE);
 	CHECK(ae_weapon_slots_loadout(BR, 2) == AE_WEAPON_SLOT_NONE);
 	CHECK(ae_weapon_slots_loadout(BR, 0) == AE_WEAPON_SLOT_NONE && ae_weapon_slots_loadout(BR, 3) == AE_WEAPON_SLOT_NONE);
+	CHECK(ae_weapon_slots_loadout(BR | SMG | CARBINE, 3) == AE_WEAPON_SLOT_CARBINE);
+	CHECK(ae_weapon_slots_loadout(0x1F, 5) == AE_WEAPON_SLOT_AR_SILENCED && ae_weapon_slots_loadout(0x1F, 6) == 0);
 	CHECK(ae_weapon_slots_loadout(BR | SMG, 1) == AE_WEAPON_SLOT_BATTLE_RIFLE);
 	CHECK(ae_weapon_slots_loadout(BR | SMG, 2) == AE_WEAPON_SLOT_SMG);
 	CHECK(ae_weapon_slots_loadout(SMG | CARBINE, 1) == AE_WEAPON_SLOT_SMG);
@@ -36,16 +38,61 @@ int main(void)
 	CHECK(ae_weapon_slots_loadout(0, 1) == AE_WEAPON_SLOT_NONE);
 	CHECK(ae_weapon_slots_first(SILENCED | CARBINE) == AE_WEAPON_SLOT_SMG_SILENCED && ae_weapon_slots_first(0) == 0);
 
-	/* a slot's source among the named ones; the third and later have none; remapping keeps each loadout slot's pack */
+	/* a slot's rank among the named ones, the third and later too */
 	CHECK(ae_weapon_slots_source(BR | SMG, AE_WEAPON_SLOT_BATTLE_RIFLE) == 1);
 	CHECK(ae_weapon_slots_source(BR | SMG, AE_WEAPON_SLOT_SMG) == 2);
-	CHECK(ae_weapon_slots_source(BR | SMG | CARBINE, AE_WEAPON_SLOT_CARBINE) == 0);
+	CHECK(ae_weapon_slots_source(BR | SMG | CARBINE, AE_WEAPON_SLOT_CARBINE) == 3);
+	CHECK(ae_weapon_slots_source(0x1F, AE_WEAPON_SLOT_AR_SILENCED) == 5);
 	CHECK(ae_weapon_slots_source(BR, AE_WEAPON_SLOT_SMG) == 0 && ae_weapon_slots_source(BR, 0) == 0);
-	/* primary the SMG (source 1 of SMG|CARBINE), secondary the carbine (2); the BR joins: SMG 2, carbine 0 */
-	CHECK(ae_weapon_slots_loadout_remap(SMG | CARBINE, BR | SMG | CARBINE, 0x20 | 0x01 | (2 << 2)) == (0x20 | 2));
-	/* the SMG leaves: the carbine, was the second, is the first; the primary goes back to stock */
-	CHECK(ae_weapon_slots_loadout_remap(SMG | CARBINE, CARBINE, 0x80 | 0x01 | (2 << 2)) == (0x80 | (1 << 2)));
-	CHECK(ae_weapon_slots_loadout_remap(0, BR, 0x55) == 0x50);
+
+	/* the rank's bits: 1 and 2 in pack_loadout alone (as 0.3.6-0.3.8 wrote them), 3-5 source 3 and the flags' two
+	bits a loadout slot from bit 12; other bits kept */
+	{
+		unsigned char loadout = 0xF0;
+		unsigned long flags = 0x80010FFFul;
+		unsigned int rank;
+
+		for (rank = 0; rank <= 5; rank++)
+		{
+			ae_weapon_slots_rank_set(&loadout, &flags, 0, rank);
+			ae_weapon_slots_rank_set(&loadout, &flags, 1, 5 - rank);
+			CHECK(ae_weapon_slots_rank(loadout, flags, 0) == rank && ae_weapon_slots_rank(loadout, flags, 1) == 5 - rank);
+			CHECK((loadout & 0xF0) == 0xF0 && (flags & ~AE_WEAPON_SLOTS_LATER_MASK) == 0x80010FFFul);
+		}
+		loadout = 0x01 | (2 << 2);
+		flags = 0;
+		CHECK(ae_weapon_slots_rank(loadout, flags, 0) == 1 && ae_weapon_slots_rank(loadout, flags, 1) == 2);
+		ae_weapon_slots_rank_set(&loadout, &flags, 0, 4);
+		CHECK((loadout & 3) == 3 && flags == (1ul << 12) && ae_weapon_slots_rank(loadout, flags, 0) == 4);
+		/* (a later field of 3 is no rank: stock) */
+		CHECK(ae_weapon_slots_rank(3, 3ul << 12, 0) == 0);
+	}
+
+	/* remapping keeps each loadout slot's pack */
+	{
+		unsigned char loadout;
+		unsigned long flags;
+
+		/* primary the SMG (rank 1 of SMG|CARBINE), secondary the carbine (2); the BR joins: SMG 2, carbine 3 */
+		loadout = 0x20 | 0x01 | (2 << 2);
+		flags = 0;
+		ae_weapon_slots_loadout_remap(SMG | CARBINE, BR | SMG | CARBINE, &loadout, &flags);
+		CHECK(loadout == (0x20 | 2 | (3 << 2)) && flags == 0 && ae_weapon_slots_rank(loadout, flags, 1) == 3);
+		/* the SMG leaves: the carbine, was the second, is the first; the primary goes back to stock */
+		loadout = 0x80 | 0x01 | (2 << 2);
+		flags = 0;
+		ae_weapon_slots_loadout_remap(SMG | CARBINE, CARBINE, &loadout, &flags);
+		CHECK(loadout == (0x80 | (1 << 2)) && flags == 0);
+		/* the silenced AR fifth of five; the BR leaves: fourth */
+		loadout = 3;
+		flags = 2ul << 12;
+		ae_weapon_slots_loadout_remap(0x1F, 0x1E, &loadout, &flags);
+		CHECK(ae_weapon_slots_rank(loadout, flags, 0) == 4 && ae_weapon_slots_loadout(0x1E, 4) == AE_WEAPON_SLOT_AR_SILENCED);
+		loadout = 0x55;
+		flags = 0;
+		ae_weapon_slots_loadout_remap(0, BR, &loadout, &flags);
+		CHECK(loadout == 0x50);
+	}
 
 	/* the capability: the highest level whose slots are all loaded; the BR's 2 as before */
 	CHECK(ae_weapon_slots_capability(0) == 0);

@@ -79,7 +79,7 @@ static void narrow_upper(wchar_t const *wide, int length, char *text, int size)
 static const char *pack_words(struct game_variant const *variant, short slot, int start)
 {
 	short pack = game_variant_pack_loadout_weapon_slot(variant->universal_variant.weapon_pack,
-		variant->universal_variant.pack_loadout, slot);
+		variant->universal_variant.pack_loadout, variant->universal_variant.flags, slot);
 
 	if (pack == AE_WEAPON_SLOT_NONE)
 		return NULL;

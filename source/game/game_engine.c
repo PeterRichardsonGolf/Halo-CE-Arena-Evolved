@@ -6298,26 +6298,26 @@ short game_variant_weapon_pack(
 	return (short)ae_weapon_slots_mask(weapon_pack);
 }
 
-/* port: weapon pack: TRUE when the pack_loadout byte takes the loadout slot's weapon from
-a pack (source 1, the lowest named pack's weapon 0, or 2, the second lowest's; a slot past the two: no) */
+/* port: weapon pack: TRUE when the pack_loadout byte (and the flags' later bits) take the loadout slot's weapon
+from a pack: its rank among the packs named, 1 to 5 (ae_weapon_slots.h) */
 boolean game_variant_pack_loadout_slot(
 	byte pack_loadout,
+	unsigned long flags,
 	short slot)
 {
-	unsigned int source = slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS ?
-		(pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK : 0;
-
-	return source == _pack_loadout_pack || source == _pack_loadout_second_pack;
+	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS &&
+		ae_weapon_slots_rank(pack_loadout, flags, (unsigned int)slot) != 0;
 }
 
 /* port: weapon pack: the pack slot (ae_weapon_slots.h) a variant's loadout slot takes its weapon from, or 0 */
 short game_variant_pack_loadout_weapon_slot(
 	byte weapon_pack,
 	byte pack_loadout,
+	unsigned long flags,
 	short slot)
 {
 	return slot >= 0 && slot < NUMBER_OF_PACK_LOADOUT_SLOTS ? ae_weapon_slots_loadout(ae_weapon_slots_mask(weapon_pack),
-		(pack_loadout >> PACK_LOADOUT_SLOT_SHIFT(slot)) & PACK_LOADOUT_SOURCE_MASK) : 0;
+		ae_weapon_slots_rank(pack_loadout, flags, (unsigned int)slot)) : 0;
 }
 
 /* port: weapon pack: BATTLE RIFLE ON MAP from its byte */
@@ -6367,7 +6367,8 @@ boolean game_engine_pack_loadout_slot(
 	short slot)
 {
 	return game_engine_weapon_pack() != _weapon_pack_none &&
-		game_variant_pack_loadout_slot(global_variant.universal_variant.pack_loadout, slot);
+		game_variant_pack_loadout_slot(global_variant.universal_variant.pack_loadout,
+			global_variant.universal_variant.flags, slot);
 }
 
 /* port: the pack slot the running game's loadout slot takes its weapon from, or 0 */
@@ -6375,7 +6376,7 @@ short game_engine_pack_loadout_weapon_slot(
 	short slot)
 {
 	return game_engine_running() ? game_variant_pack_loadout_weapon_slot(global_variant.universal_variant.weapon_pack,
-		global_variant.universal_variant.pack_loadout, slot) : 0;
+		global_variant.universal_variant.pack_loadout, global_variant.universal_variant.flags, slot) : 0;
 }
 
 /* port: the running game's weapon pack's BATTLE RIFLE ON MAP (with its weapon
@@ -9498,8 +9499,10 @@ void game_engine_log_rules(
 				universal->starting_frags == 3 ? "3" : universal->starting_frags == 4 ? "4" : "0",
 			universal->ball_melee == 1 ? "lethal" : "stock",
 			game_variant_weapon_pack_name(universal->weapon_pack),
-			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_primary) ? "pack" : "stock",
-			pack && game_variant_pack_loadout_slot(universal->pack_loadout, _pack_loadout_secondary) ? "pack" : "stock",
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, flags, _pack_loadout_primary) ? "pack" :
+				"stock",
+			pack && game_variant_pack_loadout_slot(universal->pack_loadout, flags, _pack_loadout_secondary) ? "pack" :
+				"stock",
 			pack && game_variant_pack_map_spawns(universal->pack_loadout) ? "on" : "off");
 		ae_gametype_ammo_log_rules(universal->pack_loadout); /* AE hook */
 		ae_controller_crouch_log_rules(flags); /* AE hook */

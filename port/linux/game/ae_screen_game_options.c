@@ -966,8 +966,8 @@ static struct ae_screen_class const options_class =
 /* ---------- the WEAPON PACKS screen (EQUIPMENT > WEAPON PACKS; owner 2026-10-22, the mockups' option B)
 
 The same frame: the crumb GAME OPTIONS > WEAPON PACKS above the title, the rail (EQUIPMENT lit), one list: PACKS (the
-five packs and PACK WEAPONS ON MAP, each a switch; an ON pack a CAN START or MAP ONLY capsule: only the first two
-packs on, in slot order, can be start weapons; a pack not installed here and off, NOT INSTALLED) and START WEAPONS
+five packs and PACK WEAPONS ON MAP, each a switch; any pack on can be a start weapon (owner 2026-10-23: the
+capsules that said which went with the two-pack limit); a pack not installed here and off, NOT INSTALLED) and START WEAPONS
 (PRIMARY and SECONDARY, the same rows as EQUIPMENT's). A or left / right toggles a switch, A opens a start weapon's
 values; Y DEFAULTS this screen's rows only (the gametype's own, after asking); B back to EQUIPMENT on WEAPON PACKS.
 Log: "ae game options: weapon packs open (N rows, on: ...)", "packs focus <label>", the glue's "set ...",
@@ -975,16 +975,11 @@ Log: "ae game options: weapon packs open (N rows, on: ...)", "packs focus <label
 
 enum { PACKS_ENTRIES = 16, HIT_PACKS_LIST = OPTIONS_HIT + 8, HIT_PACKS_PROMPTS };
 
-/* the switch and the capsule (u; the mockup's 52 x 28 pill) */
+/* the switch (u; the mockup's 52 x 28 pill) */
 #define SWITCH_WIDTH_U 52.0f
 #define SWITCH_HEIGHT_U 28.0f
 #define SWITCH_INSET_U 4.0f
 #define SWITCH_TEXT_GAP_U 14.0f
-#define CAPSULE_GAP_U 12.0f
-#define CAPSULE_PAD_U 10.0f
-#define CAPSULE_HEIGHT_U 22.0f
-#define CAPSULE_LINE_U 1.5f
-#define CAPSULE_TRACKING 0.12f
 #define SWITCH_MS 120
 /* menu blue (40,148,254): the switch's on fill; its off track the rule's colour at .25 (the slider's) */
 #define SWITCH_ON 0x2894FEFFu
@@ -1159,7 +1154,7 @@ static void packs_switch_block(short option, float x, float y, float width, floa
 	struct ae_density const *density = &screen.density;
 	float pad = u(density->metrics->pad), center = y + height * 0.5f, right = x + width - pad;
 	float text = ae_size_text(density), sw = u(SWITCH_WIDTH_U), sh = u(SWITCH_HEIGHT_U), inset = u(SWITCH_INSET_U);
-	float knob = sh - 2.0f * inset, sx = right - sw, sy = center - sh * 0.5f, t, text_x, said;
+	float knob = sh - 2.0f * inset, sx = right - sw, sy = center - sh * 0.5f, t, text_x;
 	int on = screen.access.get(screen.access.context, option) == 1;
 	int slot = option - AE_SO_PACK_FIRST + 1;
 
@@ -1178,22 +1173,8 @@ static void packs_switch_block(short option, float x, float y, float width, floa
 	ae_draw_rect(sx + inset + t * (sw - 2.0f * inset - knob), sy + inset, knob, knob, knob * 0.5f,
 		t >= 0.5f ? SWITCH_KNOB : on_bar ? SWITCH_KNOB_OFF_ON_BAR : SWITCH_KNOB_OFF);
 	text_x = sx - u(SWITCH_TEXT_GAP_U);
-	said = ae_draw_text(AE_FONT_ROW, text, text_x, cap_top(AE_FONT_ROW, text, center), AE_ALIGN_RIGHT,
+	ae_draw_text(AE_FONT_ROW, text, text_x, cap_top(AE_FONT_ROW, text, center), AE_ALIGN_RIGHT,
 		on_bar ? AE_COLOR_SELECTION_TEXT : on ? AE_COLOR_ACCENT : AE_COLOR_MUTED, on ? "ON" : "OFF");
-	/* (an ON pack: CAN START, or MAP ONLY when two packs before it hold the start weapons' places) */
-	if (on && slot >= 1 && slot <= AE_SETUP_PACKS)
-	{
-		int can = ae_setup_pack_source(&screen.access, slot) != 0;
-		const char *label = can ? "CAN START" : "MAP ONLY";
-		float size = u(density->metrics->badge), ch = u(CAPSULE_HEIGHT_U);
-		float tw = ae_draw_text_tracked_width(AE_FONT_BODY, size, CAPSULE_TRACKING, label);
-		float cw = tw + 2.0f * u(CAPSULE_PAD_U), cx = text_x - said - u(CAPSULE_GAP_U) - cw;
-		unsigned int color = on_bar ? AE_COLOR_SELECTION_TEXT : can ? AE_COLOR_TEXT : AE_COLOR_MUTED;
-
-		ae_draw_outline(cx, center - ch * 0.5f, cw, ch, ch * 0.5f, u(CAPSULE_LINE_U), color);
-		ae_draw_text_tracked(AE_FONT_BODY, size, CAPSULE_TRACKING, cx + (cw - tw) * 0.5f, cap_top(AE_FONT_BODY, size,
-			center), AE_ALIGN_LEFT, color, label);
-	}
 }
 
 static void packs_item(void *context, short item, float x, float y, float width, float height, unsigned int flags)

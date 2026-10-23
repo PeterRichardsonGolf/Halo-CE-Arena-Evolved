@@ -25,6 +25,7 @@ Off (the default), nothing is read or written.
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 
+#include "ae_weapon_slots.h"
 #include "ae_saved_limits.h"
 #include "ae_gametype_audit.h"
 #include "ae_sensor_range_rules.h"
@@ -117,10 +118,8 @@ static struct ae_audit_column const ae_audit_columns[] =
 	FLAG_BIT("mouse_aim_assist_off", _game_variant_block_mouse_aim_assist_bit),
 	/* (bit 11: VEHICLES DESTRUCTIBLE, 1 ON, 0 OFF: ae_vehicle_death_rules.h, seed revision 23) */
 	FLAG_BIT("vehicles_destructible", _game_variant_vehicles_destructible_bit),
-	FLAG_BIT("bit12", 12),
-	FLAG_BIT("bit13", 13),
-	FLAG_BIT("bit14", 14),
-	FLAG_BIT("bit15", 15),
+	/* (bits 12-15: a later pack as a start weapon, two bits the PRIMARY's then the SECONDARY's: ae_weapon_slots.h) */
+	BITS("universal_variant.flags.pack_start_later", universal_variant.flags, _audit_bits_long, AE_WEAPON_SLOTS_LATER_MASK),
 	FLAG_BIT("no_falling_damage", _game_variant_no_falling_damage_bit),
 	FLAG_BIT("item_timers", _game_variant_item_timers_bit),
 	FLAG_BIT("training", _game_variant_training_bit),

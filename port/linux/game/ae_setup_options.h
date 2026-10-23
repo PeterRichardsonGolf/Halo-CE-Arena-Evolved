@@ -132,14 +132,13 @@ short ae_setup_packs_entries(struct ae_setup_access const *access, short *entrie
 /* a section's header ("PACKS", "START WEAPONS"; a group's name below AE_SETUP_SECTION_PACKS; "" past them) */
 const char *ae_setup_section_name(struct ae_setup_access const *access, int section);
 
-/* the packs (slot 1-5, ae_weapon_slots.h's order): on in the gametype, and the source (1, 2) that makes it a start
-weapon: only the first two packs on, in slot order, can be (pack_loadout's two bits a loadout slot); 0: off, or on
-the map only */
+/* the packs (slot 1-5, ae_weapon_slots.h's order): on in the gametype, and its rank among the packs on (1-5,
+ae_weapon_slots.h), which a start weapon names; 0: off */
 int ae_setup_pack_on(struct ae_setup_access const *access, int slot);
 int ae_setup_pack_source(struct ae_setup_access const *access, int slot);
 /* WEAPON PACKS' value: the packs on by name ("SMG, CARBINE"), "N ON" past 14 characters, "NONE" */
 void ae_setup_packs_summary(struct ae_setup_access const *access, char *text, int size);
-/* a pack row's help on the WEAPON PACKS screen (its fact, then what on / off / map only / not installed means),
+/* a pack row's help on the WEAPON PACKS screen (its fact, then what on / off / not installed means),
 NULL for another row */
 const char *ae_setup_pack_help(struct ae_setup_access const *access, int option, int installed, char *text, int size);
 

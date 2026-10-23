@@ -16,6 +16,7 @@ WEAPON PACKS off, a map the pack cannot be added to).
 #include "interface/ui_widget_instance.h"
 
 #include "ae_rifle_menu.h"
+#include "ae_weapon_slots.h"
 
 void platform_log(char const *format, ...);
 
@@ -54,7 +55,7 @@ static void slot_row(struct widget_instance *spinner, struct universal_variant *
 	if (!save)
 	{
 		/* (the choice is the battle rifle's: the slot's weapon the BR's pack, ae_weapon_slots.h) */
-		if (game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, slot) ==
+		if (game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, universal->flags, slot) ==
 			_weapon_pack_battle_rifle)
 		{
 			spinner->parameters.list.selected_index = PACK_CHOICE;
@@ -64,7 +65,8 @@ static void slot_row(struct widget_instance *spinner, struct universal_variant *
 	/* (a slot that names another pack keeps it unless the BR's choice is taken: the editor has no rows for the
 	other packs yet, and their slot shows the weapon played without the pack) */
 	{
-		short named = game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout, slot);
+		short named = game_variant_pack_loadout_weapon_slot(universal->weapon_pack, universal->pack_loadout,
+			universal->flags, slot);
 
 		if (named != _weapon_pack_none && named != _weapon_pack_battle_rifle &&
 			!(custom && spinner->parameters.list.selected_index == PACK_CHOICE))
@@ -72,7 +74,7 @@ static void slot_row(struct widget_instance *spinner, struct universal_variant *
 			return;
 		}
 	}
-	universal->pack_loadout &= (byte)~(0x3 << (slot * 2));
+	ae_weapon_slots_rank_set(&universal->pack_loadout, &universal->flags, (unsigned int)slot, 0);
 	if (custom && spinner->parameters.list.selected_index == PACK_CHOICE)
 	{
 		/* (the slot's own weapon is what is played where the pack is not: an assault rifle) */
