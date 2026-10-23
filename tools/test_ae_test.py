@@ -739,9 +739,10 @@ class SeedCompare(unittest.TestCase):
         source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
         self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 22)
         migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
-        # (the new seeds have no migration: only revision 21's AE seeds do)
+        # (the new seeds have no migration of revision 22: only revision 21's AE seeds do; later revisions may
+        # migrate them, as 23's VEHICLES DESTRUCTIBLE does the BTB ones)
         for name in REVISION_22_SEEDS:
-            self.assertNotIn(f'.old_row = {{ .name = "{name}"', migrations)
+            self.assertNotRegex(migrations, r'\.revision = 22,\s*\.old_row = \{ \.name = "' + re.escape(name) + '"')
         table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
         # (each row as one line, the comments after it left out)
         rows = {n: re.sub(r"\s+", " ", re.sub(r"/\*.*?\*/", "", b, flags=re.S)).strip()
@@ -759,7 +760,9 @@ class SeedCompare(unittest.TestCase):
         same("AE BTB SLY", "AE TEAM SLY", [("ARENA_TEAM_SLAYER_SCORE", "ARENA_BTB_SLAYER_SCORE")] + btb)
         same("AE BTB CTF", "AE CTF", btb)
         same("AE BTB KING", "AE KING", btb)
-        same("AE BTB BALL", "AE TEAM OB", btb)
+        # (AE TEAM OB has no vehicles: revision 23's VEHICLES DESTRUCTIBLE is the BTB one's alone)
+        same("AE BTB BALL", "AE TEAM OB",
+             btb + [("mouse_aim_assist_off", "mouse_aim_assist_off_and_vehicles_destructible_1")])
         same("AE BTB HVY", "AE TEAM SLY", [("ARENA_TEAM_SLAYER_SCORE", "ARENA_BTB_SLAYER_SCORE")] + btb +
              [("controller_crouch_stays_down", "controller_crouch_stays_down_and_heavy_vehicles")])
         same("AE C2V2 TS", "AE COMP TS", [("ARENA_TEAM_SLAYER_SCORE", "25")])

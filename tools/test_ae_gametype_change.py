@@ -124,9 +124,10 @@ def test_variant_change_render():
     """a variant field goes through a new adjust: after the row's old one (called), or alone; one that exists with
     the same body is reused; the BR start's fields and other engines' fields are refused"""
     # (AE FFA ROCK's own adjust: no speed changes, CONTROLLER CROUCH STAYS DOWN since revision 21, MELEE UNZOOMS ON
-    # and MOUSE AIM ASSIST OFF since revision 22)
+    # and MOUSE AIM ASSIST OFF since revision 22, VEHICLES DESTRUCTIBLE ON since revision 23)
     p = plan(["AE FFA ROCK"], ["universal_variant.respawn_time_growth=0"])
-    old = "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off"
+    old = ("arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off"
+           "_and_vehicles_destructible_1")
     function = old + "_and_no_respawn_growth"
     assert p.changes["AE FFA ROCK"]["adjust"] == (old, function)
     text = change.render(p, {})
