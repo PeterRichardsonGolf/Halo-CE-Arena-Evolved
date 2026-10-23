@@ -25,7 +25,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 	{ "HUD", "Your HUD, names, scoreboard and training aids. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. Chat is yours; the filter is this PC's.",
 		AE_SETTINGS_PLAYER, 0 },
-	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 0 },
+	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 0 },
 	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 };
@@ -140,6 +140,20 @@ static const char *const voice_chat_texts[] = { "PUSH TO TALK", "OPEN MIC", "OFF
 static const char *const voice_chat_values[] = { "push_to_talk", "open_mic", "off" };
 static const char *const resampler_texts[] = { "SINC", "LINEAR" };
 static const char *const resampler_values[] = { "sinc", "linear" };
+
+/* (phase B) ONLINE */
+static const char *const yes_no_values[] = { "yes", "no" };
+static const char *const ask_texts[] = { "ASK", "ALWAYS", "NEVER" };
+static const char *const ask_values[] = { "ask", "always", "never" };
+static const char *const upload_texts[] = { "64 KB/S", "128 KB/S", "256 KB/S", "512 KB/S", "1 MB/S", "2 MB/S", "4 MB/S",
+	"8 MB/S", "10 MB/S" };
+static const char *const upload_values[] = { "64", "128", "256", "512", "1024", "2048", "4096", "8192", "10240" };
+static const char *const download_texts[] = { "256 MB", "512 MB", "1 GB", "2 GB", "4 GB", "8 GB", "16 GB", "64 GB" };
+static const char *const download_values[] = { "256", "512", "1024", "2048", "4096", "8192", "16384", "65536" };
+static const char *const discord_texts[] = { "FULL", "MINIMAL", "OFF" };
+static const char *const discord_values[] = { "full", "minimal", "off" };
+static const char *const protocol_texts[] = { "AUTO", "OPENCE", "DELTA" };
+static const char *const protocol_values[] = { "auto", "opence", "delta" };
 
 /* (the long numeric lists: made once) */
 enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11,
@@ -486,6 +500,51 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_AUDIO, "ADVANCED", "RESAMPLER", AE_SETTINGS_SPINNER, "audio.resampler",
 		VALUES(resampler_texts, resampler_values), AE_SETTINGS_ALWAYS,
 		"SINC is cleaner, LINEAR is lighter on a slow PC.", 0 },
+	/* ONLINE (this PC's; the classic menus' Network Setup and its MAP SHARING write the same keys) */
+	{ AE_SETTINGS_ONLINE, "CONNECTION", "INTERNET PLAY", AE_SETTINGS_TOGGLE, "network.online", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Join and host games over the internet. OFF keeps you to LAN and this PC.", 0 },
+	{ AE_SETTINGS_ONLINE, "CONNECTION", "COMMUNITY SERVICES", AE_SETTINGS_TOGGLE, "network.community_services",
+		on_off_texts, yes_no_values, COUNT(on_off_texts), AE_SETTINGS_ALWAYS,
+		"The server browser and invites, through halo.milenko.org. OFF: nothing goes there.", 0 },
+	{ AE_SETTINGS_ONLINE, "CONNECTION", "UPNP PORT FORWARDING", AE_SETTINGS_TOGGLE, "network.allow_upnp", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Opens the game's port on your router so players can join you.", 0 },
+	{ AE_SETTINGS_ONLINE, "CONNECTION", "JOIN FROM CLIPBOARD", AE_SETTINGS_SPINNER, "network.join_from_clipboard",
+		VALUES(ask_texts, ask_values), AE_SETTINGS_ALWAYS,
+		"Join an invite link you copied, when you switch to the game.", 0 },
+	{ AE_SETTINGS_ONLINE, "CONNECTION", "SERVER PINGS", AE_SETTINGS_TOGGLE, "network.browser_pings", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Ping every game in the server browser to show its delay. Each host then sees your address.",
+		0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "DOWNLOAD MAPS", AE_SETTINGS_TOGGLE, "network.map_download", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Get a map you don't have from the host when you join.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "INTERNET DOWNLOADS", AE_SETTINGS_TOGGLE, "network.map_download_internet", ON_OFF,
+		AE_SETTINGS_WHEN_MAP_DOWNLOAD, "Also from hosts over the internet, not only on your LAN.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "MAP DOWNLOADS", AE_SETTINGS_SPINNER, "network.map_downloads",
+		VALUES(ask_texts, ask_values), AE_SETTINGS_ALWAYS,
+		"Maps from the community map sites, for games the browser lists.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "HELP SEND MAPS", AE_SETTINGS_TOGGLE, "network.map_seed", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Pass maps you have on to other joining players.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "UPLOAD LIMIT", AE_SETTINGS_SPINNER, "network.map_seed_upload",
+		VALUES(upload_texts, upload_values), AE_SETTINGS_WHEN_MAP_SEED, "The most this PC sends while helping.", 0 },
+	{ AE_SETTINGS_ONLINE, "MAPS", "DOWNLOAD LIMIT", AE_SETTINGS_SPINNER, "network.map_download_limit",
+		VALUES(download_texts, download_values), AE_SETTINGS_ALWAYS,
+		"The most map data this PC takes from one host.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "LIST HOSTED GAMES", AE_SETTINGS_TOGGLE, "network.list_hosted_games", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Games you host show in the server browser.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "HOSTED GAME STATS", AE_SETTINGS_TOGGLE, "network.report_hosted_games", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Send your hosted games' scores to the stats site.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "SHARE HOSTED STATS", AE_SETTINGS_TOGGLE, "network.report_events", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Also each kill and pickup in your hosted games.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "SHARE GAME STATS", AE_SETTINGS_TOGGLE, "network.report_joined_games", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Send the scores of games you join.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "DISCORD STATUS", AE_SETTINGS_SPINNER, "discord.presence",
+		VALUES(discord_texts, discord_values), AE_SETTINGS_ALWAYS, "Show what you play on your Discord profile.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "DISCORD GAME NAME", AE_SETTINGS_TOGGLE, "discord.show_server_name", ON_OFF,
+		AE_SETTINGS_WHEN_DISCORD, "Include the game's name in your status.", 0 },
+	{ AE_SETTINGS_ONLINE, "PRIVACY", "DISCORD JOIN BUTTON", AE_SETTINGS_TOGGLE, "discord.show_join", ON_OFF,
+		AE_SETTINGS_WHEN_DISCORD, "Friends can join you from Discord.", 0 },
+	{ AE_SETTINGS_ONLINE, "ADVANCED", "PROTOCOL", AE_SETTINGS_SPINNER, "network.protocol",
+		VALUES(protocol_texts, protocol_values), AE_SETTINGS_ALWAYS,
+		"How this PC talks to other machines. AUTO picks the best both have.", 0 },
 	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",

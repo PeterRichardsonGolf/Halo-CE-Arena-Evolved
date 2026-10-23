@@ -213,6 +213,26 @@ int main(void)
 		CHECK(ae_settings_row(ae_settings_row_of("audio.channels"))->flags & AE_SETTINGS_RESTART);
 	}
 
+	/* ONLINE (19 of rows.md's 22: GAME PORT, LAN ADDRESS and BROADCAST ADDRESSES wait for their own lists): INTERNET
+	DOWNLOADS with DOWNLOAD MAPS on, UPLOAD LIMIT with HELP SEND MAPS on, the Discord rows unless DISCORD STATUS is OFF;
+	COMMUNITY SERVICES ON / OFF writes yes / no */
+	{
+		struct ae_settings_row const *community = ae_settings_row(ae_settings_row_of("network.community_services"));
+
+		set("network.map_download", "true");
+		set("network.map_seed", "true");
+		set("discord.presence", "full");
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 19);
+		set("network.map_download", "false");
+		set("network.map_seed", "false");
+		set("discord.presence", "off");
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 15);
+		CHECK(!has_label(AE_SETTINGS_ONLINE, &pad, "INTERNET DOWNLOADS") && !has_label(AE_SETTINGS_ONLINE, &pad,
+			"DISCORD JOIN BUTTON"));
+		CHECK(!strcmp(ae_settings_value_of(community, 0), "yes") && !strcmp(ae_settings_value_text(community, 1), "OFF"));
+		CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("network.map_seed_upload")), "300") == 2);
+	}
+
 	/* the dialogs */
 	{
 		static const char *const labels[] = { "LOOK SENSITIVITY", "ZOOM", "VIBRATION", "LEGS", "FOV" };

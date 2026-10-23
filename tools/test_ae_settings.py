@@ -82,6 +82,11 @@ CASES = (
     ("audio-130", 35, AUDIO, 1, "1920x1080", 130, ()),
     ("audio-keep", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:b", "pad:a")),
     ("audio-defaults", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:y", "pad:down", "pad:a")),
+    # ONLINE: RB to MAPS, DOWNLOAD MAPS one right (OFF: INTERNET DOWNLOADS goes), B, UNDO (down, A)
+    ("online", 35, ONLINE, 1, "1920x1080", 100, ()),
+    ("online-130", 35, ONLINE, 1, "1920x1080", 130, ()),
+    ("online-changed", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right")),
+    ("online-undo", 35, ONLINE, 1, "1920x1080", 100, ("pad:rb", "pad:right", "pad:b", "pad:down", "pad:a")),
 )
 
 
@@ -210,6 +215,13 @@ def test_audio(runs):
     said = lines(runs["audio-keep"][1], "ae settings: ")
     assert "set MASTER VOLUME 9" in said and "keep" in said and "closed AUDIO (1 changed)" in said, said
     assert lines(runs["audio-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
+
+
+def test_online(runs):
+    said = lines(runs["online-changed"][1], "ae settings: ")
+    assert "set DOWNLOAD MAPS OFF" in said, said
+    said = lines(runs["online-undo"][1], "ae settings: ")
+    assert "undo (1 rows)" in said and "closed ONLINE (0 changed)" in said, said
 
 
 if __name__ == "__main__":
