@@ -46,6 +46,10 @@ struct ae_result ae_profile_switch(short local_player, int profile_index);
 /* a new profile with that name (1-11 characters, not another profile's), as upstream's (player_profile_new):
 its index; at the menus only. Nobody plays with it until a switch */
 struct ae_result ae_profile_new(const char *name, int *profile_index);
+/* player 1's profile when none is active (nothing chose one since the game started: only CAMPAIGN and a game do):
+the one used last, else the first on this PC, read into profile; its index, NONE for none on this PC */
+struct player_profile;
+long ae_profile_player1_fallback(struct player_profile *profile);
 /* plays without a profile: settings apply to this session only (never saved) */
 struct ae_result ae_profile_guest(short local_player);
 int ae_profile_is_guest(short local_player);
