@@ -77,6 +77,11 @@ CASES = (
     # (DISPLAY MODE one left (the hidden window is WINDOWED, the last value): the timed KEEP / UNDO, shown; B undoes it)
     ("video-display", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait")),
     ("video-display-undo", 35, VIDEO, 1, "1920x1080", 100, ("pad:left", "wait", "pad:b", "wait")),
+    # AUDIO: MASTER VOLUME one left (9), B: KEEP; RESTORE DEFAULTS puts it back (down, A)
+    ("audio", 35, AUDIO, 1, "1920x1080", 100, ()),
+    ("audio-130", 35, AUDIO, 1, "1920x1080", 130, ()),
+    ("audio-keep", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:b", "pad:a")),
+    ("audio-defaults", 35, AUDIO, 1, "1920x1080", 100, ("pad:left", "pad:y", "pad:down", "pad:a")),
 )
 
 
@@ -199,6 +204,12 @@ def test_video(runs):
     assert lines(runs["video-display"][1], "ae settings: display asked ")
     said = lines(runs["video-display-undo"][1], "ae settings: ")
     assert any(line.startswith("display undo (DISPLAY MODE ") for line in said), said
+
+
+def test_audio(runs):
+    said = lines(runs["audio-keep"][1], "ae settings: ")
+    assert "set MASTER VOLUME 9" in said and "keep" in said and "closed AUDIO (1 changed)" in said, said
+    assert lines(runs["audio-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
 
 
 if __name__ == "__main__":

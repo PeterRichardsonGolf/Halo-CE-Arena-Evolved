@@ -196,6 +196,23 @@ int main(void)
 		CHECK(!ae_settings_row_takes_empty(resolution));
 	}
 
+	/* AUDIO (13): INPUT DEVICE unless VOICE CHAT is OFF, PUSH TO TALK (a key row, no values) with PUSH TO TALK only;
+	the volumes 0 to 10 as shown, 0 to 1 as written */
+	{
+		struct ae_settings_row const *master = ae_settings_row(ae_settings_row_of("audio.volume"));
+
+		set("audio.voice_chat", "push_to_talk");
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 13);
+		set("audio.voice_chat", "off");
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 11 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
+		CHECK(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))->kind == AE_SETTINGS_KEY &&
+			!ae_settings_value_count(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))));
+		CHECK(ae_settings_value_count(master) == 11 && !strcmp(ae_settings_value_of(master, 10), "1") &&
+			!strcmp(ae_settings_value_of(master, 4), "0.4") && !strcmp(ae_settings_value_text(master, 4), "4"));
+		CHECK(ae_settings_value_index(master, "1.0") == 10 && ae_settings_value_index(master, "0.4") == 4);
+		CHECK(ae_settings_row(ae_settings_row_of("audio.channels"))->flags & AE_SETTINGS_RESTART);
+	}
+
 	/* the dialogs */
 	{
 		static const char *const labels[] = { "LOOK SENSITIVITY", "ZOOM", "VIBRATION", "LEGS", "FOV" };

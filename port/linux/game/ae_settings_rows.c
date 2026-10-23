@@ -21,7 +21,7 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_GROUPS] =
 		1 },
 	{ "VIDEO", "The screen, the graphics and the frame rate. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "VIEW", "What you see in first person, and your shields. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
-	{ "AUDIO", "Volume, speakers and voice. One set for this PC.", AE_SETTINGS_PC, 0 },
+	{ "AUDIO", "Volume, speakers and voice. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "HUD", "Your HUD, names, scoreboard and training aids. Every player has their own.", AE_SETTINGS_PLAYER, 1 },
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. Chat is yours; the filter is this PC's.",
 		AE_SETTINGS_PLAYER, 0 },
@@ -133,8 +133,20 @@ static const char *const exposure_values[] = { "0.25", "0.5", "0.75", "1", "1.25
 static const char *const tone_texts[] = { "NEUTRAL", "ACES", "REINHARD" };
 static const char *const tone_values[] = { "neutral", "aces", "reinhard" };
 
+/* (phase B) AUDIO */
+static const char *const speakers_texts[] = { "STEREO", "5.1", "AUTO" };
+static const char *const speakers_values[] = { "stereo", "5.1", "auto" };
+static const char *const voice_chat_texts[] = { "PUSH TO TALK", "OPEN MIC", "OFF" };
+static const char *const voice_chat_values[] = { "push_to_talk", "open_mic", "off" };
+static const char *const resampler_texts[] = { "SINC", "LINEAR" };
+static const char *const resampler_values[] = { "sinc", "linear" };
+
 /* (the long numeric lists: made once) */
-enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11 };
+enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZONE_STEPS = 9, WAYPOINT_STEPS = 11,
+	VOLUME_STEPS = 11 };
+/* (AUDIO's volumes: 0 to 10 as shown, 0 to 1 as config.toml has them, as the classic menus write them) */
+static char volume_text[VOLUME_STEPS][16], volume_value[VOLUME_STEPS][16];
+static const char *volume_texts[VOLUME_STEPS], *volume_values[VOLUME_STEPS];
 static char mcc_text[MCC_STEPS][8], scale_text[SCALE_STEPS][8], hold_text[HOLD_STEPS][8], hold_value[HOLD_STEPS][8];
 static char fov_text[FOV_STEPS][8], deadzone_text[DEADZONE_STEPS][8], deadzone_value[DEADZONE_STEPS][8];
 static char waypoint_size_text[WAYPOINT_STEPS][8], waypoint_size_value[WAYPOINT_STEPS][8];
@@ -192,6 +204,13 @@ static void lists_build(void)
 		snprintf(deadzone_text[index], sizeof(deadzone_text[index]), "%d %%", 5 * index);
 		deadzone_texts[index] = deadzone_text[index];
 		deadzone_values[index] = deadzone_value[index];
+	}
+	for (index = 0; index < VOLUME_STEPS; index++)
+	{
+		snprintf(volume_text[index], sizeof(volume_text[index]), "%d", index);
+		snprintf(volume_value[index], sizeof(volume_value[index]), "%g", (double)index / 10.0);
+		volume_texts[index] = volume_text[index];
+		volume_values[index] = volume_value[index];
 	}
 	for (index = 0; index < WAYPOINT_STEPS; index++)
 	{
@@ -435,6 +454,38 @@ static struct ae_settings_row const rows[] =
 		"How HDR's bright light is fitted to your screen.", 0 },
 	{ AE_SETTINGS_VIDEO, "ADVANCED", "SHOW COORDINATES", AE_SETTINGS_TOGGLE, "display.coordinates", ON_OFF,
 		AE_SETTINGS_ALWAYS, "Your position on the map, for map makers and layouts.", 0 },
+	/* AUDIO (this PC's; the classic menus' Audio Setup writes the same keys) */
+	{ AE_SETTINGS_AUDIO, "VOLUME", "MASTER VOLUME", AE_SETTINGS_SLIDER, "audio.volume", volume_texts, volume_values,
+		VOLUME_STEPS, AE_SETTINGS_ALWAYS, "Everything at once.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOLUME", "MUSIC VOLUME", AE_SETTINGS_SLIDER, "audio.music_volume", volume_texts, volume_values,
+		VOLUME_STEPS, AE_SETTINGS_ALWAYS, "The music in menus and the campaign.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOLUME", "EFFECTS VOLUME", AE_SETTINGS_SLIDER, "audio.effects_volume", volume_texts,
+		volume_values, VOLUME_STEPS, AE_SETTINGS_ALWAYS, "Weapons, vehicles, voices in the game.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOLUME", "MENU SOUNDS", AE_SETTINGS_SLIDER, "audio.arena_menus_volume", volume_texts,
+		volume_values, VOLUME_STEPS, AE_SETTINGS_ALWAYS, "The AE menus' clicks and moves.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOLUME", "OUTPUT DEVICE", AE_SETTINGS_SPINNER, "audio.output_device", NULL, NULL, 0,
+		AE_SETTINGS_ALWAYS, "Where the game's sound plays. A lists every output.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOLUME", "SPEAKERS", AE_SETTINGS_SPINNER, "audio.channels",
+		VALUES(speakers_texts, speakers_values), AE_SETTINGS_ALWAYS,
+		"STEREO for headphones and TVs, 5.1 for surround speakers. The game restarts to change it.",
+		AE_SETTINGS_RESTART },
+	{ AE_SETTINGS_AUDIO, "VOICE", "VOICE CHAT", AE_SETTINGS_SPINNER, "audio.voice_chat",
+		VALUES(voice_chat_texts, voice_chat_values), AE_SETTINGS_ALWAYS,
+		"How your microphone sends in network games. The host can turn voice off.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOICE", "INPUT DEVICE", AE_SETTINGS_SPINNER, "audio.input_device", NULL, NULL, 0,
+		AE_SETTINGS_WHEN_VOICE, "The microphone voice chat uses.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOICE", "VOICE VOLUME", AE_SETTINGS_SLIDER, "audio.voice_volume", volume_texts, volume_values,
+		VOLUME_STEPS, AE_SETTINGS_ALWAYS, "Other players' voices.", 0 },
+	{ AE_SETTINGS_AUDIO, "VOICE", "PUSH TO TALK", AE_SETTINGS_KEY, "controls.push_to_talk", NULL, NULL, 0,
+		AE_SETTINGS_WHEN_PUSH_TO_TALK, "The key you hold to talk. The classic menus' Controls change it for now.", 0 },
+	{ AE_SETTINGS_AUDIO, "ADVANCED", "REVERB", AE_SETTINGS_TOGGLE, "audio.reverb", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Echo in rooms and caves, as Halo CE has it.", 0 },
+	{ AE_SETTINGS_AUDIO, "ADVANCED", "NHE SOUND FILTER", AE_SETTINGS_TOGGLE, "audio.nhe_sound_filter", ON_OFF,
+		AE_SETTINGS_ALWAYS,
+		"Mutes the plasma pistol's charging hum and the needler's shots on any map, as NHE's maps did.", 0 },
+	{ AE_SETTINGS_AUDIO, "ADVANCED", "RESAMPLER", AE_SETTINGS_SPINNER, "audio.resampler",
+		VALUES(resampler_texts, resampler_values), AE_SETTINGS_ALWAYS,
+		"SINC is cleaner, LINEAR is lighter on a slow PC.", 0 },
 	{ AE_SETTINGS_SYSTEM, "MENUS", "MENUS", AE_SETTINGS_SPINNER, "display.arena_menus",
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",
