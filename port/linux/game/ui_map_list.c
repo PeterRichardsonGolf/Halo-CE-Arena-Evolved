@@ -1467,4 +1467,31 @@ void ui_map_list_map_tag(
 	snprintf(tag, (size_t)tag_size, "%s", map_family_tag(family));
 	snprintf(title, (size_t)title_size, "%s", map_family_title(family));
 }
+#else
+/* (AE: the builds without the map list, the web's, have no pack maps: a
+game's map is named and tagged by its family alone; the lobby's browser and
+the server browser call these on every build) */
+void ui_map_list_map_name(
+	char const *map,
+	wchar_t *name,
+	long size)
+{
+	char file[MAP_NAME_LENGTH];
+	short family = map_family_parse_listed(map, file, sizeof(file));
+
+	ui_map_list_family_name(family, file, name, size);
+}
+
+void ui_map_list_map_tag(
+	char const *map,
+	char *tag,
+	long tag_size,
+	char *title,
+	long title_size)
+{
+	short family = map_family_parse_listed(map, NULL, 0);
+
+	snprintf(tag, (size_t)tag_size, "%s", map_family_tag(family));
+	snprintf(title, (size_t)title_size, "%s", map_family_title(family));
+}
 #endif
