@@ -116,7 +116,7 @@ int main(void)
 		!has_label(AE_SETTINGS_CONTROLS, &both, "HORIZONTAL SENSITIVITY"));
 	mouse_style = "classic";
 	CHECK(rows_of(AE_SETTINGS_VIEW, &pad) == 11);
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 26);
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 23);
 	/* a pad-only player: no MOUSE, no KEYBOARD, no DUALSENSE (no DualSense); ZOOM HOLD TIME only with BOTH */
 	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "MOUSE STYLE") && !has_label(AE_SETTINGS_CONTROLS, &pad, "KEY BINDINGS"));
 	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "ADAPTIVE TRIGGERS"));
@@ -130,8 +130,10 @@ int main(void)
 	panel = "false";
 	callouts = "off";
 	CHECK(!has_label(AE_SETTINGS_VIEW, &pad, "GLOW INTENSITY") && !has_label(AE_SETTINGS_HUD, &pad, "CLOCK LABELS"));
-	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "PANEL COLOR") && !has_label(AE_SETTINGS_HUD, &pad, "CALLOUT VOICE"));
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 22);
+	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "PANEL COLOR") && !has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUT VOICE"));
+	/* (CALLOUTS on AUDIO since 0.3.9) */
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 21 && !has_label(AE_SETTINGS_HUD, &pad, "CALLOUTS") &&
+		has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUTS"));
 	clock = "down";
 	panel = "true";
 
@@ -202,9 +204,9 @@ int main(void)
 		struct ae_settings_row const *master = ae_settings_row(ae_settings_row_of("audio.volume"));
 
 		set("audio.voice_chat", "push_to_talk");
-		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 13);
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 14); /* (CALLOUTS off above: its row alone) */
 		set("audio.voice_chat", "off");
-		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 11 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 12 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
 		CHECK(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))->kind == AE_SETTINGS_KEY &&
 			!ae_settings_value_count(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))));
 		CHECK(ae_settings_value_count(master) == 11 && !strcmp(ae_settings_value_of(master, 10), "1") &&
