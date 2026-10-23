@@ -466,8 +466,15 @@ static void run_list_set(const char *key, const char *const *texts, const char *
 			;
 		if (index == count && now[0] && count < RUN_VALUES)
 		{
+			long width, height;
+			char tail;
+
 			snprintf(extra, sizeof(extra), "%s", now);
-			upper(now, extra_text, sizeof(extra_text));
+			/* (a size as the list shows sizes: "1280 X 960") */
+			if (sscanf(now, "%ldx%ld%c", &width, &height, &tail) == 2)
+				snprintf(extra_text, sizeof(extra_text), "%ld X %ld", width, height);
+			else
+				upper(now, extra_text, sizeof(extra_text));
 			all_texts[count] = extra_text;
 			all_values[count] = extra;
 			count++;
