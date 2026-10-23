@@ -25,7 +25,7 @@ that time the last player is seated in the nearest vehicle of HALO_VEHICLE_DEATH
 default warthog; HALO_VEHICLE_DEATH_TEST_EMPTY=1 seats no one); from 3 seconds on, every 2 seconds a hit of
 HALO_VEHICLE_DEATH_TEST_DAMAGE (a damage effect's name, default the rocket's explosion) goes off on it, owned by
 another player: an explosion's area, or the vehicle alone with HALO_VEHICLE_DEATH_TEST_DIRECT=1.
-HALO_VEHICLE_DEATH_TEST_EXIT=<n>: the rider gets out after hit n. HALO_VEHICLE_DEATH_TEST_ALL=1: every vehicle of the
+HALO_VEHICLE_DEATH_TEST_EXIT=<n>: the rider gets out a second after hit n. HALO_VEHICLE_DEATH_TEST_ALL=1: every vehicle of the
 map is hit instead (the wrecks' frame time). Each second of the test logs the wrecks and the wall time a tick took.
 */
 
@@ -84,11 +84,12 @@ static struct
 	long vehicle_index;
 	long rider_index;
 	long hits;
+	long exit_at;
 	unsigned long last_tick_at;
 	unsigned long second_ms;
 	unsigned long second_slowest;
 	long second_ticks;
-} ae_vehicle_death_test = { NONE, NONE, 0, 0, 0, 0, 0 };
+} ae_vehicle_death_test = { NONE, NONE, 0, NONE, 0, 0, 0, 0 };
 
 static long ae_vehicle_death_effect_index(long object_index);
 
@@ -109,6 +110,7 @@ static void ae_vehicle_death_new_game_check(void)
 		ae_vehicle_death_test.vehicle_index = NONE;
 		ae_vehicle_death_test.rider_index = NONE;
 		ae_vehicle_death_test.hits = 0;
+		ae_vehicle_death_test.exit_at = NONE;
 	}
 	last_time = now;
 }
@@ -399,6 +401,9 @@ static void ae_vehicle_death_update_held(void)
 
 			if (!rider || TEST_FLAG(rider->object.damage_flags, _object_dead_bit))
 				died = TRUE;
+			error(_error_silent, "AE vehicle death: %08lX's rider %08lX %s", (unsigned long)object_index,
+				(unsigned long)ae_vehicle_death_held_list[index].riders[known],
+				!rider ? "gone" : TEST_FLAG(rider->object.damage_flags, _object_dead_bit) ? "dead" : "out alive");
 		}
 		ae_vehicle_death_held_list[index].object_index = NONE;
 		if (ae_vehicle_death_after_riders(died) == _ae_vehicle_death_riders_gone_dies)
@@ -585,11 +590,24 @@ static void ae_vehicle_death_test_hit(void)
 	{
 		ae_vehicle_death_test_hit_one(ae_vehicle_death_test.vehicle_index, damage_index);
 	}
-	if (exit_value && ae_vehicle_death_test.hits == atol(exit_value) && ae_vehicle_death_test.rider_index != NONE &&
-		object_try_and_get(ae_vehicle_death_test.rider_index) &&
+	if (exit_value && ae_vehicle_death_test.hits == atol(exit_value))
+		ae_vehicle_death_test.exit_at = game_time_get() + TICKS_PER_SECOND;
+}
+
+/* HALO_VEHICLE_DEATH_TEST_EXIT: the rider gets out a second after its hit (the vehicle settled: one thrown by
+the hit would run over a rider getting out under it) */
+static void ae_vehicle_death_test_exit(void)
+{
+	if (ae_vehicle_death_test.exit_at == NONE || game_time_get() != ae_vehicle_death_test.exit_at)
+		return;
+	ae_vehicle_death_test.exit_at = NONE;
+	if (ae_vehicle_death_test.rider_index != NONE && object_try_and_get(ae_vehicle_death_test.rider_index) &&
 		!TEST_FLAG(object_get(ae_vehicle_death_test.rider_index)->object.damage_flags, _object_dead_bit))
 	{
-		error(_error_silent, "AE vehicle death test: unit %08lX gets out", (unsigned long)ae_vehicle_death_test.rider_index);
+		error(_error_silent, "AE vehicle death test: unit %08lX gets out (body %.3f shield %.3f)",
+			(unsigned long)ae_vehicle_death_test.rider_index,
+			(double)object_get(ae_vehicle_death_test.rider_index)->object.body_vitality,
+			(double)object_get(ae_vehicle_death_test.rider_index)->object.shield_vitality);
 		unit_exit_seat_end(ae_vehicle_death_test.rider_index);
 	}
 }
@@ -683,4 +701,5 @@ void ae_vehicle_death_update(void)
 	}
 	if (now > test_ticks + 3 * TICKS_PER_SECOND && (now - test_ticks) % (2 * TICKS_PER_SECOND) == 0)
 		ae_vehicle_death_test_hit();
+	ae_vehicle_death_test_exit();
 }

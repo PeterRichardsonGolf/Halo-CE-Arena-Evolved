@@ -75,6 +75,15 @@ They are in the gametype list the first time you play. Back to the [README](../R
   melee while zoomed) and MOUSE AIM ASSIST OFF (no aim assist for the mouse,
   for every player; controllers keep theirs). Halo 1: NHE's set and the stock
   gametypes keep Halo CE's melee and allow the mouse's aim assist.
+  Since seed revision 23 every AE gametype with vehicles has VEHICLES
+  DESTRUCTIBLE ON, the Halo 2 way: only explosives hurt a vehicle (a warthog
+  takes 2 rockets, a ghost, banshee or gun turret 1, a scorpion 2-3), it
+  cannot die while someone rides in it (it holds until its last rider gets
+  out, which gives it back a quarter of its health, or dies in it, which
+  destroys it), and the wreck burns 10 seconds before it is cleared; a
+  destroyed vehicle respawns by the gametype's time, 30 seconds where that is
+  never. NHE's set and the stock gametypes keep Halo CE's vehicles, which
+  never die.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
   7S/10S, eight CTFs and CTF WIZARD), with NHE's values: Halo CE health, fall
