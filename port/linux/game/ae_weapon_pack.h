@@ -73,6 +73,10 @@ boolean ae_weapon_pack_read(long tag_index, long offset, long size, void *buffer
 /* the lowest slot whose pack is added to the loaded map, or 0: none was asked for, or each was refused (the
 fallback: what the loadout and the map spawns key on) */
 short ae_weapon_pack_added(void);
+/* whether the vehicle damage pack (packs\ae_vehicle_damage.aepack, a pack of tags only: ae_vehicle_pack_rules.h)
+is added to the loaded map: read at start beside the weapon packs, added after them to a multiplayer map with
+vehicles when the game about to be played has VEHICLES DESTRUCTIBLE on; its tags are found by name */
+boolean ae_weapon_pack_vehicle_pack_added(void);
 /* whether the slot's pack is added to the loaded map */
 boolean ae_weapon_pack_slot_added(short slot);
 /* the slots whose packs are added to the loaded map (ae_weapon_slots.h's mask) */

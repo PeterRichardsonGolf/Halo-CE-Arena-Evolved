@@ -91,7 +91,11 @@ They are in the gametype list the first time you play. Back to the [README](../R
   destroys it), and the wreck burns 10 seconds before it is cleared; a
   destroyed vehicle respawns by the gametype's time, 30 seconds where that is
   never. NHE's set and the stock gametypes keep Halo CE's vehicles, which
-  never die.
+  never die. With the vehicle damage pack (`packs/ae_vehicle_damage.aepack`,
+  CMT's TSC:E effects) a damaged warthog, ghost or banshee smokes and burns,
+  dies in TSC:E's explosion with its hood or wings coming off, and the
+  warthog and the banshee leave a burning wreck (the ghost its burning body);
+  each machine shows what its own pack gives, the game is the same.
 - **Halo 1: NHE's own 23 gametypes** (TS 50, TS 100, TS ON-OFF, TS TRAINING,
   TS PRACTICE, TS SNIPERS, FFA 50 NR/R, 1 V 1 NR/R, KOTH 5M 7S/10S, BALL 5M
   7S/10S, eight CTFs and CTF WIZARD), with NHE's values: Halo CE health, fall

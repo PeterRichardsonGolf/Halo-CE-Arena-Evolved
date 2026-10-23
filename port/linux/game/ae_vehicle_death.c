@@ -20,6 +20,10 @@ Clients take the host's word: the object state's dead bit (network_objects.c) ki
 object_deplete_body there too (so an AE client plays the explosion); the wreck's deletion and the new vehicle are
 the host's object messages.
 
+The vehicle damage pack (ae_vehicle_pack.c), where a machine has it, adds the look on that machine: the damaged
+smoke and fire, TSC:E's explosion beside the map's, the parts coming off and the burning wreck. It changes nothing
+here: who dies, when, the damage and the clearing are this file's, with the pack or without.
+
 HALO_VEHICLE_DEATH_TEST=<seconds> (test driver, host or local game only; runs with the rule off too, to compare): at
 that time the last player is seated in the nearest vehicle of HALO_VEHICLE_DEATH_TEST_KIND (a word of the table,
 default warthog; HALO_VEHICLE_DEATH_TEST_EMPTY=1 seats no one); from 3 seconds on, every 2 seconds a hit of
@@ -27,6 +31,9 @@ HALO_VEHICLE_DEATH_TEST_DAMAGE (a damage effect's name, default the rocket's exp
 another player: an explosion's area, or the vehicle alone with HALO_VEHICLE_DEATH_TEST_DIRECT=1.
 HALO_VEHICLE_DEATH_TEST_EXIT=<n>: the rider gets out a second after hit n. HALO_VEHICLE_DEATH_TEST_ALL=1: every vehicle of the
 map is hit instead (the wrecks' frame time). Each second of the test logs the wrecks and the wall time a tick took.
+HALO_VEHICLE_DEATH_TEST_WATCH=<units> (with _EMPTY): the last player is put that far from the vehicle at the test's
+start, looking at it, and keeps looking at it (or where it was) each tick: the shots of the vehicle damage pack's
+look (ae_vehicle_pack.c).
 */
 
 #include "cseries.h"
@@ -45,6 +52,7 @@ map is hit instead (the wrecks' frame time). Each second of the test logs the wr
 
 #include "ae_vehicle_death.h"
 #include "ae_vehicle_death_rules.h"
+#include "ae_vehicle_pack.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -89,7 +97,9 @@ static struct
 	unsigned long second_ms;
 	unsigned long second_slowest;
 	long second_ticks;
-} ae_vehicle_death_test = { NONE, NONE, 0, NONE, 0, 0, 0, 0 };
+	real_point3d watched;
+	boolean watching;
+} ae_vehicle_death_test = { NONE, NONE, 0, NONE, 0, 0, 0, 0, { 0.0f, 0.0f, 0.0f }, FALSE };
 
 static long ae_vehicle_death_effect_index(long object_index);
 
@@ -111,6 +121,7 @@ static void ae_vehicle_death_new_game_check(void)
 		ae_vehicle_death_test.rider_index = NONE;
 		ae_vehicle_death_test.hits = 0;
 		ae_vehicle_death_test.exit_at = NONE;
+		ae_vehicle_death_test.watching = FALSE;
 	}
 	last_time = now;
 }
@@ -311,6 +322,8 @@ void ae_vehicle_death_depleted(long object_index, struct damage_data const *dama
 		if (effect_index != NONE)
 			effect_new_from_object(effect_index, object_index, object_index, NONE, 0.0f, 0.0f, NULL, NULL);
 	}
+	/* (the vehicle damage pack's look, where this machine has it: its explosion beside the map's, the wreck) */
+	ae_vehicle_pack_died(object_index);
 	ae_vehicle_death_note_wreck(object_index);
 }
 
@@ -350,7 +363,12 @@ static long ae_vehicle_death_effect_index(long object_index)
 
 long ae_vehicle_death_effect(long object_index)
 {
-	return network_game_distributed_client() ? ae_vehicle_death_effect_index(object_index) : NONE;
+	long effect_index = network_game_distributed_client() ? ae_vehicle_death_effect_index(object_index) : NONE;
+
+	/* (a vehicle the rule destroyed, on a client: the vehicle damage pack's look too, where it has the pack) */
+	if (effect_index != NONE)
+		ae_vehicle_pack_died(object_index);
+	return effect_index;
 }
 
 long ae_vehicle_death_respawn_ticks(long respawn_ticks)
@@ -472,17 +490,21 @@ static void ae_vehicle_death_test_seat(void)
 	long nearest_index = NONE;
 	real nearest_distance = 0.0f;
 	short seat_index;
+	boolean empty = ae_vehicle_death_test_value("HALO_VEHICLE_DEATH_TEST_EMPTY") != NULL;
+	boolean placed = last && last->unit_index != NONE;
 
 	if (!kind)
 		kind = "warthog";
-	if (!last || last->unit_index == NONE)
+	/* (an empty vehicle needs no player: the first of the kind when the last player has no unit, dead or not yet
+	there, as a network test's may be) */
+	if (!placed && !empty)
 		return;
 	object_iterator_new(&vehicles, _object_mask_vehicle, 0);
 	while (object_iterator_next(&vehicles))
 	{
 		char const *name = tag_get_name(object_get(vehicles.index)->definition_index);
-		real distance = distance_squared3d(&object_get(last->unit_index)->object.position,
-			&object_get(vehicles.index)->object.position);
+		real distance = placed ? distance_squared3d(&object_get(last->unit_index)->object.position,
+			&object_get(vehicles.index)->object.position) : 0.0f;
 
 		if (name && ae_vehicle_death_contains(name, kind) && (nearest_index == NONE || distance < nearest_distance))
 		{
@@ -497,10 +519,30 @@ static void ae_vehicle_death_test_seat(void)
 	}
 	ae_vehicle_death_test.vehicle_index = nearest_index;
 	ae_vehicle_death_test.rider_index = NONE;
-	if (ae_vehicle_death_test_value("HALO_VEHICLE_DEATH_TEST_EMPTY"))
+	if (empty)
 	{
+		char const *watch = ae_vehicle_death_test_value("HALO_VEHICLE_DEATH_TEST_WATCH");
+
 		error(_error_silent, "AE vehicle death test: %s %08lX, empty", tag_get_name(object_get(nearest_index)->definition_index),
 			(unsigned long)nearest_index);
+		if (placed && watch && atof(watch) > 0.0)
+		{
+			/* (the watcher beside it, a little above, on the side its forward points to: the wreck in view) */
+			struct object_datum *vehicle = object_get(nearest_index);
+			real distance = (real)atof(watch);
+			real_point3d at = vehicle->object.position;
+			real_vector3d forward = { 1.0f, 0.0f, 0.0f };
+			real_vector3d up = { 0.0f, 0.0f, 1.0f };
+
+			at.x += vehicle->object.forward.i * distance;
+			at.y += vehicle->object.forward.j * distance;
+			at.z += 1.0f;
+			object_set_position(last->unit_index, &at, &forward, &up);
+			ae_vehicle_death_test.watched = vehicle->object.position;
+			ae_vehicle_death_test.watching = TRUE;
+			error(_error_silent, "AE vehicle death test: unit %08lX watches from %.1f units", (unsigned long)last->unit_index,
+				(double)distance);
+		}
 		return;
 	}
 	for (seat_index = 0; seat_index < unit_definition_get(object_get(nearest_index)->definition_index)->unit.seats.count;
@@ -612,6 +654,25 @@ static void ae_vehicle_death_test_exit(void)
 	}
 }
 
+/* HALO_VEHICLE_DEATH_TEST_WATCH: the first local player looks at the vehicle (where it last was) */
+static void ae_vehicle_death_test_watch(void)
+{
+	struct player_datum *last = ae_vehicle_death_last_player();
+	struct object_datum *vehicle = ae_vehicle_death_test.vehicle_index == NONE ? NULL :
+		object_try_and_get(ae_vehicle_death_test.vehicle_index);
+	real_vector3d direction;
+
+	if (!ae_vehicle_death_test.watching || !last || last->unit_index == NONE)
+		return;
+	if (vehicle)
+		ae_vehicle_death_test.watched = vehicle->object.position;
+	direction.i = ae_vehicle_death_test.watched.x - object_get(last->unit_index)->object.position.x;
+	direction.j = ae_vehicle_death_test.watched.y - object_get(last->unit_index)->object.position.y;
+	direction.k = ae_vehicle_death_test.watched.z - object_get(last->unit_index)->object.position.z - 0.9f;
+	if (normalize3d(&direction) > 0.0f)
+		player_control_set_facing(0, &direction);
+}
+
 /* each second of the test: the wrecks there and the wall time a game tick took (the frame time with wrecks) */
 static void ae_vehicle_death_test_time(long now)
 {
@@ -644,6 +705,23 @@ static void ae_vehicle_death_test_time(long now)
 			now / TICKS_PER_SECOND, (int)wrecks,
 			(double)ae_vehicle_death_test.second_ms / (double)ae_vehicle_death_test.second_ticks,
 			ae_vehicle_death_test.second_slowest);
+		/* (the test's vehicle and its first child, a wreck of the vehicle damage pack's: where each is drawn) */
+		{
+			struct object_datum *vehicle = ae_vehicle_death_test.vehicle_index == NONE ? NULL :
+				object_try_and_get(ae_vehicle_death_test.vehicle_index);
+
+			if (vehicle && vehicle->object.first_child_object_index != NONE)
+			{
+				real_point3d origin, child_origin;
+
+				object_get_origin(ae_vehicle_death_test.vehicle_index, &origin);
+				object_get_origin(vehicle->object.first_child_object_index, &child_origin);
+				error(_error_silent, "AE vehicle death test: %08lX at (%.2f %.2f %.2f), its child %s at (%.2f %.2f %.2f)",
+					(unsigned long)ae_vehicle_death_test.vehicle_index, (double)origin.x, (double)origin.y,
+					(double)origin.z, tag_get_name(object_get(vehicle->object.first_child_object_index)->definition_index),
+					(double)child_origin.x, (double)child_origin.y, (double)child_origin.z);
+			}
+		}
 		ae_vehicle_death_test.second_ms = 0;
 		ae_vehicle_death_test.second_slowest = 0;
 		ae_vehicle_death_test.second_ticks = 0;
@@ -656,6 +734,8 @@ void ae_vehicle_death_update(void)
 	long test_ticks;
 	short index;
 
+	/* (every machine: the vehicle damage pack's damaged look where it knows a vehicle's health) */
+	ae_vehicle_pack_update();
 	if (!game_engine_running() || network_game_distributed_client())
 		return;
 	ae_vehicle_death_new_game_check();
@@ -702,4 +782,5 @@ void ae_vehicle_death_update(void)
 	if (now > test_ticks + 3 * TICKS_PER_SECOND && (now - test_ticks) % (2 * TICKS_PER_SECOND) == 0)
 		ae_vehicle_death_test_hit();
 	ae_vehicle_death_test_exit();
+	ae_vehicle_death_test_watch();
 }

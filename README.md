@@ -152,6 +152,9 @@ Arena Evolved's own menus, map packs as folders in the map lists, and more of th
   Cartographer: Evolved (1.4.1c), used with credit; its scope and gun-screen art are redrawn here, and its aiming
   reticle follows crosshair 033 of [Kenney's Crosshair Pack](https://kenney.nl/assets/crosshair-pack) (CC0). The
   pack's own credits file is `packs/ae_battle_rifle.CREDITS.txt`.
+- The vehicle damage pack's effects and wrecks (`packs/ae_vehicle_damage.aepack`) are CMT's, from the same TSC:E
+  1.4.1c source release (the Evolved team), used with credit; its credits file is
+  `packs/ae_vehicle_damage.CREDITS.txt`.
 - The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
   made by `tools/ae_logo.py`); it uses no third-party art. It is not under
   the code's licence (see "Licence" below).

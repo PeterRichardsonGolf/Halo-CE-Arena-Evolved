@@ -1178,6 +1178,13 @@ and ChupathingyCE players see the vehicle die and the wreck go, without the
 explosion that an Arena Evolved client plays. The stock multiplayer
 vehicles get their health from a table by their tag (Halo 2's ratios:
 warthog 2 rockets, ghost, banshee and gun turret 1, scorpion 2-3).
+The vehicle damage pack (`packs/ae_vehicle_damage.aepack`, a pack of tags
+only: `game/ae_vehicle_pack.c`, docs/weapon-packs.md) adds the look on each
+machine that has it: the damaged smoke and fire where the machine knows a
+vehicle's health (the host, a local game), and on every machine TSC:E's
+explosion beside the map's, the parts coming off and the burning wreck (a
+scenery made by each machine, the dead vehicle's child, never sent over the
+network). A machine without the pack shows the basic death.
 
 Linux, Windows and Android machines can play in the same game. Each machine
 simulates the players from the same inputs, and the host does not correct

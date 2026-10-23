@@ -107,6 +107,7 @@ A refusal is one "weapon pack: refused for <map>: <reason>" line.
 #include "ae_weapon_pack.h"
 #include "ae_weapon_slots.h"
 #include "ae_pack_spawns.h"
+#include "ae_vehicle_pack_rules.h"
 
 /* ---------- constants */
 
@@ -136,6 +137,17 @@ static struct
 	{ PACKS_FOLDER "\\ae_smg_silenced.aepack", "ae_smg_silenced" },
 	{ PACKS_FOLDER "\\ae_carbine.aepack", "ae_carbine" },
 	{ PACKS_FOLDER "\\ae_ar_silenced.aepack", "ae_ar_silenced" },
+};
+
+/* the vehicle damage pack (ae_vehicle_pack_rules.h): a pack of tags only, in a place of its own past the weapon
+slots (VEHICLE_PACK_SLOT), never one a gametype's mask names. It is added to a multiplayer map with vehicles when the
+game about to be played has VEHICLES DESTRUCTIBLE on, after the weapon packs (its tags past theirs: theirs are at the
+same indices on a machine without it), and the game finds its tags by name (ae_vehicle_pack.c) */
+#define VEHICLE_PACK_FILE PACKS_FOLDER "\\" AE_VEHICLE_PACK_ID ".aepack"
+enum
+{
+	VEHICLE_PACK_SLOT = AE_WEAPON_PACK_SLOTS + 1,
+	PLACED_SLOTS = VEHICLE_PACK_SLOT,
 };
 
 /* the pack on a map */
@@ -267,6 +279,7 @@ static struct
 {
 	boolean initialized;
 	struct ae_pack *packs[AE_WEAPON_PACK_SLOTS];
+	struct ae_pack *vehicle_pack;
 } weapon_pack_globals;
 
 /* a pack on the loaded map (one a slot: placements below; `placed` is the one being added or asked) */
@@ -322,7 +335,7 @@ struct placed_state
 
 /* each slot's pack on the loaded map, added in slot order (each grows the table the one before left) and let go
 in reverse; `placed` is the slot's being added, let go or asked (placed_select) */
-static struct placed_state placements[AE_WEAPON_PACK_SLOTS];
+static struct placed_state placements[PLACED_SLOTS];
 static struct placed_state *placed_current = &placements[0];
 #define placed (*placed_current)
 
@@ -333,7 +346,7 @@ struct refusal_state
 	char map_name[MAP_NAME_SIZE];
 	char reason[REASON_SIZE];
 };
-static struct refusal_state refusals[AE_WEAPON_PACK_SLOTS];
+static struct refusal_state refusals[PLACED_SLOTS];
 static struct refusal_state *refusal_current = &refusals[0];
 #define refusal (*refusal_current)
 
@@ -344,17 +357,17 @@ struct refused_map
 	char map_name[MAP_NAME_SIZE];
 	char reason[REASON_SIZE];
 };
-static struct refused_map refused_maps_of[AE_WEAPON_PACK_SLOTS][REFUSED_MAPS_MAXIMUM];
-static short refused_maps_next_of[AE_WEAPON_PACK_SLOTS];
+static struct refused_map refused_maps_of[PLACED_SLOTS][REFUSED_MAPS_MAXIMUM];
+static short refused_maps_next_of[PLACED_SLOTS];
 static struct refused_map *refused_maps = refused_maps_of[0];
 static short *refused_maps_next_current = &refused_maps_next_of[0];
 #define refused_maps_next (*refused_maps_next_current)
 
-/* `placed`, `refusal` and the refused maps made the slot's (1 to AE_WEAPON_PACK_SLOTS) */
+/* `placed`, `refusal` and the refused maps made the slot's (1 to AE_WEAPON_PACK_SLOTS, or VEHICLE_PACK_SLOT) */
 static void placed_select(
 	short slot)
 {
-	short index = slot >= 1 && slot <= AE_WEAPON_PACK_SLOTS ? (short)(slot - 1) : 0;
+	short index = slot >= 1 && slot <= PLACED_SLOTS ? (short)(slot - 1) : 0;
 
 	placed_current = &placements[index];
 	refusal_current = &refusals[index];
@@ -375,6 +388,8 @@ static short placed_selected(
 static struct ae_pack *slot_pack(
 	short slot)
 {
+	if (slot == VEHICLE_PACK_SLOT)
+		return weapon_pack_globals.vehicle_pack;
 	if (slot < 1 || slot > AE_WEAPON_PACK_SLOTS)
 		return NULL;
 	return weapon_pack_globals.packs[slot - 1];
@@ -424,7 +439,7 @@ static void pack_log(
 
 	for (index = 0; index < 8; index++)
 		snprintf(hash + index * 2, 3, "%02x", pack->header.sha256[index]);
-	weapons[0] = 0;
+	snprintf(weapons, sizeof(weapons), "%s", pack->weapon_count ? "" : "none (tags only)");
 	for (index = 0; index < pack->weapon_count; index++)
 	{
 		char const *key = ae_pack_string(pack, pack->weapons[index].key);
@@ -434,8 +449,8 @@ static void pack_log(
 	}
 	/* (at most 48 MiB: times ten stays well inside 32 bits) */
 	tenths = (pack->resources_size * 10u + 524288u) / 1048576u;
-	error(_error_silent, "weapon pack: '%s' revision %u (sha256 %s...), %u own tags, %u external, %u resources "
-		"(%u.%u MB), weapons: %s",
+	error(_error_silent, "%s pack: '%s' revision %u (sha256 %s...), %u own tags, %u external, %u resources "
+		"(%u.%u MB), weapons: %s", pack->weapon_count ? "weapon" : "vehicle",
 		pack->header.pack_id, pack->header.pack_revision, hash, pack->own_tag_count,
 		pack->tag_count - pack->own_tag_count, pack->resource_count, tenths / 10, tenths % 10, weapons);
 }
@@ -499,6 +514,12 @@ static struct ae_pack *slot_read(
 		ae_pack_close(pack);
 		return NULL;
 	}
+	if (!pack->weapon_count)
+	{
+		pack_refused(slot, path, "it is a pack of tags only, with no weapon");
+		ae_pack_close(pack);
+		return NULL;
+	}
 	if (!ae_pack_verify_resources(pack, &problem))
 	{
 		pack_refused(slot, path, problem.text);
@@ -507,6 +528,44 @@ static struct ae_pack *slot_read(
 	}
 	pack_log(pack);
 	return pack;
+}
+
+/* the vehicle damage pack read, checked and logged, or refused and logged (a pack of tags only, its own id); none
+in the packs folder is one line, and no packs folder none */
+static struct ae_pack *vehicle_pack_read(
+	void)
+{
+	struct ae_pack *pack = NULL;
+	struct ae_pack_problem problem;
+	char const *path = VEHICLE_PACK_FILE;
+
+	if (path_kind(PACKS_FOLDER) == _path_missing)
+		return NULL;
+	switch (path_kind(path))
+	{
+	case _path_missing:
+		error(_error_silent, "vehicle pack: none here (%s): destroyed vehicles look as the map makes them", path);
+		return NULL;
+	case _path_other:
+		error(_error_silent, "vehicle pack: %s is no pack file; destroyed vehicles look as the map makes them", path);
+		return NULL;
+	}
+	if (!ae_pack_open(path, &pack, &problem))
+		pack = NULL;
+	else if (strcmp(pack->header.pack_id, AE_VEHICLE_PACK_ID) != 0)
+		snprintf(problem.text, sizeof(problem.text), "it is pack '%s', not '%s'", pack->header.pack_id, AE_VEHICLE_PACK_ID);
+	else if (pack->weapon_count)
+		snprintf(problem.text, sizeof(problem.text), "it has weapons: it is no pack of tags only");
+	else if (ae_pack_verify_resources(pack, &problem))
+	{
+		pack_log(pack);
+		return pack;
+	}
+	error(_error_silent, "vehicle pack: %s not taken: %s; destroyed vehicles look as the map makes them", path,
+		problem.text);
+	if (pack)
+		ae_pack_close(pack);
+	return NULL;
 }
 
 /* ---------- private code: the pack on a map */
@@ -1422,9 +1481,9 @@ static boolean placed_add(
 
 		for (index = 0; index < PLACED_FINGERPRINT_SIZE; index++)
 			snprintf(fingerprint + index * 2, 3, "%02x", placed.fingerprint[index]);
-		error(_error_silent, "weapon pack: added to %s: %d tags new (%u bytes), %u the map's own, %d optional ones "
+		error(_error_silent, "%s pack: added to %s: %d tags new (%u bytes), %u the map's own, %d optional ones "
 			"the map lacks, %d corrections; its tag table %d to %d; fingerprint %s",
-			map_name, (int)next, (unsigned int)bytes_size,
+			slot == VEHICLE_PACK_SLOT ? "vehicle" : "weapon", map_name, (int)next, (unsigned int)bytes_size,
 			pack->tag_count - pack->own_tag_count - (unsigned int)placed.missing_count, (int)placed.missing_count,
 			(int)corrections, (int)existing, (int)(existing + next), fingerprint);
 	}
@@ -1503,7 +1562,15 @@ static void refusal_refused(
 
 	snprintf(problem, sizeof(problem), "%s", placed.problem);
 	placed_free(pack);
-	error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", map_name, problem);
+	if (placed_selected() == VEHICLE_PACK_SLOT)
+	{
+		/* (no failure: a map without a stock tag the pack names, and destroyed vehicles look as the map makes
+		them) */
+		error(_error_silent, "vehicle pack: not added to %s: %s; destroyed vehicles look as the map makes them",
+			map_name, problem);
+	}
+	else
+		error(_error_silent, "weapon pack: refused for %s: %s; the game plays without it", map_name, problem);
 	refusal_note(map_name, problem, TRUE);
 }
 
@@ -1544,7 +1611,7 @@ static boolean placed_any(
 {
 	short slot;
 
-	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	for (slot = 1; slot <= PLACED_SLOTS; slot++)
 		if (placements[slot - 1].added)
 			return TRUE;
 	return FALSE;
@@ -1574,6 +1641,7 @@ void ae_weapon_pack_initialize(
 
 		weapon_pack_globals.packs[slot - 1] = slot_read(slot, debug ? debug_file : slot_files[slot - 1].path, debug);
 	}
+	weapon_pack_globals.vehicle_pack = vehicle_pack_read();
 }
 
 void ae_weapon_pack_dispose(
@@ -1583,7 +1651,7 @@ void ae_weapon_pack_dispose(
 
 	/* (a map's tags are let go before the game is: scenario_tags_unload. Were they not, the pack's tags stay
 	as they are, in memory that is not given back, and no more is read from the pack: said, as it should not be) */
-	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	for (slot = 1; slot <= PLACED_SLOTS; slot++)
 	{
 		if (placements[slot - 1].added)
 			error(_error_silent, "weapon pack: the game ends with the pack still on %s: its tags were never let go",
@@ -1595,6 +1663,8 @@ void ae_weapon_pack_dispose(
 		ae_pack_close(weapon_pack_globals.packs[slot - 1]);
 		weapon_pack_globals.packs[slot - 1] = NULL;
 	}
+	ae_pack_close(weapon_pack_globals.vehicle_pack);
+	weapon_pack_globals.vehicle_pack = NULL;
 	weapon_pack_globals.initialized = FALSE;
 }
 
@@ -1780,6 +1850,75 @@ static void placed_looks_set(
 	}
 }
 
+/* the slot's pack added to the map whose tags have just loaded, or refused for it (one line, the reason kept) */
+static void placed_add_slot(
+	short slot,
+	char const *map_name)
+{
+	struct ae_pack *pack = slot_pack(slot);
+
+	placed_select(slot);
+	memset(&placed, 0, sizeof(placed));
+	if (!pack)
+	{
+		char reason[64];
+
+		if (slot == VEHICLE_PACK_SLOT)
+		{
+			error(_error_silent, "vehicle pack: not added to %s: this game has none (destroyed vehicles look as the map "
+				"makes them)", map_name);
+			return;
+		}
+		error(_error_silent, "weapon pack: not added to %s: this game has no pack for slot %d", map_name, (int)slot);
+		snprintf(reason, sizeof(reason), "this machine has no %s pack", ae_weapon_slots_name(slot));
+		refusal_note(map_name, reason, FALSE);
+		return;
+	}
+	/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
+	PAL's through pal_tags.c: cache_files.c's list) */
+	{
+		char build[0x20];
+
+		if (!cache_files_multiplayer_region(build))
+		{
+			snprintf(placed.problem, sizeof(placed.problem), "build %.31s", build);
+			refusal_refused(pack, map_name);
+			return;
+		}
+	}
+	if (!placed_add(pack, map_name, slot))
+	{
+		refusal_refused(pack, map_name);
+		return;
+	}
+	placed.added = TRUE;
+	placed.slot = slot;
+	snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
+	refused_map_forget(map_name);
+	placed_looks_set(pack);
+}
+
+/* whether the game about to be played on the map whose tags have just loaded asks for the vehicle damage pack: the
+pending game variant (game_variant_global) has VEHICLES DESTRUCTIBLE on, and the map is a multiplayer one whose
+scenario places vehicles */
+static boolean vehicle_pack_asked(
+	long scenario_tag_index)
+{
+	struct game_variant const *variant = &game_variant_global;
+	struct scenario *scenario;
+
+	memset(&refusals[VEHICLE_PACK_SLOT - 1], 0, sizeof(refusals[VEHICLE_PACK_SLOT - 1]));
+	if (!variant->game_engine_index ||
+		ae_vehicle_death_get((unsigned long)variant->universal_variant.flags) != _ae_vehicle_death_on ||
+		scenario_tag_index == NONE)
+	{
+		return FALSE;
+	}
+	scenario = scenario_definition_get(scenario_tag_index);
+	return scenario->type == _scenario_type_multiplayer && scenario->vehicle_palette.count > 0 &&
+		scenario->vehicles.count > 0;
+}
+
 /* once a map's tags are read and checked (scenario_tags_load), before anything else adds to its tag table: the
 pack the game about to be played asks for is added to a multiplayer map. A map loaded for no game (the menus',
 the campaign: no pending game variant) gets none */
@@ -1797,49 +1936,18 @@ void ae_weapon_pack_tags_loaded(
 	snprintf(name, sizeof(name), "%.32s", map_name);
 	map_name = name;
 	ae_pack_spawns_new_map();
-	if (!refusal_asked(map_name, scenario_tag_index, &mask))
-		return;
-	/* (each named slot's pack in slot order: each grows the table the one before left) */
-	for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	if (refusal_asked(map_name, scenario_tag_index, &mask))
 	{
-		struct ae_pack *pack = slot_pack(slot);
-
-		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
-			continue;
-		placed_select(slot);
-		memset(&placed, 0, sizeof(placed));
-		if (!pack)
+		/* (each named slot's pack in slot order: each grows the table the one before left) */
+		for (slot = 1; slot <= AE_WEAPON_PACK_SLOTS; slot++)
 		{
-			char reason[64];
-
-			error(_error_silent, "weapon pack: not added to %s: this game has no pack for slot %d", map_name, (int)slot);
-			snprintf(reason, sizeof(reason), "this machine has no %s pack", ae_weapon_slots_name(slot));
-			refusal_note(map_name, reason, FALSE);
-			continue;
+			if (mask & AE_WEAPON_SLOT_BIT(slot))
+				placed_add_slot(slot, map_name);
 		}
-		/* CHECK: the map's tags are laid out as the engine's: a build it plays multiplayer on (2276, NHE's 2300,
-		PAL's through pal_tags.c: cache_files.c's list) */
-		{
-			char build[0x20];
-
-			if (!cache_files_multiplayer_region(build))
-			{
-				snprintf(placed.problem, sizeof(placed.problem), "build %.31s", build);
-				refusal_refused(pack, map_name);
-				continue;
-			}
-		}
-		if (!placed_add(pack, map_name, slot))
-		{
-			refusal_refused(pack, map_name);
-			continue;
-		}
-		placed.added = TRUE;
-		placed.slot = slot;
-		snprintf(placed.map_name, sizeof(placed.map_name), "%s", map_name);
-		refused_map_forget(map_name);
-		placed_looks_set(pack);
 	}
+	/* (the vehicle damage pack, after them: VEHICLES DESTRUCTIBLE on, a multiplayer map with vehicles) */
+	if (vehicle_pack_asked(scenario_tag_index))
+		placed_add_slot(VEHICLE_PACK_SLOT, map_name);
 	placed_select(1);
 }
 
@@ -1940,13 +2048,14 @@ void ae_weapon_pack_tags_unloaded(
 	short slot;
 
 	/* (in reverse: each slot's table back to the one the slot before left) */
-	for (slot = AE_WEAPON_PACK_SLOTS; slot >= 1; slot--)
+	for (slot = PLACED_SLOTS; slot >= 1; slot--)
 	{
 		placed_select(slot);
 		if (!placed.added)
 			continue;
-		error(_error_silent, "weapon pack: let go from %s: %d tags; %d bitmap and %d sound reads (%u bytes) were "
-			"served from the pack, %d could not be", placed.map_name, (int)placed.own_count, (int)placed.bitmap_reads,
+		error(_error_silent, "%s pack: let go from %s: %d tags; %d bitmap and %d sound reads (%u bytes) were "
+			"served from the pack, %d could not be", slot == VEHICLE_PACK_SLOT ? "vehicle" : "weapon", placed.map_name,
+			(int)placed.own_count, (int)placed.bitmap_reads,
 			(int)placed.sound_reads, (unsigned int)placed.read_bytes, (int)placed.failed_reads);
 		cache_files_set_tag_instances(placed.original_instances, placed.original_count);
 		placed_free(slot_pack(placed.slot));
@@ -2075,7 +2184,7 @@ boolean ae_weapon_pack_read(
 	short slot;
 	boolean read = FALSE;
 
-	for (slot = 1; !read && slot <= AE_WEAPON_PACK_SLOTS; slot++)
+	for (slot = 1; !read && slot <= PLACED_SLOTS; slot++)
 	{
 		placed_select(slot);
 		read = placed_read(tag_index, offset, size, buffer, complete);
@@ -2093,6 +2202,12 @@ short ae_weapon_pack_added(
 		if (placements[slot - 1].added)
 			return slot;
 	return 0;
+}
+
+boolean ae_weapon_pack_vehicle_pack_added(
+	void)
+{
+	return placements[VEHICLE_PACK_SLOT - 1].added;
 }
 
 boolean ae_weapon_pack_slot_added(
