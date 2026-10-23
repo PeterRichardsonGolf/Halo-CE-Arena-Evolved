@@ -85,10 +85,10 @@ SAVES = (
      {"BATTLE RIFLE PACK": 1, "SMG PACK": 1, "SILENCED SMG PACK": 0, "CARBINE PACK": 0, "SILENCED AR PACK": 0,
       "PACK WEAPONS ON MAP": 1, "STARTING GRENADES": 3, "BOTTOMLESS CLIP": 1, "PRIMARY WEAPON": 10,
       "SECONDARY WEAPON": 11, "LOADOUT": 1}),
-    # (the BR joins a game whose loadout names the SMG and the carbine: the carbine is the third pack, no source
-    # reaches it, the secondary goes back to the pistol the carbine plays as; the SMG, still second, stays)
+    # (the BR joins a game whose loadout names the SMG and the carbine: both keep their weapon, the carbine now the
+    # third pack on, which starts as well since any pack on can start: rank 3 in universal_variant.flags' later bits)
     ("save-remap", "SMG PACK=1;CARBINE PACK=1;LOADOUT=1;PRIMARY WEAPON=11;SECONDARY WEAPON=13;BATTLE RIFLE PACK=1",
-     "GORS REMAP", {"PRIMARY WEAPON": 11, "SECONDARY WEAPON": 3, "CARBINE PACK": 1, "BATTLE RIFLE PACK": 1}),
+     "GORS REMAP", {"PRIMARY WEAPON": 11, "SECONDARY WEAPON": 13, "CARBINE PACK": 1, "BATTLE RIFLE PACK": 1}),
     # (a pack turned off: the slot that took its weapon plays the stock one)
     ("save-pack-off", "SMG PACK=1;LOADOUT=1;PRIMARY WEAPON=11;SMG PACK=0", "GORS OFF",
      {"SMG PACK": 0, "PRIMARY WEAPON": 2}),
