@@ -8,11 +8,14 @@ GL_TIME_ELAPSED query read when ready, never waited on), and how much the settin
 call returns at once.
 */
 
+/* (the platform layer's order, as in ae_draw.c: its header first, and before gl.h, which on Windows brings
+windows.h) */
+#include "platform.h"
+#include "ae_frame_times.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-
-#include "ae_frame_times.h"
 
 #if defined(HALO_SERVER) || defined(HALO_ANDROID)
 
@@ -27,12 +30,11 @@ void ae_ft_gpu_end(void) {}
 
 #else
 
-#include <SDL3/SDL.h>
 #ifndef HALO_GLES
 #include "gl.h"
 #endif
+#include <SDL3/SDL.h>
 
-void platform_log(const char *format, ...);
 extern void (*ae_config_counter)(int what);
 unsigned long config_changes(void);
 unsigned long ae_config_player_value_changes(void);
