@@ -735,14 +735,12 @@ int ae_setup_pack_source(struct ae_setup_access const *access, int slot)
 		return 0;
 	for (other = 1; other < slot; other++)
 		below += ae_setup_pack_on(access, other);
-	return below < 2 ? below + 1 : 0;
+	return below + 1;
 }
 
 /* the packs' names as the summary and the help say them */
 static const char *const pack_names[AE_SETUP_PACKS] = { "BATTLE RIFLE", "SMG", "SILENCED SMG", "CARBINE",
 	"SILENCED AR" };
-static const char *const pack_lower[AE_SETUP_PACKS] = { "battle rifle", "SMG", "silenced SMG", "carbine",
-	"silenced AR" };
 static const char *const pack_facts[AE_SETUP_PACKS] = {
 	"Battle rifle: three-round bursts, 3x zoom.",
 	"SMG: fast and close range, 60 rounds a magazine.",
@@ -780,7 +778,7 @@ void ae_setup_packs_summary(struct ae_setup_access const *access, char *text, in
 
 const char *ae_setup_pack_help(struct ae_setup_access const *access, int option, int installed, char *text, int size)
 {
-	int slot = option - AE_SO_PACK_FIRST + 1, other, first = 0, second = 0;
+	int slot = option - AE_SO_PACK_FIRST + 1;
 
 	if (!text || size <= 0 || slot < 1 || slot > AE_SETUP_PACKS)
 		return NULL;
@@ -795,24 +793,7 @@ const char *ae_setup_pack_help(struct ae_setup_access const *access, int option,
 		snprintf(text, (size_t)size, "%s A or left / right turns the pack on.", pack_facts[slot - 1]);
 		return text;
 	}
-	if (ae_setup_pack_source(access, slot))
-	{
-		snprintf(text, (size_t)size, "%s On the map; it can also be a start weapon.", pack_facts[slot - 1]);
-		return text;
-	}
-	/* (on the map only: the two packs on before it hold the start weapons' two places) */
-	for (other = 1; other < slot; other++)
-	{
-		if (!ae_setup_pack_on(access, other))
-			continue;
-		if (!first)
-			first = other;
-		else if (!second)
-			second = other;
-	}
-	snprintf(text, (size_t)size, "The %s pack is on the map, but only the first two packs on can be start weapons "
-		"(%s and %s). Turn one of those off to start with the %s.", pack_lower[slot - 1],
-		first ? pack_lower[first - 1] : "?", second ? pack_lower[second - 1] : "?", pack_lower[slot - 1]);
+	snprintf(text, (size_t)size, "%s On the map; it can also be a start weapon.", pack_facts[slot - 1]);
 	return text;
 }
 

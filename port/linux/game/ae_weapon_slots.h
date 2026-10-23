@@ -8,7 +8,11 @@ A gametype's universal_variant.weapon_pack byte is a MASK of pack SLOTS: bit n-1
 the mask; 128 and over read as none (as before). Each named slot's pack is added to the map, in slot order.
 
 pack_loadout's two bits a loadout slot (game_engine.h): 1 the LOWEST named slot's weapon 0 (for the BR alone: the BR,
-as before), 2 the SECOND lowest named slot's; anything else the stock value. Older builds read 2 as stock.
+as before), 2 the SECOND lowest named slot's, 3 a LATER one: the third, fourth or fifth named, as the loadout slot's two
+bits of the universal variant's flags (bits 12-13 the PRIMARY's, 14-15 the SECONDARY's) say, 0, 1 or 2 (3: stock); 0
+the stock value. So every named pack's weapon can start (owner 2026-10-23). A loadout slot's RANK is that place among
+the named slots, 1 to 5 (0 stock). Builds before 0.3.9 read 3 as stock, builds before 0.3.6 read 2 as stock: they play
+the slot's own weapon, the pack's stock fallback.
 
 The join mark's capability (ae_silent_rules.h): 2 the machine has the BR's pack, 3 and the SMG's and the silenced
 SMG's, 4 and the carbine's, 5 and the silenced assault rifle's. A machine tells the highest level whose slots are all
@@ -59,14 +63,25 @@ enum ae_weapon_stock
 
 /* the mask a gametype byte names (0 for none; 128 and over none; bits past the known slots dropped) */
 unsigned int ae_weapon_slots_mask(unsigned char weapon_pack);
-/* the slot a loadout slot's two source bits give (pack_loadout >> 2 * loadout slot & 3), or AE_WEAPON_SLOT_NONE */
-short ae_weapon_slots_loadout(unsigned int mask, unsigned int source);
-/* the source value (1, 2) that gives a loadout slot this pack slot's weapon 0 among the named slots in mask, or 0:
-the slot is not named, or is the third named or later (no source reaches it) */
+/* the source value that is a LATER rank (3-5), and where the flags hold which: two bits a loadout slot from bit 12 */
+#define AE_WEAPON_SLOTS_SOURCE_LATER 3u
+#define AE_WEAPON_SLOTS_LATER_SHIFT(loadout_slot) (12u + 2u * (unsigned int)(loadout_slot))
+#define AE_WEAPON_SLOTS_LATER_MASK 0xF000UL
+
+/* the slot the rank-th named slot of mask is (rank 1-5), or AE_WEAPON_SLOT_NONE */
+short ae_weapon_slots_loadout(unsigned int mask, unsigned int rank);
+/* the rank (1-5) of this pack slot among the named slots in mask, or 0: the slot is not named */
 unsigned int ae_weapon_slots_source(unsigned int mask, short slot);
-/* pack_loadout's two loadout slots (bits 0-3) after the mask changed from old_mask to new_mask: each keeps its
-pack slot's weapon where that slot is still named and reachable, else goes back to stock (0). Other bits kept */
-unsigned char ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char pack_loadout);
+/* a loadout slot's (0 PRIMARY, 1 SECONDARY) rank from pack_loadout's two bits and the flags' later bits (0: stock) */
+unsigned int ae_weapon_slots_rank(unsigned char pack_loadout, unsigned long flags, unsigned int loadout_slot);
+/* writes a loadout slot's rank (0 stock, 1-5): its two bits of pack_loadout and its two later bits of the flags;
+the other bits kept */
+void ae_weapon_slots_rank_set(unsigned char *pack_loadout, unsigned long *flags, unsigned int loadout_slot,
+	unsigned int rank);
+/* the two loadout slots after the mask changed from old_mask to new_mask: each keeps its pack slot's weapon where
+that slot is still named, else goes back to stock (0). Other bits kept */
+void ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char *pack_loadout,
+	unsigned long *flags);
 /* the lowest named slot (0 for none) */
 short ae_weapon_slots_first(unsigned int mask);
 /* the level a machine with these slots loaded tells */

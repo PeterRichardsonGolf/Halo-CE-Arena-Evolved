@@ -33,6 +33,10 @@ enum
 	_game_variant_controller_crouch_bit = 8, /* AE hook */
 	_game_variant_melee_unzoom_bit = 9, /* AE hook */
 	_game_variant_block_mouse_aim_assist_bit = 10, /* AE hook */
+	/* port: a custom loadout's later pack (pack_loadout source 3): the
+	PRIMARY's two bits (12-13) and the SECONDARY's (14-15) say the third,
+	fourth or fifth pack named (port/linux/game/ae_weapon_slots.h) */
+	_game_variant_pack_start_later_first_bit = 12, /* AE hook */
 	/* port: a player's landing does no damage, from any height (pits and
 	kill volumes still kill); the port's own bits from 16, clear of the
 	game's */
@@ -222,7 +226,9 @@ enum pack_loadout_source
 {
 	_pack_loadout_stock = 0,
 	_pack_loadout_pack,       /* the lowest named pack's weapon 0 (the BR, for the BR's byte) */
-	_pack_loadout_second_pack /* the second lowest named pack's weapon 0 (older builds: stock) */
+	_pack_loadout_second_pack, /* the second lowest named pack's weapon 0 (older builds: stock) */
+	_pack_loadout_later_pack /* the third, fourth or fifth named, as the flags' bits from 12 say (before 0.3.9:
+	stock) */
 };
 
 #define PACK_LOADOUT_SLOT_SHIFT(slot) ((slot) * 2)
@@ -1066,10 +1072,12 @@ short game_variant_weapon_pack(
 	byte weapon_pack);
 boolean game_variant_pack_loadout_slot(
 	byte pack_loadout,
+	unsigned long flags,
 	short slot);
 short game_variant_pack_loadout_weapon_slot(
 	byte weapon_pack,
 	byte pack_loadout,
+	unsigned long flags,
 	short slot);
 #define PACK_MAP_SPAWNS_BIT 0x10
 boolean game_variant_pack_map_spawns(

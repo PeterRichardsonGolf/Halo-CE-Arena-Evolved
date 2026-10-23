@@ -51,17 +51,17 @@ short ae_weapon_slots_first(unsigned int mask)
 	return AE_WEAPON_SLOT_NONE;
 }
 
-short ae_weapon_slots_loadout(unsigned int mask, unsigned int source)
+short ae_weapon_slots_loadout(unsigned int mask, unsigned int rank)
 {
 	short slot, seen = 0;
 
-	if (source != 1 && source != 2)
+	if (rank < 1 || rank > AE_WEAPON_SLOT_COUNT)
 		return AE_WEAPON_SLOT_NONE;
 	for (slot = 1; slot <= AE_WEAPON_SLOT_COUNT; slot++)
 	{
 		if (!(mask & AE_WEAPON_SLOT_BIT(slot)))
 			continue;
-		if (++seen == (short)source)
+		if (++seen == (short)rank)
 			return slot;
 	}
 	return AE_WEAPON_SLOT_NONE;
@@ -76,21 +76,46 @@ unsigned int ae_weapon_slots_source(unsigned int mask, short slot)
 	for (other = 1; other <= slot; other++)
 		if (mask & AE_WEAPON_SLOT_BIT(other))
 			rank++;
-	return rank <= 2 ? (unsigned int)rank : 0u;
+	return (unsigned int)rank;
 }
 
-unsigned char ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char pack_loadout)
+unsigned int ae_weapon_slots_rank(unsigned char pack_loadout, unsigned long flags, unsigned int loadout_slot)
 {
-	unsigned char result = (unsigned char)(pack_loadout & ~0x0Fu);
+	unsigned int source, later;
+
+	if (loadout_slot > 1)
+		return 0;
+	source = (pack_loadout >> (loadout_slot * 2)) & 3u;
+	if (source != AE_WEAPON_SLOTS_SOURCE_LATER)
+		return source;
+	later = (unsigned int)(flags >> AE_WEAPON_SLOTS_LATER_SHIFT(loadout_slot)) & 3u;
+	return later <= 2 ? 3u + later : 0u;
+}
+
+void ae_weapon_slots_rank_set(unsigned char *pack_loadout, unsigned long *flags, unsigned int loadout_slot,
+	unsigned int rank)
+{
+	unsigned int source = rank <= 2 ? rank : rank <= AE_WEAPON_SLOT_COUNT ? AE_WEAPON_SLOTS_SOURCE_LATER : 0u;
+	unsigned long later = source == AE_WEAPON_SLOTS_SOURCE_LATER ? (unsigned long)(rank - 3) : 0ul;
+
+	if (loadout_slot > 1)
+		return;
+	*pack_loadout = (unsigned char)((*pack_loadout & ~(3u << (loadout_slot * 2))) | (source << (loadout_slot * 2)));
+	*flags = (*flags & ~(3ul << AE_WEAPON_SLOTS_LATER_SHIFT(loadout_slot))) |
+		(later << AE_WEAPON_SLOTS_LATER_SHIFT(loadout_slot));
+}
+
+void ae_weapon_slots_loadout_remap(unsigned int old_mask, unsigned int new_mask, unsigned char *pack_loadout,
+	unsigned long *flags)
+{
 	unsigned int loadout_slot;
 
 	for (loadout_slot = 0; loadout_slot < 2; loadout_slot++)
 	{
-		short slot = ae_weapon_slots_loadout(old_mask, (pack_loadout >> (loadout_slot * 2)) & 3u);
+		short slot = ae_weapon_slots_loadout(old_mask, ae_weapon_slots_rank(*pack_loadout, *flags, loadout_slot));
 
-		result = (unsigned char)(result | (ae_weapon_slots_source(new_mask, slot) << (loadout_slot * 2)));
+		ae_weapon_slots_rank_set(pack_loadout, flags, loadout_slot, ae_weapon_slots_source(new_mask, slot));
 	}
-	return result;
 }
 
 int ae_weapon_slots_capability(unsigned int loaded_mask)

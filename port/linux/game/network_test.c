@@ -58,7 +58,8 @@ port's gametype options: game_engine.h's _game_variant_..._bit).
 debug.network_test_gametype: the host plays a custom gametype of the save
 root (by its stored name, with its PC options) in place of the built-in one.
 debug.network_test_pack_loadout (primary, secondary or both; primary2,
-secondary2, first_second, second_first for the second named pack's weapon),
+secondary2, first_second, second_first for the second named pack's weapon;
+primary3 .. primary5, secondary3 .. secondary5 for the third to fifth's),
 debug.network_test_pack_map_spawns and debug.network_test_weapon_packs (the
 packs' slot mask, ae_weapon_slots.h: 3 the BR and the SMG): the host's gametype
 uses the weapon packs (game_engine.h's weapon_pack, pack_loadout and
@@ -106,6 +107,7 @@ network_test_update, which does nothing there */
 #include "ae_silent.h" /* AE hook */
 #include "ae_burst_rifle.h" /* AE hook */
 #include "ae_saved_limits.h" /* AE hook */
+#include "ae_weapon_slots.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
 #include <xtl.h> /* (MAX_GAMENAME) */
 #include "hs/hs.h"
@@ -238,6 +240,8 @@ static struct
 	/* (debug.network_test_pack_loadout: the variant's pack_loadout byte, 0 none;
 	debug.network_test_pack_map_spawns: its BATTLE RIFLE ON MAP) */
 	byte pack_loadout;
+	/* (its later packs' bits of the variant's flags: "primary3" .. "secondary5", ae_weapon_slots.h) */
+	unsigned long pack_later_flags;
 	boolean pack_map_spawns;
 	/* (debug.network_test_weapon_packs: the variant's weapon_pack mask, 0 the battle rifle's alone) */
 	byte weapon_packs;
@@ -417,6 +421,7 @@ static void network_test_read_settings(
 	}
 	network_test.auto_balance = config_boolean("debug.network_test_auto_balance") != 0;
 	network_test.pack_loadout = 0;
+	network_test.pack_later_flags = 0;
 	network_test.pack_map_spawns = config_boolean("debug.network_test_pack_map_spawns") != 0;
 	{
 		char const *pack_loadout = config_string("debug.network_test_pack_loadout");
@@ -434,12 +439,22 @@ static void network_test_read_settings(
 		if (!strcmp(pack_loadout, "first_second"))
 			network_test.pack_loadout |= (byte)((_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary)) |
 				(_pack_loadout_second_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary)));
+		/* ("primary3" .. "primary5", "secondary3" .. "secondary5": the third, fourth or fifth named pack's weapon) */
+		{
+			int rank;
+			unsigned long *later = &network_test.pack_later_flags;
+
+			if (sscanf(pack_loadout, "primary%d", &rank) == 1 && rank >= 3 && rank <= 5)
+				ae_weapon_slots_rank_set(&network_test.pack_loadout, later, _pack_loadout_primary, (unsigned int)rank);
+			if (sscanf(pack_loadout, "secondary%d", &rank) == 1 && rank >= 3 && rank <= 5)
+				ae_weapon_slots_rank_set(&network_test.pack_loadout, later, _pack_loadout_secondary, (unsigned int)rank);
+		}
 		if (!strcmp(pack_loadout, "second_first"))
 			network_test.pack_loadout |= (byte)((_pack_loadout_second_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_primary)) |
 				(_pack_loadout_pack << PACK_LOADOUT_SLOT_SHIFT(_pack_loadout_secondary)));
 		if (pack_loadout[0] && !network_test.pack_loadout)
 			platform_log("network test: debug.network_test_pack_loadout '%s' is not primary, secondary, both, primary2, "
-				"secondary2, first_second or second_first: ignored", pack_loadout);
+				"secondary2, first_second, second_first or primary3-5 / secondary3-5: ignored", pack_loadout);
 	}
 	/* (debug.network_test_weapon_packs: the packs' slots, a mask: 0 the battle rifle's alone) */
 	network_test.weapon_packs = (byte)(config_integer("debug.network_test_weapon_packs") & WEAPON_PACK_MAXIMUM);
@@ -2162,7 +2177,7 @@ void network_test_update(
 					if (network_test.score_to_win > 0)
 						variant.universal_variant.score_to_win = network_test.score_to_win;
 					/* debug.network_test_flags: the port's gametype options */
-					variant.universal_variant.flags |= network_test.variant_flags;
+					variant.universal_variant.flags |= network_test.variant_flags | network_test.pack_later_flags;
 					if (network_test.ball_melee)
 						variant.universal_variant.ball_melee = 1;
 					ae_silent_network_test(&variant); /* AE hook */

@@ -279,7 +279,7 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 	case _encoding_loadout_slot:
 	{
 		short pack = game_variant_pack_loadout_weapon_slot(variant->universal_variant.weapon_pack,
-			variant->universal_variant.pack_loadout, (short)encoding->argument);
+			variant->universal_variant.pack_loadout, variant->universal_variant.flags, (short)encoding->argument);
 
 		return pack != AE_WEAPON_SLOT_NONE ? AE_SETUP_WEAPON_PACK_FIRST + pack - 1 :
 			(encoding->argument == _pack_loadout_primary ? options->primary_weapon : options->secondary_weapon);
@@ -315,13 +315,12 @@ static void pack_mask_set(struct rules *rules, unsigned int mask)
 	struct universal_variant *universal = &rules->variant.universal_variant;
 	unsigned int old_mask = ae_weapon_slots_mask(universal->weapon_pack);
 
-	universal->pack_loadout = ae_weapon_slots_loadout_remap(old_mask, mask, universal->pack_loadout);
+	ae_weapon_slots_loadout_remap(old_mask, mask, &universal->pack_loadout, &universal->flags);
 	universal->weapon_pack = (byte)mask;
 }
 
 /* a loadout slot to a value: a game weapon (the pack source off), or a pack slot's weapon (its pack turned on; the
-slot's own weapon keeps the stock one the pack falls back to). A pack that no source reaches (the third named or
-later) is not taken: 0 */
+slot's own weapon keeps the stock one the pack falls back to): any named pack, by its rank (ae_weapon_slots.h) */
 static int loadout_slot_set(struct rules *rules, short loadout_slot, long value)
 {
 	struct universal_variant *universal = &rules->variant.universal_variant;
@@ -330,7 +329,7 @@ static int loadout_slot_set(struct rules *rules, short loadout_slot, long value)
 
 	if (value < AE_SETUP_WEAPON_PACK_FIRST)
 	{
-		universal->pack_loadout &= (byte)~(PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
+		ae_weapon_slots_rank_set(&universal->pack_loadout, &universal->flags, (unsigned int)loadout_slot, 0);
 		*weapon = (byte)value;
 		return 1;
 	}
@@ -342,8 +341,7 @@ static int loadout_slot_set(struct rules *rules, short loadout_slot, long value)
 		if (!source)
 			return 0;
 		pack_mask_set(rules, mask);
-		universal->pack_loadout &= (byte)~(PACK_LOADOUT_SOURCE_MASK << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
-		universal->pack_loadout |= (byte)(source << PACK_LOADOUT_SLOT_SHIFT(loadout_slot));
+		ae_weapon_slots_rank_set(&universal->pack_loadout, &universal->flags, (unsigned int)loadout_slot, source);
 		*weapon = (byte)ae_weapon_slots_fallback(pack);
 		return 1;
 	}
