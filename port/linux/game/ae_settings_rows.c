@@ -596,6 +596,9 @@ static struct ae_settings_row const rows[] =
 		VALUES(menus_texts, menus_values), AE_SETTINGS_ALWAYS,
 		"Arena Evolved's menus, or the classic ones (co-op is there for now). The game restarts to switch.",
 		AE_SETTINGS_RESTART },
+	{ AE_SETTINGS_SYSTEM, "FILES", "OPEN GAMETYPES FOLDER", AE_SETTINGS_SUBSCREEN, "action.gametypes_folder", NULL,
+		NULL, 0, AE_SETTINGS_ALWAYS,
+		"Your own game types as files. Copy one to a server's admin/gametypes, or add one: it is listed next start.", 0 },
 };
 
 short ae_settings_row_count(void)

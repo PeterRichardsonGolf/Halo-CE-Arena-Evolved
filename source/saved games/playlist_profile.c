@@ -372,6 +372,15 @@ void playlist_profiles_enumerate_available_to_local_player_index(
 			playlist_profile_wait_for_write();
 			saved_game_files_notify_memory_units_changed();
 		}
+#ifdef HALO_GAME_BROWSER
+		/* port: and the player's game type files (<save root>/gametypes,
+		gametype_files.c) not yet saved gametypes, or changed by hand */
+		if (gametype_files_import())
+		{
+			playlist_profile_wait_for_write();
+			saved_game_files_notify_memory_units_changed();
+		}
+#endif
 		arena_gametypes_debug_set_display_name();
 		ae_gametype_audit_write(); /* AE hook */
 	}

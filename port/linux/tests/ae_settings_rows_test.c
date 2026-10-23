@@ -101,6 +101,11 @@ int main(void)
 	CHECK(ae_settings_group(AE_SETTINGS_SYSTEM)->built && ae_settings_row_of("display.arena_menus") >= 0 &&
 		ae_settings_row(ae_settings_row_of("display.arena_menus"))->group == AE_SETTINGS_SYSTEM &&
 		(ae_settings_row(ae_settings_row_of("display.arena_menus"))->flags & AE_SETTINGS_RESTART));
+	/* (0.3.9: and OPEN GAMETYPES FOLDER, an action: A opens the folder, no value) */
+	CHECK(ae_settings_row_of("action.gametypes_folder") >= 0 &&
+		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->group == AE_SETTINGS_SYSTEM &&
+		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->kind == AE_SETTINGS_SUBSCREEN &&
+		ae_settings_value_count(ae_settings_row(ae_settings_row_of("action.gametypes_folder"))) == 0);
 	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
 
 	/* rows.md's counts: CONTROLS 29 with everything shown (a pad-only player sees fewer), VIEW 11, HUD 26 */

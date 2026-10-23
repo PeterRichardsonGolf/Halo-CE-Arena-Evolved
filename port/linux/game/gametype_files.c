@@ -16,12 +16,19 @@ menus' editors) writes its file, and one deleted deletes it; the files that
 have none, or were changed by hand, become saved gametypes as the menus'
 map loads. A file wins over its saved gametype only when they differ in
 what a file holds.
+
+Arena Evolved: the gametypes it seeds (AE's and Halo 1: NHE's, by name, an
+old name too) have no files: seeding and its migrations write none, and a
+file of a seeded name is not read (the owner's rule, 2026-10-22: the folder
+holds the player's own). The folder is read once a start, after seeding
+(playlist_profile.c).
 */
 
 #ifdef HALO_GAME_BROWSER
 
 #include "cseries.h"
 #include "game/game_engine.h"
+#include "saved games/arena_gametypes.h"
 #include "saved games/playlist_profile.h"
 #include "saved games/saved_game_files.h"
 #include "text/unicode.h"
@@ -38,6 +45,7 @@ what a file holds.
 
 const char *platform_folder(enum port_folder folder);
 void platform_log(char const *format, ...);
+void platform_open_url(const char *url);
 
 /* ---------- constants */
 
@@ -55,6 +63,20 @@ enum
 static boolean gametype_files_importing;
 
 /* ---------- private code */
+
+/* a gametype Arena Evolved seeds, by its name (an old name of one too) */
+static boolean seeded_title(
+	char const *title)
+{
+	wchar_t wide[SERVER_GAMETYPE_TITLE_SIZE];
+	struct arena_gametype_info info;
+	long index;
+
+	for (index = 0; title[index] && index < SERVER_GAMETYPE_TITLE_SIZE - 1; index++)
+		wide[index] = (wchar_t)(unsigned char)title[index];
+	wide[index] = 0;
+	return arena_gametype_info(wide, &info);
+}
 
 static char const *folder(
 	void)
@@ -279,7 +301,7 @@ void gametype_files_profile_saved(
 	char name[GAMETYPE_FOLDER_NAME_SIZE];
 
 	if (gametype_files_importing || ((unsigned long)profile_index & READ_ONLY_BIT) ||
-		!profile_title(profile_index, title))
+		!profile_title(profile_index, title) || seeded_title(title))
 	{
 		return;
 	}
@@ -312,9 +334,10 @@ void gametype_files_profile_deleted(
 		platform_log("game types: deleted %s.toml", name);
 }
 
-void gametype_files_import(
+boolean gametype_files_import(
 	void)
 {
+	boolean imported = FALSE;
 	static char names[MAXIMUM_GAMETYPES][GAMETYPE_FOLDER_NAME_SIZE];
 	static char text[GAMETYPE_FOLDER_TEXT_SIZE];
 	int count = gametype_folder_list(folder(), names, MAXIMUM_GAMETYPES);
@@ -334,6 +357,12 @@ void gametype_files_import(
 			continue;
 		}
 		file_title(&gametype, names[index], title);
+		if (seeded_title(title))
+		{
+			platform_log("game types: %s.toml is not read: %s is a gametype Arena Evolved seeds", names[index],
+				title);
+			continue;
+		}
 		profile_index = gametype_files_profile_find(title);
 		if (profile_index != NONE)
 		{
@@ -354,8 +383,45 @@ void gametype_files_import(
 				continue;
 		}
 		if (profile_write(&gametype, title) != NONE)
+		{
 			platform_log("game types: %s.toml is the saved gametype %s", names[index], title);
+			imported = TRUE;
+		}
 	}
+	return imported;
+}
+
+boolean gametype_files_open_folder(
+	void)
+{
+	static char const unreserved[] = "-._~/:";
+	char url[700];
+	char const *path = folder();
+	long length = 0;
+
+	length += snprintf(url, sizeof(url), "file://%s", path[0] == '/' ? "" : "/");
+	for (; *path && length < (long)sizeof(url) - 4; path++)
+	{
+		unsigned char c = (unsigned char)*path;
+
+		/* (a Windows path's separators as a URL's; anything else not a
+		letter, a digit or a path's own mark percent-encoded) */
+		if (c == '\\')
+			url[length++] = '/';
+		else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || strchr(unreserved, c))
+			url[length++] = (char)c;
+		else
+			length += snprintf(url + length, sizeof(url) - (size_t)length, "%%%02X", c);
+	}
+	if (*path)
+	{
+		platform_log("game types: the folder's path is too long to open: %s", folder());
+		return FALSE;
+	}
+	url[length] = 0;
+	platform_log("game types: opening the folder %s", folder());
+	platform_open_url(url);
+	return TRUE;
 }
 
 #endif

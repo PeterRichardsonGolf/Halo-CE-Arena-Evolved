@@ -34,6 +34,9 @@ values back.
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
+#ifdef HALO_GAME_BROWSER
+#include "gametype_files.h"
+#endif
 
 void platform_log(char const *format, ...);
 const char *platform_data_root(void);
@@ -271,7 +274,7 @@ static void row_value(short player, struct ae_settings_row const *row, char *tex
 		snprintf(text, (size_t)size, "%d", value);
 		return;
 	}
-	if (!strcmp(row->key, "controls.bindings"))
+	if (!strcmp(row->key, "controls.bindings") || !strncmp(row->key, "action.", 7))
 		return;
 	if (!ae_player_setting_get(player, row->key, text, size))
 		text[0] = 0;
@@ -1257,6 +1260,19 @@ static void picker_open(struct ae_settings_row const *row)
 	if (row->kind == AE_SETTINGS_LINK)
 	{
 		link_go(row);
+		return;
+	}
+	/* (OPEN GAMETYPES FOLDER: the system's file manager) */
+	if (!strcmp(row->key, "action.gametypes_folder"))
+	{
+#ifdef HALO_GAME_BROWSER
+		if (gametype_files_open_folder())
+		{
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+			return;
+		}
+#endif
+		ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
 	}
 	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY || !ae_settings_value_count(row))

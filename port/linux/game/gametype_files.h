@@ -35,8 +35,13 @@ void gametype_files_profile_saved(long profile_index, struct game_variant const 
 void gametype_files_profile_deleted(long profile_index);
 
 /* the folder's files that no saved gametype has, or that were changed by
-hand, made saved gametypes (as the menus' map loads): every gametype list
-then has them */
-void gametype_files_import(void);
+hand, made saved gametypes (once a start, after seeding: playlist_profile.c):
+every gametype list then has them; never one of a seeded gametype's name.
+TRUE when it wrote any */
+boolean gametype_files_import(void);
+
+/* the folder opened in the system's file manager (SETTINGS > SYSTEM > OPEN
+GAMETYPES FOLDER); FALSE when it cannot be (why logged) */
+boolean gametype_files_open_folder(void);
 
 #endif
