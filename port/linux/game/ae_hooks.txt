@@ -545,6 +545,7 @@ source/networking/network_game_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_game_manager.c	if (ae_lan_bots_network_player(player)) controller_index = NONE; /* AE hook */
 source/networking/network_client_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_client_manager.c	if (ae_lan_bots_network_player(player)) continue; /* AE hook */
+source/networking/network_client_manager.c	if (player->machine_index == client->machine_index && !ae_lan_bots_network_player(player)) /* AE hook */
 source/game/player_queues_new.c	#include "ae_lan_bots.h" /* AE hook */
 source/game/player_queues_new.c	ae_lan_bots_action(queue_index, &update->update.actions[queue_index]); /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_lan_bots.h" /* AE hook */

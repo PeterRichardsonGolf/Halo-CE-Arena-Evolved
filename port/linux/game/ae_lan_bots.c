@@ -127,6 +127,8 @@ static struct
 	/* the bots' own last step in it (ae_lan_bots_ingame_step: > 0 joined, < 0 left; 0 none since its players last
 	changed otherwise) */
 	int ingame_last_step;
+	/* the host's local players (its views) as last told in halo.log: a bot is none of them (NONE: not yet) */
+	short ingame_views;
 } lan;
 
 enum
@@ -170,6 +172,7 @@ static void lan_initialize(void)
 	lan.ingame_signature = NONE;
 	lan.ingame_settled_tick = NONE;
 	lan.ingame_last_step = 0;
+	lan.ingame_views = NONE;
 	lan.initialized = TRUE;
 }
 
@@ -925,10 +928,17 @@ void ae_lan_bots_ingame(struct network_game_server *server, struct network_game 
 		game->variant.game_engine_index == game_engine_none)
 	{
 		lan.ingame_signature = NONE;
+		lan.ingame_views = NONE;
 		return;
 	}
 	now = game_time_get();
 	lan_scan_players(game, machine, &scan);
+	if (local_player_count() != lan.ingame_views)
+	{
+		lan.ingame_views = local_player_count();
+		platform_log("net bots: the host has %d local players (views) with %d bots in the game (tick %ld)",
+			(int)lan.ingame_views, (int)scan.bots, now);
+	}
 	/* (changes wait for the game to settle: its players unchanged for a while, no machine still to add its
 	player; the bots' own steps the same way follow each other sooner) */
 	signature = scan.others * 1000 + scan.bots;

@@ -331,6 +331,26 @@ def test_layout_bot_lines(tmp_path):
     assert closed and int(closed.group(1)) > 0, output[-3000:]
 
 
+HOST_VIEWS = re.compile(r"net bots: the host has (\d+) local players \(views\) with (\d+) bots in the game")
+
+
+@pytest.mark.parametrize("settings", [{"HALO_BOTS_LIVE_TEST": "8:7"}, {"HALO_BOTS": "7"}], ids=["in-progress", "lobby"])
+def test_network_bots_take_no_host_view(tmp_path, settings):
+    """the network bots on the host's own free controllers (ae_lan_bots.c) are no local players of the host: one view.
+    Bots that joined the game in progress (bots.count raised in game, as BOTS IN GAME does) were the host's local
+    players in 0.3.9's builds, a split-screen view each (network_client_manager.c's player added in game set the local
+    player of any player of the host's machine); the lobby's bots (bots.count before the start) never were"""
+    status, output = _play(tmp_path, "host:bloodgulch", 40, **settings)
+    assert status == 0, output[-3000:]
+    # (bots on the host's own controllers 2-4, in the game in progress or the lobby)
+    assert re.search(r"(?:net|lan) bots: bot \d+ joined the (?:game in progress|lobby) \(machine #0(?: the host's)?, controller [234],",
+                     output), output[-3000:]
+    views = [(int(count), int(bots)) for count, bots in HOST_VIEWS.findall(output)]
+    assert views, output[-3000:]
+    # (0 at the game's first ticks, before its player is the host's)
+    assert max(count for count, _ in views) == 1, views
+
+
 def test_the_ladder():
     """The six levels (owner 10-20): NORMAL and HEROIC are OpenCE's rows, LEGENDARY is AE's halfway from HEROIC to
     DEMON, DEMON is OpenCE's LEGENDARY row; every aim and sight number steps the right way level to level"""
