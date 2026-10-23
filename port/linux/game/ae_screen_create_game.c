@@ -93,7 +93,7 @@ enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 
 static const char *const network_names[NETWORKS] = { "LAN", "HOST ONLINE" };
 static const char *const network_helps[NETWORKS] = {
-	"Your home or local network only: players there find it in LAN GAMES. Fine alone with bots.",
+	"Your home or local network only: players there find it in JOIN LAN GAMES. Fine alone with bots.",
 	"Open to the internet too: friends join with your invite (Copy invite, in the lobby)."
 };
 static const int network_kinds[NETWORKS] = { AE_LOBBY_LAN, AE_LOBBY_ONLINE };
