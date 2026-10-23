@@ -170,7 +170,12 @@ static boolean game_starting(
 	unsigned long now)
 {
 	if (game_starting_since && now - game_starting_since > GAME_STARTING_HOLD_MS)
+	{
+		/* (the level never took the game out of its main menu: AE's opens again) */
+		platform_log("ae menus: the game did not start within %d s: the main menu opens again",
+			GAME_STARTING_HOLD_MS / 1000);
 		game_starting_since = 0;
+	}
 	return game_starting_since != 0;
 }
 
