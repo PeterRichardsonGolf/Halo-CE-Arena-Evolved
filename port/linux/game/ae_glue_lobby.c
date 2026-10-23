@@ -267,6 +267,7 @@ struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster)
 		(const unsigned short *)game->variant.human_readable_game_description,
 		NUMBEROF(game->variant.human_readable_game_description));
 	roster->team_game = game->variant.universal_variant.teams != 0;
+	roster->maximum_players = game->maximum_players;
 	roster->postgame = game_engine_showing_postgame();
 	roster->in_game = game_engine_running() && !main_menu_is_active() && !roster->postgame;
 	ae_lobby_roster_order(roster);

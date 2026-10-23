@@ -78,7 +78,8 @@ static float flow_row_pitch(struct ae_flow_screen const *flow, short index)
 
 	if (flow->rows[index].kind == AE_FLOW_ROW_HEADER)
 		return ae_widget_group(d, 0.0f, 0.0f, 0.0f, NULL);
-	return ae_size_row(d) + ae_flow_u(flow, d->metrics->gap);
+	return ae_size_row(d) + ae_flow_u(flow, d->metrics->gap) +
+		(flow->rows[index].primary ? ae_flow_u(flow, AE_FLOW_PRIMARY_ROOM_U) : 0.0f);
 }
 
 /* the last row drawn from first in height: the "▲ N more" line's room taken when rows are above, the "▼ N more"
@@ -179,6 +180,11 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 		memset(&widget, 0, sizeof(widget));
 		widget.label = row->label;
 		widget.value = row->value;
+		if (row->primary)
+		{
+			y += ae_flow_u(flow, AE_FLOW_PRIMARY_ROOM_U);
+			widget.flags |= AE_ROW_PRIMARY;
+		}
 		if (index == flow->focus)
 			widget.flags |= AE_ROW_FOCUSED;
 		if (row->reason)

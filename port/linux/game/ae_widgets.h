@@ -57,7 +57,10 @@ enum
 	AE_ROW_SLIDER = 1 << 10, AE_ROW_SUBSCREEN = 1 << 11, AE_ROW_STATUS = 1 << 12,
 	/* (0.3.7 SETTINGS phase B, spec 3) a link: the value accent at the row's size with a chevron, no arrows (A goes to
 	the linked screen); a key: the value in a key cap (KEY_CAP, navy text 15 u, 30 u high, text + 18 u), no arrows */
-	AE_ROW_LINK = 1 << 13, AE_ROW_KEY = 1 << 14
+	AE_ROW_LINK = 1 << 13, AE_ROW_KEY = 1 << 14,
+	/* (0.3.9 one lobby) the screen's primary action: unfocused, a menu blue row with its label white; focused, the
+	selection bar as any row */
+	AE_ROW_PRIMARY = 1 << 15
 };
 enum { AE_ROW_BADGES = 2 };
 struct ae_row
