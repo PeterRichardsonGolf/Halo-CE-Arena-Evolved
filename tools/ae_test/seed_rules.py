@@ -352,6 +352,29 @@ for _name in ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE FFA BALL", 
 for _name in ("AE FFA SLAY", "AE TEAM SLY", "AE CTF", "AE KING", "AE 2V2 SLY", "AE 2V2 CTF", "AE 2V2 KING", "AE PRACTICE", "AE SNIPERS", "AE SHOTSNIP", "AE SWAT", "AE ROCKETS", "AE SHOTGUNS", "AE HEAVIES", "AE BTB SLY", "AE BTB CTF", "AE BTB KING", "AE BTB BALL", "AE BTB HVY", "AE ELIM", "AE PHANTOMS", "AE ENDURE", "AE FFA ROCK", "AE FFA SNPR", "AE JUGGER", "AE STALKER", "AE FFA KING", "AE CRAZYKNG", "AE RACE", "AE RALLY", "AE TRAINING", "AE BR FFA", "AE BR ELIM", "AE BR PHANT", "AE BR ENDUR", "AE BR JUGG", "AE BR STALK", "AE BR FKING", "AE BR CKING", "AE BR PRAC", "AE BR TS", "AE BR CTF", "AE BR KING", "AE BR 2V2 S", "AE BR 2V2 C", "AE BR 2V2 K", "AE BR BTB S", "AE BR BTB C", "AE BR BTB K", "AE BR BTB B", "AE BR BTB H", "AE OCT BR", "AE OCT BRSN", "AE OCT MAG", "AE OCT MGSN", "AE OCT TBR", "AE OCT TBSN", "AE OCT TMAG", "AE OCT TMSN",):
     ROWS[_name][0].update({"vehicles destructible": "on"})
 
+# revision 24 (owner, 2026-10-23): added seeds, no migration, in the builds with Bomb (game_engine_bomb.c; the game's
+# log names its engine "terminator", Bungie's cut game type in that slot). AE BOMB: Bomb's rules (3 rounds, its
+# 5 second respawns) on AE CTF's casual team set, no vehicles (Bomb's own: VEHICLES DESTRUCTIBLE stays off). AE
+# GRIFBALL: Grifball's rules (melee only: no starting weapons, none on the map, no grenades; no shields, 3 second
+# respawns, rounds to 3, no game time limit, the motion sensor at the map's range) with AE's rules, COMBAT FEEDBACK
+# ARENA EVOLVED, CONTROLLER CROUCH STAYS DOWN, MELEE UNZOOMS ON and MOUSE AIM ASSIST OFF; no DROP SECONDARY ALWAYS or
+# TIMERS (no weapons or power items to act on). Grifball's first spawn is the map's sword or the unseen fists: not
+# checked
+BOMB_ENGINE = "terminator (teams)"
+_want, _spawn, _frags = ROWS["AE CTF"]
+# (and revision 13's two frag grenades, which AE CTF's row above still lacks)
+ROWS["AE BOMB"] = (dict(_want, **{"engine": BOMB_ENGINE, "respawn": T(150), "suicide penalty": T(150),
+                                  "vehicle set": "1", "vehicles destructible": "off", "starting frags": "2"}),
+                   _spawn, 2)
+ROWS["AE GRIFBALL"] = (dict(AE, **{
+    "engine": BOMB_ENGINE, "score to win": "3", "respawn": T(90), "suicide penalty": T(0), "time limit": "none",
+    "timers": "off", "timers level": "off", "training": "off", "practice": "off", "objective": "normal",
+    "radar players": "all", "goal radar": "nav points", "shields": "off", "weapon set": "no grenades",
+    "loadout": "none + none", "no map weapons": "on", "drop secondary": "ce", "vehicle set": "1",
+    "starting frags": "0", "sensor range": "stock", "controller crouch": "stays down", "melee unzooms": "on",
+    "mouse aim assist": "off", "vehicles destructible": "off"}), None, None)
+REVISION_24_SEEDS = ("AE GRIFBALL", "AE BOMB")
+
 
 def check(runs, prefix):
     """{name: (passed, problems)} for every seed run under runs/<prefix><name, spaces as _>/*/debug.txt"""

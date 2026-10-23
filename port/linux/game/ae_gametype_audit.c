@@ -257,11 +257,17 @@ static struct
 	{ "team_oddball", build_game_variant_team_oddball },
 	{ "team_king", build_game_variant_team_king },
 	{ "team_slayer", build_game_variant_team_slayer },
+#ifdef HALO_GAME_BROWSER
+	/* (Bomb's: the builds with Delta Peer) */
+	{ "bomb", build_game_variant_bomb },
+	{ "grifball", build_game_variant_grifball },
+	{ "grifball_open_pitch", build_game_variant_grifball_open_pitch },
+#endif
 };
 
 static char const *const ae_audit_engines[] =
 {
-	"none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub"
+	"none", "ctf", "slayer", "oddball", "king", "race", "bomb", "stub"
 };
 
 /* a wide name as ASCII for the file (others '?', a tab or line break a space) */

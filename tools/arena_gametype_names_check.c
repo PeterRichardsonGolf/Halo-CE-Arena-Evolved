@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 35, AE BR 34, AE COMP 9, OCTAGON 8, NHE 25, TRAINING 1 (112), each set's orders
+- the sets: AE 37, AE BR 34, AE COMP 9, OCTAGON 8, NHE 25, TRAINING 1 (114), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 35, 34, 9, 8, 25, 1 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 37, 34, 9, 8, 25, 1 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "NHE", "TRAINING" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
@@ -110,8 +110,8 @@ int main(void)
 	wchar_t display[40];
 
 	/* the table */
-	if (arena_gametype_catalog_count() != 112)
-		fail("catalog count is not 112", "");
+	if (arena_gametype_catalog_count() != 114)
+		fail("catalog count is not 114", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -122,8 +122,12 @@ int main(void)
 			fail("description", entry->stored_name);
 		if (entry->set <= _arena_gametype_set_none || entry->set >= NUMBER_OF_ARENA_GAMETYPE_SETS)
 			fail("set", entry->stored_name);
-		if (entry->game_engine < first_usable_game_engine_index || entry->game_engine > last_usable_game_engine_index)
+		/* (Bomb, revision 24's AE GRIFBALL and AE BOMB, past the stock engines) */
+		if ((entry->game_engine < first_usable_game_engine_index || entry->game_engine > last_usable_game_engine_index) &&
+			entry->game_engine != game_engine_bomb)
+		{
 			fail("game engine", entry->stored_name);
+		}
 		if (strncmp(entry->display_name, entry->team ? "TEAM " : "FFA ", entry->team ? 5 : 4))
 			fail("display name does not say TEAM or FFA as the entry", entry->display_name);
 		if (entry->special && entry->set != _arena_gametype_set_ae)
@@ -370,7 +374,7 @@ int main(void)
 		{
 			char const *const expected_names[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
 				{ "", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
-			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 16, 16, 10, 24, 11, 25, 0 };
+			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] = { 0, 10, 16, 16, 10, 26, 11, 25, 0 };
 
 			for (category = 0; category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES; category++)
 			{

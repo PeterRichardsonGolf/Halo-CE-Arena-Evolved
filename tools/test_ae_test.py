@@ -25,7 +25,9 @@ COMP_2V2_SEEDS = ("AE C2V2 TS", "AE C2V2 CTF", "AE C2V2 KOH", "AE C2V2 OB")
 BR_22_SEEDS = ("AE BR BTB S", "AE BR BTB C", "AE BR BTB K", "AE BR BTB B", "AE BR BTB H", "AE BR C2 TS", "AE BR C2CTF",
                "AE BR C2KOH", "AE BR C2 OB")
 REVISION_22_SEEDS = BTB_SEEDS + COMP_2V2_SEEDS + BR_22_SEEDS
-ADDED_SEEDS = OCTAGON_SEEDS + TEAM_OCTAGON_SEEDS + REVISION_22_SEEDS
+# and revision 24's (AE GRIFBALL and AE BOMB: the Bomb game type, in the builds with it)
+REVISION_24_SEEDS = ("AE GRIFBALL", "AE BOMB")
+ADDED_SEEDS = OCTAGON_SEEDS + TEAM_OCTAGON_SEEDS + REVISION_22_SEEDS + REVISION_24_SEEDS
 # (OpenCE's asset-free tests, tools/harness, are a package of the same name,
 # imported by it too: ours while these tools are imported, then the name is
 # theirs again, whichever tests one pytest run collects first)
@@ -1074,9 +1076,9 @@ class Handshake(unittest.TestCase):
 
 class SeedRules(unittest.TestCase):
     def test_table_and_parse(self):
-        """seed_rules.py: the 112 seeds, and a run's rules lines read back field by field"""
+        """seed_rules.py: the 114 seeds, and a run's rules lines read back field by field"""
         import seed_rules
-        self.assertEqual(len(seed_rules.ROWS), 112)
+        self.assertEqual(len(seed_rules.ROWS), 114)
         for name in seed_rules.ROWS:
             self.assertLessEqual(len(name), 11, name)
         text = ("x  game rules: health halo 2, fall damage off, starting equipment generic, vehicle set 1, "
@@ -1121,9 +1123,10 @@ class SeedRules(unittest.TestCase):
         enemies = {name for name, (want, _, _) in seed_rules.ROWS.items() if want["radar players"] == "enemies"}
         # (and revision 22's BTB set and its battle rifle versions, from the AE team gametypes)
         btb = set(BTB_SEEDS) | {br for br, twin in seed_rules.BR_TWINS_22.items() if twin in BTB_SEEDS}
-        self.assertEqual(enemies, set(seed_rules.RADAR_ENEMIES) | set(TEAM_OCTAGON_SEEDS) | btb |
+        # (and revision 24's AE BOMB, AE CTF's rules)
+        self.assertEqual(enemies, set(seed_rules.RADAR_ENEMIES) | set(TEAM_OCTAGON_SEEDS) | btb | {"AE BOMB"} |
                          {br for br, twin in seed_rules.BR_TWINS.items() if twin in seed_rules.RADAR_ENEMIES})
-        self.assertEqual(len(enemies), 33)
+        self.assertEqual(len(enemies), 34)
         for name in enemies:
             self.assertIn("(teams)", seed_rules.ROWS[name][0]["engine"], name)
         # (revision 14: every slayer seed without the death bonus and the kill penalty, 38 of them, 46 with revisions
@@ -1134,6 +1137,50 @@ class SeedRules(unittest.TestCase):
             self.assertEqual((want["death bonus"], want["kill penalty"]), ("off", "off"), name)
         self.assertEqual(sorted(n for n, want in slayers.items() if want["kill in order"] == "on"),
                          ["AE BR PHANT", "AE PHANTOMS"])
+
+    def test_grifball_and_bomb(self):
+        """revision 24 (owner, 2026-10-23): AE GRIFBALL and AE BOMB, the Bomb game type on AE's rules, added seeds (no
+        migration) in the builds with Bomb (HALO_GAME_BROWSER: their rows inside its #ifdef). GRIFBALL is Grifball's
+        builder (melee only: no custom loadout, the PC options' default none + none) with AE's rules; BOMB is Bomb's
+        builder on AE CTF's casual team row, no vehicles. golden_seeds_rev24.json is a fresh revision 24 root:
+        revision 23's 112 files as they were, in their folders, and the two new ones (a revision 23 root started on
+        revision 24 holds the same files); seed_rules expects them; no battle rifle versions"""
+        import re
+        import seed_rules
+        source = (HERE.parent.parent / "source" / "saved games" / "arena_gametypes.c").read_text(encoding="latin-1")
+        self.assertGreaterEqual(int(re.search(r"ARENA_GAMETYPES_REVISION = (\d+),", source)[1]), 24)
+        migrations = source[source.index("arena_gametype_migrations[] ="):source.index("arena_gametype_test_migration =")]
+        self.assertNotIn(".revision = 24,", migrations)
+        table = source[source.index("arena_gametypes[] ="):source.index("arena_gametype_migrations[] =")]
+        guarded = table[table.index("#ifdef HALO_GAME_BROWSER"):]
+        guarded = guarded[:guarded.index("#endif")]
+        rows = {n: re.sub(r"\s+", " ", re.sub(r"/\*.*?\*/", "", b, flags=re.S)).strip()
+                for n, b in re.findall(r'^\t\{ "([^"]+)",(.*?)(?=^\t\{ "|^\};|^#)', table, re.M | re.S)}
+        self.assertEqual(re.findall(r'^\t\{ "([^"]+)"', guarded, re.M), list(REVISION_24_SEEDS))
+        self.assertIn("build_game_variant_grifball, ARENA_GAMETYPE_FLAGS, 0, 0,", rows["AE GRIFBALL"])
+        self.assertIn("ARENA_VEHICLES_STOCK, FALSE,", rows["AE GRIFBALL"])
+        self.assertIn("build_game_variant_bomb, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, 0, ARENA_TIME_LIMIT,",
+                      rows["AE BOMB"])
+        # (AE CTF's row past its builder and score, without VEHICLES DESTRUCTIBLE: Bomb has no vehicles)
+        ctf = rows["AE CTF"]
+        tail = lambda s: s[s.index("ARENA_RADAR_ENEMIES"):]
+        self.assertEqual(tail(rows["AE BOMB"]).replace(" ", ""),
+                         tail(ctf).replace("_and_vehicles_destructible_1", "").replace(" ", ""))
+        twins = dict(re.findall(r'\{ "(AE BR [^"]+)", "([^"]+)" \},', source))
+        for name in REVISION_24_SEEDS:
+            self.assertNotIn(name, twins.values())
+        golden = json.loads((HERE / "golden_seeds_rev24.json").read_text())
+        golden_rev23 = json.loads((HERE / "golden_seeds_rev23.json").read_text())
+        self.assertEqual(sorted(golden), sorted(list(golden_rev23) + list(REVISION_24_SEEDS)))
+        for name, value in golden_rev23.items():
+            self.assertEqual(golden[name], value, name)
+        self.assertEqual(len({golden[n]["folder"] for n in golden}), len(golden))
+        bomb, grifball = seed_rules.ROWS["AE BOMB"][0], seed_rules.ROWS["AE GRIFBALL"][0]
+        self.assertEqual((bomb["engine"], bomb["radar players"], bomb["loadout"], bomb["vehicles destructible"]),
+                         ("terminator (teams)", "enemies", "pistol + assault rifle", "off"))
+        self.assertEqual((grifball["engine"], grifball["shields"], grifball["loadout"], grifball["no map weapons"],
+                          grifball["weapon set"], grifball["controller crouch"], grifball["melee unzooms"]),
+                         ("terminator (teams)", "off", "none + none", "on", "no grenades", "stays down", "on"))
 
 
 class Windows(unittest.TestCase):

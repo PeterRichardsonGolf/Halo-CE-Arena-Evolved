@@ -72,8 +72,8 @@ enum
 	/* the most a "#revision N" line takes */
 	ARENA_GAMETYPES_REVISION_LINE = 32,
 	/* the seeds' revision now (the last of arena_gametype_migrations, or
-	past it: revisions 11, 16 and 17 only added seeds) */
-	ARENA_GAMETYPES_REVISION = 23,
+	past it: revisions 11, 16, 17 and 24 only added seeds) */
+	ARENA_GAMETYPES_REVISION = 24,
 	/* a memory unit lists at most AE_SAVED_GAMES_MAXIMUM saved games of any
 	type, the built-in ones (the stock gametypes, the default profiles)
 	among them (saved_game_files.c; ae_saved_limits.h): the self-check
@@ -730,6 +730,26 @@ static struct arena_gametype const arena_gametypes[] =
 	{ "AE RALLY", build_game_variant_rally, ARENA_LATER_FLAGS, 0, ARENA_TIME_LIMIT, ARENA_STOCK, ARENA_STOCK,
 		ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, TRUE, .hit_feedback = 1, .starting_frags = ARENA_AE_STARTING_FRAGS,
 		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1 },
+#ifdef HALO_GAME_BROWSER
+	/* AE GRIFBALL and AE BOMB (revision 24; owner, 2026-10-23): the Bomb game type (game_engine_bomb.c, docs/bomb.md;
+	only the builds with Delta Peer have it, and only machines that agree on its capability play it) on AE's rules.
+	GRIFBALL: Grifball's official rules as its builder has them (one hit kills, melee only: no starting weapons, none
+	on the map, no grenades; no shields, 3 second respawns, the motion sensor on, rounds of 3 minutes, first to 3
+	rounds, no game time limit) and AE's that fit: AE's rules (ARENA_GAMETYPE_FLAGS: the countdown, no landing damage;
+	the rest has no weapon or shield to act on), COMBAT FEEDBACK ARENA EVOLVED, CONTROLLER CROUCH STAYS DOWN, MELEE
+	UNZOOMS ON, MOUSE AIM ASSIST OFF. BOMB: Bomb's rules (3 rounds, arm in 3 s, a dropped bomb resets after 30 s,
+	no round time) on AE CTF's casual team set: TIMERS HUD + WAYPOINTS, DROP SECONDARY ALWAYS, 15 minutes, the
+	stock respawns, the motion sensor's enemies at 10 m, a pistol and an assault rifle, 2 frags, CONTROLLER CROUCH
+	STAYS DOWN, MELEE UNZOOMS ON, MOUSE AIM ASSIST OFF; no vehicles (Bomb's own), so VEHICLES DESTRUCTIBLE stays
+	off. No battle rifle version of either */
+	{ "AE GRIFBALL", build_game_variant_grifball, ARENA_GAMETYPE_FLAGS, 0, 0, ARENA_STOCK, ARENA_STOCK,
+		ARENA_RADAR_STOCK, ARENA_VEHICLES_STOCK, FALSE, .hit_feedback = 1,
+		.adjust = arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off },
+	{ "AE BOMB", build_game_variant_bomb, ARENA_GAMETYPE_FLAGS | ARENA_CASUAL_FLAGS, 0, ARENA_TIME_LIMIT, ARENA_STOCK,
+		ARENA_STOCK, ARENA_RADAR_ENEMIES, ARENA_VEHICLES_STOCK, TRUE, .hit_feedback = 1,
+		.starting_frags = ARENA_AE_STARTING_FRAGS,
+		.adjust = arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off },
+#endif
 	/* TRAINING: free for all slayer with no practical score limit, the
 	item timers and TRAINING's waypoints */
 	{ "AE TRAINING", build_game_variant_slayer, ARENA_GAMETYPE_FLAGS | ARENA_TRAINING_FLAGS | ARENA_DROP_ALWAYS,
@@ -1095,8 +1115,10 @@ while zoomed takes the zoom off (MELEE UNZOOMS ON) and no aim assist for the
 mouse (MOUSE AIM ASSIST OFF) in every AE gametype; the NHE set and stock
 gametypes keep Halo CE's. Revision 23 (tools/ae_gametype_change.py): VEHICLES
 DESTRUCTIBLE ON in every AE gametype with vehicles (vehicle set not NONE):
-Halo 2's way, explosives only, no death while occupied. A row whose old and
-new names are the same is a value update (in place, under its name).
+Halo 2's way, explosives only, no death while occupied. Revision 24 has no
+migration (it only added AE GRIFBALL and AE BOMB, in the builds with Bomb).
+A row whose old and new names are the same is a value update (in place,
+under its name).
 Designated initialisers: a field added to struct arena_gametype never
 shifts a frozen row */
 static struct arena_gametype_migration const arena_gametype_migrations[] =
@@ -9179,7 +9201,7 @@ static void arena_gametype_log(
 	struct game_variant const *variant,
 	struct game_variant_options const *options)
 {
-	static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "terminator", "stub" };
+	static char const *const engines[] = { "none", "ctf", "slayer", "oddball", "king", "race", "bomb", "stub" };
 	/* (game_engine.h's _loadout_weapon_*) */
 	static char const *const weapons[] =
 	{

@@ -81,7 +81,7 @@ def test_xbox_menus_list_holds_it():
 def test_pc_menus_and_test_launcher_hold_it():
     text = MENUS.read_text()
     assert "#define MAXIMUM_GAMETYPES AE_SAVED_GAMES_MAXIMUM /* AE hook */" in text
-    # (the AE menus' gametype lists: no list of 128 (revision 22's 112 seeds and the 26 built-ins are 138))
+    # (the AE menus' gametype lists: no list of 128 (revision 24's 114 seeds and the 26 built-ins are 140))
     game = ROOT / "port" / "linux" / "game"
     for name in ("ae_glue_setup_options.c", "ae_screen_create_game.c", "ae_screen_main_menu.c"):
         source = (game / name).read_text()
@@ -109,7 +109,7 @@ def test_seeds_leave_room():
     """a seeded root (the seeds, the built-in entries, a few profiles and own gametypes) stays under the warning, and
     every gametype the memory unit can list fits the lists"""
     count = len(seeds())
-    assert count == 112
+    assert count == 114
     assert count + BUILT_IN + ROOM_PROFILES + ROOM_OWN <= maximum() - 10
     # (one profile: the start's own state is under the warning)
     assert count + BUILT_IN + 1 < maximum() - 10
@@ -121,7 +121,7 @@ def test_record_fits():
     """the record of the seeded names (each "NAME\\n" after "#revision N\\n") fits its buffer. A fresh root's stayed
     under the length builds before the migrations read (ARENA_GAMETYPES_RECORD_OLD_LIMIT) until revision 17's four
     seeds took it past (arena_gametypes_seed logs a warning: such a build, 0.1.0-beta's, would seed its own gametypes
-    again, never over a file). Revision 22's 112 seeds: about 1.3 KB of the 2 KB, every old name too, with room for
+    again, never over a file). Revision 24's 114 seeds: about 1.3 KB of the 2 KB, every old name too, with room for
     another 40 or so"""
     text = ARENA.read_text()
     size = int(re.search(r"ARENA_GAMETYPES_RECORD_SIZE = (\d+)", text)[1])

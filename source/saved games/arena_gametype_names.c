@@ -128,6 +128,14 @@ static struct arena_gametype_name const arena_gametype_names[] =
 		"Team slayer with shotguns and pistols." },
 	{ "AE HEAVIES", "TEAM AE HEAVIES", _arena_gametype_set_ae, game_engine_slayer, TRUE, TRUE,
 		"Team slayer with rocket launchers, assault rifles, the heavy weapons and the map's vehicles, to 75 kills." },
+	/* AE GRIFBALL and AE BOMB (revision 24; owner, 2026-10-23): the Bomb game type on AE's rules (seeded only by the
+	builds with Bomb, arena_gametypes.c) */
+	{ "AE GRIFBALL", "TEAM AE GRIFBALL", _arena_gametype_set_ae, game_engine_bomb, TRUE, TRUE,
+		"Grifball: carry the bomb into the other team's goal. Melee only, one hit kills, no shields; rounds of 3 "
+		"minutes, first to 3." },
+	{ "AE BOMB", "TEAM AE BOMB", _arena_gametype_set_ae, game_engine_bomb, TRUE, FALSE,
+		"Carry the bomb into the other team's goal and arm it, on AE's rules: pistol and assault rifle, the motion "
+		"tracker, first to 3 rounds." },
 	/* AE BTB (revision 22; owner, 2026-10-22): big team games, 8 against 8, on AE's rules, with the map's vehicles */
 	{ "AE BTB SLY", "TEAM AE BTB SLAYER", _arena_gametype_set_ae, game_engine_slayer, TRUE, FALSE,
 		"Big team slayer (8 against 8) on AE's rules: 100 kills, 20 minutes, the map's vehicles, power item timers "
@@ -435,6 +443,7 @@ static struct arena_gametype_category_row const arena_gametype_category_rows[] =
 	{ _arena_gametype_category_action_sack, "AE ELIM" }, { _arena_gametype_category_action_sack, "AE BR ELIM" },
 	{ _arena_gametype_category_action_sack, "AE ENDURE" }, { _arena_gametype_category_action_sack, "AE BR ENDUR" },
 	{ _arena_gametype_category_action_sack, "AE RACE" }, { _arena_gametype_category_action_sack, "AE RALLY" },
+	{ _arena_gametype_category_action_sack, "AE GRIFBALL" }, { _arena_gametype_category_action_sack, "AE BOMB" },
 	{ _arena_gametype_category_action_sack, "AE SWAT" }, { _arena_gametype_category_action_sack, "AE SNIPERS" },
 	{ _arena_gametype_category_action_sack, "AE SHOTSNIP" }, { _arena_gametype_category_action_sack, "AE ROCKETS" },
 	{ _arena_gametype_category_action_sack, "AE SHOTGUNS" }, { _arena_gametype_category_action_sack, "AE HEAVIES" },

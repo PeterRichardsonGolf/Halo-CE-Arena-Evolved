@@ -37,6 +37,14 @@ They are in the gametype list the first time you play. Back to the [README](../R
   scorpions for both teams (each team's vehicles CUSTOM: as many as the map places, up to 4 of each; the Xbox maps
   have no rocket warthog, so they place their scorpions only). A dropped flag goes home after Halo CE's own 17
   seconds untouched (the gametype has no setting for it).
+- **Arena Evolved GRIFBALL and BOMB** (seed revision 24; the builds with Bomb, [bomb.md](bomb.md)), in AE ACTION
+  SACK: TEAM AE GRIFBALL (AE GRIFBALL) is Grifball's official rules (melee only, one hit kills, no shields, 3-second
+  respawns at your own goal, rounds of 3 minutes, first to 3 rounds) with AE's rules: the countdown, CONTROLLER
+  CROUCH STAYS DOWN, MELEE UNZOOMS, MOUSE AIM ASSIST OFF. TEAM AE BOMB (AE BOMB) is Bomb (carry the bomb into the
+  other team's goal and arm it for 3 seconds; first to 3 rounds) on AE CTF's casual team rules: 15 minutes, a pistol
+  and an assault rifle, 2 frags, the motion sensor showing enemies at 10 m, item TIMERS with waypoints, no vehicles.
+  Neither has a battle rifle version. Bomb is played only between machines whose builds have it (an OpenCE machine
+  is dropped from the game with a message); bots do not play it.
 - **Motion sensor, enemies only** (0.3.0): the team gametypes above that have the
   motion sensor (and their AE BR twins) show only enemies on it, never your
   teammates (OTHER PLAYERS ON RADAR: ENEMIES, in Indicator Options); the free
