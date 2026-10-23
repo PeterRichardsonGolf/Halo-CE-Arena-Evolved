@@ -412,8 +412,9 @@ static void flow_text(wchar_t const *source)
 	real rgb[3];
 	wchar_t *at;
 
-	/* (the text with CE's line ends as '\n': the campaign's help text breaks its lines with "|n", which AE's text
-	measured as the last line's width and drew in a one-line box, so the next piece started back over the first) */
+	/* (the text with CE's line ends as '\n': the campaign's help text breaks its lines with "|n". AE's text measured
+	such a piece as 0 px (a10's "Energy Shields Charged|n|nPress ") and drew only its first line, so the button and the
+	next piece started back at the line's left, over the first words) */
 	length = ae_hud_message_flow_clean(source, text, TEXT_MAXIMUM);
 	text_rgb(rgb);
 	color.alpha = block.opaque ? 1.0f : block.saved_color.alpha;
