@@ -312,6 +312,34 @@ static const char *const nhe_help[] = { "NHE's maps only: the vehicle set picks 
 static const char *const nhe_extras_help[] = { "Stock teams and camera.", "As Halo 1: NHE: everyone joins red and keeps "
 	"their colour between games, the dead camera stays on you, and the match clock counts up." };
 
+/* OpenCE's gametypes (game_modes.c; its OPENCE OPTIONS screen's words, tools/port_settings.py's OPENCE_ROWS) */
+static const char *const opence_mode_values[] = { "NONE", "SWAT", "INFECTION", "GUN GAME" };
+static const char *const opence_mode_help[] = { "Slayer's own rules.",
+	"OpenCE's SWAT: no shields, and a shot to the head kills.",
+	"OpenCE's Infection: humans killed join the zombies, who win when no human is left. Teams.",
+	"OpenCE's Gun Game: each kill gives the next weapon; a kill with the last wins. Free for all." };
+static const char *const hardcore_help[] = { "The motion sensor and aim assist as the gametype has them.",
+	"OpenCE's Hardcore: no motion sensor, no aim assist, and a kill restores the killer's health and shields." };
+static const char *const zombies_values[] = { "1", "2", "3", "4", "8", "16" };
+static const char *const zombies_help[] = { "The zombies chosen when the round starts (a human is always left)." };
+static const char *const zombie_speed_values[] = { "100%", "110%", "125%", "150%", "175%", "200%" };
+static const char *const zombie_speed_help[] = { "How fast zombies move, of a human's speed." };
+static const char *const skull_damage_values[] = { "100%", "150%", "200%", "250%" };
+static const char *const skull_damage_help[] = { "The damage of a zombie's skull's melee." };
+static const char *const zombie_respawn_values[] = { "1 SECOND", "3 SECONDS", "5 SECONDS", "10 SECONDS", "15 SECONDS",
+	"30 SECONDS" };
+static const char *const zombie_respawn_help[] = { "How long a dead zombie waits to respawn." };
+static const char *const infection_countdown_values[] = { "NONE", "5 SECONDS", "10 SECONDS", "15 SECONDS",
+	"30 SECONDS" };
+static const char *const infection_countdown_help[] = { "How long the round waits, once two players are alive, before "
+	"the first zombies are chosen." };
+static const char *const zombie_shields_help[] = { "Zombies have no shields.", "Zombies have shields, as humans do." };
+static const char *const gun_order_values[] = { "STRONGEST FIRST", "WEAKEST FIRST", "RANDOM" };
+static const char *const gun_order_help[] = { "From the rocket launcher to the pistol.",
+	"From the pistol to the rocket launcher.", "In an order the host draws for each game." };
+static const char *const melee_demotes_help[] = { "A melee kill takes nothing from the victim.",
+	"A melee kill takes the victim back a weapon." };
+
 /* ---------- the rows */
 
 #define VALUES(list) list, COUNT(list)
@@ -351,6 +379,7 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 	[AE_SO_CONTROLLER_CROUCH] = ROW("CONTROLLER CROUCH", AE_SG_PLAYERS, 0, 0, 1, crouch_values, crouch_help),
 	[AE_SO_MELEE_UNZOOMS] = ROW("MELEE UNZOOMS", AE_SG_PLAYERS, 0, 0, 1, on_off, melee_unzoom_help),
 	[AE_SO_MOUSE_AIM_ASSIST] = ROW("MOUSE AIM ASSIST", AE_SG_PLAYERS, 0, 0, 1, mouse_aim_values, mouse_aim_help),
+	[AE_SO_HARDCORE] = ROW("HARDCORE", AE_SG_PLAYERS, 0, 0, 0, off_on, hardcore_help),
 
 	[AE_SO_TEAM_PLAY] = ROW("TEAM PLAY", AE_SG_TEAMS, TEAM_ENGINES, 0, 0, yes_no, team_play_help),
 	[AE_SO_FRIENDLY_FIRE] = ROW("FRIENDLY FIRE", AE_SG_TEAMS, 0, 1, 0, friendly_fire_values, friendly_fire_help),
@@ -405,6 +434,24 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 		kill_penalty_help),
 	[AE_SO_KILL_IN_ORDER] = ROW("KILL IN ORDER", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, yes_no,
 		kill_order_help),
+	[AE_SO_OPENCE_MODE] = ROW("OPENCE MODE", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, opence_mode_values,
+		opence_mode_help),
+	[AE_SO_INFECTION_ZOMBIES] = ROW("FIRST ZOMBIES", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, zombies_values,
+		zombies_help),
+	[AE_SO_INFECTION_SPEED] = ROW("ZOMBIE SPEED", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, zombie_speed_values,
+		zombie_speed_help),
+	[AE_SO_INFECTION_DAMAGE] = ROW("SKULL DAMAGE", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0,
+		skull_damage_values, skull_damage_help),
+	[AE_SO_INFECTION_RESPAWN] = ROW("ZOMBIE RESPAWN", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0,
+		zombie_respawn_values, zombie_respawn_help),
+	[AE_SO_INFECTION_COUNTDOWN] = ROW("INFECTION COUNTDOWN", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0,
+		infection_countdown_values, infection_countdown_help),
+	[AE_SO_INFECTION_SHIELDS] = ROW("ZOMBIE SHIELDS", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, off_on,
+		zombie_shields_help),
+	[AE_SO_GUN_GAME_ORDER] = ROW("WEAPON ORDER", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, gun_order_values,
+		gun_order_help),
+	[AE_SO_GUN_GAME_MELEE] = ROW("MELEE DEMOTES", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_SLAYER), 0, 0, off_on,
+		melee_demotes_help),
 	[AE_SO_ASSAULT] = ROW("ASSAULT", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_CTF), 0, 0, yes_no, assault_help),
 	[AE_SO_SINGLE_FLAG] = ROW("SINGLE FLAG", AE_SG_MODE, ENGINE(AE_SETUP_ENGINE_CTF), 0, 0, single_flag_values,
 		single_flag_help),
@@ -581,6 +628,11 @@ int ae_setup_visible(struct ae_setup_access const *access, int option)
 		return !value_is(access, AE_SO_LOADOUT, AE_SETUP_LOADOUT_CUSTOM) || access->ae_rules;
 	if (option == AE_SO_PRIMARY || option == AE_SO_SECONDARY)
 		return value_is(access, AE_SO_LOADOUT, AE_SETUP_LOADOUT_CUSTOM);
+	/* (OpenCE's MODE's own rows: Infection's, Gun Game's) */
+	if (option >= AE_SO_INFECTION_ZOMBIES && option <= AE_SO_INFECTION_SHIELDS)
+		return value_is(access, AE_SO_OPENCE_MODE, AE_SETUP_OPENCE_INFECTION);
+	if (option == AE_SO_GUN_GAME_ORDER || option == AE_SO_GUN_GAME_MELEE)
+		return value_is(access, AE_SO_OPENCE_MODE, AE_SETUP_OPENCE_GUN_GAME);
 	/* (WEAPON PACKS: while the gametype has a pack row to open it on) */
 	if (option == AE_SO_WEAPON_PACKS)
 	{

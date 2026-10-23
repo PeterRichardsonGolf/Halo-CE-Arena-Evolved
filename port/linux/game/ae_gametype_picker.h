@@ -33,6 +33,8 @@ enum ae_gtp_folder
 {
 	AE_GTP_FOLDER_RECENT, AE_GTP_FOLDER_FAVOURITES, AE_GTP_FOLDER_MINE, AE_GTP_FOLDER_FFA, AE_GTP_FOLDER_2V2,
 	AE_GTP_FOLDER_4V4, AE_GTP_FOLDER_BTB, AE_GTP_FOLDER_ACTION_SACK, AE_GTP_FOLDER_PRACTICE, AE_GTP_FOLDER_NHE,
+	/* (OpenCE's built-in gametypes: SWAT, Infection, Gun Game, Hardcore; game_modes.c) */
+	AE_GTP_FOLDER_OPENCE,
 	AE_GTP_FOLDER_STOCK, AE_GTP_FOLDERS,
 	/* (the folders a gametype lives in: the rest are views of them) */
 	AE_GTP_FOLDER_FIRST_HOME = AE_GTP_FOLDER_MINE

@@ -11,7 +11,7 @@ CHANGE GAMETYPE's model. See ae_gametype_picker.h.
 #include "ae_setup_options.h"
 
 static const char *const folder_names[AE_GTP_FOLDERS] = { "RECENT", "FAVOURITES", "MY GAMETYPES", "AE FFA", "AE 2V2",
-	"AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "STOCK" };
+	"AE 4V4", "AE BTB", "AE ACTION SACK", "AE PRACTICE", "NHE", "OPENCE", "STOCK" };
 static const char *const filter_names[AE_GTP_FILTERS] = { "ALL", "SLAYER", "CTF", "KING", "ODDBALL", "RACE", "BOMB" };
 static const char *const weapon_names[AE_GTP_WEAPONS] = { "NO WEAPON", "RANDOM", "ASSAULT RIFLE", "PISTOL", "SHOTGUN",
 	"SNIPER RIFLE", "ROCKET LAUNCHER", "PLASMA PISTOL", "PLASMA RIFLE", "NEEDLER" };
