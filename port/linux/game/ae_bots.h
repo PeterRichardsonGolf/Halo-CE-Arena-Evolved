@@ -56,6 +56,8 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 /* (damage.c's object_cause_damage) the damage a player caused to a unit: a bot's hit is measured and logged; and a
 bot's unit's last damage (its effect's definition and damage flags), the cause of its death (ae_bots_falls_rules.h) */
 void ae_bots_damage_note(long owner_player_index, long object_index, long definition_index, unsigned long flags);
+/* (2026-10-24, ae_bots_revenge.inc) game_engine_player_killed: REVENGE's count of who killed a bot, and its kills */
+void ae_bots_player_killed(long killing_player_index, long dead_player_index);
 
 /* how the bots get around a map: teleporters, the layout file's bot lines, health packs (ae_bots_travel.c) */
 #include "ae_bots_travel.h"

@@ -20,6 +20,7 @@ getting around's (ae_bots_travel.inc) and the deaths by the bots' own hand
 #include "ae_bots_combat.inc"
 #include "ae_bots_power.inc"
 #include "ae_bots_team.inc"
+#include "ae_bots_revenge.inc"
 #include "ae_bots_objective.inc"
 #include "ae_bots_vehicle.inc"
 #include "ae_bots_travel.inc"

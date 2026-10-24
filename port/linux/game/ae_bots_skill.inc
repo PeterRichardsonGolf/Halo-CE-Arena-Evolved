@@ -280,6 +280,12 @@ static long ae_bots_team_wingman_of(struct bots_bot const *bot);
 static boolean ae_bots_team_leash(struct bots_bot *bot, struct bots_tick *tick, real *direction);
 static void ae_bots_team_hear(struct bots_bot *bot, long player_index, real_point3d const *position, long now);
 static void ae_bots_team_reset(void);
+/* (2026-10-24, ae_bots_revenge.inc) REVENGE: bots_choose_goal's ask after the objectives, the nemesis's target score,
+the fight's tilt, a map's start */
+static boolean ae_bots_revenge_goal(struct bots_bot *bot, long player_index, real_point3d const *position, boolean fighting);
+static real ae_bots_revenge_score(struct bots_bot const *bot, long player_index);
+static real ae_bots_revenge_tilt(struct bots_bot const *bot, int level);
+static void ae_bots_revenge_reset(void);
 /* (ae_bots_travel.inc) whether a point is within radius of a teleporter pad (a spot a bot waits on must not be one) */
 static boolean ae_bots_travel_near_pad(real_point3d const *point, real radius);
 /* (ae_bots_falls.inc: bots.c's bots_bot_update after the unstick) the bot does not walk off a lethal edge, runs from its

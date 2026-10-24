@@ -558,7 +558,7 @@ static void ae_bots_fight_move(struct bots_bot *bot, struct bots_tick *tick)
 	/* (OUTNUMBERED, ae_bots_team.inc: the enemies near past the teammates near take from it) */
 	real confidence = ae_bots_combat_confidence(own_shield, own_body, target_shield, target_body, tick->target_distance,
 		bots_weapon_range(tick->weapon_index), tick->weapon_index != NONE ? bots_weapon_loaded(tick->weapon_index) : 1.0f,
-		tick->position.z - target_point.z) - ae_bots_team_outnumbered(bot, tick, level);
+		tick->position.z - target_point.z) - ae_bots_team_outnumbered(bot, tick, level) + ae_bots_revenge_tilt(bot, level);
 	int started, ended;
 	boolean new_fight = tick->now - state->last_fight_tick > TICKS_PER_SECOND * 2 || tick->now < state->last_fight_tick;
 	boolean retreating = ae_bots_combat_retreat_step(&state->retreat, level, confidence, own_shield, tick->now,
