@@ -1352,3 +1352,5 @@ source/networking/network_client_manager.c	!(network_game_client_advertised_vers
 source/networking/network_client_manager.h	byte kind; /* AE hook */
 source/networking/network_client_manager.c	game->kind = network_game_client_advertised_game_kind(client, advertised); /* AE hook */
 source/networking/network_server_message_handler.c	#include "delta.h" /* AE hook */
+# (delta.h in every build, the web one too: DELTA_ADVERTISED_FLAG for the kind byte)
+source/networking/network_client_manager.c	#include "delta.h" /* AE hook */

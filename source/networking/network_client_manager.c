@@ -3431,6 +3431,7 @@ boolean network_game_client_version_compatible(
 /* port/linux/src/delta_peer_game.c's */
 int delta_peer_advertised_wire_matches(unsigned char const *reserved, int size, char *theirs, int theirs_size);
 #endif
+#include "delta.h" /* AE hook */
 
 /* whether this client can join the advertised game (its host's network
 version and netcode: network_game_client_version_compatible, which tells
