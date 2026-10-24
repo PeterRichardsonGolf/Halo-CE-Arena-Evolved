@@ -1366,6 +1366,12 @@ source/networking/network_client_manager.c	#include "delta.h" /* AE hook */
 # held quads as one triangle list instead of the quad's own fan.
 source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	int ae_hud_quad_batch_submit(void (*submit)(struct dynamic_screen_vertex const *vertex)); /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	if (!ae_hud_quad_batch_submit(submit_screen_vertex)) /* AE hook */\n{
+# (0.3.9) HUD TEXT BATCHING (ae_hud_text.c): an outlined HUD text's 13 passes as one batch of the text's quads: the begin
+# goes on with the held batch when its state is the same, the end leaves it held
+source/rasterizer/xbox/rasterizer_xbox_text.c	int ae_hud_text_hold_begin(void const *parameters, int size); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_text.c	int ae_hud_text_hold_end(void); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_text.c	if (ae_hud_text_hold_end()) return; /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_text.c	if (ae_hud_text_hold_begin(parameters, (int)sizeof(*parameters))) { text_batch_open = TRUE; return; } /* AE hook */
 source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	} /* AE hook */
 # (0.3.9) a windowless run (no GL loaded) makes no PNG texture: AE's key prompts preload at the UI map's load called a
 # null glGenTextures (crossplay tests, SDL dummy video).
