@@ -40,8 +40,9 @@ enum
 
 /* a row as drawn: what it is, its option (AE_FLOW_ROW_OPTION: ae_setup_options.h's), its texts (NULL value: an action
 row; help: the line under the rows while it has the focus; reason: disabled, the reason shown in the value's place;
-primary: the screen's primary action, AE_ROW_PRIMARY's look with AE_FLOW_PRIMARY_ROOM_U more room above it) */
-struct ae_flow_row { short kind, option; const char *label, *value, *help, *reason; short primary; };
+primary: the screen's primary action, AE_ROW_PRIMARY's look with AE_FLOW_PRIMARY_ROOM_U more room above it; status:
+a value nothing changes here, AE_ROW_STATUS's look, no arrows) */
+struct ae_flow_row { short kind, option; const char *label, *value, *help, *reason; short primary, status; };
 
 struct ae_flow_screen
 {

@@ -53,8 +53,9 @@ static void rows_make(void)
 		snprintf(screen.continue_text, sizeof(screen.continue_text), "LEVEL %d \xE2\x80\xA2 %s",
 			screen.campaign.saved_level + 1, ae_campaign_difficulty_name(screen.campaign.saved_difficulty));
 		screen.level_of_row[count] = -1;
+		/* (its difficulty is the saved game's: shown, never changed here) */
 		flow->rows[count++] = (struct ae_flow_row){ ROW_CONTINUE, -1, "CONTINUE", screen.continue_text,
-			"Goes on from your saved game.", NULL };
+			"Goes on from your saved game, at its difficulty.", NULL, 0, 1 };
 	}
 	screen.level_of_row[count] = -1;
 	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "LEVELS", NULL, NULL, NULL };
@@ -112,8 +113,8 @@ static void draw_side(void)
 	y += ae_flow_u(flow, 44.0f);
 	memset(&row, 0, sizeof(row));
 	row.label = "DIFFICULTY";
-	row.value = ae_campaign_difficulty_name(screen.difficulty);
-	row.flags = AE_ROW_FOCUSED;
+	row.value = ae_campaign_difficulty_name(continue_focused() ? screen.campaign.saved_difficulty : screen.difficulty);
+	row.flags = continue_focused() ? AE_ROW_STATUS : AE_ROW_FOCUSED;
 	y += ae_widget_row(d, x, y, width, &row, HIT_SIDE, 0) + gap;
 	/* (0.3.9: information, not a choice: a status's muted value, no arrows, as nothing can change it here) */
 	memset(&row, 0, sizeof(row));
@@ -133,9 +134,24 @@ static void draw_side(void)
 		"Co-op: SETTINGS > SYSTEM > MENUS > CLASSIC, for now.");
 }
 
+/* whether CONTINUE has the focus: it plays the saved game's difficulty, so DIFFICULTY shows that one and doesn't change
+(0.3.9: it showed the next new game's, LEGENDARY beside CONTINUE's NORMAL) */
+static int continue_focused(void)
+{
+	short focus = screen.flow.focus;
+
+	return focus >= 0 && focus < screen.flow.count && screen.flow.rows[focus].kind == ROW_CONTINUE;
+}
+
 static void difficulty_step(short direction)
 {
 	short next = ae_value_step(AE_CAMPAIGN_DIFFICULTIES, screen.difficulty, direction);
+
+	if (continue_focused())
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
 
 	ae_sound_request(next == screen.difficulty ? AE_SOUND_FAILURE : AE_SOUND_CURSOR, 0);
 	screen.difficulty = next;
@@ -184,7 +200,8 @@ static void campaign_draw(struct ae_screen *instance)
 	draw_side();
 	flow->prompt_count = 0;
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_A, "Play", AE_ACTION_ACCEPT);
-	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_Y, "Difficulty", AE_ACTION_Y);
+	if (!continue_focused())
+		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_Y, "Difficulty", AE_ACTION_Y);
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
 	ae_flow_draw_prompts(flow);
 }
@@ -205,6 +222,11 @@ static int campaign_handle(struct ae_screen *instance, struct ae_event const *ev
 		difficulty_step(event->action == AE_ACTION_RIGHT ? 1 : -1);
 		return 1;
 	case AE_ACTION_Y:
+		if (continue_focused())
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return 1;
+		}
 		screen.difficulty = (short)((screen.difficulty + 1) % AE_CAMPAIGN_DIFFICULTIES);
 		ae_sound_request(AE_SOUND_CURSOR, 0);
 		return 1;

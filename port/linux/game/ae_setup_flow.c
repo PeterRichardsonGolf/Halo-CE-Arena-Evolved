@@ -187,6 +187,8 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 		}
 		if (index == flow->focus)
 			widget.flags |= AE_ROW_FOCUSED;
+		if (row->status)
+			widget.flags |= AE_ROW_STATUS;
 		if (row->reason)
 		{
 			widget.flags |= AE_ROW_DISABLED;
