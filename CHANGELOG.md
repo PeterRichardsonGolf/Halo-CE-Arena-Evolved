@@ -64,6 +64,7 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   been opened first.
 - Bots that join a LAN or online game in progress (BOTS raised mid-game) no longer show up as split-screen views on
   the host (the host drew a view for each of the first three, and its frame rate fell).
+- Lowering BOTS to OFF during a network game no longer ends it: the host plays on alone, as in a game started alone.
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
 - NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways, and with ChupathingyCE 0.8.0f
