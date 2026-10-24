@@ -73,6 +73,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   keyboard, Square on a PlayStation pad...); they named the Xbox pad's always.
 - HUD STYLE AE draws its panels' shapes in batches: far fewer draws a frame while alive (the frame rate dropped while
   alive, not while dead).
+- HUD STYLE AE, split screen: the scoreboard (BACK held) is drawn at the one-player board's size, centred in each view:
+  at 2, 3 and 4 players its last rows end above the score strip (they were drawn over it), and in quarter views it
+  clears the motion sensor. The one-player board and HUD STYLE CLASSIC are unchanged.
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
 - NETWORK VERSION 38 (OpenCE build-266 and build-268 merged): plays with OpenCE build-268 both ways, and with

@@ -53,6 +53,18 @@ void ae_test_capture_player_killed(long dead_player_index, long killing_player_i
 	}
 }
 
+/* ---------- debug.scoreboard_shown */
+
+int ae_test_scoreboard_shown(void)
+{
+	/* (read once: an environment setting of a test run) */
+	static int shown = -1;
+
+	if (shown < 0)
+		shown = config_boolean("debug.scoreboard_shown") ? 1 : 0;
+	return shown;
+}
+
 /* ---------- debug.network_test_all_weapons */
 
 static long weapons_and_equipment_count(void)

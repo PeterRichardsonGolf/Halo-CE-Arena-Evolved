@@ -1621,6 +1621,10 @@ static const struct config_setting config_settings[] =
 	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, /* AE hook */
 		_platform_all,
 		"The test's name in the line debug.test_verdict_file's keys write." },
+	{ "debug.scoreboard_shown", _config_boolean, "false", "HALO_DEBUG_SCOREBOARD_SHOWN", _environment_value, /* AE hook */
+		_platform_all,
+		"Test hook: every view's scoreboard stays shown in a game, as with BACK (Tab)\n"
+		"held, for screenshots of it." },
 	{ "debug.network_test_all_weapons", _config_boolean, "false", "HALO_NETWORK_TEST_ALL_WEAPONS", _environment_value, /* AE hook */
 		_platform_all,
 		"An automated test host runs cheat_all_weapons for its first local player a second after\n"
