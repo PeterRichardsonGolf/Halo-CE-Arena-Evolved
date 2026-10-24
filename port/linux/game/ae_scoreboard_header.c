@@ -11,6 +11,7 @@ HUD STYLE AE's scoreboard header (ae_scoreboard_header.h).
 #include "game/game.h"
 #include "game/game_engine.h"
 #include "main/main.h"
+#include "rasterizer/rasterizer.h"
 #include "render/render.h"
 #include "saved games/arena_gametypes.h"
 
@@ -23,6 +24,10 @@ HUD STYLE AE's scoreboard header (ae_scoreboard_header.h).
 
 #define AE_HEADER_GAP 4.0f           /* the header's foot over the scoreboard (px) */
 #define AE_HEADER_QUARTER_SHIFT 18.0f /* quarter views: the header and the scoreboard move down (px at 1080) */
+/* split views: the board's text at the full-screen scoreboard's scale (game_engine.c SCOREBOARD_SCALE), about the
+view's centre and the title's top: a half view's rows end above the score strip, a quarter view's too, and the
+text is as large as the one-player board's */
+#define AE_SPLIT_BOARD_SCALE 0.75f
 #define AE_HEADER_LINE1 24.0f
 #define AE_HEADER_LINE2 15.0f
 #define AE_HEADER_FLOOR 12.0f
@@ -185,9 +190,13 @@ static boolean quarter_view(void)
 		(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0) < 300);
 }
 
+/* the split board's text scale is set (ae_scoreboard_header_row) until its row is drawn */
+static boolean split_scale_set = FALSE;
+
 void ae_scoreboard_header_row(long row, union rectangle2d *bounds, real alpha)
 {
 	real ppu = ae_hud_pixels_per_unit();
+	real centre_x, title_y;
 
 	if (!header_on() || !bounds)
 		return;
@@ -198,6 +207,21 @@ void ae_scoreboard_header_row(long row, union rectangle2d *bounds, real alpha)
 		bounds->y0 = (short)(bounds->y0 + shift);
 		bounds->y1 = (short)(bounds->y1 + shift);
 	}
+	/* (the view's centre, where the layout centres the columns; the title's top, rows being as tall as this one) */
+	centre_x = (real)(render.camera.window_bounds.x0 + render.camera.window_bounds.x1) / 2.0f -
+		(real)render.camera.viewport_bounds.x0;
+	title_y = (real)bounds->y0 - (real)row * (real)(bounds->y1 - bounds->y0);
 	if (row == 0 && alpha > 0.0f)
-		draw_header((real)bounds->x0 * ppu, (real)bounds->y0 * ppu - AE_HEADER_GAP, 0.0f, alpha);
+		draw_header((centre_x + ((real)bounds->x0 - centre_x) * AE_SPLIT_BOARD_SCALE) * ppu, title_y * ppu - AE_HEADER_GAP,
+			0.0f, alpha);
+	rasterizer_text_set_scale(AE_SPLIT_BOARD_SCALE, centre_x, title_y);
+	split_scale_set = TRUE;
+}
+
+void ae_scoreboard_header_row_drawn(void)
+{
+	if (!split_scale_set)
+		return;
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+	split_scale_set = FALSE;
 }

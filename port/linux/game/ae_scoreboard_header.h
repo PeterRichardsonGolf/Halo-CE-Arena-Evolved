@@ -8,7 +8,9 @@ place of the scoreboard's gametype-name row (dropped with AE). 1p: above CE's
 scoreboard panel, the rule as wide as the panel; split screen: above each
 view's title at its x; in quarter views (960x540 of a 1080 screen) the header
 and the scoreboard under it move down 18 px together, clear of the ammo's
-rows. CLASSIC: nothing here draws; the gametype row stays.
+rows; a split view's board is drawn at the full-screen board's scale (0.75)
+about the view's centre, so its rows end above the score strip. CLASSIC:
+nothing here draws; the gametype row stays.
 */
 
 #ifndef __AE_SCOREBOARD_HEADER_H
@@ -28,7 +30,10 @@ long ae_scoreboard_header_rows(long gametype_rows);
 void ae_scoreboard_header_full(short x0, short left, short top, short block_width, long line_height, real scale,
 	real ping_room, real alpha);
 /* (game_engine.c, the split-screen score) a row's bounds before it is drawn (row 0, the title): quarter views move
-it down 18 px; above the title, the header */
+it down 18 px; above the title, the header; the row's text scale set (0.75 about the view's centre and the title's
+top) */
 void ae_scoreboard_header_row(long row, union rectangle2d *bounds, real alpha);
+/* (game_engine.c) the row drawn: the text scale back to 1 */
+void ae_scoreboard_header_row_drawn(void);
 
 #endif /* __AE_SCOREBOARD_HEADER_H */

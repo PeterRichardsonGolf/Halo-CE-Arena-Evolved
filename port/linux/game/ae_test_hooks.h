@@ -10,6 +10,8 @@ files call them from single lines marked AE hook (ae_hooks.txt).
 - debug.network_test_all_weapons: an automated test host's player gets the
   map's weapons (cheat_all_weapons) a second after each spawn, and the log says
   what the map lists and what was made.
+- debug.scoreboard_shown: every view's scoreboard stays shown, as with BACK (Tab)
+  held, for screenshots of it.
 */
 
 #ifndef AE_TEST_HOOKS_H
@@ -24,5 +26,7 @@ player killed them */
 void ae_test_capture_player_killed(long dead_player_index, long killing_player_index);
 /* (network_test_update, each frame of a test host's game) debug.network_test_all_weapons */
 void ae_test_all_weapons_update(void);
+/* (game_engine_post_rasterize_in_game, each view's frame) debug.scoreboard_shown: TRUE keeps the scoreboard shown */
+int ae_test_scoreboard_shown(void);
 
 #endif

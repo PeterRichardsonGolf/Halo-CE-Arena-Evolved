@@ -1606,6 +1606,7 @@ static void rasterize_in_game_score_draw_line(
 		ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */
 		draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, color);
 		rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, string);
+		ae_scoreboard_header_row_drawn(); /* AE hook */
 	}
 
 	draw_string_set_tab_stops(NULL, 0);
@@ -4583,6 +4584,7 @@ static void game_engine_post_rasterize_in_game(
 	}
 
 	fade = PIN(fade, 0.0f, 1.0f);
+	if (ae_test_scoreboard_shown()) fade = 1.0f; /* AE hook */
 	if (fade > 0.0f)
 	{
 		real alpha = linear_to_non_linear_alpha(fade);

@@ -412,6 +412,7 @@ source/game/game_engine.c	#include "ae_scoreboard_header.h" /* AE hook */
 source/game/game_engine.c	gametype_rows = ae_scoreboard_header_rows(gametype_rows); /* AE hook */
 source/game/game_engine.c	ae_scoreboard_header_full(bounds.x0, left, top, block_width, line_height, SCOREBOARD_SCALE, SCOREBOARD_PING_ROOM, alpha); /* AE hook */
 source/game/game_engine.c	ae_scoreboard_header_row(row_index - row_offset, &bounds, color->alpha); /* AE hook */
+source/game/game_engine.c	ae_scoreboard_header_row_drawn(); /* AE hook */
 source/game/game_engine.c	#include "ae_hud_style_draw.h" /* AE hook */
 source/game/game_engine.c	if (ae_hud_style_countdown(ticks_left, view_width, view_height)) /* AE hook */\nreturn;
 source/game/game_engine.c	if (ae_hud_style_voice_speakers()) /* AE hook */\nreturn;
@@ -680,11 +681,12 @@ source/interface/hud.c	#include "ae_radar.h" /* AE hook */
 source/interface/hud.c	!ae_radar_name_shown(player->unit_index)) /* AE hook */
 port/linux/game/menu_functions.c	{ "indicator_options_players_on_radar_spinner", _option_radar, OPTIONS_FIELD(radar_players), 0, 4, { _radar_players_all, _radar_players_friends, _radar_players_enemies, _radar_players_none } }, /* AE hook */
 # test hooks (ae_test_hooks.c, ae_platform.c; each OFF by default): debug.capture_on_event captures on game events,
-# debug.test_verdict_file's F7/F8 keys and debug.test_verdict_auto, debug.network_test_all_weapons
+# debug.test_verdict_file's F7/F8 keys and debug.test_verdict_auto, debug.network_test_all_weapons, debug.scoreboard_shown
 port/linux/src/port_config.c	{ "debug.capture_on_event", _config_string, "\"\"", "HALO_CAPTURE_ON_EVENT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.test_verdict_file", _config_string, "\"\"", "HALO_TEST_VERDICT_FILE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.test_verdict_auto", _config_string, "\"\"", "HALO_TEST_VERDICT_AUTO", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.test_name", _config_string, "\"\"", "HALO_TEST_NAME", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "debug.scoreboard_shown", _config_boolean, "false", "HALO_DEBUG_SCOREBOARD_SHOWN", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.network_test_all_weapons", _config_boolean, "false", "HALO_NETWORK_TEST_ALL_WEAPONS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/sdl_platform.c	ae_platform_test_verdict_auto(); /* AE hook */
 port/linux/src/sdl_platform.c	if (event.key.down && !event.key.repeat && ae_platform_test_verdict_key((int)event.key.scancode)) /* AE hook */\nbreak;
@@ -692,6 +694,7 @@ port/linux/game/network_test.c	#include "ae_test_hooks.h" /* AE hook */
 port/linux/game/network_test.c	if (network_test.mode == _network_test_host && game_in_progress() && !main_menu_loaded) ae_test_all_weapons_update(); /* AE hook */
 source/game/game_engine.c	#include "ae_test_hooks.h" /* AE hook */
 source/game/game_engine.c	ae_test_capture("start", 700); /* AE hook */
+source/game/game_engine.c	if (ae_test_scoreboard_shown()) fade = 1.0f; /* AE hook */
 source/game/game_engine.c	ae_test_capture_player_killed(dead_player_index, killing_player_index); /* AE hook */
 source/game/game_engine.c	ae_test_capture("postgame", global_network_game_server_get() ? 9000 : 2000); /* AE hook */
 source/game/game_engine.c	ui_widgets_close_all();\nae_test_capture("postgame", 9000); /* AE hook */
