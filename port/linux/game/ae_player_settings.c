@@ -220,6 +220,11 @@ int ae_player_settings_write(struct ae_player_settings const *settings, int (*is
 	return 1;
 }
 
+int ae_player_settings_profile_has_file(long profile)
+{
+	return profile != AE_PLAYER_SETTINGS_NO_PROFILE && profile != AE_PLAYER_SETTINGS_UNREAD;
+}
+
 int ae_player_settings_needs_seed(int found, int version)
 {
 	return !found || version < AE_PLAYER_SETTINGS_VERSION;

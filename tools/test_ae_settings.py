@@ -45,6 +45,11 @@ CASES = (
     # (the same with no profile chosen yet, as AE's menus right after a launch: player 1 takes the one used last, else
     # the first; 0.3.8 refused every CONTROLS profile row there, "BUTTON LAYOUT 1 not set")
     ("changed-fresh", 35, CONTROLS, 1, "1920x1080", 100, ("pad:right", "pad:down", "pad:down", "pad:right")),
+    # (a player's own row (VIEW's FOV, one right), B, KEEP: written to the profile's ae.toml at once; and the same with
+    # no profile chosen yet: player 1 takes the one used last first. 0.3.7-0.3.9 kept every such change in memory only:
+    # a profile's index is negative, which read as none)
+    ("view-saved", 35, VIEW, 1, "1920x1080", 100, ("pad:right", "pad:b", "pad:a")),
+    ("view-saved-fresh", 35, VIEW, 1, "1920x1080", 100, ("pad:right", "pad:b", "pad:a")),
     # (a change, then B: KEEP / UNDO, shown)
     ("keep-dialog", 35, CONTROLS, 1, "1920x1080", 100, ("pad:right", "pad:b")),
     # (KEEP: back to nothing; UNDO: down once, A)
@@ -195,6 +200,18 @@ def test_a_step_without_a_chosen_profile(runs):
     assert "BUTTON LAYOUT SWAP TRIGGERS" in said and "LOOK SENSITIVITY 4" in said, said
     assert " not set" not in "\n".join(lines(text, "ae settings: "))
     assert "ae profiles: controls 1 " in text
+
+
+def test_a_players_own_change_is_written(runs):
+    """a VIEW row's change is the profile's: its ae.toml written with it (with no profile chosen too)"""
+    for name in ("view-saved", "view-saved-fresh"):
+        _, text, _ = runs[name]
+        said = lines(text, "ae player settings: player 1 ")
+        assert any(line.startswith("set display.fov ") for line in said), (name, said)
+        written = [line for line in said if " written (" in line]
+        assert written and not written[-1].endswith("(0 values)"), (name, said)
+        assert "could not be written" not in text, name
+    assert "ae profiles: player 1 had no profile: " in runs["view-saved-fresh"][1]
 
 
 def test_keep_and_undo(runs):

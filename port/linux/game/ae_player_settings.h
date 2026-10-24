@@ -19,7 +19,10 @@ enum
 	AE_PLAYER_SETTINGS_VERSION = 1,
 	AE_PLAYER_SETTINGS_MAXIMUM = 96,
 	AE_PLAYER_SETTINGS_NAME = 64,
-	AE_PLAYER_SETTINGS_VALUE = 64
+	AE_PLAYER_SETTINGS_VALUE = 64,
+	/* a player's profile index when they have none (the game's NONE), and before any was looked at */
+	AE_PLAYER_SETTINGS_NO_PROFILE = -1,
+	AE_PLAYER_SETTINGS_UNREAD = -2
 };
 
 #define AE_PLAYER_SETTINGS_FILE "ae.toml"
@@ -44,6 +47,10 @@ int ae_player_settings_put(struct ae_player_settings *settings, const char *name
 does not fit */
 int ae_player_settings_write(struct ae_player_settings const *settings, int (*is_string)(const char *name),
 	char *text, size_t size);
+/* whether a player's profile index names a profile, whose file is read and written: any but the two above. (A saved
+game file's index has its top bit set (_saved_game_file_index_valid_bit): as the game's 32-bit long every real one is
+negative; 0.3.7-0.3.9 took a negative index for none and never wrote a change) */
+int ae_player_settings_profile_has_file(long profile);
 /* whether a profile's file needs its first copy: none read, or an older version's */
 int ae_player_settings_needs_seed(int found, int version);
 /* the first copy: each of the names the file has no value of, given config.toml's chosen value (seed returns 1 with
