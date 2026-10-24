@@ -103,8 +103,8 @@ void ae_chupa_link_host_frame(
 			continue;
 		}
 		dropped[machine_index] = (unsigned short)hello;
-		network_event("cross-play: client machine #%ld plays network %d, which can't read this host's (%u) game settings: dropped",
-			machine_index, hello, announce);
+		network_event("cross-play: client machine #%d plays network %d, which can't read this host's (%u) game settings: dropped",
+			(int)machine_index, hello, announce);
 		snprintf(notice, sizeof(notice),
 			"A player's game plays network %d and can't join this game (network %u): ChupathingyCE 0.8.0f or Arena Evolved 0.3.9 or later joins",
 			hello, announce);
