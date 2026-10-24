@@ -39,6 +39,10 @@ static void *object_iterator_next(struct object_iterator *iterator)
  while(iterator->next<5){long index=iterator->next++;if(objects[index].mask&iterator->mask){iterator->index=index;return &datums[index];}}
  return NULL;
 }
+/* (Arena Evolved: ae_chupa_link.c's, whether the rules of network 34 are played, a
+ChupathingyCE host's 32 not) */
+static boolean network_34=TRUE;
+static boolean ae_chupa_link_static_shields(void){return network_34;}
 #include "under_test.inc"
 int main(int argc,char **argv)
 {
@@ -59,6 +63,13 @@ int main(int argc,char **argv)
   CHECK(static_target_damage(&light),"a destructible scenery's own damage");
   CHECK(!static_target_damage(&grenade),"what a unit or projectile owns");
   CHECK(!static_target_damage(&none),"damage with no owner object");
+ } else CASE("network32") {
+  /* a client of a host of network 32 (ChupathingyCE 0.8's): a body alone, and a tripmine's damage the client's own */
+  struct damage_data tripmine={1},light={0};
+  network_34=FALSE;
+  CHECK(static_target(0),"scenery with a body");
+  CHECK(!static_target(1)&&!static_target(3),"a shield only, under 34");
+  CHECK(!static_target_damage(&tripmine)&&!static_target_damage(&light),"no static target's own damage under 34");
  } else CASE("near") {
   /* another machine's copy of a tripmine (object 1, a shield) where this machine has it, and not too far */
   real_point3d at={10.3f,0,0},away={11.6f,0,0},nothing={30,0,0};

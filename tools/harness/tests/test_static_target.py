@@ -17,7 +17,7 @@ def generated(fault=None):
     return (('under_test.inc', code),)
 
 
-@pytest.mark.parametrize('case', ['body', 'shield', 'neither', 'damage', 'near'])
+@pytest.mark.parametrize('case', ['body', 'shield', 'neither', 'damage', 'near', 'network32'])
 def test_case(case):
     status, output = run(build('static_target', generated()), case)
     assert status == 0, output
@@ -25,7 +25,10 @@ def test_case(case):
 
 @pytest.mark.parametrize('fault,case', [
     # (the shield-only objects left out, as before: Rat Race's shields, a map's tripmines)
-    (('||\n\t\t\tobject_get_maximum_shield_vitality(object_index, TRUE) > 0.0f', ''), 'shield'),
+    (('||\n\t\t\t(object_get_maximum_shield_vitality(object_index, TRUE) > 0.0f && ae_chupa_link_static_shields())', ''), 'shield'),
+    # (the shield-only objects taken whatever the host's version: a ChupathingyCE host of 32)
+    (('> 0.0f && ae_chupa_link_static_shields())', '> 0.0f)'), 'network32'),
+    (('static_target(damage->owner_object_index) && ae_chupa_link_static_shields()', 'static_target(damage->owner_object_index)'), 'network32'),
     (('STATIC_TARGET_TYPES)', 'STATIC_TARGET_TYPES | _object_mask_unit)'), 'neither'),
     (('object_get_maximum_body_vitality(object_index, TRUE) > 0.0f ||', ''), 'body'),
     (('damage->owner_object_index != NONE && static_target(damage->owner_object_index)', 'FALSE'), 'damage'),

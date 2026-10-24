@@ -891,6 +891,13 @@ int delta_peer_game_machine_pending(int machine_index)
 	return delta_peer_machine_pending(&delta_game.peer, GetTickCount(), machine_index);
 }
 
+int delta_peer_game_machine_legacy_version(int machine_index)
+{
+	if (delta_peer_protocol() == _delta_peer_protocol_opence || delta_game.role != _role_host || !delta_game.port)
+		return 0;
+	return delta_peer_machine_legacy_version(&delta_game.peer, machine_index);
+}
+
 int delta_peer_game_room_has(int capability)
 {
 	return delta_game.ready && delta_game.role != _role_none && delta_peer_room_has(&delta_game.peer, capability);

@@ -186,6 +186,10 @@ UNITS = {
     "ae_hud_style_test.c": ([UI / "ae_hud_style.c"], [], []),
     # (bug 139: a mode's needs from a map's flags and spawns)
     "ae_mode_guard_rules_test.c": ([UI / "ae_mode_guard_rules.c"], [], []),
+    # (Arena Evolved and ChupathingyCE 0.8 in one Delta game: the record by the host's number, its widening, the
+    # HELLO check)
+    "ae_chupa_link_rules_test.c": ([UI / "ae_chupa_link_rules.c"], ["-fsanitize=address,undefined",
+                                                              "-fno-sanitize-recover=all"], []),
     # (high-resolution HUD digits drawn at the stock size)
     "ae_hud_hires_test.c": ([UI / "ae_hud_hires.c"], [], []),
     # (the score strip's model: what it says in every mode, its colours and bars; under the sanitizers, as the

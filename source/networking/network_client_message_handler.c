@@ -204,6 +204,7 @@ symbols in this file:
 #include "networking/network_game_protocol.h"
 #endif
 #include "networking/network_messages.h"
+#include "ae_chupa_link.h" /* AE hook */
 
 /* port/linux/game/network_distributed.c's */
 void network_distributed_handle_message(long machine_index, word const *message, word size);
@@ -1083,7 +1084,7 @@ static boolean network_game_client_receive_game_settings_piece(
 {
 	boolean result = TRUE;
 
-	if (piece->total_size != sizeof(network_game_client_settings_staging) ||
+	if (!ae_chupa_link_record_size_taken(piece->total_size) || /* AE hook */
 		piece->length > sizeof(piece->data) ||
 		piece->offset + piece->length > sizeof(network_game_client_settings_staging))
 	{
@@ -1113,6 +1114,7 @@ static boolean network_game_client_receive_game_settings_piece(
 			if (network_game_client_settings_staging_size == piece->total_size)
 			{
 				network_game_client_settings_staging_size = 0;
+				ae_chupa_link_record_arrived((byte *)&network_game_client_settings_staging, piece->total_size); /* AE hook */
 #ifdef HALO_PORT_CONSOLE_LIMITS
 				{
 					int clamped;
