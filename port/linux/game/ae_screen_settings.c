@@ -2031,7 +2031,7 @@ static void test_profile(short player, const char *name, int use)
 				found = profiles[index].index;
 		}
 	}
-	if (found < 0 && !ae_profile_new(name, &found).ok)
+	if (found == NONE && !ae_profile_new(name, &found).ok)
 		return;
 	if (use)
 		ae_profile_switch(player, found);
