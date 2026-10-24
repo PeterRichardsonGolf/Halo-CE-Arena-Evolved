@@ -129,6 +129,10 @@ static struct
 	int ingame_last_step;
 	/* the host's local players (its views) as last told in halo.log: a bot is none of them (NONE: not yet) */
 	short ingame_views;
+	/* the player datums of the bots that left the game in progress, to the game's end (NONE: none): they hold their
+	teams in it (ae_lan_bots_left_player), and the next ones overwrite the oldest */
+	long left_players[LAN_BOTS];
+	int left_next;
 } lan;
 
 enum
@@ -173,6 +177,8 @@ static void lan_initialize(void)
 	lan.ingame_settled_tick = NONE;
 	lan.ingame_last_step = 0;
 	lan.ingame_views = NONE;
+	for (index = 0; index < LAN_BOTS; index++)
+		lan.left_players[index] = NONE;
 	lan.initialized = TRUE;
 }
 
@@ -781,6 +787,8 @@ static void lan_scan_players(struct network_game *game, short machine, struct la
 	}
 }
 
+static long lan_player_at(long absolute_index);
+
 /* a bot leaves the game in progress: out of the game's players, and every machine told it quits (as a machine's
 player that leaves: network_game_server_send_player_quit_messages_ingame), at once for the host's settings, at its
 quit time on each machine; its slot is free for the person who takes its place */
@@ -796,6 +804,9 @@ static boolean lan_remove_ingame(struct network_game_server *server, struct netw
 		return FALSE;
 	}
 	removal.player = game->players[(long)lan.bots[bot_index].slot];
+	/* (its player, kept to the game's end as a player that quit, still holds its team) */
+	lan.left_players[lan.left_next] = lan_player_at((long)lan.bots[bot_index].slot);
+	lan.left_next = (lan.left_next + 1) % LAN_BOTS;
 	if (!network_game_remove_player(game, &removal.player))
 	{
 		platform_log("net bots: bot %d could not leave the game in progress", bot_index + 1);
@@ -929,6 +940,14 @@ void ae_lan_bots_ingame(struct network_game_server *server, struct network_game 
 	{
 		lan.ingame_signature = NONE;
 		lan.ingame_views = NONE;
+		/* (between games: the next game's left bots are its own) */
+		if (lan.initialized && !game_engine_running())
+		{
+			short index;
+
+			for (index = 0; index < LAN_BOTS; index++)
+				lan.left_players[index] = NONE;
+		}
 		return;
 	}
 	now = game_time_get();
@@ -1158,6 +1177,24 @@ boolean ae_lan_bots_in_game(void)
 		{
 			return TRUE;
 		}
+	}
+	return FALSE;
+}
+
+/* a bot that left the game in progress (BOTS lowered, or a person took its place) is still in it for the one team
+left rule (game_engine.c's multiple_teams_alive and team_has_players): the host left alone by its bots plays on, as
+in a game it started alone, to the time or score limit or until it ends the game; a person who leaves ends it as
+before */
+boolean ae_lan_bots_left_player(long player_index)
+{
+	short index;
+
+	if (!lan.initialized || player_index == NONE || !lan_hosting())
+		return FALSE;
+	for (index = 0; index < LAN_BOTS; index++)
+	{
+		if (lan.left_players[index] == player_index)
+			return TRUE;
 	}
 	return FALSE;
 }

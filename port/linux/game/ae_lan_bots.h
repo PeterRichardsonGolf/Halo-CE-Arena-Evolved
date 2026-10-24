@@ -76,6 +76,10 @@ boolean ae_lan_bots_network_player(struct network_player const *player);
 a LAN bot's from the bot brain, in place of the idle input its queue holds */
 void ae_lan_bots_action(long absolute_player_index, struct player_action *action);
 
+/* (game_engine.c's multiple_teams_alive and team_has_players) whether the player (a datum index) is a bot that
+left the game in progress on this host: it still holds its team, so its leaving never ends the game */
+boolean ae_lan_bots_left_player(long player_index);
+
 /* whether the game now has LAN bots (this machine hosts it): Delta Stats records no such game (ae_bots.c) */
 boolean ae_lan_bots_in_game(void);
 

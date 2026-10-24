@@ -615,6 +615,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_melee_unzoom.h" /* AE hook */
 #include "ae_mouse_aim.h" /* AE hook */
 #include "ae_hud_style.h" /* AE hook */
+#include "ae_lan_bots.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
 #include "ae_postgame.h" /* AE hook */
@@ -8650,7 +8651,7 @@ boolean multiple_teams_alive(
 		player = (struct player_datum *)data_iterator_next(&iterator);
 		while (player)
 		{
-			if (!player->quit_out_of_game &&
+			if ((!player->quit_out_of_game || ae_lan_bots_left_player(iterator.datum_index)) && /* AE hook */
 				(player->unit_index != NONE ||
 					(!game_engine_player_is_odd_man_out(iterator.datum_index) &&
 						!game_engine_player_is_out_of_lives(
@@ -8699,7 +8700,7 @@ boolean team_has_players(
 		player = (struct player_datum *)data_iterator_next(&iterator);
 		while (player)
 		{
-			if (!player->quit_out_of_game &&
+			if ((!player->quit_out_of_game || ae_lan_bots_left_player(iterator.datum_index)) && /* AE hook */
 				(player->unit_index != NONE ||
 					(!game_engine_player_is_odd_man_out(iterator.datum_index) &&
 						!game_engine_player_is_out_of_lives(
