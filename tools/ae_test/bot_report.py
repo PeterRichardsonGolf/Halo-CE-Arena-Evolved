@@ -4,7 +4,7 @@ HALO_BOT_EVENTS=1; port/linux/game/ae_bots_events.inc), as Markdown tables.
 
     python3 tools/ae_test/bot_report.py debug.txt [more debug.txt ...] [--warmup-ticks 120] [--stuck-seconds 5]
 
-One file is one game. Per skill and per bot: shots, hits, hit rate, reaction (target seen -> first shot, median
+One file is one game. Per skill, per team (team games: the team= of the bots' position lines) and per bot: shots, hits, hit rate, reaction (target seen -> first shot, median
 and p90, seconds), time to kill (first shot at a target -> its death), engagement range (median distance of
 shots, world units), strafe changes per second of fighting, crouches per minute alive, blows, kills, deaths; then
 the spots where a bot stood still more than --stuck-seconds while not fighting.
@@ -74,7 +74,7 @@ def analyse(events, warmup=120, stuck_seconds=5.0):
     for bot, evs in sorted(by_bot.items()):
         r = {"skill": evs[0]["skill"], "shots": 0, "hits": 0, "melee_hits": 0, "melee": 0, "kills": 0, "deaths": 0,
              "reaction": [], "ttk": [], "range": [], "strafes": 0, "crouches": 0, "alive_s": 0, "fight_s": 0,
-             "stuck": []}
+             "stuck": [], "team": None}
         shot_ticks, melee_ticks, hit_keys = [], [], set()
         seen_at = {}
         boundary = None     # the bot's last kill or death
@@ -84,6 +84,8 @@ def analyse(events, warmup=120, stuck_seconds=5.0):
             kind, t = e["ev"], e["t"]
             if kind == "pos":
                 pos.append(e)
+                if "team" in e:
+                    r["team"] = int(e["team"])
                 r["alive_s"] += 1
                 if e.get("fighting") == "1":
                     r["fight_s"] += 1
@@ -179,8 +181,11 @@ def table(rows):
     return "\n".join(out)
 
 
+TEAM_NAMES = {0: "red", 1: "blue"}
+
+
 def merge(results):
-    total = {"skill": results[0]["skill"], "stuck": []}
+    total = {"skill": results[0]["skill"], "stuck": [], "team": results[0].get("team")}
     for key in ("shots", "hits", "melee_hits", "melee", "kills", "deaths", "strafes", "crouches", "alive_s", "fight_s"):
         total[key] = sum(r[key] for r in results)
     for key in ("reaction", "ttk", "range"):
@@ -201,11 +206,20 @@ def report(paths, warmup=120, stuck_seconds=5.0):
     out = ["# Bot report", "", f"{len(games)} game(s), {sum(len(b) for _, b in games)} bot(s); "
            f"warm-up {warmup} ticks dropped.", "", "## By skill", ""]
     out.append(table([row(s, merge(by_skill[s])) for s in skills]))
+    by_team = defaultdict(list)
+    for name, bots in games:
+        for bot, r in bots.items():
+            if r["team"] is not None:
+                by_team[r["team"]].append(r)
+    if by_team:
+        out += ["", "## By team", ""]
+        out.append(table([row(TEAM_NAMES.get(t, f"team {t}"), merge(by_team[t])) for t in sorted(by_team)]))
     out += ["", "## By bot", ""]
     rows = []
     for name, bots in games:
         for bot, r in bots.items():
-            rows.append(row(f"{name} bot {bot} ({r['skill']})", r))
+            team = "" if r["team"] is None else ", " + TEAM_NAMES.get(r["team"], f"team {r['team']}")
+            rows.append(row(f"{name} bot {bot} ({r['skill']}{team})", r))
     out.append(table(rows))
     stuck = [(name, bot, s) for name, bots in games for bot, r in bots.items() for s in r["stuck"]]
     out += ["", f"## Stuck spots (still more than {stuck_seconds:g} s, not fighting)", ""]

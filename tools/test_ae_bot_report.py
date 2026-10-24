@@ -61,6 +61,29 @@ def test_stuck_spot(tmp_path):
     assert bot_report.analyse(bot_report.parse(f), warmup=0, stuck_seconds=60)[3]["stuck"] == []
 
 
+def test_by_team(tmp_path):
+    """(team games) the bots' team= on their position lines gives a table by team; an FFA game has none"""
+    f = tmp_path / "g" / "debug.txt"
+    f.parent.mkdir()
+    f.write_text("\n".join([
+        P + "t=200 bot=1 skill=normal ev=pos target=-1 dist=-1 x=1 y=1 z=1 fighting=0 team=0",
+        P + "t=210 bot=1 skill=normal ev=shot target=4 dist=8.0 weapon=w",
+        P + "t=211 bot=1 skill=normal ev=hit target=4 dist=8.0 dmg=0.3",
+        P + "t=200 bot=2 skill=normal ev=pos target=-1 dist=-1 x=5 y=1 z=1 fighting=0 team=1",
+        P + "t=220 bot=2 skill=normal ev=shot target=3 dist=9.0 weapon=w",
+        P + "t=230 bot=2 skill=normal ev=shot target=3 dist=9.0 weapon=w",
+    ]))
+    bots = bot_report.analyse(bot_report.parse(f))
+    assert bots[1]["team"] == 0 and bots[2]["team"] == 1
+    text = bot_report.report([f])
+    assert "## By team" in text and "| red | 1 | 1 | 100% |" in text and "| blue | 2 | 0 | 0% |" in text
+    assert "bot 2 (normal, blue)" in text
+    g = tmp_path / "ffa" / "debug.txt"
+    g.parent.mkdir()
+    g.write_text(SAMPLE)
+    assert "## By team" not in bot_report.report([g])
+
+
 def test_fighting_is_not_stuck():
     pos = [{"t": 30 * i, "x": "1", "y": "1", "z": "1", "fighting": "1"} for i in range(20)]
     assert bot_report.stuck_spots(pos, 5) == []
