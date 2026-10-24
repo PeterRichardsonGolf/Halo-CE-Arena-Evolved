@@ -1377,3 +1377,8 @@ source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	} /* AE hook */
 # (0.3.9) a windowless run (no GL loaded) makes no PNG texture: AE's key prompts preload at the UI map's load called a
 # null glGenTextures (crossplay tests, SDL dummy video).
 port/linux/src/hud_hires.c	if (!glGenTextures) { free(pixels); return 0; } /* AE hook (no window, no GL: key prompts' preload crashed windowless runs) */
+# a gametype's vehicles of each team (0.3.9; ae_vehicle_sides.c, the rule ae_vehicle_sides_rules.h): a placement is the
+# team's whose CTF starting locations are nearest. The port's nearest of ANY starting location made every Sidewinder
+# vehicle red's (its race starts, team 0, line blue's base): CUSTOM counts placed red's over the map, none of blue's
+source/game/game_engine.c	#include "ae_vehicle_sides.h" /* AE hook */
+source/game/game_engine.c	if (global_variant.universal_variant.teams) side = ae_vehicle_sides_team(&placement->position, side); /* AE hook */

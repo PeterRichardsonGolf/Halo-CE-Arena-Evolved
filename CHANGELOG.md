@@ -66,6 +66,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots that join a LAN or online game in progress (BOTS raised mid-game) no longer show up as split-screen views on
   the host (the host drew a view for each of the first three, and its frame rate fell).
 - Lowering BOTS to OFF during a network game no longer ends it: the host plays on alone, as in a game started alone.
+- Team games with each team's own vehicles (CUSTOM counts, or a set per team) give each base its own vehicles:
+  on Sidewinder every vehicle counted as red's (its race spawns line blue's base), so red's counts were spread over the
+  whole map and blue got none (one scorpion, nothing else); Blood Gulch's blue ghosts were half red's. A map only
+  places the kinds it has: Sidewinder and Blood Gulch have no rocket warthogs, banshees or turrets.
 - Split screen in Arena Evolved's lobby: START on another controller adds its player (its profile, or a guest's), B on
   it takes them out; with one controller and the keyboard, the lobby panel's ADD PLAYER first. Players who joined
   another's game have ADD PLAYER too. At the main menu, START on another controller signs its player in (a card
