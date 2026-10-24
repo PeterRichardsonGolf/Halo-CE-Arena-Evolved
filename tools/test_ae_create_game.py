@@ -48,9 +48,9 @@ CASES = (
                                                               "pad:down", "pad:right", "wait"), 56),
     ("setup-bots-130", 32, 130, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:right", "pad:x") + ("pad:down",) * 5 +
      ("wait",), 50),
-    # (0.3.9: RB jumps to the lobby panel, BOTS one right there; LB back to the left column's row (MAP), RB again
-    # comes back to BOTS; the footer's "LB RB Column" at 100 and 130 %)
-    ("columns", 32, 100, ("wait", "pad:rb", "pad:down", "pad:right", "pad:lb", "pad:rb", "wait"), 40),
+    # (0.3.9: RB jumps to the lobby panel, down past ADD PLAYER to BOTS, one right there; LB back to the left column's
+    # row (MAP), RB again comes back to BOTS; the footer's "LB RB Column" at 100 and 130 %)
+    ("columns", 32, 100, ("wait", "pad:rb", "pad:down", "pad:down", "pad:right", "pad:lb", "pad:rb", "wait"), 42),
     ("columns-130", 32, 130, ("wait", "pad:rb", "wait"), 32),
     # (0.3.9 split screen: the keyboard down past START GAME and LOBBY to ADD PLAYER, Enter; the one pad leaves the
     # keyboard's controller for its own, its START joins it as a guest, its B takes that player out again)
