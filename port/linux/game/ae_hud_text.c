@@ -23,6 +23,10 @@ HUD's own text and screen-quad passes.
 #include "text/draw_string.h"
 #include "text/font_group.h"
 
+#include <xtl.h>
+
+#include "rasterizer/xbox/rasterizer_xbox.h"
+
 #include "ae_hud_digits.h"
 #include "ae_hud_text.h"
 
@@ -186,10 +190,77 @@ static pixel32 to_pixel(const union real_argb_color *color)
 	return real_argb_color_to_pixel32(&c);
 }
 
+/* (0.3.9 frame rate) flat quads in a row drawn as one triangle list: each quad was a draw of its own (the HUD's band
+ramps drew ~3,650 a frame alive, ~14 ms of CPU, most of it in the GL driver). Open from ae_hud_quads_begin to
+ae_hud_quads_end, between which nothing else draws; full, it draws what it holds and goes on */
+enum { QUAD_BATCH_MAXIMUM = 512 };
+static struct
+{
+	int open, drawing;
+	short count;
+	struct dynamic_screen_vertex vertices[QUAD_BATCH_MAXIMUM][4];
+} quad_batch;
+
+static void quad_draw(struct dynamic_screen_vertex *vertices, struct bitmap_data *map)
+{
+	struct rasterizer_dynamic_screen_geometry_parameters parameters;
+
+	csmemset(&parameters, 0, sizeof(parameters));
+	parameters.framebuffer_blend_function = AE_BLEND_ALPHA;
+	parameters.map_texture_scale[0].i = 1.0f;
+	parameters.map_texture_scale[0].j = 1.0f;
+	parameters.map_scale[0].i = 1.0f;
+	parameters.map_scale[0].j = 1.0f;
+	parameters.map[0] = map;
+	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
+}
+
+/* the held quads drawn: one quad draw's state, then all of them (ae_hud_quad_batch_submit, its AE hook) */
+static void quad_batch_flush(void)
+{
+	struct bitmap_data *map = white_map();
+
+	if (quad_batch.count && map)
+	{
+		quad_batch.drawing = TRUE;
+		quad_draw(quad_batch.vertices[0], map);
+		quad_batch.drawing = FALSE;
+	}
+	quad_batch.count = 0;
+}
+
+void ae_hud_quads_begin(void)
+{
+	quad_batch.open = TRUE;
+	quad_batch.count = 0;
+}
+
+void ae_hud_quads_end(void)
+{
+	quad_batch_flush();
+	quad_batch.open = FALSE;
+}
+
+int ae_hud_quad_batch_submit(void (*submit)(struct dynamic_screen_vertex const *vertex))
+{
+	static const short fan[6] = { 0, 1, 2, 0, 2, 3 };
+	short quad, corner;
+
+	if (!quad_batch.drawing)
+		return FALSE;
+	IDirect3DDevice8_Begin(global_d3d_device, D3DPT_TRIANGLELIST);
+	for (quad = 0; quad < quad_batch.count; quad++)
+	{
+		for (corner = 0; corner < 6; corner++)
+			submit(&quad_batch.vertices[quad][fan[corner]]);
+	}
+	IDirect3DDevice8_End(global_d3d_device);
+	return TRUE;
+}
+
 void ae_hud_fill_quad(const real points[4][2], const union real_argb_color *colors)
 {
 	struct dynamic_screen_vertex vertices[4];
-	struct rasterizer_dynamic_screen_geometry_parameters parameters;
 	struct bitmap_data *map = white_map();
 	real units = 1.0f / ae_hud_pixels_per_unit();
 	short i;
@@ -216,14 +287,14 @@ void ae_hud_fill_quad(const real points[4][2], const union real_argb_color *colo
 		vertices[i].texture_coordinates.y = 0.0f;
 		vertices[i].color = to_pixel(&colors[order[i]]);
 	}
-	csmemset(&parameters, 0, sizeof(parameters));
-	parameters.framebuffer_blend_function = AE_BLEND_ALPHA;
-	parameters.map_texture_scale[0].i = 1.0f;
-	parameters.map_texture_scale[0].j = 1.0f;
-	parameters.map_scale[0].i = 1.0f;
-	parameters.map_scale[0].j = 1.0f;
-	parameters.map[0] = map;
-	rasterizer_psuedo_dynamic_screen_quad_draw(&parameters, vertices);
+	if (quad_batch.open)
+	{
+		if (quad_batch.count == QUAD_BATCH_MAXIMUM)
+			quad_batch_flush();
+		csmemcpy(quad_batch.vertices[quad_batch.count++], vertices, sizeof(vertices));
+		return;
+	}
+	quad_draw(vertices, map);
 }
 
 void ae_hud_fill_quad_color(const real points[4][2], const union real_argb_color *color)
@@ -273,6 +344,7 @@ void ae_hud_backing_draw(short local_player_index, real cx, real cy, real rx, re
 	(void)local_player_index;
 	if (rx <= 0.0f || ry <= 0.0f || peak_alpha <= 0.0f)
 		return;
+	ae_hud_quads_begin();
 	for (row = 0; row < AE_BACKING_ROWS; row++)
 	{
 		for (column = 0; column < AE_BACKING_COLUMNS; column++)
@@ -298,4 +370,5 @@ void ae_hud_backing_draw(short local_player_index, real cx, real cy, real rx, re
 			ae_hud_fill_quad(points, colors);
 		}
 	}
+	ae_hud_quads_end();
 }

@@ -89,6 +89,7 @@ symbols in this file:
 #include "rasterizer_xbox.h"
 #include "rasterizer_xbox_dynavobgeom.h"
 #include "rasterizer_xbox_pixel_shader.h"
+int ae_hud_quad_batch_submit(void (*submit)(struct dynamic_screen_vertex const *vertex)); /* AE hook */
 
 /* ---------- constants */
 
@@ -662,12 +663,15 @@ void _rasterizer_psuedo_dynamic_screen_quad_draw(
 		SCREEN_GEOMETRY_VERTEX_TYPE,
 		SCREEN_GEOMETRY_VERTEX_SHADER_PERMUTATION);
 
+	if (!ae_hud_quad_batch_submit(submit_screen_vertex)) /* AE hook */
+	{
 	IDirect3DDevice8_Begin(global_d3d_device, D3DPT_TRIANGLEFAN);
 	for (vertex_index = 0; vertex_index < NUMBER_OF_VERTICES_PER_QUADRILATERAL; vertex_index++)
 	{
 		submit_screen_vertex(&vertices[vertex_index]);
 	}
 	IDirect3DDevice8_End(global_d3d_device);
+	} /* AE hook */
 
 	IDirect3DDevice8_SetTextureStageState(
 		global_d3d_device,

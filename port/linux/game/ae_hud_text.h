@@ -40,6 +40,9 @@ void ae_hud_backing_draw(short local_player_index, real cx, real cy, real rx, re
 /* (shapes in the HUD pass, screen pixels: a filled quadrilateral of four corners in order, one colour each, and a
 line of a width) */
 void ae_hud_fill_quad(const real points[4][2], const union real_argb_color *colors);
+/* (0.3.9) the flat quads from here to ae_hud_quads_end drawn as one (nothing else may draw between them) */
+void ae_hud_quads_begin(void);
+void ae_hud_quads_end(void);
 void ae_hud_fill_quad_color(const real points[4][2], const union real_argb_color *color);
 void ae_hud_line(real x0, real y0, real x1, real y1, real width, const union real_argb_color *color);
 

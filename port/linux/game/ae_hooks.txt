@@ -1362,3 +1362,8 @@ source/networking/network_client_manager.c	game->kind = network_game_client_adve
 source/networking/network_server_message_handler.c	#include "delta.h" /* AE hook */
 # (delta.h in every build, the web one too: DELTA_ADVERTISED_FLAG for the kind byte)
 source/networking/network_client_manager.c	#include "delta.h" /* AE hook */
+# (0.3.9 frame rate) AE HUD's flat quads batched (ae_hud_text.c ae_hud_quads_begin/end): one quad draw's state, then the
+# held quads as one triangle list instead of the quad's own fan.
+source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	int ae_hud_quad_batch_submit(void (*submit)(struct dynamic_screen_vertex const *vertex)); /* AE hook */
+source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	if (!ae_hud_quad_batch_submit(submit_screen_vertex)) /* AE hook */\n{
+source/rasterizer/xbox/rasterizer_xbox_dynavobgeom.c	} /* AE hook */

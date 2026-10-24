@@ -337,6 +337,7 @@ static void rounded_band_ramp(const real corners[4][2], real radius, real d0, re
 	short count = rounded(corners, radius, d0, a), i;
 
 	rounded(corners, radius, d1, b);
+	ae_hud_quads_begin();
 	for (i = 0; i < count; i++)
 	{
 		real points[4][2];
@@ -351,6 +352,7 @@ static void rounded_band_ramp(const real corners[4][2], real radius, real d0, re
 		colors[2] = colors[3] = *c1;
 		ae_hud_fill_quad(points, colors);
 	}
+	ae_hud_quads_end();
 }
 
 static void rounded_band(const real corners[4][2], real radius, real d0, real d1, const real_argb_color *color)
@@ -897,6 +899,7 @@ static void ring_band_ramp(real cx, real cy, real r0, real r1, short steps, cons
 
 	count = circle(cx, cy, r0 > 0.0f ? r0 : 0.0f, a, steps);
 	circle(cx, cy, r1 > 0.0f ? r1 : 0.0f, b, steps);
+	ae_hud_quads_begin();
 	for (i = 0; i < count; i++)
 	{
 		real points[4][2];
@@ -911,6 +914,7 @@ static void ring_band_ramp(real cx, real cy, real r0, real r1, short steps, cons
 		colors[2] = colors[3] = *c1;
 		ae_hud_fill_quad(points, colors);
 	}
+	ae_hud_quads_end();
 }
 
 /* the band r0..r1 with soft edges: solid inside, a 1 px ramp across each edge (a band under 1 px: the two ramps
