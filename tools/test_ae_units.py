@@ -228,6 +228,8 @@ UNITS = {
     "ae_mouse_aim_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (VEHICLES DESTRUCTIBLE: the variant's flags bit after MOUSE AIM ASSIST's, the Halo 2 ratios, the hold)
     "ae_vehicle_death_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (whose vehicle a placement is: the nearest CTF starting location's team, with Sidewinder's own starts)
+    "ae_vehicle_sides_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the vehicle damage pack's look: the kinds by the tag's name, the pack's names, the damaged threshold)
     "ae_vehicle_pack_rules_test.c": ([], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (a pack's tags on a Custom Edition map: the reads its memory lets through, its bitmaps' Xbox layout)

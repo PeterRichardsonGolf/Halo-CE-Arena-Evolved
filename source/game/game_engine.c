@@ -629,6 +629,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_weapon_slots.h" /* AE hook */
 #include "ae_pack_spawns.h" /* AE hook */
 #include "ae_vehicle_death.h" /* AE hook */
+#include "ae_vehicle_sides.h" /* AE hook */
 #include "ae_weapon_pack.h" /* port: weapon pack (the pack's weapon on this map: the loadout, its resources) */
 #ifdef HALO_64BIT
 #include "main/console.h"
@@ -9940,6 +9941,7 @@ boolean game_engine_vehicle_placement_allowed(
 	if (!game_engine || placement->palette_entry_index == NONE)
 		return TRUE;
 	side = global_variant.universal_variant.teams ? game_engine_nearest_team(&placement->position) : 0;
+	if (global_variant.universal_variant.teams) side = ae_vehicle_sides_team(&placement->position, side); /* AE hook */
 	if (global_variant.universal_variant.teams) side = ae_layout_vehicle_side(placement, side); /* AE hook */
 	/* (port: NHE MODE's set on NHE's maps, else the options': the PC set
 	keeps every vehicle the map places) */
