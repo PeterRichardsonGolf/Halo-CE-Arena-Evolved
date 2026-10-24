@@ -65,16 +65,20 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - Bots that join a LAN or online game in progress (BOTS raised mid-game) no longer show up as split-screen views on
   the host (the host drew a view for each of the first three, and its frame rate fell).
 - Lowering BOTS to OFF during a network game no longer ends it: the host plays on alone, as in a game started alone.
+- Split screen in Arena Evolved's lobby: START on another controller adds its player (its profile, or a guest's), B on
+  it takes them out; with one controller and the keyboard, the lobby panel's ADD PLAYER first.
+- CAMPAIGN: with CONTINUE focused, DIFFICULTY shows the saved game's difficulty, which CONTINUE plays (it showed the
+  next new game's).
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
-- NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways, and with ChupathingyCE 0.8.0f
-  both ways (by Delta: Bomb and Grifball too). Arena Evolved 0.3.5 to 0.3.8, OpenCE build-244 to build-256 and
-  ChupathingyCE 0.8.0e and older can no longer join it (they are told to update); a ChupathingyCE 0.8.0d host still
-  takes an Arena Evolved client.
+- NETWORK VERSION 38 (OpenCE build-266 and build-268 merged): plays with OpenCE build-268 both ways, and with
+  ChupathingyCE 0.8.0f and 0.8.0g both ways (by Delta: Bomb and Grifball too). Arena Evolved 0.3.8 and older, OpenCE
+  build-256 and older and ChupathingyCE 0.8.0e and older can no longer join it (they are told to update). SERVER
+  BROWSER names OpenCE's game kinds (SWAT, HC CTF...) on LAN and internet games.
 - OpenCE's gametypes: SWAT, INFECTION, GUN GAME and HARDCORE (Slayer, CTF, Oddball, King), in an OPENCE folder of
   CHANGE GAMETYPE, with OPENCE MODE and HARDCORE rows in GAME OPTIONS. Bots play SWAT and Gun Game; in Infection
   they hardly fight yet.
-- The host's shield effects in network games (SETTINGS > ONLINE > HOSTING > SHIELD EFFECTS); co-op ALLY FRIENDLY FIRE
+- The host's shield effects in network games (SETTINGS > ONLINE > HOSTING > SHIELD EFFECTS, PLAYERS' OWN too); co-op ALLY FRIENDLY FIRE
   (classic menus); breakable scenery shields and tripmines over the network.
 - Saved gametypes keep OpenCE's longer options; gametypes from 0.3.8 upgrade unchanged (their display names move
   within the file). 0.3.8 reads a gametype saved by 0.3.9 with default options and without its display name.
