@@ -38,7 +38,9 @@ void halo_input_shown_name(const char *binding, char *shown, size_t size);
 enum
 {
 	KEYS_HIT = 0x7E40,
-	HIT_LIST = KEYS_HIT + 1, HIT_RAIL, HIT_PROMPTS,
+	/* (the caps' own id: under the list's, a cap's index (item x 2 + slot) read as an item made a hover focus a row
+	far below, and the list scrolled to it under the pointer, again and again) */
+	HIT_LIST = KEYS_HIT + 1, HIT_RAIL, HIT_PROMPTS, HIT_CAP,
 	PROMPTS = 6,
 	TEXT_SIZE = 128,
 	PLAYERS = 4
@@ -733,7 +735,7 @@ static void keys_cap(float x, float center_y, float width, const char *binding, 
 		ae_draw_text(AE_FONT_ROW, size, x + width * 0.5f, cap_top(AE_FONT_ROW, size, center_y), AE_ALIGN_CENTER,
 			text_color, fitted);
 	}
-	ae_hit_add(x, top, width, height, HIT_LIST, AE_PART_KEY, hit_index);
+	ae_hit_add(x, top, width, height, HIT_CAP, AE_PART_KEY, hit_index);
 }
 
 static void keys_columns(float x, float width, float *first, float *second)
@@ -936,7 +938,7 @@ static void keys_pointer(struct ae_screen *instance, struct ae_pointer const *po
 {
 	struct ae_event event;
 	struct ae_hit hit;
-	short item;
+	short item, before;
 
 	/* (waiting: the mouse's buttons and wheel are the capture's) */
 	if (keys.capturing)
@@ -955,37 +957,42 @@ static void keys_pointer(struct ae_screen *instance, struct ae_pointer const *po
 			keys_handle(instance, &event);
 		return;
 	}
-	/* a cap: hovered on the focused row, it is the one left / right pick; clicked, it waits for a key (a right click is
-	BACK in AE's menus: ae_input.c) */
-	if ((pointer->moved || pointer->left_clicks) && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_LIST &&
+	if (pointer->left_clicks && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_RAIL)
+	{
+		keys_section_go(hit.index);
+		return;
+	}
+	/* the list: the wheel scrolls, a hover only highlights the row under the pointer (never scrolls: a header
+	hovered keeps the focus where it was), as SETTINGS' group screens */
+	before = keys.list.list.focus;
+	item = ae_list_view_pointer(&keys.list, pointer, HIT_LIST);
+	/* a cap: hovered, its row is focused and it is the one left / right pick; clicked, it waits for a key (a right
+	click is BACK in AE's menus: ae_input.c) */
+	if ((pointer->moved || pointer->left_clicks) && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_CAP &&
 		hit.part == AE_PART_KEY)
 	{
 		short place = (short)(hit.index / AE_KEYS_SLOTS), slot = (short)(hit.index % AE_KEYS_SLOTS);
 
 		if (place >= 0 && place < keys.count && !ae_keys_entry_is_header(keys.entries[place]))
 		{
-			if (pointer->left_clicks || keys.list.list.focus == place)
-			{
-				ae_list_set_focus(&keys.list.list, place);
-				keys.slot = slot;
-				keys_refresh();
-			}
+			keys.list.list.focus = place;
+			keys.list.hover = place;
+			keys.slot = slot;
+			keys_refresh();
 			if (pointer->left_clicks)
-			{
 				keys_capture_begin();
-				return;
-			}
+			return;
 		}
 	}
-	if (pointer->left_clicks && ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_RAIL)
+	if (keys.list.list.focus >= 0 && keys.list.list.focus < keys.count &&
+		ae_keys_entry_is_header(keys.entries[keys.list.list.focus]))
 	{
-		keys_section_go(hit.index);
-		return;
+		if (item < 0 && before >= 0 && before < keys.count && !ae_keys_entry_is_header(keys.entries[before]))
+			keys.list.list.focus = before;
+		else
+			keys_skip_headers(1);
 	}
-	item = ae_list_view_pointer(&keys.list, pointer, HIT_LIST);
-	keys_skip_headers(1);
 	keys_refresh();
-	(void)item;
 }
 
 static void keys_leave(struct ae_screen *instance)
