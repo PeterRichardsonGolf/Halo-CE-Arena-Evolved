@@ -48,6 +48,10 @@ CASES = (
                                                               "pad:down", "pad:right", "wait"), 56),
     ("setup-bots-130", 32, 130, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:right", "pad:x") + ("pad:down",) * 5 +
      ("wait",), 50),
+    # (0.3.9: RB jumps to the lobby panel, BOTS one right there; LB back to the left column's row (MAP), RB again
+    # comes back to BOTS; the footer's "LB RB Column" at 100 and 130 %)
+    ("columns", 32, 100, ("wait", "pad:rb", "pad:down", "pad:right", "pad:lb", "pad:rb", "wait"), 40),
+    ("columns-130", 32, 130, ("wait", "pad:rb", "wait"), 32),
     # (NETWORK to HOST ONLINE, PUBLIC on, B: the lobby opens again online)
     ("online", 32, 100, ("wait", "pad:x", "pad:right", "pad:down", "pad:right", "pad:b", "wait", "wait"), 36),
     # (the lobby: down to the panel's last row (BOT SKILL), up to BOTS, 3 bots, then BOT SKILL focused)
@@ -143,6 +147,15 @@ def test_lobby_setup_bot_rows(runs):
         assert line in said, (line, said)
     assert "could not" not in "\n".join(said)
     assert "lobby: setup open" in lines(runs["setup-bots-130"][1], "ae create game: ")
+
+
+def test_columns(runs):
+    """(0.3.9) RB to the lobby panel, LB back: no scrolling down past START GAME to reach the lobby"""
+    said = lines(runs["columns"][1], "ae create game: ")
+    columns = [line for line in said if line.startswith("lobby: column ")]
+    assert columns == ["lobby: column panel", "lobby: column left", "lobby: column panel"], said
+    assert "lobby: bots 1" in said, said
+    assert "lobby: column panel" in lines(runs["columns-130"][1], "ae create game: ")
 
 
 def test_the_lobby_starts_the_game(runs):

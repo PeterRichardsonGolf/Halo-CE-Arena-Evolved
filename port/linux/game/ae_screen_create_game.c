@@ -19,7 +19,8 @@ they last to the next game, the saved gametype is never written.
 On the right, the lobby panel: LOBBY (network, privacy, players / most players; A or X opens LOBBY SETUP), INVITE
 (HOST ONLINE: A copies the invite link), PLAYERS counting people (bots apart) and the roster's cards, and BOTS and BOT
 SKILL at its foot (the settings' bots.count and bots.skill: OFF and 1-31 in the menus, config.toml up to 127; written
-at once, so the lobby's bots follow). The focus goes down from START GAME into the panel and up out of it.
+at once, so the lobby's bots follow). The focus goes down from START GAME into the panel and up out of it; RB (E)
+jumps to the panel (its row last focused) and LB (Q) back to the left column's row ("LB RB Column", 0.3.9).
 
 LOBBY SETUP, a popover over the panel: NETWORK (LAN / HOST ONLINE), PUBLIC (HOST ONLINE only: listed in everyone's
 SERVER BROWSER; off = invite only) and MAX PLAYERS (bots included); with bots (0.3.9), under a BOTS heading, the
@@ -39,7 +40,7 @@ Its log: "ae create game: open", "hosting (<network>, '<map>', '<gametype>')", "
 <why>", "lobby: open", "lobby: quick <label> <value>", "lobby: bots <count>", "lobby: bot skill <level>",
 "lobby: players <people>, bots <bots>" (as they change), "lobby: setup open", "lobby: public on|off", "lobby: max
 players <n>", "lobby: shooting skill|movement skill|playfight|teams <value>", "lobby: network <network>, reopening",
-"lobby: start", "lobby: leave", "closed".
+"lobby: column panel|left", "lobby: start", "lobby: leave", "closed".
 */
 
 #include <stdint.h>
@@ -203,6 +204,7 @@ static struct
 	/* the panel's rows as drawn (PANEL_*), the focused one's index in them, -1 none (the left column's) */
 	short panel_kinds[PANEL_ROWS];
 	short panel_count, panel_focus;
+	short panel_last;          /* (0.3.9) the panel row RB comes back to: the one last focused there */
 	struct ae_rect panel_rects[PANEL_ROWS];
 	short logged_people, logged_bots;   /* the roster's counts last logged (-1: none yet) */
 } lobby;
@@ -1154,6 +1156,9 @@ static void lobby_draw(struct ae_screen *instance)
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_B, "Leave", AE_ACTION_BACK);
 	if (!lobby.joiner)
 	{
+		/* (0.3.9: "LB RB Column", paired as CHANGE MAP's "LB RB Filter": the left column or the lobby panel) */
+		flow->prompts[flow->prompt_count] = ae_flow_prompt(AE_BUTTON_LEFT_SHOULDER, "Column", AE_ACTION_TAB_PREVIOUS);
+		flow->prompts[flow->prompt_count++].pair = 1;
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_X, "Lobby setup", AE_ACTION_X);
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_START, "Start game", AE_ACTION_START);
 	}
@@ -1223,10 +1228,28 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 	(void)instance;
 	lobby_rows();
 	panel_rows();
+	if (lobby.panel_focus >= 0)
+		lobby.panel_last = lobby.panel_focus;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
 		leave_or_ask();
+		return 1;
+	/* (0.3.9: RB (E) to the lobby panel, on its row last focused; LB (Q) back to the left column, on the row left
+	there: no scrolling down past START GAME to reach the lobby) */
+	case AE_ACTION_TAB_NEXT:
+	case AE_ACTION_TAB_PREVIOUS:
+		if (lobby.joiner)
+			return 1;
+		if (event->action == AE_ACTION_TAB_NEXT ? lobby.panel_focus >= 0 : lobby.panel_focus < 0)
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return 1;
+		}
+		lobby.panel_focus = event->action == AE_ACTION_TAB_PREVIOUS ? -1 :
+			lobby.panel_last >= 0 && lobby.panel_last < lobby.panel_count ? lobby.panel_last : 0;
+		ae_sound_request(AE_SOUND_CURSOR, 0);
+		platform_log("ae create game: lobby: column %s", lobby.panel_focus >= 0 ? "panel" : "left");
 		return 1;
 	case AE_ACTION_UP:
 	case AE_ACTION_DOWN:
