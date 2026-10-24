@@ -8,7 +8,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 - CREATE GAME is one screen with its lobby: MULTIPLAYER > CREATE GAME opens a live lobby at once (invite only), START
   GAME is the blue button, and X or the LOBBY row opens LOBBY SETUP (NETWORK, PUBLIC, MAX PLAYERS). Players who join see
-  the same screen as LOBBY, read only.
+  the same screen as LOBBY, read only. RB (E) jumps to the lobby panel and LB (Q) back to the left column ("LB RB
+  Column"), so the lobby rows need no scroll down past START GAME.
 - GAME OPTIONS > WEAPON PACKS: a sub-screen for the packs and the start weapons. Every pack that is on can be a start
   weapon, not only the first two.
 - AE GRIFBALL and AE BOMB (seed revision 24, in AE ACTION SACK): Bomb, the game type Bungie cut, on AE's rules.
