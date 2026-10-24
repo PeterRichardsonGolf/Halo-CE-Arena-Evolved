@@ -40,6 +40,12 @@ CASES = (
     ("keys-cancel", CONTROLS, 100, JUMP + ("pad:a", "type:Escape", "wait")),
     ("keys-backspace", CONTROLS, 100, JUMP + ("pad:a", "type:Backspace", "wait")),
     ("keys-clear", CONTROLS, 100, JUMP + ("pad:x", "wait")),
+    # (the mouse moved over the list, nothing clicked: JUMP's PRIMARY cap, its SECONDARY, STRAFE LEFT's and CROUCH's
+    # labels, WEAPONS' header, MOVE FORWARD's SECONDARY. Each hover focuses the row under the pointer and nothing
+    # scrolls; the header keeps the focus where it was. 0.3.9's first build read a cap's hit (item x 2 + slot) as a
+    # list item: JUMP's cap focused MELEE, and the list scrolled under the pointer)
+    ("keys-hover", CONTROLS, 100, OPEN + ("move:560:218", "move:645:218", "move:300:168", "move:300:243",
+                                          "move:300:272", "move:645:119", "wait")),
     # (the mouse: a click on JUMP's PRIMARY cap (1500, 491 at 1080p: the menus' 640 x 480 in the middle) waits for a
     # key, Delete leaves none; a click on its SECONDARY, F5 typed)
     ("keys-mouse", CONTROLS, 100, OPEN + ("click:560:218", "type:Delete", "click:645:218", "type:F5", "wait")),
@@ -132,6 +138,11 @@ def test_cancel_and_clear(runs):
 def test_the_mouse(runs):
     said = lines(runs["keys-mouse"][1], "ae keys: ")
     assert "cleared JUMP 1" in said and "set JUMP 2 F5" in said and 'controls.jump = "F5"' in said, said
+
+
+def test_hover_never_scrolls(runs):
+    said = lines(runs["keys-hover"][1], "ae keys: focus ")
+    assert said == ["MOVE FORWARD", "JUMP", "STRAFE LEFT", "CROUCH", "MOVE FORWARD"], said
 
 
 def test_keep_and_undo(runs):
