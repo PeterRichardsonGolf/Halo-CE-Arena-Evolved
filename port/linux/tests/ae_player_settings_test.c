@@ -95,6 +95,14 @@ int main(void)
 	CHECK(!strcmp(ae_player_settings_get(&settings, "input.zoom_mode"), "both"));
 	CHECK(!ae_player_settings_needs_seed(1, settings.version));
 
+	/* a profile's index (its top bit, valid, set: negative as the game's 32-bit long, 0x804C0000 on the owner's PC) is
+	one, whose file is written; none (the game's NONE) and not looked at yet are not */
+	CHECK(ae_player_settings_profile_has_file((long)(int)0x804C0000u));
+	CHECK(ae_player_settings_profile_has_file((long)(int)0xC0000001u));
+	CHECK(ae_player_settings_profile_has_file(0x00010001L));
+	CHECK(!ae_player_settings_profile_has_file(AE_PLAYER_SETTINGS_NO_PROFILE));
+	CHECK(!ae_player_settings_profile_has_file(AE_PLAYER_SETTINGS_UNREAD));
+
 	if (failures)
 	{
 		printf("%d failure(s)\n", failures);

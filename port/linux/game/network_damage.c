@@ -68,6 +68,7 @@ being hit looks and feels like on the clients).
 #include "units/units.h"
 #include "network_distributed.h"
 #include "ae_shield_fx.h" /* AE hook */
+#include "ae_chupa_link.h" /* AE hook */
 
 #include <math.h>
 
@@ -525,7 +526,7 @@ static boolean static_target(
 {
 	return object_try_and_get_and_verify_type(object_index, STATIC_TARGET_TYPES) &&
 		(object_get_maximum_body_vitality(object_index, TRUE) > 0.0f ||
-			object_get_maximum_shield_vitality(object_index, TRUE) > 0.0f);
+			(object_get_maximum_shield_vitality(object_index, TRUE) > 0.0f && ae_chupa_link_static_shields())); /* AE hook */
 }
 
 boolean network_damage_static_target(
@@ -541,7 +542,7 @@ vehicle running over it), so their machine has no hit of it to report */
 static boolean static_target_damage(
 	struct damage_data const *damage)
 {
-	return damage->owner_object_index != NONE && static_target(damage->owner_object_index);
+	return damage->owner_object_index != NONE && static_target(damage->owner_object_index) && ae_chupa_link_static_shields(); /* AE hook */
 }
 
 /* ---------- object_cause_damage (damage.c) */

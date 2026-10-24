@@ -2,13 +2,14 @@
 
 (Arena Evolved: this is ChupathingyCE's document, kept as it is. Arena
 Evolved's wire is its own, `chupa-38z`, from 0.3.9: it plays OpenCE's network
-38, which no ChupathingyCE release plays yet (0.3.6 to 0.3.8 were on
-ChupathingyCE 0.8's `chupa-32a`, 0.3.5 on `ae-32a`, 0.3.4-beta and earlier on
-ChupathingyCE 0.7.5b's `chupa-29a`). Its range is that wire alone
-(`port/linux/src/ae_delta_wire.h`), so it neither advertises nor joins any
-other wire. Its advertisement's Delta block starts a byte later than
-ChupathingyCE's (OpenCE's network 37 has the game's kind in the fourth reserved
-byte). It announces network 38 and joins hosts of 38 alone by number
+38 (0.3.6 to 0.3.8 were on ChupathingyCE 0.8's `chupa-32a`, 0.3.5 on
+`ae-32a`, 0.3.4-beta and earlier on ChupathingyCE 0.7.5b's `chupa-29a`). Its
+range is from `chupa-32a` to it (`port/linux/src/ae_delta_wire.h`), so
+ChupathingyCE 0.8's machines join its games and it joins theirs, each played
+by the host's number as ChupathingyCE 0.8.0f does (its host drops a machine
+whose HELLO says under 35: `port/linux/game/ae_chupa_link.c`). A Delta host sends no
+game kind (OpenCE's network 37) in the advertisement byte that is its major. It
+announces network 38 and joins OpenCE hosts of 38 alone by number
 (`DELTA_LEGACY_PRESUMED` is 0, as OpenCE's clients join their own version
 only), and fetches ChupathingyCE's signed tables only with
 `network.legacy_table_fetch` on (off by default; a table has no `chupa-38z`

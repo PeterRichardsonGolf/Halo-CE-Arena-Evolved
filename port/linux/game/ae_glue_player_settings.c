@@ -25,11 +25,13 @@ enum { LOCAL_PLAYERS = 4, FILE_TEXT = 16384, SETTLE_MS = 500 };
 /* (xbox_files.c's: a file put in another's place in one step) */
 int platform_replace_file(char const *path, char const *new_path);
 typedef char ae_player_settings_players_match[LOCAL_PLAYERS == AE_CONFIG_PLAYERS ? 1 : -1];
+typedef char ae_player_settings_none_match[AE_PLAYER_SETTINGS_NO_PROFILE == NONE ? 1 : -1];
 
 static struct
 {
 	int started;
-	/* the profile each player's values are of now (NONE: a guest, none read), and that profile's file as read */
+	/* the profile each player's values are of now (NONE: a guest, none read; AE_PLAYER_SETTINGS_UNREAD before the
+	first look), and that profile's file as read. (A profile's index is negative: ae_player_settings_profile_has_file) */
 	long profile[LOCAL_PLAYERS];
 	/* the guest's start (ae_profile_guest_generation): a new guest has none of the last one's values */
 	int guest[LOCAL_PLAYERS];
@@ -92,8 +94,12 @@ static void flush(short player)
 	if (!players.dirty[player])
 		return;
 	players.dirty[player] = 0;
-	if (players.profile[player] != NONE && players.profile[player] >= 0 &&
-		!write_file(players.profile[player], &players.file[player]))
+	if (!ae_player_settings_profile_has_file(players.profile[player]))
+		return;
+	if (write_file(players.profile[player], &players.file[player]))
+		platform_log("ae player settings: player %d %08lX written (%d values)", player + 1,
+			(unsigned long)players.profile[player], players.file[player].count);
+	else
 		platform_log("ae player settings: player %d: %s could not be written", player + 1, AE_PLAYER_SETTINGS_FILE);
 }
 
@@ -157,7 +163,7 @@ void ae_player_settings_update(void)
 	{
 		players.started = 1;
 		for (player = 0; player < LOCAL_PLAYERS; player++)
-			players.profile[player] = -2;
+			players.profile[player] = AE_PLAYER_SETTINGS_UNREAD;
 		ae_config_player_set_writer(written);
 	}
 	for (player = 0; player < LOCAL_PLAYERS; player++)
@@ -175,8 +181,22 @@ void ae_player_settings_update(void)
 	}
 }
 
+/* player 1 on their profile before their values are read or changed, and that profile's values in memory: AE's
+menus right after a launch, a lobby left or a game's end (the game's teardown takes every local player's profile:
+player_ui_clear_multiplayer_joins), a pause's SETTINGS (which takes player 1's as it opens: its rows read in the same
+frame). Player 1 takes the profile used last, as the lobby and CAMPAIGN do (a guest stays a guest; players 2-4 choose
+their own) */
+static void player_profile_taken(short local_player)
+{
+	if (local_player == 0)
+		ae_profile_player1_ensure();
+	ae_player_settings_update();
+}
+
 int ae_player_setting_get(short local_player, const char *name, char *text, int size)
 {
+	if (local_player >= 0 && local_player < LOCAL_PLAYERS && ae_config_player_setting(name))
+		player_profile_taken(local_player);
 	return ae_config_player_text(local_player, name, text, (size_t)size);
 }
 
@@ -186,12 +206,13 @@ int ae_player_setting_put(short local_player, const char *name, const char *valu
 
 	if (local_player < 0 || local_player >= LOCAL_PLAYERS || !ae_config_player_setting(name))
 		return 0;
-	ae_player_settings_update();
+	player_profile_taken(local_player);
 	if (!ae_config_player_set(local_player, name, value))
 		return 0;
 	profile = players.profile[local_player];
 	platform_log("ae player settings: player %d set %s %s", local_player + 1, name, value ? value : "(none)");
-	if (profile == NONE || profile < 0)
+	/* (a guest's, or with no profile on this PC at all: memory only) */
+	if (!ae_player_settings_profile_has_file(profile))
 		return 1;
 	if (value)
 		ae_player_settings_put(&players.file[local_player], name, value);
@@ -239,7 +260,7 @@ void ae_player_settings_menu_player(short local_player)
 int ae_player_settings_menu_text(const char *name, char *text, unsigned int size)
 {
 	if (ae_config_player_setting(name))
-		return ae_config_player_text(menu_player, name, text, size);
+		return ae_player_setting_get(menu_player, name, text, (int)size);
 	return config_text(name, text, size);
 }
 

@@ -1019,8 +1019,20 @@ source/interface/hud.c	(void)hud_draw_match_timer; /* AE hook */
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
-# Arena Evolved's Delta wire (network 36, from 0.3.9): its own chupa-38z (0.3.6-0.3.8: ChupathingyCE 0.8's chupa-32a; 0.3.5: ae-32a)
+# Arena Evolved's Delta wire (network 38, from 0.3.9): its own chupa-38z (0.3.6-0.3.8: ChupathingyCE 0.8's chupa-32a; 0.3.5: ae-32a),
+# its range from chupa-32a (ae_delta_wire.h)
 port/linux/include/delta.h	#define DELTA_WIRE "chupa-38z" /* AE hook */
+# ChupathingyCE 0.8.0f in Arena Evolved's games (0.3.9; ae_chupa_link.c): a client of a ChupathingyCE host plays by
+# the number it announces (32: the 13,120-byte game settings record widened, shield-only scenery no static target,
+# a static target's own damage reported); a host drops a Delta machine whose HELLO says a version under 35
+source/networking/network_client_message_handler.c	#include "ae_chupa_link.h" /* AE hook */
+source/networking/network_client_message_handler.c	if (!ae_chupa_link_record_size_taken(piece->total_size) || /* AE hook */
+source/networking/network_client_message_handler.c	ae_chupa_link_record_arrived((byte *)&network_game_client_settings_staging, piece->total_size); /* AE hook */
+port/linux/game/network_damage.c	#include "ae_chupa_link.h" /* AE hook */
+port/linux/game/network_damage.c	(object_get_maximum_shield_vitality(object_index, TRUE) > 0.0f && ae_chupa_link_static_shields())); /* AE hook */
+port/linux/game/network_damage.c	return damage->owner_object_index != NONE && static_target(damage->owner_object_index) && ae_chupa_link_static_shields(); /* AE hook */
+source/networking/network_server_manager.c	#include "ae_chupa_link.h" /* AE hook */
+source/networking/network_server_manager.c	ae_chupa_link_host_frame(); /* AE hook */
 # A widget deleted between the menus' render and the next frame's pointer (a join closing the menus) left its mouse
 # targets on freed memory: the hover read its name and crashed (10-19). Its targets are dropped first (ae_ui_deleted.c).
 source/interface/ui_widget.c	#include "ae_ui_deleted.h" /* AE hook */

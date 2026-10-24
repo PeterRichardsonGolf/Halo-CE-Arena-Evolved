@@ -483,6 +483,7 @@ symbols in this file:
 #include "ae_bots.h" /* AE hook */
 #include "ae_lan_bots.h" /* AE hook */
 #include "ae_disc_join.h" /* AE hook */
+#include "ae_chupa_link.h" /* AE hook */
 #include "bots.h" /* port: port/linux/game/bots.c */
 
 /* port: internet play's Discord presence (port/linux/src/p2p.c), and the
@@ -5818,6 +5819,7 @@ static void network_game_server_delta_frame(
 	game_engine_bomb_host_traits(&server->game.variant);
 	delta_peer_game_host_frame(machines, count, player_machines);
 	network_game_server_bomb_refusals(server);
+	ae_chupa_link_host_frame(); /* AE hook */
 }
 
 void network_distributed_host_notice(char const *text);

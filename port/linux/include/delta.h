@@ -221,12 +221,13 @@ which ChupathingyCE's releases never reach, keeps it apart from any
 ChupathingyCE wire of 38), as it plays OpenCE's network 38 (build-268: the
 0x2C bytes of PC options, the longer game settings record, Infection's state,
 the host's shield effects, the game's kind in the advertisement, which a
-Delta host leaves to its major) and ChupathingyCE 0.8 plays 32;
-its range that wire alone: port/linux/src/ae_delta_wire.h. 0.3.6 to 0.3.8
-were on ChupathingyCE 0.8's chupa-32a (network 32), 0.3.5 on a wire of its
-own, ae-32a, and 0.3.4-beta and earlier on chupa-29a, none of which it
-joins. Once a ChupathingyCE release plays 38 and a handshake with it passes,
-its wire here is one line) */
+Delta host leaves to its major) and ChupathingyCE 0.8 plays 32
+(0.8.0f a host's 33 to 36 by its number); its range from chupa-32a:
+port/linux/src/ae_delta_wire.h. 0.3.6 to 0.3.8
+were on ChupathingyCE 0.8's chupa-32a (network 32: their hosts joined and
+played by that number, their clients dropped by their HELLO's 32), 0.3.5 on a
+wire of its own, ae-32a, and 0.3.4-beta and earlier on chupa-29a, neither of
+which it joins) */
 #define DELTA_WIRE "chupa-38z" /* AE hook */
 
 /* Wire compatibility ranges: the oldest wire each one plays the game with,

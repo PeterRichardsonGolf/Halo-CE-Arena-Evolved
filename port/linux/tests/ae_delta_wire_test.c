@@ -1,7 +1,7 @@
 /*
 AE_DELTA_WIRE_TEST.C
 
-Arena Evolved's range on its own wire, chupa-38z (port/linux/src/ae_delta_wire.c;
+Arena Evolved's range on its own wire, chupa-38z, from ChupathingyCE 0.8's chupa-32a (port/linux/src/ae_delta_wire.c;
 tools/test_ae_delta_wire.py runs it): what an Arena Evolved host advertises,
 what ChupathingyCE's clients (0.8's ranged decision, 0.7.5's exact slot)
 make of it, and which hosts an Arena Evolved client joins.
@@ -78,25 +78,26 @@ static int ae_decides(const unsigned char *reserved, char *theirs, int size)
 int main(void)
 {
 	unsigned char reserved[RESERVED];
-	struct delta_wire_id wire, oldest;
+	struct delta_wire_id wire, oldest, own;
 	char theirs[24];
 
-	CHECK(!strcmp(DELTA_WIRE, "chupa-38z"));
 
-	/* the host: its slot and its range the wire alone */
+	/* (this build's wire: Arena Evolved's own, of the letter z) */
+	CHECK(delta_wire_parse(DELTA_WIRE, (int)strlen(DELTA_WIRE), &own) && own.letter == 'z' && own.number >= 36);
+
+	/* the host: its slot ChupathingyCE 0.8's wire, its range from it to its own */
 	ae_host(reserved);
 	CHECK(reserved[DELTA_ADVERTISED_WIRE_OFFSET] == DELTA_MAJOR);
-	CHECK(!strcmp((const char *)reserved + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-38z"));
+	CHECK(!strcmp((const char *)reserved + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-32a"));
 	CHECK(delta_compat_read_range(reserved, RESERVED, &wire, &oldest));
-	CHECK(wire.number == 38 && wire.letter == 'z' && oldest.number == 38 && oldest.letter == 'z');
-	/* ... ChupathingyCE 0.8's clients (32a, network 32) never join it, nor
-	0.7.5's (exact slot, and its 0.8.0a range check of 29a) or 0.7.4's; nor a
-	ChupathingyCE wire of 38 before it is proven to be this one */
-	CHECK(chupa_decides(reserved, "chupa-32a") == 0);
+	CHECK(!delta_wire_compare(&wire, &own) && oldest.number == 32 && oldest.letter == 'a');
+	/* ... ChupathingyCE 0.8's clients (32a: 0.8.0f plays 36 by the host's
+	number; older ones the host keeps out by their HELLO) join it; 0.7.5's
+	(29a, its range check and its exact slot) and 0.7.4's (28a) never */
+	CHECK(chupa_decides(reserved, "chupa-32a") == 1);
 	CHECK(chupa_decides(reserved, "chupa-29a") == 0);
 	CHECK(chupa_decides(reserved, "chupa-28a") == 0);
-	CHECK(chupa_decides(reserved, "chupa-38a") == 0);
-	CHECK(!exact(reserved, "chupa-32a") && !exact(reserved, "chupa-29a") && !exact(reserved, "chupa-28a"));
+	CHECK(!exact(reserved, "chupa-29a") && !exact(reserved, "chupa-28a"));
 	/* ... a ChupathingyCE host's own range is left as it is */
 	chupa_host(reserved, "chupa-32a");
 	CHECK(delta_compat_read_range(reserved, RESERVED, &wire, &oldest) && oldest.number == 28);
@@ -104,28 +105,32 @@ int main(void)
 	/* the client: another Arena Evolved 0.3.9 host joined */
 	ae_host(reserved);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
-	/* ... a ChupathingyCE 0.8 host (32a, its range from 28a) never: its 32 is
-	not OpenCE's 38, which this build plays */
+	/* ... a ChupathingyCE 0.8 host (32a, its range from 28a) joined, played
+	by the number it announces (ae_chupa_link.c); by its slot alone too */
 	chupa_host(reserved, "chupa-32a");
-	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-32a"));
-	/* ... nor Arena Evolved 0.3.5's own wire, or 0.3.6 to 0.3.8's (32a) */
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
+	slot_host(reserved, "chupa-32a");
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
+	/* ... Arena Evolved 0.3.5's own wire never */
 	slot_host(reserved, "ae-32a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) != 1);
-	slot_host(reserved, "chupa-32a");
-	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-32a"));
 	/* ... a ChupathingyCE 0.7.5 host (29a, by its slot or by its range) never */
 	slot_host(reserved, "chupa-29a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
 	chupa_host(reserved, "chupa-29a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
-	/* ... a ChupathingyCE wire of 38 (38a) never; a newer one whose range has
-	38z joined, one whose has not, not */
-	chupa_host(reserved, "chupa-38a");
+	/* ... a ChupathingyCE wire past 32a not proven (32b, 36a) never; a newer
+	one whose range has this build's wire joined, one whose has not, not */
+	chupa_host(reserved, "chupa-32b");
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-32b"));
+	chupa_host(reserved, "chupa-36a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
 	chupa_host(reserved, "chupa-39a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
-	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] = 38;
-	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4] = 'z';
+	chupa_host(reserved, "chupa-99a");
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
+	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] = (unsigned char)own.number;
+	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4] = (unsigned char)own.letter;
 	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 5] = (unsigned char)(0xA5 ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 1] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 2] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4]);

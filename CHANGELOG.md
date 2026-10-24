@@ -44,6 +44,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   packs come in every download: Helljumper, Corporal, Aurora, Bastion, Selene and Solace.
 - Bots: in a network game in progress, bots fill up to BOTS (new bot machines join too);
   the classic Game Options BOTS row goes up to 31.
+- Per-player settings (VIEW, HUD, the mouse and the rest of SETTINGS' own rows) are saved to the profile again: since
+  0.3.7 every change was lost at the next start. Player 1 also takes their profile before such a change at the menus or
+  in a pause's SETTINGS.
 - Games started from CREATE GAME, JOIN WITH INVITE or SERVER BROWSER play with player 1's profile (the one used last):
   the name showed as "Player" and the profile's colour and settings were not used, unless CAMPAIGN or SETTINGS had
   been opened first.
@@ -51,9 +54,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   the host (the host drew a view for each of the first three, and its frame rate fell).
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
-- NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways. Arena Evolved 0.3.5 to 0.3.8,
-  OpenCE build-244 to build-256 and ChupathingyCE 0.8 (network 32) can no longer join it or host for it, until they
-  move to 36 too. The Delta wire is Arena Evolved's own, chupa-36z.
+- NETWORK VERSION 36 (OpenCE build-266 merged): plays with OpenCE build-266 both ways, and with ChupathingyCE 0.8.0f
+  both ways (by Delta: Bomb and Grifball too). Arena Evolved 0.3.5 to 0.3.8, OpenCE build-244 to build-256 and
+  ChupathingyCE 0.8.0e and older can no longer join it (they are told to update); a ChupathingyCE 0.8.0d host still
+  takes an Arena Evolved client.
 - OpenCE's gametypes: SWAT, INFECTION, GUN GAME and HARDCORE (Slayer, CTF, Oddball, King), in an OPENCE folder of
   CHANGE GAMETYPE, with OPENCE MODE and HARDCORE rows in GAME OPTIONS. Bots play SWAT and Gun Game; in Infection
   they hardly fight yet.
