@@ -42,8 +42,12 @@ is joined by its OpenCE number, as before
 OLDEST COMPATIBLE wire that a released client knows (one that checks
 the bytes for an exact match, as 0.7.5a's does, then joins), and the host's
 own wire and its compatible range follow in the range bytes below. */
-#define DELTA_ADVERTISED_WIRE_OFFSET 3
-#define DELTA_ADVERTISED_WIRE_SIZE 16
+/* (Arena Evolved: from 0.3.9, a byte later, its wire slot 15 bytes: OpenCE's
+network 37 sends the game's kind in the fourth reserved byte,
+HALO_PORT_ADVERTISED_KIND_OFFSET, where ChupathingyCE's major was; the range
+bytes stay where they were) */
+#define DELTA_ADVERTISED_WIRE_OFFSET 4 /* AE hook */
+#define DELTA_ADVERTISED_WIRE_SIZE 15 /* AE hook */
 /* ... and after the wire, in the six bytes that were free to the end of the
 advertisement's 0x1A reserved bytes (docs/delta.md, "Wire compatibility
 ranges"): the range's layout version (1), the host's own wire (its number, then
@@ -211,17 +215,18 @@ legacy table (port/linux/src/delta.c; docs/delta.md, "The legacy table as
 config") has a row of OpenCE numbers for each wire, which CI adds to only
 after a cross-play test of that wire; a build reads its own wire's row alone.
 Give each release that changes what the machines send a new one. */
-/* (Arena Evolved: a wire of its own from 0.3.9, chupa-36z (the letter z,
+/* (Arena Evolved: a wire of its own from 0.3.9, chupa-38z (the letter z,
 which ChupathingyCE's releases never reach, keeps it apart from any
-ChupathingyCE wire of 36), as it plays OpenCE's network 36 (OpenCE main past
-build-256: the 0x2C bytes of PC options, the longer game settings record,
-Infection's state, the host's shield effects) and ChupathingyCE 0.8 plays 32;
+ChupathingyCE wire of 38), as it plays OpenCE's network 38 (build-268: the
+0x2C bytes of PC options, the longer game settings record, Infection's state,
+the host's shield effects, the game's kind in the advertisement, where its
+Delta block starts a byte later) and ChupathingyCE 0.8 plays 32;
 its range that wire alone: port/linux/src/ae_delta_wire.h. 0.3.6 to 0.3.8
 were on ChupathingyCE 0.8's chupa-32a (network 32), 0.3.5 on a wire of its
 own, ae-32a, and 0.3.4-beta and earlier on chupa-29a, none of which it
-joins. Once a ChupathingyCE release plays 36 and a handshake with it passes,
+joins. Once a ChupathingyCE release plays 38 and a handshake with it passes,
 its wire here is one line) */
-#define DELTA_WIRE "chupa-36z" /* AE hook */
+#define DELTA_WIRE "chupa-38z" /* AE hook */
 
 /* Wire compatibility ranges: the oldest wire each one plays the game with,
 without a desync and without losing what the older wire has (a feature the
@@ -288,7 +293,9 @@ command repository's watch adds a row when it follows OpenCE's raise
 	X(33, "build-257", additive) /* (33 to 36: OpenCE main dedb3755d, past build-256, before a build of it was tagged) co-op's ALLY FRIENDLY FIRE, bit 1 of the game settings' cooperative_flags (the host deals the damage) */ \
 	X(34, "build-257", breaking) /* the map's breakable scenery and device shields and tripmines over the network: the host deals what they deal */ \
 	X(35, "build-257", breaking) /* OpenCE's gametypes: PC options 0x2C bytes, the game settings record 16 bytes longer, Infection's state */ \
-	X(36, "build-257", breaking) /* the host's shield effects (message 91), which a client draws in place of its own */
+	X(36, "build-257", breaking) /* the host's shield effects (message 91), which a client draws in place of its own */ \
+	X(37, "build-268", additive) /* the game's kind (an OpenCE gametype's mode, Hardcore) in the advertisement's fourth reserved byte and the listing's stamp */ \
+	X(38, "build-268", breaking) /* SHIELD EFFECTS' PLAYERS' OWN, a value of message 91 */
 
 /* ---------- the legacy table (port/linux/src/delta.c)
 

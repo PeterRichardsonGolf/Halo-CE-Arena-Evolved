@@ -1,7 +1,7 @@
 /*
 AE_DELTA_WIRE_TEST.C
 
-Arena Evolved's range on its own wire, chupa-36z (port/linux/src/ae_delta_wire.c;
+Arena Evolved's range on its own wire, chupa-38z (port/linux/src/ae_delta_wire.c;
 tools/test_ae_delta_wire.py runs it): what an Arena Evolved host advertises,
 what ChupathingyCE's clients (0.8's ranged decision, 0.7.5's exact slot)
 make of it, and which hosts an Arena Evolved client joins.
@@ -81,21 +81,21 @@ int main(void)
 	struct delta_wire_id wire, oldest;
 	char theirs[24];
 
-	CHECK(!strcmp(DELTA_WIRE, "chupa-36z"));
+	CHECK(!strcmp(DELTA_WIRE, "chupa-38z"));
 
 	/* the host: its slot and its range the wire alone */
 	ae_host(reserved);
 	CHECK(reserved[DELTA_ADVERTISED_WIRE_OFFSET] == DELTA_MAJOR);
-	CHECK(!strcmp((const char *)reserved + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-36z"));
+	CHECK(!strcmp((const char *)reserved + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-38z"));
 	CHECK(delta_compat_read_range(reserved, RESERVED, &wire, &oldest));
-	CHECK(wire.number == 36 && wire.letter == 'z' && oldest.number == 36 && oldest.letter == 'z');
+	CHECK(wire.number == 38 && wire.letter == 'z' && oldest.number == 38 && oldest.letter == 'z');
 	/* ... ChupathingyCE 0.8's clients (32a, network 32) never join it, nor
 	0.7.5's (exact slot, and its 0.8.0a range check of 29a) or 0.7.4's; nor a
-	ChupathingyCE wire of 36 before it is proven to be this one */
+	ChupathingyCE wire of 38 before it is proven to be this one */
 	CHECK(chupa_decides(reserved, "chupa-32a") == 0);
 	CHECK(chupa_decides(reserved, "chupa-29a") == 0);
 	CHECK(chupa_decides(reserved, "chupa-28a") == 0);
-	CHECK(chupa_decides(reserved, "chupa-36a") == 0);
+	CHECK(chupa_decides(reserved, "chupa-38a") == 0);
 	CHECK(!exact(reserved, "chupa-32a") && !exact(reserved, "chupa-29a") && !exact(reserved, "chupa-28a"));
 	/* ... a ChupathingyCE host's own range is left as it is */
 	chupa_host(reserved, "chupa-32a");
@@ -105,7 +105,7 @@ int main(void)
 	ae_host(reserved);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
 	/* ... a ChupathingyCE 0.8 host (32a, its range from 28a) never: its 32 is
-	not OpenCE's 36, which this build plays */
+	not OpenCE's 38, which this build plays */
 	chupa_host(reserved, "chupa-32a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-32a"));
 	/* ... nor Arena Evolved 0.3.5's own wire, or 0.3.6 to 0.3.8's (32a) */
@@ -118,18 +118,28 @@ int main(void)
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
 	chupa_host(reserved, "chupa-29a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
-	/* ... a ChupathingyCE wire of 36 (36a) never; a newer one whose range has
-	36z joined, one whose has not, not */
-	chupa_host(reserved, "chupa-36a");
+	/* ... a ChupathingyCE wire of 38 (38a) never; a newer one whose range has
+	38z joined, one whose has not, not */
+	chupa_host(reserved, "chupa-38a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
-	chupa_host(reserved, "chupa-37a");
+	chupa_host(reserved, "chupa-39a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
-	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] = 36;
+	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] = 38;
 	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4] = 'z';
 	reserved[DELTA_ADVERTISED_RANGE_OFFSET + 5] = (unsigned char)(0xA5 ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 1] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 2] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4]);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
+	/* the fourth reserved byte is OpenCE's game kind (network 37): an Arena Evolved host leaves it alone; a
+	ChupathingyCE host's advertisement (its major there, its wire from the fifth) is no Delta host of this layout,
+	so the numbers decide (ChupathingyCE 0.8's 32: refused) */
+	ae_host(reserved);
+	CHECK(DELTA_ADVERTISED_WIRE_OFFSET == 4 && reserved[3] == 0); /* (halo_port_limits.h's HALO_PORT_ADVERTISED_KIND_OFFSET, 3) */
+	CHECK(DELTA_ADVERTISED_RANGE_OFFSET + DELTA_ADVERTISED_RANGE_SIZE == 0x1A);
+	memset(reserved, 0, RESERVED);
+	reserved[3] = DELTA_MAJOR;
+	memcpy(reserved + 4, "chupa-32a", 9);
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) != 1);
 	/* ... a host that says nothing of a wire: the numbers decide */
 	memset(reserved, 0, RESERVED);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == -1);

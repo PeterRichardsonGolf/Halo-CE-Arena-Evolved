@@ -37,6 +37,7 @@ failed: <why>", "closed".
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
+#include "game_modes.h"
 #include "halo_map_families.h"
 #include "halo_port_limits.h"
 #include "halo_server_browser.h"
@@ -143,10 +144,22 @@ static void map_name(char const *map, char *text, size_t size)
 	}
 }
 
-static void type_name(short engine, int teams, char *text, size_t size)
+static void type_name(short engine, int teams, unsigned char kind, char *text, size_t size)
 {
 	static char const *const engines[] = { "", "CTF", "SLAYER", "ODDBALL", "KING", "RACE", "BOMB" };
 	char const *name = engine >= 0 && engine < (short)NUMBEROF(engines) ? engines[engine] : "";
+	/* (an OpenCE gametype's kind, as its advertisement or listing says it: its short name, "SWAT", "HC CTF") */
+	wchar_t const *kind_name = kind ? game_modes_kind_name(engine, kind, TRUE) : NULL;
+
+	if (kind_name)
+	{
+		size_t index;
+
+		for (index = 0; index + 1 < size && kind_name[index]; index++)
+			text[index] = kind_name[index] >= 0x20 && kind_name[index] < 0x7F ? (char)kind_name[index] : '?';
+		text[index] = 0;
+		return;
+	}
 
 	/* (CTF and Bomb are team games only: no TEAM before them) */
 	snprintf(text, size, "%s%s", teams && engine != 1 && engine != 6 && name[0] ? "TEAM " : "", name[0] ? name : "-");
@@ -222,7 +235,7 @@ static void internet_read(void)
 		memset(game, 0, sizeof(*game));
 		ae_lobby_utf16_to_utf8(game->name, sizeof(game->name), source->name, BROWSER_NAME_LENGTH);
 		map_name(source->map, game->map, sizeof(game->map));
-		type_name(source->engine, source->teams, game->type, sizeof(game->type));
+		type_name(source->engine, source->teams, source->kind, game->type, sizeof(game->type));
 		game->players_count = source->players;
 		game->maximum_players = source->maximum_players;
 		players_text(game);
@@ -264,7 +277,7 @@ static void lan_read(void)
 		memset(game, 0, sizeof(*game));
 		snprintf(game->name, sizeof(game->name), "%s", source->name);
 		map_name(source->map, game->map, sizeof(game->map));
-		type_name(source->engine, source->teams, game->type, sizeof(game->type));
+		type_name(source->engine, source->teams, source->kind, game->type, sizeof(game->type));
 		game->players_count = source->players;
 		game->maximum_players = source->maximum_players;
 		players_text(game);

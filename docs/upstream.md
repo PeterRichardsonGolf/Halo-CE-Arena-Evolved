@@ -20,7 +20,7 @@ Back to the [README](../README.md).
   needs to update). Arena Evolved 0.3.5 to 0.3.8, OpenCE build-244 to
   build-256 and ChupathingyCE 0.8 (32) don't play with 0.3.9: their players
   are told which side needs to update. From 0.3.9 Arena Evolved's Delta wire
-  is its own, `chupa-36z`, with a range of that wire alone
+  is its own, `chupa-38z`, with a range of that wire alone
   (`port/linux/src/ae_delta_wire.h`); 0.3.6 to 0.3.8 were on ChupathingyCE
   0.8's `chupa-32a` (and played with it both ways), 0.3.5 on `ae-32a`.
   Arena Evolved 0.3.0-beta to 0.3.4-beta, OpenCE build-206 to build-237 and

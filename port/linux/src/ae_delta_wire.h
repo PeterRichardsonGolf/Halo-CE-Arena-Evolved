@@ -1,13 +1,13 @@
 /*
 AE_DELTA_WIRE.H
 
-Arena Evolved on a Delta wire of its own, chupa-36z (delta.h's DELTA_WIRE:
+Arena Evolved on a Delta wire of its own, chupa-38z (delta.h's DELTA_WIRE:
 OpenCE's network 36, which no ChupathingyCE release plays yet), with a range
 of that wire alone (ae_delta_wire.c). So an Arena Evolved host advertises its
-range as chupa-36z to chupa-36z and its old slot chupa-36z (ChupathingyCE
+range as chupa-38z to chupa-38z and its old slot chupa-38z (ChupathingyCE
 0.8's clients, chupa-32a, and 0.7.5's exact slot match never join), and an
 Arena Evolved client joins a Delta host only when the host's range has
-chupa-36z. (0.3.6 to 0.3.8 played ChupathingyCE 0.8's chupa-32a, and 0.3.5
+chupa-38z. (0.3.6 to 0.3.8 played ChupathingyCE 0.8's chupa-32a, and 0.3.5
 its own ae-32a: network 32, which this build does not play.) Pure C
 (delta_compat.h only), so the unit tests build it
 (port/linux/tests/ae_delta_wire_test.c).

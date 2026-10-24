@@ -68,6 +68,9 @@ struct browser_game
 	unsigned char open;
 	unsigned char teams;
 	unsigned short version;
+	/* the game's kind, from its p2p listing when the lobby has one (OpenCE's network 37: game_modes.h's
+	game_modes_kind; 0 none) */
+	unsigned char kind;
 	short score_limit;
 	/* who is in it, as its host announces it (none from hosts that do not:
 	OpenCE's, and links added on the site); roster_count may be more than

@@ -440,6 +440,7 @@ short ae_lobby_lan_games(struct ae_lan_game *games, short maximum)
 		out->in_progress = game.in_progress;
 		out->join_state = game.join_state;
 		out->version = game.version;
+		out->kind = game.kind;
 		count++;
 	}
 	return count;

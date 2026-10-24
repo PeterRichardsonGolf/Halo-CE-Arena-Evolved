@@ -2559,14 +2559,15 @@ static void add_known(struct browser_game *games, int count)
 			}
 		}
 		games[index].locked = 0;
+		games[index].kind = 0;
 		for (other = 0; other < listing_count; other++)
 		{
-			if (!listings[other].locked)
-				continue;
 			p2p_hex(listings[other].key_hash, P2P_KEY_HASH_SIZE, key_hash);
 			if (!SDL_strncasecmp(key_hash, games[index].invite, 2 * P2P_KEY_HASH_SIZE))
 			{
-				games[index].locked = 1;
+				/* (and its kind, an OpenCE gametype's: the listing's, network 37) */
+				games[index].locked = listings[other].locked != 0;
+				games[index].kind = listings[other].kind;
 				break;
 			}
 		}
