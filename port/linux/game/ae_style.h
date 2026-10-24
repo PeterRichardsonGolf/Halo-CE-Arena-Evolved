@@ -45,6 +45,7 @@ answer 5): AE_COLOR_SCRIM is drawn behind dialogs only.
 #define AE_COLOR_CHIP_DISABLED  0xC8D6E029u   /* outline .16 */
 #define AE_COLOR_CHIP_DISABLED_TEXT 0x84939F96u   /* a disabled chip's text, muted .59 (preflight P9) */
 #define AE_COLOR_RING           0xE8EEF2FFu   /* the 2 u white focus ring, the selection's colour (preflight P9) */
+#define AE_COLOR_SELECTION_MUTED 0x0F171EADu  /* the selection text at .68: a quiet word on the bar (5.4:1 on it) */
 #define AE_DISABLED_ROW_ALPHA   0.43f
 /* pad face buttons (owner answer 4); Nintendo, shoulders and START monochrome AE_COLOR_KEY_CAP */
 #define AE_TINT_XBOX_A 0x66CC66FFu

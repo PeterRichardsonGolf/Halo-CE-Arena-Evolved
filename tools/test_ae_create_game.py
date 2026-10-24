@@ -41,6 +41,13 @@ CASES = (
     # (LOBBY SETUP: X opens it over the panel)
     ("setup", 32, 100, ("wait", "pad:x"), 30),
     ("setup-130", 32, 130, ("wait", "pad:x"), 30),
+    # (0.3.9: with bots (BOTS 1 at the panel's foot), LOBBY SETUP's BOTS heading and rows: SHOOTING SKILL and
+    # MOVEMENT SKILL to RECRUIT, PLAYFIGHT ON (A), BOT TEAMS AGAINST YOU; and the popover with them at 130 %)
+    ("setup-bots", 32, 100, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:right", "pad:x", "pad:down", "pad:down",
+                                                              "pad:right", "pad:down", "pad:right", "pad:down", "pad:a",
+                                                              "pad:down", "pad:right", "wait"), 56),
+    ("setup-bots-130", 32, 130, ("wait",) + ("pad:down",) * 14 + ("pad:up", "pad:right", "pad:x") + ("pad:down",) * 5 +
+     ("wait",), 50),
     # (NETWORK to HOST ONLINE, PUBLIC on, B: the lobby opens again online)
     ("online", 32, 100, ("wait", "pad:x", "pad:right", "pad:down", "pad:right", "pad:b", "wait", "wait"), 36),
     # (the lobby: down to the panel's last row (BOT SKILL), up to BOTS, 3 bots, then BOT SKILL focused)
@@ -125,6 +132,17 @@ def test_bots_rows(runs):
     # (the lobby's bots follow the setting at once; PLAYERS counts the person alone)
     assert lines(runs["lobby-bots"][1], "lan bots: bot 3 joined the lobby"), said
     assert "lobby: players 1, bots 3" in said, said
+
+
+def test_lobby_setup_bot_rows(runs):
+    """(0.3.9) with bots, LOBBY SETUP holds the classic menus' four bot settings, each written to config.toml at once"""
+    text = runs["setup-bots"][1]
+    said = lines(text, "ae create game: ")
+    for line in ("lobby: shooting skill RECRUIT", "lobby: movement skill RECRUIT", "lobby: playfight ON",
+                 "lobby: teams AGAINST YOU"):
+        assert line in said, (line, said)
+    assert "could not" not in "\n".join(said)
+    assert "lobby: setup open" in lines(runs["setup-bots-130"][1], "ae create game: ")
 
 
 def test_the_lobby_starts_the_game(runs):

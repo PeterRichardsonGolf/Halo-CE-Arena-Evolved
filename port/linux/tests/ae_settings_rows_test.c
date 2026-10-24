@@ -328,6 +328,100 @@ int main(void)
 			"settings stay as they are."));
 	}
 
+	/* (0.3.9) the MOUSE sensitivities are number rows: 0.01 steps (Shift, Ctrl + wheel) and typed values */
+	{
+		struct ae_settings_row const *mcc = ae_settings_row(ae_settings_row_of("input.mouse_mcc_sensitivity"));
+		struct ae_settings_row const *horizontal = ae_settings_row(ae_settings_row_of("input.mouse_sensitivity"));
+		struct ae_settings_row const *vertical = ae_settings_row(ae_settings_row_of("input.mouse_vertical_sensitivity"));
+		struct ae_settings_row const *zoom = ae_settings_row(ae_settings_row_of("input.mouse_zoom_scale"));
+		struct ae_settings_row const *vehicle = ae_settings_row(ae_settings_row_of("input.mouse_vehicle_scale"));
+		struct ae_settings_row const *hold = ae_settings_row(ae_settings_row_of("input.mouse_zoom_hold_time"));
+		struct ae_settings_row const *fov = ae_settings_row(ae_settings_row_of("display.fov"));
+		struct ae_settings_number range;
+		char out[32];
+
+		CHECK(ae_settings_row_number(mcc, &range) && range.minimum == 0.1 && range.maximum == 10.0 && !range.has_special);
+		CHECK(ae_settings_row_number(horizontal, NULL) && ae_settings_row_number(zoom, NULL) &&
+			ae_settings_row_number(vehicle, NULL));
+		CHECK(ae_settings_row_number(vertical, &range) && range.has_special && range.special == 0.0);
+		/* (not the others, nor the hold time: a time, not a sensitivity) */
+		CHECK(!ae_settings_row_number(hold, NULL) && !ae_settings_row_number(fov, NULL) && !ae_settings_row_number(NULL,
+			NULL));
+		/* the text: two decimals only when the hundredths aren't 0 */
+		ae_settings_number_text(1.37, out, sizeof(out));
+		CHECK(!strcmp(out, "1.37"));
+		ae_settings_number_text(1.4, out, sizeof(out));
+		CHECK(!strcmp(out, "1.4"));
+		ae_settings_number_text(10.0, out, sizeof(out));
+		CHECK(!strcmp(out, "10.0"));
+		ae_settings_number_text(0.05, out, sizeof(out));
+		CHECK(!strcmp(out, "0.05"));
+		ae_settings_number_text(2.999, out, sizeof(out));
+		CHECK(!strcmp(out, "3.0"));
+		/* shown: a step's own text, else the number; SAME stays SAME */
+		ae_settings_number_shown(mcc, "1.37", out, sizeof(out));
+		CHECK(!strcmp(out, "1.37"));
+		ae_settings_number_shown(mcc, "1.4", out, sizeof(out));
+		CHECK(!strcmp(out, "1.4"));
+		ae_settings_number_shown(horizontal, "1", out, sizeof(out));
+		CHECK(!strcmp(out, "1.0"));
+		ae_settings_number_shown(horizontal, "1.33", out, sizeof(out));
+		CHECK(!strcmp(out, "1.33"));
+		ae_settings_number_shown(vertical, "0", out, sizeof(out));
+		CHECK(!strcmp(out, "SAME"));
+		ae_settings_number_shown(vertical, "0.0", out, sizeof(out));
+		CHECK(!strcmp(out, "SAME"));
+		/* (MCC's unset 0.0, outside the range: its nearest step as before) */
+		ae_settings_number_shown(mcc, "0.0", out, sizeof(out));
+		CHECK(!strcmp(out, "0.1"));
+		/* typing: digits and one '.', two decimals, five characters */
+		CHECK(ae_settings_number_typing_ok("") && ae_settings_number_typing_ok("1") && ae_settings_number_typing_ok("1.") &&
+			ae_settings_number_typing_ok(".37") && ae_settings_number_typing_ok("10.00"));
+		CHECK(!ae_settings_number_typing_ok("1.375") && !ae_settings_number_typing_ok("1..3") &&
+			!ae_settings_number_typing_ok("1a") && !ae_settings_number_typing_ok("-1") &&
+			!ae_settings_number_typing_ok("100.00") && !ae_settings_number_typing_ok(NULL));
+		/* typed: kept to 0.01, clamped, a step's own text */
+		CHECK(ae_settings_number_typed(mcc, "1.37", out, sizeof(out)) && !strcmp(out, "1.37"));
+		CHECK(ae_settings_number_typed(mcc, "25", out, sizeof(out)) && !strcmp(out, "10.0"));
+		CHECK(ae_settings_number_typed(mcc, "0.01", out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(ae_settings_number_typed(mcc, "5.", out, sizeof(out)) && !strcmp(out, "5.0"));
+		CHECK(ae_settings_number_typed(mcc, ".5", out, sizeof(out)) && !strcmp(out, "0.5"));
+		CHECK(ae_settings_number_typed(horizontal, "1", out, sizeof(out)) && !strcmp(out, "1"));
+		CHECK(ae_settings_number_typed(horizontal, "9", out, sizeof(out)) && !strcmp(out, "4"));
+		CHECK(ae_settings_number_typed(zoom, "0.85", out, sizeof(out)) && !strcmp(out, "0.85"));
+		CHECK(ae_settings_number_typed(vertical, "0", out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(ae_settings_number_typed(vertical, "0.04", out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(!ae_settings_number_typed(mcc, "", out, sizeof(out)) && !ae_settings_number_typed(mcc, ".", out,
+			sizeof(out)) && !ae_settings_number_typed(fov, "90", out, sizeof(out)));
+		/* fine steps: 0.01, held at the ends */
+		CHECK(ae_settings_number_step(mcc, "1.4", 1, 1, out, sizeof(out)) && !strcmp(out, "1.41"));
+		CHECK(ae_settings_number_step(mcc, "1.4", -1, 1, out, sizeof(out)) && !strcmp(out, "1.39"));
+		CHECK(ae_settings_number_step(mcc, "1.39", 1, 1, out, sizeof(out)) && !strcmp(out, "1.4"));
+		CHECK(!ae_settings_number_step(mcc, "10.0", 1, 1, out, sizeof(out)));
+		CHECK(!ae_settings_number_step(mcc, "0.1", -1, 1, out, sizeof(out)));
+		CHECK(ae_settings_number_step(horizontal, "1", 1, 1, out, sizeof(out)) && !strcmp(out, "1.01"));
+		CHECK(ae_settings_number_step(horizontal, "1.01", -1, 1, out, sizeof(out)) && !strcmp(out, "1"));
+		/* (from SAME: right the range's first, left held) */
+		CHECK(ae_settings_number_step(vertical, "0", 1, 1, out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(!ae_settings_number_step(vertical, "0", -1, 1, out, sizeof(out)));
+		/* coarse steps: the next step past the value, round past the ends */
+		CHECK(ae_settings_number_step(mcc, "1.37", 1, 0, out, sizeof(out)) && !strcmp(out, "1.4"));
+		CHECK(ae_settings_number_step(mcc, "1.37", -1, 0, out, sizeof(out)) && !strcmp(out, "1.3"));
+		CHECK(ae_settings_number_step(mcc, "1.4", 1, 0, out, sizeof(out)) && !strcmp(out, "1.5"));
+		CHECK(ae_settings_number_step(mcc, "10.0", 1, 0, out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(ae_settings_number_step(mcc, "0.1", -1, 0, out, sizeof(out)) && !strcmp(out, "10.0"));
+		CHECK(ae_settings_number_step(horizontal, "1.37", 1, 0, out, sizeof(out)) && !strcmp(out, "1.5"));
+		CHECK(ae_settings_number_step(horizontal, "1.37", -1, 0, out, sizeof(out)) && !strcmp(out, "1.25"));
+		CHECK(ae_settings_number_step(vertical, "0.1", -1, 0, out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(ae_settings_number_step(vertical, "4", 1, 0, out, sizeof(out)) && !strcmp(out, "0"));
+		/* the slider: between the steps' places */
+		CHECK(ae_settings_slider_at(mcc, "0.1") == 0.0f && ae_settings_slider_at(mcc, "10.0") == 1.0f);
+		CHECK(ae_settings_slider_at(mcc, "1.35") > ae_settings_slider(mcc, 12) &&
+			ae_settings_slider_at(mcc, "1.35") < ae_settings_slider(mcc, 13));
+		CHECK(ae_settings_slider_at(horizontal, "1") == ae_settings_slider(horizontal, 6));
+		CHECK(ae_settings_slider_at(vertical, "0") == 0.0f);
+	}
+
 	if (failures)
 	{
 		printf("%d failure(s)\n", failures);

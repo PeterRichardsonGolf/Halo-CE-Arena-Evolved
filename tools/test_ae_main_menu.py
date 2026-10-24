@@ -42,6 +42,8 @@ CASES = (
     # (CAMPAIGN: the levels; A on the first plays it at the difficulty shown)
     ("campaign", "1920x1080", 100, ("pad:down", "pad:a", "pad:right")),
     ("campaign-play", "1920x1080", 100, ("pad:down", "pad:a", "wait", "pad:a")),
+    # (0.3.9: PLAYERS read as information (a status's muted value), the co-op line under CO-OP; at 130 % too)
+    ("campaign-130", "1920x1080", 130, ("pad:down", "pad:a")),
     # (PROFILES: none on this PC; NEW PROFILE named on AE's keyboard with the second pad (the first counts as the
     # keyboard's, and the second's first press only attaches it): A opens it on Q, right, A types W, START keeps it
     # and makes 'w'; A edits it, right steps its COLOUR. Its presses outlast EXIT_AFTER: 40 s. Typing on a keyboard

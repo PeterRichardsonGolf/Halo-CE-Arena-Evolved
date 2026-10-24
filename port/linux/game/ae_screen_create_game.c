@@ -22,7 +22,9 @@ SKILL at its foot (the settings' bots.count and bots.skill: OFF and 1-31 in the 
 at once, so the lobby's bots follow). The focus goes down from START GAME into the panel and up out of it.
 
 LOBBY SETUP, a popover over the panel: NETWORK (LAN / HOST ONLINE), PUBLIC (HOST ONLINE only: listed in everyone's
-SERVER BROWSER; off = invite only) and MAX PLAYERS (bots included). PUBLIC and MAX PLAYERS reach the session at once;
+SERVER BROWSER; off = invite only) and MAX PLAYERS (bots included); with bots (0.3.9), under a BOTS heading, the
+classic menus' SHOOTING SKILL, MOVEMENT SKILL (AS BOT SKILL or a level), PLAYFIGHT and BOT TEAMS, written to
+config.toml at once as the panel's BOTS are. PUBLIC and MAX PLAYERS reach the session at once;
 a NETWORK change opens the lobby again on the new network when the popover closes (asked first when other players are
 in it: they leave with the old session, told by their own game).
 
@@ -36,7 +38,7 @@ and gametype, WAITING FOR THE HOST TO START, the panel's LOBBY line and roster; 
 Its log: "ae create game: open", "hosting (<network>, '<map>', '<gametype>')", "hosted, player 1 in", "open failed:
 <why>", "lobby: open", "lobby: quick <label> <value>", "lobby: bots <count>", "lobby: bot skill <level>",
 "lobby: players <people>, bots <bots>" (as they change), "lobby: setup open", "lobby: public on|off", "lobby: max
-players <n>", "lobby: network <network>, reopening",
+players <n>", "lobby: shooting skill|movement skill|playfight|teams <value>", "lobby: network <network>, reopening",
 "lobby: start", "lobby: leave", "closed".
 */
 
@@ -106,8 +108,9 @@ enum { START_IDLE, START_JOINING, START_DONE, START_FAILED, START_REOPEN };
 enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 /* the panel's rows: LOBBY and INVITE at its top, BOTS and BOT SKILL at its foot */
 enum { PANEL_LOBBY, PANEL_INVITE, PANEL_BOTS, PANEL_BOT_SKILL, PANEL_ROWS };
-/* LOBBY SETUP's rows */
-enum { SETUP_NETWORK, SETUP_PUBLIC, SETUP_MAXIMUM, SETUP_ROWS };
+/* LOBBY SETUP's rows; (0.3.9) under a BOTS heading while there are bots, the classic menus' four more bot settings */
+enum { SETUP_NETWORK, SETUP_PUBLIC, SETUP_MAXIMUM, SETUP_SHOOTING, SETUP_MOVEMENT, SETUP_PLAYFIGHT, SETUP_TEAMS,
+	SETUP_ROWS };
 
 static const char *const network_names[NETWORKS] = { "LAN", "HOST ONLINE" };
 static const char *const network_words[NETWORKS] = { "LAN", "ONLINE" };
@@ -127,9 +130,28 @@ and help: tools/port_settings.py's Bots screen) */
 enum { BOTS_MENU_MAXIMUM = 31, BOTS_SETTING_MAXIMUM = 127, BOT_SKILLS = 6, BOT_SKILL_DEFAULT = 2 };
 static const char *const bot_skill_values[BOT_SKILLS] = { "recruit", "easy", "normal", "heroic", "legendary", "demon" };
 static const char *const bot_skill_names[BOT_SKILLS] = { "RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY", "DEMON" };
-#define BOTS_HELP "How many bots, up to 31, play the games you host, LAN or internet. A person who " \
-	"joins a full game takes a bot's place."
+#define BOTS_HELP "How many bots, up to 31, play your games; a person who joins a full game takes a bot's " \
+	"place. With bots, X (LOBBY SETUP) has more."
 #define BOT_SKILL_HELP "How soon the bots react, how well they aim and how far they see."
+/* (0.3.9) LOBBY SETUP's bot rows: the settings bots.shooting_skill, bots.movement_skill ("same": BOT SKILL's),
+bots.playfight, bots.teams; their wording tools/port_settings.py's classic BOTS screen's */
+enum { BOT_PARTS = BOT_SKILLS + 1 };
+static const char *const bot_part_values[BOT_PARTS] = { "same", "recruit", "easy", "normal", "heroic", "legendary",
+	"demon" };
+static const char *const bot_part_names[BOT_PARTS] = { "AS BOT SKILL", "RECRUIT", "EASY", "NORMAL", "HEROIC",
+	"LEGENDARY", "DEMON" };
+static const char *const bot_teams_values[2] = { "even", "against" };
+static const char *const bot_teams_names[2] = { "EVEN", "AGAINST YOU" };
+#define SHOOTING_HELP "The bots' aim, reactions, grenades and blows: as BOT SKILL, or a level of their own."
+#define MOVEMENT_HELP "The bots' strafing, jumping, crouching and retreating: as BOT SKILL, or a level of their own."
+static const char *const playfight_helps[2] = {
+	"Off: the bots fight back.",
+	"On: the bots move, strafe and aim at you, but never shoot, throw or strike: aim practice. At once, in game too."
+};
+static const char *const bot_teams_helps[2] = {
+	"In team games, bots on both teams, evening them with the players.",
+	"In team games, every bot on the team the players are not on."
+};
 static const short maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
 enum { MAXIMUM_PLAYERS_COUNT = sizeof(maximum_players) / sizeof(maximum_players[0]), MAXIMUM_PLAYERS_DEFAULT = 10 };
 /* the panel's and the popover's spacing (u: the mockups' 1080p numbers) */
@@ -1342,6 +1364,71 @@ static int host_open(void)
 
 /* ---------- LOBBY SETUP */
 
+/* (0.3.9) a bot setting's value index among its values (the default's when the setting has none of them) */
+static short setting_index(const char *name, const char *const *values, short count, short fallback)
+{
+	char const *now = config_string(name);
+	short index;
+
+	for (index = 0; now && index < count; index++)
+	{
+		if (!strcmp(now, values[index]))
+			return index;
+	}
+	return fallback;
+}
+
+/* the bot rows' value now: SHOOTING SKILL, MOVEMENT SKILL (AS BOT SKILL, RECRUIT..), PLAYFIGHT (OFF, ON), TEAMS */
+static short bot_setting_now(short kind)
+{
+	switch (kind)
+	{
+	case SETUP_SHOOTING: return setting_index("bots.shooting_skill", bot_part_values, BOT_PARTS, 0);
+	case SETUP_MOVEMENT: return setting_index("bots.movement_skill", bot_part_values, BOT_PARTS, 0);
+	case SETUP_PLAYFIGHT: return (short)(config_boolean("bots.playfight") != 0);
+	default: return setting_index("bots.teams", bot_teams_values, 2, 0);
+	}
+}
+
+static const char *bot_setting_text(short kind)
+{
+	short now = bot_setting_now(kind);
+
+	switch (kind)
+	{
+	case SETUP_SHOOTING:
+	case SETUP_MOVEMENT:
+		return bot_part_names[now];
+	case SETUP_PLAYFIGHT:
+		return now ? "ON" : "OFF";
+	default:
+		return bot_teams_names[now];
+	}
+}
+
+/* a bot row stepped and written to config.toml at once (the bots read it as it changes: PLAYFIGHT in game too) */
+static void bot_setting_step(short kind, short direction)
+{
+	static const char *const names[] = { "bots.shooting_skill", "bots.movement_skill", "bots.playfight", "bots.teams" };
+	static const char *const logged[] = { "shooting skill", "movement skill", "playfight", "teams" };
+	static const char *const on_off[2] = { "false", "true" };
+	short now = bot_setting_now(kind), count, next;
+	short which = (short)(kind - SETUP_SHOOTING);
+	const char *value;
+
+	count = kind == SETUP_SHOOTING || kind == SETUP_MOVEMENT ? BOT_PARTS : 2;
+	next = ae_value_step(count, now, direction);
+	value = kind == SETUP_SHOOTING || kind == SETUP_MOVEMENT ? bot_part_values[next] :
+		kind == SETUP_PLAYFIGHT ? on_off[next] : bot_teams_values[next];
+	if (next == now || !config_write(names[which], value))
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	platform_log("ae create game: lobby: %s %s", logged[which], bot_setting_text(kind));
+}
+
 static void setup_rows_now(void)
 {
 	setup.count = 0;
@@ -1350,6 +1437,14 @@ static void setup_rows_now(void)
 	if (setup.network == NETWORK_ONLINE)
 		setup.kinds[setup.count++] = SETUP_PUBLIC;
 	setup.kinds[setup.count++] = SETUP_MAXIMUM;
+	/* (the bot rows only while there are bots: BOTS OFF leaves the popover as it was) */
+	if (bots_count() > 0)
+	{
+		setup.kinds[setup.count++] = SETUP_SHOOTING;
+		setup.kinds[setup.count++] = SETUP_MOVEMENT;
+		setup.kinds[setup.count++] = SETUP_PLAYFIGHT;
+		setup.kinds[setup.count++] = SETUP_TEAMS;
+	}
 	if (setup.focus >= setup.count)
 		setup.focus = (short)(setup.count - 1);
 	if (setup.focus < 0)
@@ -1380,6 +1475,12 @@ static void setup_step(short index, short direction)
 		/* (the session now, when it is the internet's: a NETWORK change opens it again with this) */
 		if (ae_lobby_owns_session() && create.network == NETWORK_ONLINE)
 			p2p_set_hosting_public(create.privacy == PRIVACY_PUBLIC);
+		break;
+	case SETUP_SHOOTING:
+	case SETUP_MOVEMENT:
+	case SETUP_PLAYFIGHT:
+	case SETUP_TEAMS:
+		bot_setting_step(setup.kinds[index], direction);
 		break;
 	default:
 		next = ae_value_step(MAXIMUM_PLAYERS_COUNT, create.players_index, direction);
@@ -1460,6 +1561,10 @@ static const char *setup_help(short kind)
 	{
 	case SETUP_NETWORK: return NETWORK_HELP;
 	case SETUP_PUBLIC: return privacy_helps[create.privacy];
+	case SETUP_SHOOTING: return SHOOTING_HELP;
+	case SETUP_MOVEMENT: return MOVEMENT_HELP;
+	case SETUP_PLAYFIGHT: return playfight_helps[bot_setting_now(SETUP_PLAYFIGHT)];
+	case SETUP_TEAMS: return bot_teams_helps[bot_setting_now(SETUP_TEAMS)];
 	}
 	return MAXIMUM_HELP;
 }
@@ -1483,6 +1588,9 @@ static struct ae_rect setup_box(void)
 	box.height = ae_flow_u(flow, SETUP_STRIPE_U) + pad + ae_flow_u(flow, SETUP_TITLE_U) * 1.4f + gap +
 		(float)setup.count * (ae_size_row(d) + gap) + ae_flow_u(flow, 8.0f) + (float)count * line + pad * 0.75f +
 		ae_flow_u(flow, 48.0f) + pad * 0.5f;
+	/* (the BOTS heading over the bot rows) */
+	if (setup.count > 0 && setup.kinds[setup.count - 1] == SETUP_TEAMS)
+		box.height += ae_flow_u(flow, d->metrics->group_height);
 	return box;
 }
 
@@ -1522,8 +1630,27 @@ static void setup_draw(struct ae_screen *instance)
 		memset(&widget, 0, sizeof(widget));
 		if (index == setup.focus)
 			widget.flags |= AE_ROW_FOCUSED;
+		/* (the bot rows under their heading, as the settings' sections) */
+		if (setup.kinds[index] == SETUP_SHOOTING)
+			y += ae_widget_group(d, x, y, width, "BOTS");
 		switch (setup.kinds[index])
 		{
+		case SETUP_SHOOTING:
+			widget.label = "SHOOTING SKILL";
+			widget.value = bot_setting_text(SETUP_SHOOTING);
+			break;
+		case SETUP_MOVEMENT:
+			widget.label = "MOVEMENT SKILL";
+			widget.value = bot_setting_text(SETUP_MOVEMENT);
+			break;
+		case SETUP_PLAYFIGHT:
+			widget.label = "PLAYFIGHT";
+			widget.value = bot_setting_text(SETUP_PLAYFIGHT);
+			break;
+		case SETUP_TEAMS:
+			widget.label = "BOT TEAMS";
+			widget.value = bot_setting_text(SETUP_TEAMS);
+			break;
 		case SETUP_NETWORK:
 			widget.label = "NETWORK";
 			widget.value = network_names[setup.network];
@@ -1577,8 +1704,11 @@ static int setup_handle(struct ae_screen *instance, struct ae_event const *event
 		setup_step(setup.focus, event->action == AE_ACTION_RIGHT ? 1 : -1);
 		return 1;
 	case AE_ACTION_ACCEPT:
-		/* (NETWORK and PUBLIC: A takes the next value; MAX PLAYERS steps with left / right) */
-		if (setup.kinds[setup.focus] != SETUP_MAXIMUM)
+		/* (NETWORK and PUBLIC: A takes the next value; MAX PLAYERS steps with left / right; the bot rows: A takes the
+		next value, round past the last) */
+		if (setup.kinds[setup.focus] >= SETUP_SHOOTING)
+			setup_step(setup.focus, 1);
+		else if (setup.kinds[setup.focus] != SETUP_MAXIMUM)
 		{
 			short values = setup.kinds[setup.focus] == SETUP_NETWORK ? NETWORKS : PRIVACIES;
 			short now = setup.kinds[setup.focus] == SETUP_NETWORK ? (short)setup.network : (short)create.privacy;

@@ -953,6 +953,241 @@ float ae_settings_slider(struct ae_settings_row const *row, short index)
 	return (float)index / (float)(count - 1);
 }
 
+/* ---------- (0.3.9) number rows */
+
+/* (each a slider's key; its range is its steps' first and last but the special) */
+static struct { const char *key; double minimum, maximum, special; int has_special; } const numbers[] =
+{
+	{ "input.mouse_sensitivity", 0.1, 4.0, 0.0, 0 },
+	{ "input.mouse_vertical_sensitivity", 0.1, 4.0, 0.0, 1 },
+	{ "input.mouse_mcc_sensitivity", 0.1, 10.0, 0.0, 0 },
+	{ "input.mouse_zoom_scale", 0.1, 2.0, 0.0, 0 },
+	{ "input.mouse_vehicle_scale", 0.1, 2.0, 0.0, 0 },
+};
+
+int ae_settings_row_number(struct ae_settings_row const *row, struct ae_settings_number *number)
+{
+	short index;
+
+	if (!row || row->kind != AE_SETTINGS_SLIDER || !row->key)
+		return 0;
+	for (index = 0; index < COUNT(numbers); index++)
+	{
+		if (strcmp(row->key, numbers[index].key))
+			continue;
+		if (number)
+		{
+			number->minimum = numbers[index].minimum;
+			number->maximum = numbers[index].maximum;
+			number->special = numbers[index].special;
+			number->has_special = numbers[index].has_special;
+		}
+		return 1;
+	}
+	return 0;
+}
+
+/* (the numbers are counted in hundredths: 0.01 steps never drift) */
+static long hundredths(double value)
+{
+	return (long)floor(value * 100.0 + 0.5);
+}
+
+static void hundredths_text(long value, char *text, size_t size)
+{
+	if (value < 0)
+		value = 0;
+	if (value % 10)
+		snprintf(text, size, "%ld.%02ld", value / 100, value % 100);
+	else
+		snprintf(text, size, "%ld.%ld", value / 100, value % 100 / 10);
+}
+
+void ae_settings_number_text(double value, char *text, size_t size)
+{
+	hundredths_text(hundredths(value), text, size);
+}
+
+/* the step whose value is this number, -1 */
+static short step_of(struct ae_settings_row const *row, long value)
+{
+	short count = ae_settings_value_count(row), index;
+
+	for (index = 0; index < count; index++)
+	{
+		double step;
+
+		if (number(ae_settings_value_of(row, index), &step) && hundredths(step) == value)
+			return index;
+	}
+	return -1;
+}
+
+/* a number as the setting's text: a step's own text when it is a step's ("1", "0" for SAME), else its hundredths */
+static void setting_text(struct ae_settings_row const *row, long value, char *text, size_t size)
+{
+	short index = step_of(row, value);
+
+	if (index >= 0)
+		snprintf(text, size, "%s", ae_settings_value_of(row, index));
+	else
+		hundredths_text(value, text, size);
+}
+
+void ae_settings_number_shown(struct ae_settings_row const *row, const char *value, char *text, size_t size)
+{
+	struct ae_settings_number range;
+	double wanted;
+	short index;
+
+	if (!ae_settings_row_number(row, &range) || !number(value, &wanted))
+	{
+		index = ae_settings_value_index(row, value);
+		snprintf(text, size, "%s", index >= 0 ? ae_settings_value_text(row, index) : value ? value : "");
+		return;
+	}
+	index = step_of(row, hundredths(wanted));
+	/* (a value no step has and outside the range, as MCC SENSITIVITY's 0.0 before its seed: its nearest step, as
+	before) */
+	if (index < 0 && (hundredths(wanted) < hundredths(range.minimum) || hundredths(wanted) > hundredths(range.maximum)))
+		index = ae_settings_value_index(row, value);
+	if (index >= 0)
+		snprintf(text, size, "%s", ae_settings_value_text(row, index));
+	else
+		ae_settings_number_text(wanted, text, size);
+}
+
+int ae_settings_number_typing_ok(const char *typed)
+{
+	int dots = 0, decimals = 0, length = 0;
+
+	if (!typed)
+		return 0;
+	for (; *typed; typed++, length++)
+	{
+		if (*typed == '.')
+		{
+			if (dots++)
+				return 0;
+		}
+		else if (*typed >= '0' && *typed <= '9')
+		{
+			if (dots && ++decimals > 2)
+				return 0;
+		}
+		else
+			return 0;
+	}
+	return length <= AE_SETTINGS_NUMBER_TYPED;
+}
+
+int ae_settings_number_typed(struct ae_settings_row const *row, const char *typed, char *text, size_t size)
+{
+	struct ae_settings_number range;
+	long value, low, high;
+
+	if (!ae_settings_row_number(row, &range) || !ae_settings_number_typing_ok(typed) || !strpbrk(typed, "0123456789"))
+		return 0;
+	value = hundredths(strtod(typed, NULL));
+	low = hundredths(range.minimum);
+	high = hundredths(range.maximum);
+	if (!(range.has_special && value == hundredths(range.special)))
+		value = value < low ? low : value > high ? high : value;
+	setting_text(row, value, text, size);
+	return 1;
+}
+
+int ae_settings_number_step(struct ae_settings_row const *row, const char *now, short direction, int fine, char *text,
+	size_t size)
+{
+	struct ae_settings_number range;
+	short count = ae_settings_value_count(row), index, best = -1;
+	long value, low, high, best_value = 0;
+	double parsed;
+
+	if (!ae_settings_row_number(row, &range) || !direction)
+		return 0;
+	low = hundredths(range.minimum);
+	high = hundredths(range.maximum);
+	value = number(now, &parsed) ? hundredths(parsed) : low;
+	if (fine)
+	{
+		/* (from outside the range, the special too: its end on that side, else held) */
+		if (value < low || value > high)
+		{
+			if ((value < low) != (direction > 0))
+				return 0;
+			value = direction > 0 ? low : high;
+		}
+		else
+		{
+			value += direction > 0 ? 1 : -1;
+			if (value < low || value > high)
+				return 0;
+		}
+		setting_text(row, value, text, size);
+		return 1;
+	}
+	/* (the nearest step past the value on that side; none: round to the far end's) */
+	for (index = 0; index < count; index++)
+	{
+		double step;
+		long at;
+
+		if (!number(ae_settings_value_of(row, index), &step))
+			continue;
+		at = hundredths(step);
+		if (direction > 0 ? at > value && (best < 0 || at < best_value) : at < value && (best < 0 || at > best_value))
+		{
+			best = index;
+			best_value = at;
+		}
+	}
+	if (best < 0)
+	{
+		for (index = 0; index < count; index++)
+		{
+			double step;
+			long at;
+
+			if (!number(ae_settings_value_of(row, index), &step))
+				continue;
+			at = hundredths(step);
+			if (direction > 0 ? at < value && (best < 0 || at < best_value) :
+				at > value && (best < 0 || at > best_value))
+			{
+				best = index;
+				best_value = at;
+			}
+		}
+	}
+	if (best < 0)
+		return 0;
+	snprintf(text, size, "%s", ae_settings_value_of(row, best));
+	return 1;
+}
+
+float ae_settings_slider_at(struct ae_settings_row const *row, const char *text)
+{
+	short count = ae_settings_value_count(row), index;
+	double value, a, b;
+
+	if (count < 2)
+		return 0.0f;
+	if (!number(text, &value))
+		return ae_settings_slider(row, ae_settings_value_index(row, text));
+	for (index = 0; index + 1 < count; index++)
+	{
+		if (!number(ae_settings_value_of(row, index), &a) || !number(ae_settings_value_of(row, index + 1), &b) || b <= a)
+			return ae_settings_slider(row, ae_settings_value_index(row, text));
+		if (index == 0 && value <= a)
+			return 0.0f;
+		if (value <= b)
+			return ((float)index + (float)((value - a) / (b - a))) / (float)(count - 1);
+	}
+	return 1.0f;
+}
+
 /* ---------- the dialogs' texts */
 
 void ae_settings_keep_body(const char *group, const char *who, const char *const *labels, short count, char *text,

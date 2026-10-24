@@ -29,6 +29,11 @@ enum
 Page Up, Page Down and arrows are its 9, 3, 8, 2, 4 and 6: with Num Lock off they count as those keys (Page Up and
 Page Down as AE_KEY_PAGE_UP / _DOWN, the arrows as AE_KEY_UP...); its Enter is the game's Enter already (A) */
 int ae_platform_keys(void);
+/* (0.3.9) the modifiers held now, either key of each (0 without a focused window): SETTINGS' number rows step 0.01
+with Shift and the arrows, Ctrl and the wheel. A test's token holds them too: "key:Right+shift", "wheel:1+ctrl"
+(ae_platform_test_pad_press reads the token; xinput_sdl.c's own reading of it skips the unknown name) */
+enum { AE_MODIFIER_SHIFT = 1 << 0, AE_MODIFIER_CONTROL = 1 << 1 };
+int ae_platform_modifiers(void);
 /* the menus' cursor height in pixels (sdl_platform.c menu_cursor_fit: height, OpenCE's, is 32 of the menus' 480 lines,
 72 pixels at 1080p): with Arena Evolved's menus (display.arena_menus) half that, 36 pixels at 1080p, never under 16, so
 the arrow sits with AE's rows; OpenCE's otherwise */

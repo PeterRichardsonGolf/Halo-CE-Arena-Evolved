@@ -3,8 +3,10 @@ AE_SCREEN_CAMPAIGN.C
 
 AE's CAMPAIGN (ae_screen_campaign.h; the mockup's board 7, https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD): CONTINUE
 (the saved game, when there is one) and the ten levels on the left, a level not reached yet disabled; on the right the
-level's name, the difficulties it is finished on, DIFFICULTY and PLAYERS (co-op: in 0.3.7's work). A plays the focused
-level at the difficulty shown; left / right or Y change the difficulty; B back.
+level's name, the difficulties it is finished on, DIFFICULTY, and what the game takes as information, not choices:
+PLAYERS (THIS PC, a status's muted value) and CO-OP (disabled: IN CLASSIC MENUS), with a line saying where co-op is
+for now (SETTINGS > SYSTEM > MENUS > CLASSIC; AE's own co-op is 0.4.0's work). A plays the focused level at the
+difficulty shown; left / right or Y change the difficulty; B back.
 
 Its log: the glue's ("ae campaign: ..."), "ae campaign: open (<profile>)".
 */
@@ -113,16 +115,22 @@ static void draw_side(void)
 	row.value = ae_campaign_difficulty_name(screen.difficulty);
 	row.flags = AE_ROW_FOCUSED;
 	y += ae_widget_row(d, x, y, width, &row, HIT_SIDE, 0) + gap;
+	/* (0.3.9: information, not a choice: a status's muted value, no arrows, as nothing can change it here) */
 	memset(&row, 0, sizeof(row));
 	row.label = "PLAYERS";
 	row.value = "THIS PC";
+	row.flags = AE_ROW_STATUS;
 	y += ae_widget_row(d, x, y, width, &row, HIT_SIDE, 1) + gap;
 	memset(&row, 0, sizeof(row));
 	row.label = "CO-OP";
 	row.flags = AE_ROW_DISABLED;
 	/* (co-op is in the classic menus for now: SETTINGS > SYSTEM > MENUS) */
 	row.reason = "IN CLASSIC MENUS";
-	ae_widget_row(d, x, y, width, &row, HIT_SIDE, 2);
+	y += ae_widget_row(d, x, y, width, &row, HIT_SIDE, 2);
+	/* (where it is: the line under the rows, muted, the rows' own left) */
+	y += ae_flow_u(flow, 16.0f);
+	ae_draw_text(AE_FONT_BODY, minor, x + ae_flow_u(flow, d->metrics->pad), y, AE_ALIGN_LEFT, AE_COLOR_MUTED,
+		"Co-op: SETTINGS > SYSTEM > MENUS > CLASSIC, for now.");
 }
 
 static void difficulty_step(short direction)
