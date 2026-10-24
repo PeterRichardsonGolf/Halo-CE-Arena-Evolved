@@ -8,6 +8,7 @@ SHOW COORDINATES (ae_coordinates.h).
 #include "camera/observer.h"
 #include "game/game.h"
 #include "game/players.h"
+#include "interface/ui_widget.h"
 #include "memory/data.h"
 #include "objects/objects.h"
 #include "../src/port_config.h"
@@ -43,7 +44,8 @@ void ae_coordinates_append(char *line, long size)
 	char text[64];
 	size_t length;
 
-	if (!ae_coordinates_shown() || !game_in_progress() || size <= 0)
+	/* (not at the main menu: its background map's camera is no place a player stands) */
+	if (!ae_coordinates_shown() || !game_in_progress() || main_menu_is_active() || size <= 0)
 		return;
 	player_index = local_player_get_player_index(0);
 	player = player_index != NONE ? player_get(player_index) : NULL;

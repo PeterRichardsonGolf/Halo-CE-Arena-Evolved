@@ -29,6 +29,10 @@ enum
 Page Up, Page Down and arrows are its 9, 3, 8, 2, 4 and 6: with Num Lock off they count as those keys (Page Up and
 Page Down as AE_KEY_PAGE_UP / _DOWN, the arrows as AE_KEY_UP...); its Enter is the game's Enter already (A) */
 int ae_platform_keys(void);
+/* the menus' cursor height in pixels (sdl_platform.c menu_cursor_fit: height, OpenCE's, is 32 of the menus' 480 lines,
+72 pixels at 1080p): with Arena Evolved's menus (display.arena_menus) half that, 36 pixels at 1080p, never under 16, so
+the arrow sits with AE's rows; OpenCE's otherwise */
+int ae_platform_menu_cursor_height(int lines, int height);
 /* mouse button 4 (back) presses while the menus have the pointer (ae_back_presses.c): sdl_platform.c counts them
 (an AE hook line, since its pointer branch keeps them from the controller), but only while armed: the game's side
 arms the count while an AE screen is open (never with display.arena_menus off) and takes the presses (the count
@@ -99,7 +103,8 @@ int ae_platform_test_verdict_key(int scancode);
 void ae_platform_test_verdict_auto(void);
 /* (debug.test_input "menu:" with "pad:<button>" tokens, xinput_sdl.c's poll, each call) the token pressed now (NULL:
 none) and its length: a virtual SDL gamepad, attached at the first call, gets its button (pad:b, pad:start, ...), so
-the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c) */
+the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c); a
+"type:<key>" token types that key once as a real key event (KEY BINDINGS' PRESS A KEY takes it) */
 void ae_platform_test_pad_press(char const *token, int length);
 /* (debug.lone_pad_first, for test launches: xinput_sdl.c port_gamepad and connected_gamepads) a lone gamepad stays on
 port 0 with the keyboard in split screen, so it plays player 1, and port 1 is reported connected with no input

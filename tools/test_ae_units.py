@@ -96,6 +96,10 @@ UNITS = {
     # (the 0.3.7 SETTINGS model: groups, rows.md's rows, what shows when, sections, values, the dialogs' texts)
     "ae_settings_rows_test.c": ([UI / "ae_settings_rows.c"], ["-fsanitize=address,undefined",
                                                                "-fno-sanitize-recover=all"], ["-lm"]),
+    # (KEY BINDINGS' model: the actions and sections, two bindings read and written, a key moved from another action,
+    # the dialogs' texts; under the sanitizers)
+    "ae_key_bindings_test.c": ([UI / "ae_key_bindings.c"], ["-fsanitize=address,undefined",
+                                                             "-fno-sanitize-recover=all"], []),
     # (a player's own settings file, ae.toml: read, written, seeded, upgraded; under the sanitizers)
     "ae_player_settings_test.c": ([UI / "ae_player_settings.c"], ["-fsanitize=address,undefined",
                                                                    "-fno-sanitize-recover=all"], []),

@@ -1511,6 +1511,7 @@ static void menu_cursor_fit(void)
 	cursor_height = lines * MENU_CURSOR_HEIGHT / 480;
 	if (cursor_height < 16)
 		cursor_height = 16;
+	cursor_height = ae_platform_menu_cursor_height(lines, cursor_height); /* AE hook */
 	if (cursor_height == menu_cursor_height)
 		return;
 	menu_cursor_height = cursor_height;
