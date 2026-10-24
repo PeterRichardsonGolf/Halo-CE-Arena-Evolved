@@ -158,6 +158,8 @@ static short text_batch_character_count = 0;
 static boolean text_batch_open = FALSE;
 
 void text_hires_set_reset_hook(void (*hook)(void)); /* port: port/linux/src/text_hires.c */
+int ae_hud_text_hold_begin(void const *parameters, int size); /* AE hook */
+int ae_hud_text_hold_end(void); /* AE hook */
 void rasterizer_text_flush(void);
 
 /* ---------- public code */
@@ -165,6 +167,7 @@ void rasterizer_text_flush(void);
 void rasterizer_text_end(
 	void)
 {
+	if (ae_hud_text_hold_end()) return; /* AE hook */
 	/* port: (text_batch_vertices) */
 	rasterizer_text_flush();
 	text_batch_open = FALSE;
@@ -214,6 +217,7 @@ void rasterizer_text_begin(
 	if (rasterizer_debug_options.draw_dynamic_screen_geometry &&
 		global_window_parameters.rasterizer_target == 0)
 	{
+		if (ae_hud_text_hold_begin(parameters, (int)sizeof(*parameters))) { text_batch_open = TRUE; return; } /* AE hook */
 		match_assert(
 			"c:\\halo\\SOURCE\\rasterizer\\xbox\\rasterizer_xbox_text.c",
 			18,

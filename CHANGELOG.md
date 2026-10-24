@@ -71,8 +71,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   next new game's).
 - Help lines in Arena Evolved's menus name the buttons of the device used last, as the footer does (Ctrl+F on the
   keyboard, Square on a PlayStation pad...); they named the Xbox pad's always.
-- HUD STYLE AE draws its panels' shapes in batches: far fewer draws a frame while alive (the frame rate dropped while
-  alive, not while dead).
+- HUD STYLE AE draws its panels' shapes and its outlined texts in batches: far fewer draws a frame while alive (the
+  frame rate dropped while alive, not while dead).
 - ChupathingyCE main merged (past 0.8.0d): Xbox map packs in maps_<pack> folders (<file>@<pack>), the movies through
   FFmpeg on every platform, Grifball and Bomb, game type files.
 - NETWORK VERSION 38 (OpenCE build-266 and build-268 merged): plays with OpenCE build-268 both ways, and with

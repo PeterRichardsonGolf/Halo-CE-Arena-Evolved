@@ -84,6 +84,62 @@ real ae_hud_text_measure(const wchar_t *text, real px)
 		ae_hud_pixels_per_unit();
 }
 
+/* (0.3.9) HUD TEXT BATCHING: an outlined text's 13 passes (the shadow's 4, the outline's 8, the face) drawn as one.
+The text's batch (rasterizer_xbox_text.c, a string's characters as one list of quads) is held open from the first pass
+to the last while each pass begins with the same state (the same parameters: the same font bitmap, blend, scale); a
+pass of another state draws what is held first. ae_hud_text_hold_begin and _end are the AE hooks there: begin TRUE =
+the batch goes on (no state set again), end TRUE = not drawn yet */
+void rasterizer_text_flush(void);
+void rasterizer_text_end(void);
+static struct
+{
+	int held, begun;
+	int size;
+	unsigned char parameters[512];
+} text_hold;
+
+int ae_hud_text_hold_begin(void const *parameters, int size)
+{
+	if (!text_hold.held)
+		return FALSE;
+	/* (the text's begin reads its caller's parameters, rasterizer_text.c's dynamic screen geometry parameters, as a
+	struct of its own: compared as far as the caller's go) */
+	if (size > (int)sizeof(struct rasterizer_dynamic_screen_geometry_parameters))
+		size = (int)sizeof(struct rasterizer_dynamic_screen_geometry_parameters);
+	if (text_hold.begun && size == text_hold.size && !memcmp(parameters, text_hold.parameters, (size_t)size))
+		return TRUE;
+	if (text_hold.begun)
+		rasterizer_text_flush();
+	text_hold.begun = size > 0 && size <= (int)sizeof(text_hold.parameters);
+	if (text_hold.begun)
+	{
+		csmemcpy(text_hold.parameters, parameters, size);
+		text_hold.size = size;
+	}
+	return FALSE;
+}
+
+int ae_hud_text_hold_end(void)
+{
+	return text_hold.held;
+}
+
+static void text_hold_open(void)
+{
+	text_hold.held = TRUE;
+	text_hold.begun = FALSE;
+}
+
+static void text_hold_close(void)
+{
+	int begun = text_hold.begun;
+
+	text_hold.held = FALSE;
+	text_hold.begun = FALSE;
+	if (begun)
+		rasterizer_text_end();
+}
+
 /* one pass of the text: its pen's start at (x, baseline) in screen pixels, moved (dx, dy) */
 static void text_pass(long font_index, real x, real baseline_y, const wchar_t *text, real px, real dx, real dy,
 	real const rgb[3], real alpha)
@@ -133,6 +189,8 @@ void ae_hud_text_draw_ex(short local_player_index, real x, real baseline_y, cons
 	rgb[0] = color->red;
 	rgb[1] = color->green;
 	rgb[2] = color->blue;
+	if (edge != _ae_text_plain)
+		text_hold_open();
 	if (edge == _ae_text_outline)
 	{
 		/* (the soft shadow: 1.5 px down, spread about 2 px) */
@@ -153,6 +211,8 @@ void ae_hud_text_draw_ex(short local_player_index, real x, real baseline_y, cons
 				0.90f * color->alpha);
 	}
 	text_pass(font_index, x, baseline_y, text, px, 0.0f, 0.0f, rgb, color->alpha);
+	if (edge != _ae_text_plain)
+		text_hold_close();
 }
 
 void ae_hud_text_draw(short local_player_index, real x, real baseline_y, const wchar_t *text, real px,

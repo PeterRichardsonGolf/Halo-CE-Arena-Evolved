@@ -34,6 +34,9 @@ void ae_hud_text_draw(short local_player_index, real x, real baseline_y, const w
 	const union real_argb_color *color, boolean outline);
 void ae_hud_text_draw_ex(short local_player_index, real x, real baseline_y, const wchar_t *text, real px,
 	const union real_argb_color *color, enum ae_hud_text_edge edge);
+/* (rasterizer_xbox_text.c's AE hooks: an outlined text's passes in one batch) */
+int ae_hud_text_hold_begin(void const *parameters, int size);
+int ae_hud_text_hold_end(void);
 /* the soft dark backing: centre, radii (rx across; ry above the centre, 30/46 of it below), peak alpha */
 void ae_hud_backing_draw(short local_player_index, real cx, real cy, real rx, real ry, real peak_alpha);
 
