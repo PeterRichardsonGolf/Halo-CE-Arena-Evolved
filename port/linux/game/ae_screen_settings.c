@@ -27,6 +27,7 @@ values back.
 #include "ae_glue_player_settings.h"
 #include "ae_glue_profiles.h"
 #include "ae_hooks.h"
+#include "ae_screen_keys.h"
 #include "ae_screen_settings.h"
 #include "ae_seats.h"
 #include "ae_settings_rows.h"
@@ -1333,7 +1334,19 @@ static void picker_open(struct ae_settings_row const *row)
 	}
 	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY || !ae_settings_value_count(row))
 	{
-		/* (BACK PADDLES and KEY BINDINGS open their own screens: not in this pass) */
+		/* (0.3.9: KEY BINDINGS and BACK PADDLES open their own screens (ae_screen_keys.h); a KEY row, PUSH TO TALK,
+		opens KEY BINDINGS on its action) */
+		int opened = 0;
+
+		if (row->kind == AE_SETTINGS_KEY || !strcmp(row->key, "controls.bindings"))
+			opened = ae_screen_keys_open(row->key);
+		else if (!strcmp(row->key, "input.back_left"))
+			opened = ae_screen_paddles_open(who.player);
+		if (opened)
+		{
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+			return;
+		}
 		ae_sound_request(AE_SOUND_FAILURE, 0);
 		return;
 	}

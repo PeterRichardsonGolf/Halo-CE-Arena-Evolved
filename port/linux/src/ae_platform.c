@@ -687,6 +687,39 @@ void ae_platform_test_pad_press(
 	int pressed = -1;
 	unsigned int index;
 
+	/* ("type:<a key's SDL name>": that key typed once as a real key event, as a player's key reaches KEY BINDINGS'
+	PRESS A KEY (platform_binding_capture_begin takes key events only; "key:" holds a key in the keyboard's state) */
+	{
+		static char const *typed;
+
+		if (token && length > 5 && length < 64 && !strncmp(token, "type:", 5) && token != typed)
+		{
+			char name[64];
+			SDL_Event event;
+			SDL_Scancode scancode;
+
+			typed = token;
+			memcpy(name, token + 5, (size_t)length - 5);
+			name[length - 5] = 0;
+			scancode = SDL_GetScancodeFromName(name);
+			if (scancode == SDL_SCANCODE_UNKNOWN)
+				platform_log("test input: no key named \"%s\"", name);
+			else
+			{
+				SDL_zero(event);
+				event.type = SDL_EVENT_KEY_DOWN;
+				event.key.scancode = scancode;
+				event.key.key = SDL_GetKeyFromScancode(scancode, SDL_KMOD_NONE, false);
+				event.key.down = true;
+				event.key.timestamp = SDL_GetTicksNS();
+				SDL_PushEvent(&event);
+				event.type = SDL_EVENT_KEY_UP;
+				event.key.down = false;
+				SDL_PushEvent(&event);
+				platform_log("test input: typed %s", name);
+			}
+		}
+	}
 	/* (split screen's seats see the test's keys: ae_seats.c) */
 	ae_seats_test_keys(token && ((length == 10 && !strncmp(token, "key:Return", 10)) ||
 		(length == 9 && !strncmp(token, "key:Space", 9))), token && length == 10 && !strncmp(token, "key:Escape", 10));

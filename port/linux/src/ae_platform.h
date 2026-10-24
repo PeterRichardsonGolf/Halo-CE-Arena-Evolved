@@ -103,7 +103,8 @@ int ae_platform_test_verdict_key(int scancode);
 void ae_platform_test_verdict_auto(void);
 /* (debug.test_input "menu:" with "pad:<button>" tokens, xinput_sdl.c's poll, each call) the token pressed now (NULL:
 none) and its length: a virtual SDL gamepad, attached at the first call, gets its button (pad:b, pad:start, ...), so
-the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c) */
+the presses of a real lone gamepad are tested, through the game's own mapping of pads to ports (ae_platform.c); a
+"type:<key>" token types that key once as a real key event (KEY BINDINGS' PRESS A KEY takes it) */
 void ae_platform_test_pad_press(char const *token, int length);
 /* (debug.lone_pad_first, for test launches: xinput_sdl.c port_gamepad and connected_gamepads) a lone gamepad stays on
 port 0 with the keyboard in split screen, so it plays player 1, and port 1 is reported connected with no input
