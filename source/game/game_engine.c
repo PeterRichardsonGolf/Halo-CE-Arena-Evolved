@@ -617,6 +617,7 @@ struct network_game *network_game_server_get_game(struct network_game_server *se
 #include "ae_hud_style.h" /* AE hook */
 #include "ae_lan_bots.h" /* AE hook */
 #include "ae_test_hooks.h" /* AE hook */
+#include "ae_bots.h" /* AE hook */
 #include "ae_strip_engine.h" /* AE hook */
 #include "ae_postgame.h" /* AE hook */
 #include "ae_stage_map.h" /* AE hook */
@@ -5864,6 +5865,7 @@ void game_engine_player_killed(
 	}
 	dead_player->death_time = game_time_get();
 	ae_test_capture_player_killed(dead_player_index, killing_player_index); /* AE hook */
+	if (!team_change) ae_bots_player_killed(killing_player_index, dead_player_index); /* AE hook */
 	if (game_engine->player_killed_player)
 	{
 		game_engine->player_killed_player(

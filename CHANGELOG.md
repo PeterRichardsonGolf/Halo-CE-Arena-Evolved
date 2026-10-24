@@ -6,6 +6,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ## 0.3.9-beta - 2026-10-23
 
+- Bots take REVENGE: a bot killed three times in a row by the same player, with no kill back, hunts that player for a
+  minute or until it kills them. RECRUIT to NORMAL chase recklessly and push the fight; HEROIC chases straight but keeps
+  its head; LEGENDARY and DEMON hunt smart, holding a spot near them, higher ground first.
 - CREATE GAME is one screen with its lobby: MULTIPLAYER > CREATE GAME opens a live lobby at once (invite only), START
   GAME is the blue button, and X or the LOBBY row opens LOBBY SETUP (NETWORK, PUBLIC, MAX PLAYERS). Players who join see
   the same screen as LOBBY, read only. RB (E) jumps to the lobby panel and LB (Q) back to the left column ("LB RB

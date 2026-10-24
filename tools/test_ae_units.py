@@ -69,6 +69,7 @@ UNITS = {
     "ae_bots_power_rules_test.c": ([UI / "ae_bots_power_rules.c", UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (the bots playing as a team: the numbers game, outnumbered, wingman; ae_bots_team.inc)
     "ae_bots_team_rules_test.c": ([UI / "ae_bots_team_rules.c", UI / "ae_bots_combat_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    "ae_bots_revenge_rules_test.c": ([UI / "ae_bots_revenge_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_ui_deleted_test.c": ([UI / "ae_ui_deleted.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (a modded disc in the join token: no disc the stock token, the same disc the same token, which maps count;
     # under the sanitizers, as the names are a folder's)

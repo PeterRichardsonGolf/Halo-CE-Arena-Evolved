@@ -1074,6 +1074,13 @@ port/linux/game/bots.c	ae_bots_power_reset(); /* AE hook */
 # THE BOTS AS A TEAM (2026-10-20, ae_bots_team.inc): WINGMAN and THE NUMBERS GAME in bots_choose_goal, a map's start
 port/linux/game/bots.c	if (ae_bots_team_goal(bot, player_index, position, fighting)) return; /* AE hook */
 port/linux/game/bots.c	ae_bots_team_reset(); /* AE hook */
+# REVENGE (2026-10-24, ae_bots_revenge.inc; owner's idea): a bot killed three times in a row by one player hunts them,
+# by level; the game's kills reach it from game_engine_player_killed (not a team change's)
+port/linux/game/bots.c	if (ae_bots_revenge_goal(bot, player_index, position, fighting)) return; /* AE hook */
+port/linux/game/bots.c	ae_bots_revenge_reset(); /* AE hook */
+port/linux/game/bots.c	candidate->score -= ae_bots_revenge_score(bot, player_index); /* AE hook */
+source/game/game_engine.c	#include "ae_bots.h" /* AE hook */
+source/game/game_engine.c	if (!team_change) ae_bots_player_killed(killing_player_index, dead_player_index); /* AE hook */
 # PRO TRAITS (2026-10-20, ae_bots_combat.inc): HIGH GROUND in the roaming place (LEGENDARY and up), the GRENADE AT THE
 # LAST-SEEN SPOT in the walk (LEGENDARY and up); pacing and the descope reflex are ae_bots_fight_in_range's
 port/linux/game/bots.c	distance -= ae_bots_roam_height(bot, &bots_globals.roam_points[index], &enemy->object.position); /* AE hook */

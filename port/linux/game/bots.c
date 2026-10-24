@@ -1165,6 +1165,7 @@ static void bots_prepare_map(void)
 	bots_globals.roam_point_count = 0;
 	ae_bots_power_reset(); /* AE hook */
 	ae_bots_team_reset(); /* AE hook */
+	ae_bots_revenge_reset(); /* AE hook */
 	bots_prepare_paths();
 	if (!scenario)
 		return;
@@ -1548,6 +1549,7 @@ static boolean bots_target_score(struct bots_bot *bot, struct player_datum *play
 	candidate->player_index = player_index;
 	candidate->unit_index = other->unit_index;
 	candidate->score = distance + bearing * 4.0f - (player_index == bot->target_player_index ? 6.0f : 0.0f);
+	candidate->score -= ae_bots_revenge_score(bot, player_index); /* AE hook */
 	return TRUE;
 }
 
@@ -1711,6 +1713,7 @@ static void bots_choose_goal(struct bots_bot *bot, long player_index, real_point
 
 	if (ae_bots_vehicle_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_objective_goal(bot, player_index, position, fighting)) return; /* AE hook */
+	if (ae_bots_revenge_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_power_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (ae_bots_team_goal(bot, player_index, position, fighting)) return; /* AE hook */
 	if (!fighting && bot->target_player_index != NONE && bot->target_last_surface_index != NONE &&
