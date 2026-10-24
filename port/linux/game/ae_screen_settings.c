@@ -820,7 +820,7 @@ static void top_panel(struct ae_flow_screen *flow)
 		{
 			short other = player_next();
 
-			snprintf(text, sizeof(text), "%s, player %d, has their own. X switches player.", who.name[other], other + 1);
+			snprintf(text, sizeof(text), "%s, player %d, has their own. {X} switches player.", who.name[other], other + 1);
 			ae_draw_text(AE_FONT_BODY, body, x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED, text);
 			y += line;
 		}
@@ -1907,7 +1907,7 @@ static void group_rail(float x, float y, float width)
 static void group_help(float x, float y, float width)
 {
 	struct ae_settings_row const *row = focused_row();
-	char lines[HELP_LINES][160];
+	char expanded[320], lines[HELP_LINES][160];
 	float body = gu(group.density.metrics->body), line = gu(group.density.metrics->body_line);
 	int count, index;
 
@@ -1924,7 +1924,7 @@ static void group_help(float x, float y, float width)
 		if (now[0] && strcmp(now, "default"))
 		{
 			snprintf(named, sizeof(named), !strcmp(row->key, "audio.output_device") ?
-				"Where the game's sound plays: %s. A lists every output." : "The microphone voice chat uses: %s.", now);
+				"Where the game's sound plays: %s. {A} lists every output." : "The microphone voice chat uses: %s.", now);
 			help = named;
 		}
 	}
@@ -1949,7 +1949,7 @@ static void group_help(float x, float y, float width)
 			help = named;
 		}
 	}
-	count = ae_wrap_text(AE_FONT_BODY, body, help, width, lines, HELP_LINES);
+	count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(help, expanded, sizeof(expanded)), width, lines, HELP_LINES);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }

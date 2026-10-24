@@ -63,7 +63,7 @@ static void rows_make(void)
 	{
 		screen.level_of_row[count] = level;
 		flow->rows[count++] = (struct ae_flow_row){ ROW_LEVEL, -1, screen.campaign.levels[level].name, NULL,
-			"A plays it at the difficulty on the right; left / right change the difficulty.",
+			"{A} plays it at the difficulty on the right; left / right change the difficulty.",
 			screen.campaign.levels[level].reached ? NULL : "NOT REACHED" };
 	}
 	flow->count = count;

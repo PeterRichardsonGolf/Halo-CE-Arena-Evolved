@@ -14,6 +14,7 @@ port/linux/tests/ae_widgets_test.c with the recording ae_draw stub).
 #ifndef __AE_WIDGETS_H
 #define __AE_WIDGETS_H
 
+#include <stddef.h>
 #include "ae_style.h"
 #include "ae_list.h"
 #include "ae_ui.h"
@@ -178,6 +179,12 @@ const char *ae_prompt_key(int button);      /* A Enter, B Esc, X Ctrl+F, Y R, LB
                                                START Enter, d-pad Left / Right */
 /* a prompt's hit index for a pair's second mark: the prompt's index with this bit */
 enum { AE_PROMPT_PAIR_HIT = 0x100 };
+/* help lines name buttons as tokens: {A} {B} {X} {Y} {LB} {RB} {LT} {RT}; expanded into out (a stack buffer) for the
+device last used (the footer's words: Enter / Esc / Ctrl+F ...; Xbox A B X Y; PlayStation Cross Circle Square
+Triangle L1 ...; Nintendo by position). Returns out; call it on every draw */
+const char *ae_help_button_word(int device, int button);
+const char *ae_help_expand_for(int device, const char *text, char *out, size_t size);
+const char *ae_help_expand(const char *text, char *out, size_t size);
 unsigned int ae_prompt_tint(int device, int button);   /* AE_TINT_*, or AE_COLOR_KEY_CAP */
 /* the footer: a row whose centre is center_y; 32 u between prompts; status right-aligned at right_x (muted);
 pressed: the prompt index the pointer holds down (-1) */

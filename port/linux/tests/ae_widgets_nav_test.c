@@ -893,8 +893,37 @@ static void shoulder_caps(void)
 	use_device(AE_DEVICE_XBOX);
 }
 
+/* help lines: {tokens} become the last device's button words, as the footer shows them */
+static void help_words(void)
+{
+	char out[160], tiny[8];
+	const char *line = "{A} opens, {B} leaves, {X}/{Y}, {LB} {RB} {LT} {RT}; {?} {A";
+
+	ae_help_expand_for(AE_DEVICE_KEYBOARD_MOUSE, line, out, sizeof(out));
+	CHECK(!strcmp(out, "Enter opens, Esc leaves, Ctrl+F/R, Q E PgUp PgDn; {?} {A") ||
+		(printf("%s\n", out), 0));
+	ae_help_expand_for(AE_DEVICE_XBOX, line, out, sizeof(out));
+	CHECK(!strcmp(out, "A opens, B leaves, X/Y, LB RB LT RT; {?} {A"));
+	ae_help_expand_for(AE_DEVICE_PLAYSTATION, line, out, sizeof(out));
+	CHECK(!strcmp(out, "Cross opens, Circle leaves, Square/Triangle, L1 R1 L2 R2; {?} {A"));
+	ae_help_expand_for(AE_DEVICE_NINTENDO, line, out, sizeof(out));
+	CHECK(!strcmp(out, "B opens, A leaves, Y/X, L R ZL ZR; {?} {A"));
+	/* (a small buffer cuts, ends in 0, never overruns; NULL text is empty) */
+	ae_help_expand_for(AE_DEVICE_PLAYSTATION, "{A} {B}", tiny, sizeof(tiny));
+	CHECK(!strcmp(tiny, "Cross C"));
+	ae_help_expand_for(AE_DEVICE_XBOX, NULL, out, sizeof(out));
+	CHECK(!out[0]);
+	/* (the screens' call follows ae_ui's last device, so a switch mid-screen re-expands) */
+	use_device(AE_DEVICE_PLAYSTATION);
+	CHECK(!strcmp(ae_help_expand("{X}", out, sizeof(out)), "Square"));
+	use_device(AE_DEVICE_KEYBOARD_MOUSE);
+	CHECK(!strcmp(ae_help_expand("{X}", out, sizeof(out)), "Ctrl+F"));
+	use_device(AE_DEVICE_XBOX);
+}
+
 int main(void)
 {
+	help_words();
 	tabs();
 	dots();
 	prompts();

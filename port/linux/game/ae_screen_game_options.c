@@ -771,10 +771,11 @@ static void draw_rail(float x, float y, float width)
 static void draw_help_text(float x, float y, float width, const char *text)
 {
 	char lines[HELP_LINES][160];
+	char expanded[320];
 	float body = u(screen.density.metrics->body), line = u(screen.density.metrics->body_line);
 	int count, index;
 
-	count = ae_wrap_text(AE_FONT_BODY, body, text, width, lines, HELP_LINES);
+	count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(text, expanded, sizeof(expanded)), width, lines, HELP_LINES);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }

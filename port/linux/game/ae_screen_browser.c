@@ -572,25 +572,27 @@ static char const *empty_text(void)
 		return "Searching your network... Games hosted on it show here.";
 	}
 	if (screen.count && !screen.shown_count)
-		return "No games match this filter. LT / RT change it.";
+		return "No games match this filter. {LT} / {RT} change it.";
 	if (!config_boolean("network.online"))
 		return "Internet play is off (network.online): turn it on to find and join the internet's games.";
 #ifdef HALO_GAME_BROWSER
 	if (screen.list_status == BROWSER_LIST_WAITING)
 		return "Asking the game list...";
 	if (screen.list_status == BROWSER_LIST_FAILED)
-		return "The game list did not answer. X asks again.";
+		return "The game list did not answer. {X} asks again.";
 	if (screen.list_status == BROWSER_LIST_NONE)
 		return "No game list is set (network.browser_url).";
 #endif
-	return "No games listed right now. Host one from CREATE GAME, or join a friend's with an invite (Y).";
+	return "No games listed right now. Host one from CREATE GAME, or join a friend's with an invite ({Y}).";
 }
 
 static void draw_empty(float x, float y, float width)
 {
 	char lines[3][160];
 	float body = ae_size_minor(&screen.flow.density) * 1.1f, line = u(30.0f);
-	int count = ae_wrap_text(AE_FONT_BODY, body, empty_text(), width - u(40.0f), lines, 3), index;
+	char expanded[240];
+	int count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(empty_text(), expanded, sizeof(expanded)), width - u(40.0f), lines, 3),
+		index;
 
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x + u(20.0f), y + u(24.0f) + line * (float)index, AE_ALIGN_LEFT,
@@ -607,11 +609,12 @@ static void draw_card(float x, float y, float width, float bottom)
 
 	if (screen.joining)
 	{
-		char joining[96];
+		char joining[96], leave[64];
 
 		snprintf(joining, sizeof(joining), "JOINING %s...", screen.joining_name);
 		ae_draw_text(AE_FONT_ROW, text, x, y, AE_ALIGN_LEFT, AE_COLOR_ACCENT, joining);
-		ae_draw_text(AE_FONT_BODY, minor, x, y + u(44.0f), AE_ALIGN_LEFT, AE_COLOR_MUTED, "B leaves the join.");
+		ae_draw_text(AE_FONT_BODY, minor, x, y + u(44.0f), AE_ALIGN_LEFT, AE_COLOR_MUTED,
+			ae_help_expand("{B} leaves the join.", leave, sizeof(leave)));
 		return;
 	}
 	if (!game)

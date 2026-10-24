@@ -140,7 +140,7 @@ static void rows_list(void)
 		screen.profile_of_row[count] = at;
 		flow->rows[count++] = (struct ae_flow_row){ ROW_PROFILE, -1, screen.profiles[at].name,
 			screen.profiles[at].index == screen.player1 ? "PLAYER 1" : NULL,
-			"A edits it; Y: player 1 plays with it; X deletes it.", NULL };
+			"{A} edits it; {Y}: player 1 plays with it; {X} deletes it.", NULL };
 	}
 	screen.profile_of_row[count] = -1;
 	flow->rows[count++] = (struct ae_flow_row){ ROW_NEW, -1, "NEW PROFILE", NULL,

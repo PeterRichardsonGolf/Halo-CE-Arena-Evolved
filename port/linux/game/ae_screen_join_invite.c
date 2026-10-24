@@ -279,6 +279,7 @@ static void join_draw(struct ae_screen *instance)
 	struct ae_density const *d = &flow->density;
 	struct ae_field field;
 	float x = ae_flow_left_x(flow), width = ae_flow_right_x(flow) - x, y = ae_frame_y(&flow->frame, AE_FLOW_CONTENT_Y);
+	char expanded[160];
 	int error;
 
 	(void)instance;
@@ -302,11 +303,11 @@ static void join_draw(struct ae_screen *instance)
 	y += ae_widget_field(d, x, y, width, &field, HIT_FIELD) + ae_flow_u(flow, 18.0f);
 	if (join.joining)
 		ae_draw_text(AE_FONT_BODY, ae_size_minor(d), x, y + ae_flow_u(flow, 12.0f), AE_ALIGN_LEFT, AE_COLOR_ACCENT,
-			"Reaching the host's game. B leaves it.");
+			ae_help_expand("Reaching the host's game. {B} leaves it.", expanded, sizeof(expanded)));
 	else
 		ae_draw_text(AE_FONT_BODY, ae_size_minor(d), x, y + ae_flow_u(flow, 12.0f), AE_ALIGN_LEFT, AE_COLOR_MUTED,
-			join.from_clipboard ? "From your clipboard. A joins its game." :
-			"Paste the link a friend sent you (Y, or Ctrl+V while typing), or type its code.");
+			ae_help_expand(join.from_clipboard ? "From your clipboard. {A} joins its game." :
+			"Paste the link a friend sent you ({Y}, or Ctrl+V while typing), or type its code.", expanded, sizeof(expanded)));
 	flow->prompt_count = 0;
 	if (!join.joining)
 	{
