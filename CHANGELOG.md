@@ -44,6 +44,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   packs come in every download: Helljumper, Corporal, Aurora, Bastion, Selene and Solace.
 - Bots: in a network game in progress, bots fill up to BOTS (new bot machines join too);
   the classic Game Options BOTS row goes up to 31.
+- Per-player settings (VIEW, HUD, the mouse and the rest of SETTINGS' own rows) are saved to the profile again: since
+  0.3.7 every change was lost at the next start. Player 1 also takes their profile before such a change at the menus or
+  in a pause's SETTINGS.
 - Games started from CREATE GAME, JOIN WITH INVITE or SERVER BROWSER play with player 1's profile (the one used last):
   the name showed as "Player" and the profile's colour and settings were not used, unless CAMPAIGN or SETTINGS had
   been opened first.
