@@ -80,6 +80,8 @@ static short focused_level(void)
 	return focus >= 0 && focus < screen.flow.count ? screen.level_of_row[focus] : -1;
 }
 
+static int continue_focused(void);
+
 static void draw_side(void)
 {
 	struct ae_flow_screen *flow = &screen.flow;
