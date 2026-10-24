@@ -64,7 +64,7 @@ static const char *const vertical_texts[] = { "SAME", "0.1", "0.15", "0.25", "0.
 	"1.5", "1.75", "2.0", "2.5", "3.0", "4.0" };
 static const char *const vertical_values[] = { "0", "0.1", "0.15", "0.25", "0.4", "0.5", "0.75", "1", "1.25", "1.5",
 	"1.75", "2", "2.5", "3", "4" };
-static const char *const keys_texts[] = { "24 ACTIONS" };
+static const char *const keys_texts[] = { "21 ACTIONS" };
 static const char *const keys_values[] = { "" };
 static const char *const shield_texts[] = { "DEFAULT", "WHITE", "BLACK", "RED", "BLUE", "GRAY", "YELLOW", "GREEN",
 	"PINK", "PURPLE", "CYAN", "COBALT", "ORANGE", "TEAL", "SAGE", "BROWN", "TAN", "MAROON", "SALMON" };
@@ -534,7 +534,7 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_AUDIO, "VOICE", "VOICE VOLUME", AE_SETTINGS_SLIDER, "audio.voice_volume", volume_texts, volume_values,
 		VOLUME_STEPS, AE_SETTINGS_ALWAYS, "Other players' voices.", 0 },
 	{ AE_SETTINGS_AUDIO, "VOICE", "PUSH TO TALK", AE_SETTINGS_KEY, "controls.push_to_talk", NULL, NULL, 0,
-		AE_SETTINGS_WHEN_PUSH_TO_TALK, "The key you hold to talk. The classic menus' Controls change it for now.", 0 },
+		AE_SETTINGS_WHEN_PUSH_TO_TALK, "The key you hold to talk. A changes it in KEY BINDINGS.", 0 },
 	/* (CALLOUTS: sound, this PC's; on HUD before 0.3.9, owner 2026-10-23) */
 	{ AE_SETTINGS_AUDIO, "CALLOUTS", "CALLOUTS", AE_SETTINGS_SPINNER, "game.callouts",
 		VALUES(callout_texts, callout_values), AE_SETTINGS_ALWAYS, "A voice calls power items as they come up.", 0 },
