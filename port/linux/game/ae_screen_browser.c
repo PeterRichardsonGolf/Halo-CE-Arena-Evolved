@@ -32,6 +32,7 @@ failed: <why>", "closed".
 #include "ae_screen_browser.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_join_invite.h"
+#include "ae_screen_main_menu.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -447,6 +448,8 @@ static void join_update(void)
 		return;
 	}
 	platform_log("ae browser: joined");
+	/* (split screen: the players signed in at the main menu) */
+	ae_screen_main_menu_join_signed_in();
 	ae_screen_create_game_lobby_joined(screen.kind == AE_BROWSER_LAN ? "JOINED ON YOUR NETWORK" :
 		"JOINED FROM THE BROWSER");
 }

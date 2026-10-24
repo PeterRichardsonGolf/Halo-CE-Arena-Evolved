@@ -14,5 +14,8 @@ CAMPAIGN, SETTINGS, PROFILES, QUIT, in AE's look. While display.arena_menus is o
 int ae_screen_main_menu_open(void);
 /* closes it (and its MULTIPLAYER) wherever it is on the stack: the game has left its main menu */
 void ae_screen_main_menu_close(void);
+/* (split screen) the players signed in at the main menu (START on controllers 2-4) join the lobby this PC is in, after
+player 1: CREATE GAME's and a join's own call once player 1 is added */
+void ae_screen_main_menu_join_signed_in(void);
 
 #endif
