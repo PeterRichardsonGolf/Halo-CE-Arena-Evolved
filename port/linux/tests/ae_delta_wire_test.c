@@ -119,6 +119,11 @@ int main(void)
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
 	chupa_host(reserved, "chupa-29a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-29a"));
+	/* ... a ChupathingyCE 0.8.0h host (38a, its range from 28a) joined, by its range or its slot alone */
+	chupa_host(reserved, "chupa-38a");
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
+	slot_host(reserved, "chupa-38a");
+	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
 	/* ... a ChupathingyCE wire past 32a not proven (32b, 36a) never; a newer
 	one whose range has this build's wire joined, one whose has not, not */
 	chupa_host(reserved, "chupa-32b");

@@ -44,25 +44,26 @@ void ae_delta_wire_narrow(unsigned char *reserved, int size, int major, const ch
 int ae_delta_wire_decide(int decided, const unsigned char *reserved, int size, int major, const char *own,
 	char *theirs, int theirs_size)
 {
-	struct delta_wire_id mine, first, host, host_oldest;
+	struct delta_wire_id mine, first, chupa_38, host, host_oldest;
 
 	if (decided < 0 || !delta_wire_parse(own, (int)strlen(own), &mine) ||
-		!delta_wire_parse(AE_DELTA_WIRE_OLDEST, (int)strlen(AE_DELTA_WIRE_OLDEST), &first))
+		!delta_wire_parse(AE_DELTA_WIRE_OLDEST, (int)strlen(AE_DELTA_WIRE_OLDEST), &first) ||
+		!delta_wire_parse(AE_DELTA_WIRE_CHUPA_38, (int)strlen(AE_DELTA_WIRE_CHUPA_38), &chupa_38))
 	{
 		return decided;
 	}
-	/* (a host whose range has this build's wire; or one of the oldest wire,
-	ChupathingyCE 0.8's, played by its network version) */
+	/* (a host whose range has this build's wire; or one of ChupathingyCE 0.8's wires, the oldest or 0.8.0h's, played
+	by its network version) */
 	if (delta_compat_read_range(reserved, size, &host, &host_oldest))
 	{
 		if ((delta_wire_compare(&mine, &host_oldest) >= 0 && delta_wire_compare(&mine, &host) <= 0) ||
-			!delta_wire_compare(&host, &first))
+			!delta_wire_compare(&host, &first) || !delta_wire_compare(&host, &chupa_38))
 		{
 			return 1;
 		}
 	}
 	else if (delta_compat_host_wire(reserved, size, major, &host) &&
-		(!delta_wire_compare(&host, &mine) || !delta_wire_compare(&host, &first)))
+		(!delta_wire_compare(&host, &mine) || !delta_wire_compare(&host, &first) || !delta_wire_compare(&host, &chupa_38)))
 	{
 		return 1;
 	}

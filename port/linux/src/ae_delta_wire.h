@@ -21,6 +21,9 @@ and older 0.8 builds), whose game it plays by the number the host announces
 /* the oldest wire Arena Evolved plays: ChupathingyCE 0.8's (network 32,
 and OpenCE's 33 to 36 by the host's number from 0.8.0f) */
 #define AE_DELTA_WIRE_OLDEST "chupa-32a"
+/* (0.3.9) ChupathingyCE 0.8.0h's wire: OpenCE's 33 to 38 by the number it announces (its table's), its range from
+chupa-28a to it, below this build's chupa-38z: joined as AE_DELTA_WIRE_OLDEST is (crossplay test 2026-10-24) */
+#define AE_DELTA_WIRE_CHUPA_38 "chupa-38a"
 
 /* an advertisement delta_compat_advertise wrote for wire (DELTA_WIRE) at
 major, its range set to AE_DELTA_WIRE_OLDEST to the wire: its old slot the
@@ -31,8 +34,8 @@ void ae_delta_wire_narrow(unsigned char *reserved, int size, int major, const ch
 /* what this build (wire own, at major) decides of a host's advertisement,
 from delta_compat_decide's decided (1 join, 0 refuse, -1 not said) and
 theirs (its wire as text, when refused): 1 only for a host whose range
-has own, or whose wire is AE_DELTA_WIRE_OLDEST (without range bytes: whose
-slot is either); 0 for another Delta host (theirs set to its wire); -1 as
+has own, or whose wire is AE_DELTA_WIRE_OLDEST or AE_DELTA_WIRE_CHUPA_38
+(without range bytes: whose slot is one of them); 0 for another Delta host (theirs set to its wire); -1 as
 delta_compat_decide says */
 int ae_delta_wire_decide(int decided, const unsigned char *reserved, int size, int major, const char *own,
 	char *theirs, int theirs_size);
