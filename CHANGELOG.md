@@ -18,7 +18,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   refused), and bots don't play it.
 - VEHICLES DESTRUCTIBLE, a new gametype rule (seed revision 23: ON in every AE gametype with vehicles): vehicles are
   destroyed the Halo 2 way, by explosives only (a warthog takes two rockets, a ghost or banshee one), can't be destroyed
-  while someone rides them, and their wrecks clear after 10 seconds.
+  while someone rides them, and their wrecks clear after 10 seconds. A destroyed vehicle explodes, and its blast is
+  the destroyer's (point blank, it can kill you, as in Halo 2). A first version: the damage numbers are still to be
+  tuned, and bullets don't damage vehicles yet.
 - TEST: the VEHICLE DAMAGE PACK (packs/ae_vehicle_damage.aepack; CMT's TSC:E damage and wrecks, credits CMT and the
   Evolved team). With VEHICLES DESTRUCTIBLE on, damaged warthogs, ghosts and banshees smoke and burn, explode as in
   TSC:E and leave burning wrecks. Each machine shows the look it has; nothing of it goes over the network. A test
