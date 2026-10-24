@@ -37,6 +37,10 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   FALL DAMAGE and HEALTH (HALO CE, REACH, HALO 2, HALO 3). CALLOUT VOICE lists the voices when AUDIO opens.
 - The menus' mouse cursor is half OpenCE's size with Arena Evolved's menus (36 pixels at 1080p, 48 at 1440p), to sit
   with their rows; the classic menus keep OpenCE's.
+- SETTINGS > CONTROLS > KEY BINDINGS: change every keyboard and mouse action's two keys in Arena Evolved's menus (it
+  opened nothing before). Press a key, mouse button or the wheel; a key another action had moves over and the screen
+  says so; RESTORE DEFAULTS per section or all. AUDIO's PUSH TO TALK opens it. BACK PADDLES picks the button each back
+  paddle presses (each player's own).
 - Menus: left and right go round past a row's ends, as in MCC. CALLOUTS, CALLOUT DETAIL and CALLOUT VOICE moved from
   HUD to AUDIO. SETTINGS > CONTROLS changes the profile's rows before any game.
 - Gametype files: read at each start (a seeded AE or NHE gametype is never read from or written to a file), and
