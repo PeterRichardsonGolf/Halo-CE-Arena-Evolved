@@ -351,6 +351,25 @@ def test_network_bots_take_no_host_view(tmp_path, settings):
     assert max(count for count, _ in views) == 1, views
 
 
+@pytest.mark.parametrize("gametype", ["AE TEAM SLY", "AE FFA SLAY"])
+def test_network_bots_off_mid_game_keeps_playing(tmp_path, gametype):
+    """BOTS lowered to OFF in a network game in progress (owner 10-23, LAN TEAM AE BR SLAYER, the host alone with 17
+    bots): every bot leaves, and the host plays on alone as in a game started alone. Before, the bots' left players
+    left one team (or one player) in the game, and the game ended at once (game_engine_should_end_game's one team left
+    rule, which still ends a game a person leaves)"""
+    status, output = _play(tmp_path, "host:bloodgulch", 50, HALO_NETWORK_TEST_GAMETYPE=gametype,
+                           HALO_BOTS_LIVE_TEST="5:5,15:0")
+    assert status == 0, output[-3000:]
+    left = re.findall(r"net bots: bot \d+ left the game in progress \(fewer wanted, tick (\d+)\)", output)
+    assert len(set(left)) >= 1 and len(re.findall(r"net bots: bot \d+ joined the game in progress", output)) >= 5, \
+        output[-3000:]
+    last_left = max(int(tick) for tick in left)
+    ticks = [int(tick) for tick in re.findall(r"network test: tick (\d+) .*?\| playing to", output)]
+    # (still playing 20 s after the last bot left; no postgame)
+    assert ticks and max(ticks) >= last_left + 20 * 30, (last_left, ticks[-3:])
+    assert "switching to postgame" not in output, output[-3000:]
+
+
 def test_the_ladder():
     """The six levels (owner 10-20): NORMAL and HEROIC are OpenCE's rows, LEGENDARY is AE's halfway from HEROIC to
     DEMON, DEMON is OpenCE's LEGENDARY row; every aim and sight number steps the right way level to level"""

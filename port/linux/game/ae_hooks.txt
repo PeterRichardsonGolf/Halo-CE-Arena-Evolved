@@ -547,6 +547,10 @@ source/networking/network_game_manager.c	if (ae_lan_bots_network_player(player))
 source/networking/network_client_manager.c	#include "ae_lan_bots.h" /* AE hook */
 source/networking/network_client_manager.c	if (ae_lan_bots_network_player(player)) continue; /* AE hook */
 source/networking/network_client_manager.c	if (player->machine_index == client->machine_index && !ae_lan_bots_network_player(player)) /* AE hook */
+# a bot that left the game in progress (BOTS lowered) still holds its team for the one team left rule: the host left
+# alone by its bots plays on as in a game it started alone (0.3.9; ae_lan_bots_left_player)
+source/game/game_engine.c	#include "ae_lan_bots.h" /* AE hook */
+source/game/game_engine.c	if ((!player->quit_out_of_game || ae_lan_bots_left_player(iterator.datum_index)) && /* AE hook */
 source/game/player_queues_new.c	#include "ae_lan_bots.h" /* AE hook */
 source/game/player_queues_new.c	ae_lan_bots_action(queue_index, &update->update.actions[queue_index]); /* AE hook */
 port/linux/game/menu_functions.c	#include "ae_lan_bots.h" /* AE hook */
