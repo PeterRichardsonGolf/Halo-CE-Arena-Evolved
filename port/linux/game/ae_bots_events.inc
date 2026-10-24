@@ -10,7 +10,8 @@ key=value words:
 
   bot event: t=<tick> bot=<1..> skill=<name> ev=<event> target=<player or -1> dist=<world units or -1> ...
 
-  ev=pos x= y= z= fighting=0|1   once a second while alive (stuck spots, fight and alive time)
+  ev=pos x= y= z= fighting=0|1 [team=<n>]   once a second while alive (stuck spots, fight and alive time); team=
+                                 in a team game (0 red, 1 blue)
   ev=seen                        the tick it takes a target (a new one, or after losing it 2 s)
   ev=first_shot since_seen=<ticks>   its first shot at that target
   ev=shot weapon=<tag name>      the weapon fired (its last fired tick moved on; any weapon, any ammo rule); seen one tick late
@@ -296,6 +297,9 @@ void ae_bots_events_end(struct bots_bot *bot, long bot_index, struct bots_tick *
 		state->next_pos_tick = now + TICKS_PER_SECOND;
 		snprintf(extra, sizeof(extra), "x=%.1f y=%.1f z=%.1f fighting=%d", tick->position.x, tick->position.y,
 			tick->position.z, tick->fighting ? 1 : 0);
+		/* (a team game: its team, for bot_report.py's table by team) */
+		if (game_engine_has_teams())
+			snprintf(extra + strlen(extra), sizeof(extra) - strlen(extra), " team=%ld", (long)tick->player->team_index);
 		ae_bots_event_line(bot_index, now, "pos", target, dist, extra);
 	}
 }
