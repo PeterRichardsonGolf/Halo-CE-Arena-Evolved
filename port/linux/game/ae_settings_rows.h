@@ -114,6 +114,32 @@ short ae_settings_value_index(struct ae_settings_row const *row, const char *tex
 /* a slider's place, 0 to 1 */
 float ae_settings_slider(struct ae_settings_row const *row, short index);
 
+/* (0.3.9) a number row: a slider whose value may be any number of its range to 0.01, stepped 0.01 at a time (Shift
+with the arrows, Ctrl with the wheel) or typed, besides its steps. 0.3.9: the MOUSE sensitivities; 0.4.0's PC pass
+adds the other sliders to the table (ae_settings_rows.c numbers[]). special: a value of its own outside the range
+(VERTICAL SENSITIVITY's 0, SAME) */
+struct ae_settings_number { double minimum, maximum, special; int has_special; };
+/* 0 when the row is not a number row */
+int ae_settings_row_number(struct ae_settings_row const *row, struct ae_settings_number *number);
+/* a number as its setting's text: rounded to 0.01, one decimal unless the hundredths are not 0 ("1.37", "1.4", "10.0") */
+void ae_settings_number_text(double value, char *text, size_t size);
+/* a number row's value as shown: its step's text when it is a step's value ("1.0", "SAME"), else the number */
+void ae_settings_number_shown(struct ae_settings_row const *row, const char *value, char *text, size_t size);
+/* whether a text may stand in a number row's field as it is typed: digits and one '.', at most two decimals, at most
+AE_SETTINGS_NUMBER_TYPED characters (empty too) */
+enum { AE_SETTINGS_NUMBER_TYPED = 5 };
+int ae_settings_number_typing_ok(const char *typed);
+/* a typed text's value, as the setting's text: clamped to the range (the special exactly as typed: "0" is SAME) and
+rounded to 0.01. 0 when it has no number (empty, ".") */
+int ae_settings_number_typed(struct ae_settings_row const *row, const char *typed, char *text, size_t size);
+/* a step from the value now (direction 1, -1). fine: 0.01, held at the range's ends (0 there; from the special, the
+range's end on that side); else the next step's value past it (an off-step 1.37 goes to 1.5 and 1.25), round past the
+ends as every row. text: the setting's text */
+int ae_settings_number_step(struct ae_settings_row const *row, const char *now, short direction, int fine, char *text,
+	size_t size);
+/* a slider's place, 0 to 1, for any value of its row: between its steps' places for a value between them */
+float ae_settings_slider_at(struct ae_settings_row const *row, const char *text);
+
 /* B on a screen with changes: "3 CONTROLS settings changed for Chief: LOOK SENSITIVITY, ZOOM and VIBRATION. They are
 in use already." (who NULL: "on this PC"); more than 3: the first 3 and "N more" */
 void ae_settings_keep_body(const char *group, const char *who, const char *const *labels, short count, char *text,

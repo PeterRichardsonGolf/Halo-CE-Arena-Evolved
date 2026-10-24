@@ -120,6 +120,32 @@ CASES = (
     ("chat-streamer", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left")),
     ("chat-defaults", 35, CHAT, 1, "1920x1080", 100, ("pad:down", "pad:down", "pad:left", "pad:y", "pad:down",
                                                       "pad:a")),
+    # (0.3.9) MOUSE's sensitivities to 0.01: RB twice to MOUSE, down to HORIZONTAL SENSITIVITY (1.0). Shift with
+    # right: 1.01, right alone: the next step, 1.25 ("+shift", "+ctrl": the harness holds that modifier for AE)
+    ("mouse", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down")),
+    ("mouse-130", 35, CONTROLS, 1, "1920x1080", 130, ("pad:rb", "pad:rb", "pad:down")),
+    ("mouse-fine", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "key:Right+shift",
+                                                       "key:Right")),
+    # (Enter types: 1.37 kept, then B, KEEP: written to the profile's ae.toml; the field shown mid-typing at 100 and
+    # 130 %; Esc drops what was typed; 9 is held to the range's 4.0; a pad's A still lists ALL VALUES)
+    ("mouse-typed", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "key:Return", "key:1",
+                                                        "key:.", "key:3", "key:7", "key:Return", "pad:b",
+                                                        "pad:a")),
+    ("mouse-typing", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "key:Return", "key:1",
+                                                         "key:.", "key:3", "wait")),
+    ("mouse-typing-130", 35, CONTROLS, 1, "1920x1080", 130, ("pad:rb", "pad:rb", "pad:down", "key:Return", "key:1",
+                                                             "key:.", "key:3", "wait")),
+    ("mouse-cancel", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "key:Return", "key:2",
+                                                         "key:Escape", "wait")),
+    ("mouse-clamp", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "key:Return", "key:9",
+                                                        "key:Return")),
+    ("mouse-pad-a", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "pad:a")),
+    # (Ctrl with the wheel over HORIZONTAL SENSITIVITY: 1.01 (the pointer first: the row's middle, in the menus' 640 x
+    # 480); MCC's ZOOMED SENSITIVITY SCALE (MOUSE STYLE right, down twice) with Shift: 1.01 too)
+    ("mouse-wheel", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:down", "move:338:158",
+                                                        "wheel:1+ctrl", "wait")),
+    ("mouse-mcc", 35, CONTROLS, 1, "1920x1080", 100, ("pad:rb", "pad:rb", "pad:right", "pad:down", "pad:down",
+                                                      "key:Right+shift")),
 )
 
 
@@ -311,6 +337,28 @@ def test_chat_and_streaming(runs):
     said = lines(runs["chat-streamer"][1], "ae settings: ")
     assert "set STREAMER MODE ON" in said, said
     assert lines(runs["chat-defaults"][1], "ae settings: defaults ") == ["(1 rows)"]
+
+
+def test_mouse_number_rows(runs):
+    """(0.3.9) MOUSE's sensitivities to 0.01: Shift and Ctrl + wheel step 0.01, the arrows alone the next step; Enter
+    types a value (kept to 0.01 and written to the profile's ae.toml, held to the range, Esc drops it); a pad's A still
+    lists ALL VALUES"""
+    said = lines(runs["mouse-fine"][1], "ae settings: ")
+    assert said[-2:] == ["set HORIZONTAL SENSITIVITY 1.01", "set HORIZONTAL SENSITIVITY 1.25"], said
+    text = runs["mouse-typed"][1]
+    said = lines(text, "ae settings: ")
+    assert "typed HORIZONTAL SENSITIVITY '1.37'" in said and "set HORIZONTAL SENSITIVITY 1.37" in said, said
+    own = lines(text, "ae player settings: player 1 ")
+    assert "set input.mouse_sensitivity 1.37" in own and any(" written (" in line for line in own), own
+    for name in ("mouse-typing", "mouse-typing-130"):
+        assert "typing HORIZONTAL SENSITIVITY from '1.0'" in lines(runs[name][1], "ae settings: "), name
+    said = lines(runs["mouse-cancel"][1], "ae settings: ")
+    assert "typing dropped" in said and not [line for line in said if line.startswith("set ")], said
+    assert "set HORIZONTAL SENSITIVITY 4.0" in lines(runs["mouse-clamp"][1], "ae settings: ")
+    said = lines(runs["mouse-pad-a"][1], "ae settings: ")
+    assert not [line for line in said if line.startswith("typing")], said
+    assert "set HORIZONTAL SENSITIVITY 1.01" in lines(runs["mouse-wheel"][1], "ae settings: ")
+    assert "set ZOOMED SENSITIVITY SCALE 1.01" in lines(runs["mouse-mcc"][1], "ae settings: ")
 
 
 if __name__ == "__main__":

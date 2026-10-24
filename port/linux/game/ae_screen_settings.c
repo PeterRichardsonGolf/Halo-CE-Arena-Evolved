@@ -24,6 +24,7 @@ values back.
 #include "../src/ae_draw.h"
 #include "../src/ae_discs.h"
 #include "../src/ae_ds5.h"
+#include "../src/ae_platform.h"
 #include "ae_glue_player_settings.h"
 #include "ae_glue_profiles.h"
 #include "ae_hooks.h"
@@ -145,6 +146,12 @@ static struct
 	short dragging_row;                  /* a slider held by the pointer, -1 */
 	int then_switch;                     /* the KEEP / UNDO asked by X: the player switches after it */
 	float logged_width, logged_scale;
+	/* (0.3.9) a number row's value typed (the keyboard and mouse: Enter, or a click on the value): its row (-1 none),
+	the text, its edit, the caret's blink */
+	short typing_row;
+	struct ae_text typed;
+	struct ae_field_edit typed_edit;
+	unsigned long caret_since;
 } group;
 
 static struct ae_screen_class const top_class, group_class;
@@ -411,6 +418,12 @@ static void row_shown(short player, struct ae_settings_row const *row, char cons
 	if (row->kind == AE_SETTINGS_SUBSCREEN)
 	{
 		snprintf(text, (size_t)size, "%s", ae_settings_value_text(row, 0));
+		return;
+	}
+	/* (0.3.9: a number row's value between its steps as itself, 1.37) */
+	if (ae_settings_row_number(row, NULL))
+	{
+		ae_settings_number_shown(row, value, text, (size_t)size);
 		return;
 	}
 	index = row_index(row, value);
@@ -1212,10 +1225,10 @@ static void display_ask(struct ae_settings_row const *row, const char *before)
 	}
 }
 
-static void value_set(struct ae_settings_row const *row, short index)
+/* a value set, as its setting's text; logged as shown (NULL: as the row shows it) */
+static void value_put(struct ae_settings_row const *row, const char *value, const char *logged)
 {
-	const char *value = ae_settings_value_of(row, index);
-	char before[VALUE_TEXT];
+	char before[VALUE_TEXT], shown[VALUE_TEXT];
 
 	row_value(who.player, row, before, sizeof(before));
 	if (!row_set(who.player, row, value))
@@ -1226,15 +1239,33 @@ static void value_set(struct ae_settings_row const *row, short index)
 	}
 	if (row->flags & AE_SETTINGS_RESTART)
 		who.restart_pending = 1;
-	platform_log("ae settings: set %s %s", row->label, ae_settings_value_text(row, index));
+	if (!logged)
+	{
+		row_shown(who.player, row, value, shown, sizeof(shown));
+		logged = shown;
+	}
+	platform_log("ae settings: set %s %s", row->label, logged);
 	if (display_row(row) && !values_same(row, before, value))
 		display_ask(row, before);
 }
 
-static void value_step(struct ae_settings_row const *row, short direction)
+static void value_set(struct ae_settings_row const *row, short index)
 {
-	char now[VALUE_TEXT], shown[VALUE_TEXT];
-	short current, next;
+	value_put(row, ae_settings_value_of(row, index), ae_settings_value_text(row, index));
+}
+
+/* (0.3.9) whether a step from this event is a fine one: Shift held on the keyboard (a number row's 0.01) */
+static int fine_held(void)
+{
+	return (ae_platform_modifiers() & AE_MODIFIER_SHIFT) != 0;
+}
+
+/* a step left or right; fine: a number row's 0.01 (held at its range's ends), else its next step */
+static void value_step(struct ae_settings_row const *row, short direction, int fine)
+{
+	char now[VALUE_TEXT], shown[VALUE_TEXT], next_value[VALUE_TEXT];
+	short current, next = -1;
+	int number = ae_settings_row_number(row, NULL);
 
 	if (row->kind == AE_SETTINGS_SUBSCREEN || row->kind == AE_SETTINGS_KEY)
 	{
@@ -1242,23 +1273,102 @@ static void value_step(struct ae_settings_row const *row, short direction)
 		return;
 	}
 	row_value(who.player, row, now, sizeof(now));
-	current = row_index(row, now);
-	if (current < 0)
-		current = 0;
-	next = ae_value_step(ae_settings_value_count(row), current, direction);
-	if (next == current)
+	if (number)
 	{
-		ae_sound_request(AE_SOUND_FAILURE, 0);
-		return;
+		/* (a number row: from the value itself, 1.37's next step 1.5, or 0.01 on) */
+		if (!ae_settings_number_step(row, now, direction, fine, next_value, sizeof(next_value)) ||
+			values_same(row, now, next_value))
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return;
+		}
+	}
+	else
+	{
+		current = row_index(row, now);
+		if (current < 0)
+			current = 0;
+		next = ae_value_step(ae_settings_value_count(row), current, direction);
+		if (next == current)
+		{
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+			return;
+		}
 	}
 	row_shown(who.player, row, now, shown, sizeof(shown));
 	snprintf(group.tick_old, sizeof(group.tick_old), "%s", shown);
 	group.tick_row = (short)(row - ae_settings_row(0));
 	group.tick_side = direction;
 	ae_motion_start(&group.tick, 0.0f, 1.0f, AE_MOTION_VALUE_TICK_MS);
-	value_set(row, next);
+	if (number)
+		value_put(row, next_value, NULL);
+	else
+		value_set(row, next);
 	ae_sound_request(AE_SOUND_CURSOR, 0);
 	refresh();
+}
+
+/* ---------- (0.3.9) a number row's value typed: Enter (the keyboard) or a click on the value opens a field in the
+value's place; digits and one '.', Backspace, the arrows move the caret; Enter keeps it (to 0.01, held to the row's
+range), Esc drops it. A pad's A keeps its ALL VALUES picker */
+
+static void typing_finish(int keep)
+{
+	struct ae_settings_row const *row = ae_settings_row(group.typing_row);
+	char value[VALUE_TEXT];
+
+	if (group.typing_row < 0)
+		return;
+	group.typing_row = -1;
+	if (!keep || !row || !ae_settings_number_typed(row, group.typed.text, value, sizeof(value)))
+	{
+		platform_log("ae settings: typing dropped%s", keep ? " (no number)" : "");
+		return;
+	}
+	platform_log("ae settings: typed %s '%s'", row->label, group.typed.text);
+	group.tick_row = -1;
+	value_put(row, value, NULL);
+	refresh();
+}
+
+/* (an end the screen didn't make: another field took the keys (kept), or the screen went away (dropped)) */
+static void typing_done(int keep, void *context)
+{
+	(void)context;
+	typing_finish(keep);
+}
+
+static void typing_end(int keep)
+{
+	if (group.typing_row < 0)
+		return;
+	ae_field_edit_end(&group.typed_edit, keep);
+	typing_finish(keep);
+	ae_sound_request(keep ? AE_SOUND_FORWARD : AE_SOUND_BACK, 0);
+}
+
+static void typing_begin(struct ae_settings_row const *row)
+{
+	char now[VALUE_TEXT], shown[VALUE_TEXT];
+
+	if (group.typing_row >= 0)
+		return;
+	/* (the value as it shows, all of it selected: what is typed replaces it; SAME starts empty) */
+	row_value(who.player, row, now, sizeof(now));
+	ae_settings_number_shown(row, now, shown, sizeof(shown));
+	if (!ae_settings_number_typing_ok(shown))
+		shown[0] = 0;
+	ae_text_init(&group.typed, shown, AE_SETTINGS_NUMBER_TYPED, 0);
+	group.typed_edit.done = typing_done;
+	group.typed_edit.context = NULL;
+	group.typed_edit.holder = &group;
+	group.typing_row = (short)(row - ae_settings_row(0));
+	ae_field_edit_begin(&group.typed_edit, &group.typed);
+	ae_text_select_all(&group.typed);
+	group.caret_since = ae_motion_now();
+	group.tick_row = -1;
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+	platform_log("ae settings: typing %s from '%s'", row->label, shown);
 }
 
 static void picked(short index, void *context)
@@ -1581,6 +1691,72 @@ static void defaults_ask(void)
 
 /* ---------- drawing a group */
 
+/* the width of a text's first characters */
+static float prefix_width(int font, float size, const char *text, short count)
+{
+	char part[AE_TEXT_MAXIMUM];
+
+	snprintf(part, sizeof(part), "%.*s", (int)count, text);
+	return part[0] ? ae_draw_text_width(font, size, part) : 0.0f;
+}
+
+/* (0.3.9) the row being typed (always the focused one, on the bar): its value's place is a field, right where the
+values end: the well (the text fields' own, AE_COLOR_WELL), its 2 u accent ring, the text, its selection and the caret;
+the row's range left of it, quiet on the bar. No arrows, no track: left and right move the caret. The well is "10.00"
+wide plus 12 u each side, 8 u inside the row's top and bottom (the clearance rule's 8 px at 1080p) */
+#define TYPED_PAD_U 12.0f
+#define TYPED_INSET_U 8.0f
+#define TYPED_RING_U 2.0f
+#define TYPED_CARET_U 2.0f
+#define TYPED_HINT_GAP_U 16.0f
+static void typed_row(struct ae_density const *density, struct ae_settings_row const *row, float x, float y,
+	float width, struct ae_row *widget, short item)
+{
+	struct ae_settings_number range;
+	char low[16], high[16], hint[48];
+	float unit = density->unit, text = ae_size_text(density), minor = ae_size_minor(density), height, well_width;
+	float well_height, well_x, well_y, center, text_x, cap = ae_draw_cap_height(AE_FONT_ROW, text);
+	short from, to;
+
+	/* (the row as an action row: its label, dot and badges; the base value would sit where the field is) */
+	widget->value = NULL;
+	widget->base_value = NULL;
+	widget->flags &= ~(unsigned int)AE_ROW_SLIDER;
+	widget->tick = NULL;
+	height = ae_widget_row(density, x, y, width, widget, HIT_LIST, item);
+	well_width = ae_draw_text_width(AE_FONT_ROW, text, "10.00") + 2.0f * TYPED_PAD_U * unit + TYPED_CARET_U * unit;
+	well_height = height - 2.0f * TYPED_INSET_U * unit;
+	well_x = x + width - density->metrics->pad * unit - well_width;
+	well_y = y + TYPED_INSET_U * unit;
+	center = y + height * 0.5f;
+	ae_draw_rect(well_x, well_y, well_width, well_height, 0.0f, AE_COLOR_WELL);
+	ae_draw_outline(well_x, well_y, well_width, well_height, 0.0f, TYPED_RING_U * unit, AE_COLOR_ACCENT);
+	text_x = well_x + TYPED_PAD_U * unit;
+	if (ae_text_selection(&group.typed, &from, &to))
+	{
+		float left = prefix_width(AE_FONT_ROW, text, group.typed.text, from);
+		float right = prefix_width(AE_FONT_ROW, text, group.typed.text, to);
+
+		ae_draw_rect(text_x + left, center - well_height * 0.3f, right - left, well_height * 0.6f, 0.0f,
+			AE_COLOR_TEXT_SELECT);
+	}
+	if (group.typed.text[0])
+		ae_draw_text(AE_FONT_ROW, text, text_x, center - cap * 0.5f, AE_ALIGN_LEFT, AE_COLOR_TITLE, group.typed.text);
+	if (ae_caret_visible(group.caret_since))
+		ae_draw_rect(text_x + prefix_width(AE_FONT_ROW, text, group.typed.text, group.typed.caret),
+			center - well_height * 0.3f, TYPED_CARET_U * unit, well_height * 0.6f, 0.0f, AE_COLOR_ACCENT);
+	/* the range: "0.1 TO 4.0" */
+	if (ae_settings_row_number(row, &range))
+	{
+		ae_settings_number_text(range.minimum, low, sizeof(low));
+		ae_settings_number_text(range.maximum, high, sizeof(high));
+		snprintf(hint, sizeof(hint), "%s TO %s", low, high);
+		ae_draw_text(AE_FONT_BODY, minor, well_x - TYPED_HINT_GAP_U * unit, center - ae_draw_cap_height(AE_FONT_BODY,
+			minor) * 0.5f, AE_ALIGN_RIGHT, AE_COLOR_SELECTION_MUTED, hint);
+	}
+	ae_hit_add(well_x, y, well_width, height, HIT_LIST, AE_PART_FIELD, item);
+}
+
 static void list_item(void *context, short item, float x, float y, float width, float height, unsigned int flags)
 {
 	struct ae_density const *density = context;
@@ -1608,7 +1784,9 @@ static void list_item(void *context, short item, float x, float y, float width, 
 	{
 		index = row_index(row, now);
 		widget.flags |= AE_ROW_SLIDER;
-		widget.slider = ae_settings_slider(row, index < 0 ? 0 : index);
+		/* (a number row's value between its steps: its place between theirs) */
+		widget.slider = ae_settings_row_number(row, NULL) ? ae_settings_slider_at(row, now) :
+			ae_settings_slider(row, index < 0 ? 0 : index);
 	}
 	else if (row->kind == AE_SETTINGS_SUBSCREEN)
 		widget.flags |= AE_ROW_SUBSCREEN;
@@ -1638,6 +1816,11 @@ static void list_item(void *context, short item, float x, float y, float width, 
 		group.focus_rect.y = y;
 		group.focus_rect.width = width;
 		group.focus_rect.height = height;
+	}
+	if (entry == group.typing_row)
+	{
+		typed_row(density, row, x, y, width, &widget, item);
+		return;
 	}
 	ae_widget_row(density, x, y, width, &widget, HIT_LIST, item);
 }
@@ -1732,6 +1915,27 @@ static void group_help(float x, float y, float width)
 			help = named;
 		}
 	}
+	/* (0.3.9: a number row's help says how to type it and step it finely, to the keyboard and mouse) */
+	{
+		struct ae_settings_number range;
+
+		if (ae_settings_row_number(row, &range) && group.typing_row >= 0)
+		{
+			char low[16], high[16];
+
+			ae_settings_number_text(range.minimum, low, sizeof(low));
+			ae_settings_number_text(range.maximum, high, sizeof(high));
+			snprintf(named, sizeof(named), "Type %s to %s%s. Enter keeps it, Esc goes back.", low, high,
+				range.has_special ? ", or 0 for SAME" : "");
+			help = named;
+		}
+		else if (ae_settings_row_number(row, NULL) && ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE)
+		{
+			snprintf(named, sizeof(named), "%s Enter types a value. Shift with the arrows, or Ctrl with the wheel, "
+				"steps 0.01.", row->help);
+			help = named;
+		}
+	}
 	count = ae_wrap_text(AE_FONT_BODY, body, help, width, lines, HELP_LINES);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
@@ -1742,8 +1946,22 @@ static void group_footer(void)
 	short count = 0;
 	float left = group.frame.rect.x + group.frame.margin, right = group.frame.rect.x + group.frame.rect.width -
 		group.frame.margin;
+	struct ae_settings_row const *row = focused_row();
 
-	group.prompts[count++] = prompt_of(AE_BUTTON_A, ae_string(AE_STR_ALL_VALUES), AE_ACTION_ACCEPT, 0);
+	/* (0.3.9: typing a number row's value: Enter keeps it, Esc drops it, nothing else) */
+	if (group.typing_row >= 0)
+	{
+		group.prompts[count++] = prompt_of(AE_BUTTON_A, "Keep", AE_ACTION_ACCEPT, 0);
+		group.prompts[count++] = prompt_of(AE_BUTTON_B, "Cancel", AE_ACTION_BACK, 0);
+		group.prompt_count = count;
+		ae_widget_prompts(&group.density, left, group.frame.rect.height - gu(FOOTER_ABOVE_U), group.prompts, count,
+			NULL, right, -1, HIT_PROMPTS);
+		return;
+	}
+	/* (a number row's Enter types its value; a pad's A lists ALL VALUES as before) */
+	group.prompts[count++] = prompt_of(AE_BUTTON_A, row && ae_settings_row_number(row, NULL) &&
+		ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? "Type a value" : ae_string(AE_STR_ALL_VALUES),
+		AE_ACTION_ACCEPT, 0);
 	group.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK, 0);
 	group.prompts[count++] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Section", AE_ACTION_TAB_PREVIOUS, 1);
 	group.prompts[count++] = prompt_of(AE_BUTTON_Y, "Restore defaults", AE_ACTION_Y, 0);
@@ -1809,6 +2027,29 @@ static int group_handle(struct ae_screen *instance, struct ae_event const *event
 	(void)instance;
 	refresh();
 	row = focused_row();
+	/* (0.3.9: typing: Enter keeps it (START, as the typing keyboard's Enter is), Esc drops it, the arrows move the
+	caret (Shift selects); nothing else) */
+	if (group.typing_row >= 0)
+	{
+		switch (event->action)
+		{
+		case AE_ACTION_ACCEPT:
+		case AE_ACTION_START:
+			typing_end(1);
+			break;
+		case AE_ACTION_BACK:
+			typing_end(0);
+			break;
+		case AE_ACTION_LEFT:
+		case AE_ACTION_RIGHT:
+			ae_text_move(&group.typed, event->action == AE_ACTION_RIGHT ? 1 : -1, fine_held());
+			group.caret_since = ae_motion_now();
+			break;
+		default:
+			break;
+		}
+		return 1;
+	}
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
@@ -1822,11 +2063,16 @@ static int group_handle(struct ae_screen *instance, struct ae_event const *event
 		return 1;
 	case AE_ACTION_LEFT:
 	case AE_ACTION_RIGHT:
+		/* (Shift on the keyboard: a number row's 0.01) */
 		if (row)
-			value_step(row, event->action == AE_ACTION_RIGHT ? 1 : -1);
+			value_step(row, event->action == AE_ACTION_RIGHT ? 1 : -1, event->device == AE_DEVICE_KEYBOARD_MOUSE &&
+				fine_held());
 		return 1;
 	case AE_ACTION_ACCEPT:
-		if (row)
+		/* (a number row: the keyboard's Enter types its value; a pad's A lists its values as before) */
+		if (row && ae_settings_row_number(row, NULL) && event->device == AE_DEVICE_KEYBOARD_MOUSE)
+			typing_begin(row);
+		else if (row)
 			picker_open(row);
 		return 1;
 	case AE_ACTION_Y:
@@ -1891,6 +2137,31 @@ static void group_pointer(struct ae_screen *instance, struct ae_pointer const *p
 	struct ae_hit hit;
 	short item;
 
+	/* (0.3.9: typing: the prompts (KEEP, CANCEL); a click anywhere but the field keeps it, as a field losing the
+	focus; the wheel does nothing) */
+	if (group.typing_row >= 0)
+	{
+		if (ae_prompts_pointer(group.prompts, group.prompt_count, pointer, HIT_PROMPTS, &event))
+			group_handle(instance, &event);
+		else if (pointer->left_clicks && !(ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_LIST &&
+			hit.part == AE_PART_FIELD))
+			typing_end(1);
+		return;
+	}
+	/* (0.3.9: Ctrl with the wheel over a number row: 0.01 a notch, away from you up) */
+	if (pointer->wheel_steps && (ae_platform_modifiers() & AE_MODIFIER_CONTROL) &&
+		ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_LIST && hit.index >= 0 && hit.index < group.count &&
+		!ae_settings_entry_is_header(group.entries[hit.index]) &&
+		ae_settings_row_number(ae_settings_row(group.entries[hit.index]), NULL))
+	{
+		int notches = pointer->wheel_steps > 0 ? pointer->wheel_steps : -pointer->wheel_steps;
+
+		ae_list_set_focus(&group.list.list, hit.index);
+		refresh();
+		while (notches-- > 0)
+			value_step(ae_settings_row(group.entries[hit.index]), pointer->wheel_steps > 0 ? 1 : -1, 1);
+		return;
+	}
 	if (ae_prompts_pointer(group.prompts, group.prompt_count, pointer, HIT_PROMPTS, &event))
 	{
 		if (event.action == AE_ACTION_BACK)
@@ -1933,11 +2204,22 @@ static void group_pointer(struct ae_screen *instance, struct ae_pointer const *p
 				group.dragging_row = hit.index;
 				return;
 			}
+			/* (Shift held: a number row's 0.01) */
 			if (hit.part == AE_PART_ARROW_LEFT || hit.part == AE_PART_ARROW_RIGHT)
 			{
 				ae_list_set_focus(&group.list.list, hit.index);
 				refresh();
-				value_step(ae_settings_row(group.entries[hit.index]), hit.part == AE_PART_ARROW_RIGHT ? 1 : -1);
+				value_step(ae_settings_row(group.entries[hit.index]), hit.part == AE_PART_ARROW_RIGHT ? 1 : -1,
+					fine_held());
+				return;
+			}
+			/* (0.3.9: a number row's value clicked: typed there; a touch keeps the values' list) */
+			if (hit.part == AE_PART_VALUE && !pointer->touch &&
+				ae_settings_row_number(ae_settings_row(group.entries[hit.index]), NULL))
+			{
+				ae_list_set_focus(&group.list.list, hit.index);
+				refresh();
+				typing_begin(ae_settings_row(group.entries[hit.index]));
 				return;
 			}
 		}
@@ -1949,9 +2231,38 @@ static void group_pointer(struct ae_screen *instance, struct ae_pointer const *p
 		picker_open(ae_settings_row(group.entries[item]));
 }
 
+/* (0.3.9) the typed keys, once a frame: digits and one '.', two decimals, five characters; anything else stays out (a
+failure sound) */
+static void group_update(struct ae_screen *instance)
+{
+	struct ae_text before;
+	int ok;
+
+	(void)instance;
+	if (group.typing_row < 0 || !group.typed_edit.active)
+		return;
+	before = group.typed;
+	ok = ae_field_edit_keys(&group.typed_edit);
+	if (!ae_settings_number_typing_ok(group.typed.text))
+	{
+		group.typed = before;
+		ok = 0;
+	}
+	if (memcmp(&before, &group.typed, sizeof(before)))
+		group.caret_since = ae_motion_now();
+	if (!ok)
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+}
+
 static void group_leave(struct ae_screen *instance)
 {
 	(void)instance;
+	/* (typing when the screen goes: dropped) */
+	if (group.typing_row >= 0)
+	{
+		ae_field_edit_end(&group.typed_edit, 0);
+		group.typing_row = -1;
+	}
 	ae_player_settings_flush();
 	platform_log("ae settings: closed %s (%d changed)", ae_settings_group(group.group)->name, changes(NULL, 0));
 }
@@ -1959,7 +2270,7 @@ static void group_leave(struct ae_screen *instance)
 static struct ae_screen_class const group_class =
 {
 	.name = "settings group", .leave = group_leave, .handle = group_handle, .draw = group_draw,
-	.pointer = group_pointer,
+	.pointer = group_pointer, .update = group_update,
 };
 
 int ae_screen_settings_open_group(short group_number, short local_player)
@@ -1973,6 +2284,7 @@ int ae_screen_settings_open_group(short group_number, short local_player)
 	group.tick_row = -1;
 	group.logged_focus = -1;
 	group.dragging_row = -1;
+	group.typing_row = -1;
 	group.logged_width = -1.0f;
 	who.player = local_player >= 0 && local_player < PLAYERS ? local_player : 0;
 	ae_player_settings_update();

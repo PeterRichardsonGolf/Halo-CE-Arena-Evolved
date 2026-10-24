@@ -467,6 +467,43 @@ static int keypad_keys(
 	return result;
 }
 
+/* (the modifiers a test's token holds: ae_platform_test_pad_press) */
+static int test_modifiers;
+
+int ae_platform_modifiers(void)
+{
+	struct platform_input_state input;
+	int modifiers = test_modifiers;
+
+	platform_input_read(&input, FALSE);
+	if (!input.focused)
+		return modifiers;
+	if (input.keys[SDL_SCANCODE_LSHIFT] || input.keys[SDL_SCANCODE_RSHIFT])
+		modifiers |= AE_MODIFIER_SHIFT;
+	if (input.keys[SDL_SCANCODE_LCTRL] || input.keys[SDL_SCANCODE_RCTRL])
+		modifiers |= AE_MODIFIER_CONTROL;
+	return modifiers;
+}
+
+#if !defined(HALO_SERVER) && !defined(HALO_ANDROID)
+/* a token's "+shift" / "+ctrl" (key:Right+shift, wheel:1+ctrl) */
+static int token_modifiers(char const *token, int length)
+{
+	int modifiers = 0, at;
+
+	for (at = 0; token && at < length; at++)
+	{
+		if (token[at] != '+')
+			continue;
+		if (length - at - 1 >= 5 && !strncmp(token + at + 1, "shift", 5))
+			modifiers |= AE_MODIFIER_SHIFT;
+		else if (length - at - 1 >= 4 && !strncmp(token + at + 1, "ctrl", 4))
+			modifiers |= AE_MODIFIER_CONTROL;
+	}
+	return modifiers;
+}
+#endif
+
 int ae_platform_menu_cursor_height(int lines, int height)
 {
 	int ae_height = lines * 16 / 480;
@@ -687,6 +724,8 @@ void ae_platform_test_pad_press(
 	int pressed = -1;
 	unsigned int index;
 
+	/* (the token's modifiers, held for AE while it lasts) */
+	test_modifiers = token_modifiers(token, length);
 	/* (split screen's seats see the test's keys: ae_seats.c) */
 	ae_seats_test_keys(token && ((length == 10 && !strncmp(token, "key:Return", 10)) ||
 		(length == 9 && !strncmp(token, "key:Space", 9))), token && length == 10 && !strncmp(token, "key:Escape", 10));
