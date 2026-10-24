@@ -66,7 +66,9 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   the host (the host drew a view for each of the first three, and its frame rate fell).
 - Lowering BOTS to OFF during a network game no longer ends it: the host plays on alone, as in a game started alone.
 - Split screen in Arena Evolved's lobby: START on another controller adds its player (its profile, or a guest's), B on
-  it takes them out; with one controller and the keyboard, the lobby panel's ADD PLAYER first.
+  it takes them out; with one controller and the keyboard, the lobby panel's ADD PLAYER first. Players who joined
+  another's game have ADD PLAYER too. At the main menu, START on another controller signs its player in (a card
+  under player 1's; B signs them out) and the next lobby, hosted or joined, takes them in with player 1.
 - CAMPAIGN: with CONTINUE focused, DIFFICULTY shows the saved game's difficulty, which CONTINUE plays (it showed the
   next new game's).
 - Help lines in Arena Evolved's menus name the buttons of the device used last, as the footer does (Ctrl+F on the

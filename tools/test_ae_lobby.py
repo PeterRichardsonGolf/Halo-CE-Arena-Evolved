@@ -193,6 +193,22 @@ def test_lan_games_join(cfg):
                       "ae create game: lobby: open"])
     in_order(host, ["ae lobby: hosting (LAN)", "ae lobby: roster 2"])
 
+def test_joiner_split_screen(cfg):
+    """(0.3.9 split screen) a player at AE's main menu signs player 2 in (START on the second controller), joins an AE
+    host (92) from LAN GAMES: player 2 joins with them; in the joiner's LOBBY, down reaches ADD PLAYER and A turns it on"""
+    out = menus.out_dir(cfg, "lobby-joiner-split")
+    host_r, client_r, host, client = play_pair(
+        cfg, out, "pair", {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "92"},
+        {"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": "0"}, join_delay=2, client_shots=60,
+        client_input=menus.menu_input("2:start", "2:start", "pad:a", "pad:down", "pad:down", "pad:down", "pad:a",
+                                      "wait", "wait", "pad:a", "wait", "wait", "pad:down", "pad:a"))
+    assert host_r.get("status") == "PASS", host_r.get("why")
+    in_order(client, ["ae main menu: player 2 signed in (controller 2)", "ae browser: joined",
+                      "ae main menu: player 2 joins the lobby: ok", "ae create game: lobby: open",
+                      "ae create game: lobby: add player on"])
+    in_order(client, ["ae lobby: local player added (controller 1)", "ae lobby: local player added (controller 2)"])
+
+
 def test_create_game_hosts_a_joiner(cfg):
     """(0.3.9 one lobby) CREATE GAME (32) hosts at once on the LAN; a player at AE's main menu joins it from LAN GAMES
     and sees the same screen read only (LOBBY); the host's PLAYERS goes to 2, START GAME plays the game for both"""

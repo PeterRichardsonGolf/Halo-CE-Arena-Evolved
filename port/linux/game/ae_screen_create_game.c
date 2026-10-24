@@ -66,6 +66,7 @@ players <n>", "lobby: shooting skill|movement skill|playfight|teams <value>", "l
 #include "ae_screen_change_map.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_game_options.h"
+#include "ae_screen_main_menu.h"
 #include "ae_setup_flow.h"
 #include "ae_setup_maps.h"
 #include "ae_setup_options.h"
@@ -571,6 +572,8 @@ static void session_update(void)
 		open_failed(result.reason);
 		return;
 	}
+	/* (split screen: the players signed in at the main menu) */
+	ae_screen_main_menu_join_signed_in();
 	if (create.map_index < 0 || !ui_widget_port_multiplayer_map_choose(create.map_index))
 	{
 		ae_lobby_leave();
@@ -918,8 +921,15 @@ static void panel_rows(void)
 {
 	lobby.panel_count = 0;
 	lobby.panel_kinds[lobby.panel_count++] = PANEL_LOBBY;
+	/* (a joiner: the lobby's line, and ADD PLAYER for this PC's own split screen players) */
 	if (lobby.joiner)
+	{
+		if (ae_lobby_local_players() < 4)
+			lobby.panel_kinds[lobby.panel_count++] = PANEL_ADD;
+		if (lobby.panel_focus >= lobby.panel_count)
+			lobby.panel_focus = (short)(lobby.panel_count - 1);
 		return;
+	}
 	if (create.network == NETWORK_ONLINE)
 		lobby.panel_kinds[lobby.panel_count++] = PANEL_INVITE;
 	if (ae_lobby_local_players() < 4)
@@ -1317,8 +1327,18 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 		return 1;
 	case AE_ACTION_UP:
 	case AE_ACTION_DOWN:
+		/* (a joiner: down to ADD PLAYER, the one row it can use, up off it) */
 		if (lobby.joiner)
+		{
+			short add = lobby.panel_count > 1 && lobby.panel_kinds[1] == PANEL_ADD ? 1 : -1;
+			short next = event->action == AE_ACTION_DOWN ? add : -1;
+
+			if (add < 0 || next == lobby.panel_focus)
+				return 1;
+			lobby.panel_focus = next;
+			ae_sound_request(AE_SOUND_CURSOR, event->repeat);
 			return 1;
+		}
 		direction = event->action == AE_ACTION_UP ? -1 : 1;
 		/* (the panel: down from START GAME into it, up out of it from its first row) */
 		if (lobby.panel_focus >= 0)
@@ -1349,7 +1369,11 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 		return 1;
 	case AE_ACTION_ACCEPT:
 		if (lobby.joiner)
+		{
+			if (lobby.panel_focus >= 0 && lobby.panel_kinds[lobby.panel_focus] == PANEL_ADD)
+				panel_accept(lobby.panel_focus);
 			return 1;
+		}
 		if (lobby.panel_focus >= 0)
 			panel_accept(lobby.panel_focus);
 		else
@@ -1378,8 +1402,19 @@ static void lobby_pointer(struct ae_screen *instance, struct ae_pointer const *p
 		lobby_handle(instance, &event);
 		return;
 	}
+	/* (a joiner: its ADD PLAYER row only) */
 	if (lobby.joiner)
+	{
+		if (ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_PANEL_ROWS && hit.index >= 0 &&
+			hit.index < lobby.panel_count && lobby.panel_kinds[hit.index] == PANEL_ADD)
+		{
+			if (pointer->moved)
+				lobby.panel_focus = hit.index;
+			if (pointer->left_clicks)
+				panel_accept(hit.index);
+		}
 		return;
+	}
 	/* (the panel's rows: hover focuses, a click takes the row, their arrows step) */
 	if (ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == HIT_PANEL_ROWS && hit.index >= 0 &&
 		hit.index < lobby.panel_count)

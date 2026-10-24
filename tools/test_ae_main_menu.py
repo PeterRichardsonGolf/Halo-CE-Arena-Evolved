@@ -6,6 +6,7 @@ game's main menu's place.
 - MULTIPLAYER, CREATE GAME from it, and B back to MULTIPLAYER;
 - CAMPAIGN, and its first level played;
 - PROFILES: the list with no profile, a profile named on AE's keyboard, its colour changed in EDIT;
+- SPLIT SCREEN: START on a second controller signs its player in, CREATE GAME's lobby takes them, B signs them out;
 - JOIN WITH INVITE: empty, holding the clipboard's invite (HALO_AE_TEST_INVITE), a paste that is no invite (its
   error), AE's keyboard on it, and a join with internet play off (its reason on the field).
 
@@ -64,6 +65,10 @@ CASES = (
     ("join-keyboard", "1920x1080", 100, ("pad:a", "pad:down", "pad:a", "pad:x")),
     ("join-offline", "1920x1080", 100, ("pad:a", "pad:down", "pad:a", "pad:a")),
     ("join-130", "1920x1080", 130, ("pad:a", "pad:down", "pad:a")),
+    # (0.3.9 split screen: START on the second controller signs player 2 in (its card), CREATE GAME takes them into
+    # the lobby after player 1; its B signs them out. The second START: the first may only attach the pad)
+    ("signin", "1920x1080", 100, ("2:start", "2:start", "wait", "key:Return", "wait", "key:Return"), 8, 36),
+    ("signout", "1920x1080", 100, ("2:start", "2:start", "wait", "2:b")),
 )
 INVITE = "halo://join/" + "0123456789abcdef" * 4
 # the cases' own environment (the clipboard's text as JOIN WITH INVITE reads it: HALO_AE_TEST_INVITE)
@@ -154,6 +159,17 @@ def test_join_with_invite(runs):
     assert "join failed: Internet play is off" in said, said
     # (the main menu's JOIN WITH INVITE no longer goes through CREATE GAME)
     assert not lines(runs["join"][1], "ae create game: ")
+
+
+def test_split_screen_sign_in(runs):
+    text = runs["signin"][1]
+    assert "player 2 signed in (controller 2)" in lines(text, "ae main menu: "), lines(text, "ae main menu: ")
+    assert "player 2 joins the lobby: ok" in lines(text, "ae main menu: ")
+    said = lines(text, "ae lobby: ")
+    assert said.index("local player added (controller 1)") < said.index("local player added (controller 2)"), said
+    said = lines(runs["signout"][1], "ae main menu: ")
+    assert "player 2 signed out" in said and said.index("player 2 signed in (controller 2)") < said.index(
+        "player 2 signed out"), said
 
 
 def test_browsers(runs):

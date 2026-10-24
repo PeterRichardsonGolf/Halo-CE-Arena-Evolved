@@ -3,12 +3,15 @@ AE_SCREEN_MAIN_MENU.C
 
 AE's MAIN MENU and MULTIPLAYER (ae_screen_main_menu.h; the mockup's boards 5 and 6,
 https://claude.ai/artifact/DNum7ugkfszzX99GuZEpsD). Rows on the left (ae_setup_flow.h), on the right player 1's card,
-"START to add a player" and the last game; the prompts. QUIT asks first. MULTIPLAYER's CREATE GAME opens
+"START to add a player" and the last game; the prompts. QUIT asks first. SPLIT SCREEN (0.3.9): START on another
+controller (2-4) signs its player in here (a card under player 1's, its profile's name or a guest's), its B signs them
+out; the next lobby (CREATE GAME, a join) takes them in after player 1 (ae_screen_main_menu_join_signed_in). MULTIPLAYER's CREATE GAME opens
 CREATE GAME (ae_screen_create_game.h) over it, JOIN WITH INVITE its field (ae_screen_join_invite.h), SERVER BROWSER and
 LAN GAMES theirs (ae_screen_browser.h); the
 main menu's SETTINGS, CAMPAIGN and PROFILES open theirs (ae_screen_settings.h, ...).
 
-Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
+Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit", "ae main menu: player <n> signed in" / "signed
+out", "ae main menu: player <n> joins the lobby".
 */
 
 #include <stdio.h>
@@ -19,7 +22,9 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit".
 #include "saved games/playlist_profile.h"
 #include "interface/player_ui.h"
 #include "../src/ae_draw.h"
+#include "ae_glue_lobby.h"
 #include "ae_glue_profiles.h"
+#include "ae_input.h"
 #include "ae_hooks.h"
 #include "ae_screen_browser.h"
 #include "ae_screen_campaign.h"
@@ -63,6 +68,8 @@ static struct
 static struct ae_screen_class const menu_class;
 /* the local player whose A opened a row (a click: player 1) */
 static short accept_player;
+/* (split screen) the controllers 2-4 signed in here: their players join the next lobby with player 1 */
+static int signed_in[4];
 
 static void rows_main(void)
 {
@@ -153,6 +160,92 @@ static void facts_read(void)
 		gametype);
 }
 
+static int signed_in_count(void)
+{
+	int count = 0;
+	short controller;
+
+	for (controller = 1; controller < 4; controller++)
+		count += signed_in[controller] != 0;
+	return count;
+}
+
+/* a signed-in controller's card: its profile's name and colour, or a guest's (the lobby makes it one) */
+static void signed_in_cards(struct ae_flow_screen *flow, float x, float *y, float width)
+{
+	static struct ae_profile_summary profiles[AE_PROFILES_MAXIMUM];
+	static char names[4][48], subs[4][48];
+	short count = 0, index, controller;
+	int listed = ae_profiles_list(profiles, AE_PROFILES_MAXIMUM, &count).ok;
+
+	for (controller = 1; controller < 4; controller++)
+	{
+		struct ae_roster_card card;
+		long active = player_ui_get_active_player_profile_index(controller);
+
+		if (!signed_in[controller])
+			continue;
+		memset(&card, 0, sizeof(card));
+		snprintf(names[controller], sizeof(names[controller]), "Guest %d", controller + 1);
+		card.color = 0x7F8C8DFFu;
+		snprintf(subs[controller], sizeof(subs[controller]), "Player %d \xE2\x80\xA2 Controller %d", controller + 1,
+			controller + 1);
+		card.sub_line = subs[controller];
+		for (index = 0; listed && active != NONE && index < count; index++)
+		{
+			if (profiles[index].index == active && active != player_ui_get_active_player_profile_index(0))
+			{
+				snprintf(names[controller], sizeof(names[controller]), "%s", profiles[index].name);
+				card.color = profiles[index].color;
+			}
+		}
+		card.name = names[controller];
+		card.slot = (short)(controller + 1);
+		*y += ae_widget_roster_card(&flow->density, x, *y, width, &card, HIT_CARDS, controller) +
+			ae_flow_u(flow, AE_FLOW_CARD_GAP_U);
+	}
+}
+
+/* (split screen) START on a controller 2-4 signs its player in, its B signs them out; 1: taken */
+static int signed_in_press(struct ae_event const *event)
+{
+	short controller = ae_input_event_controller();
+
+	if (controller < 1 || controller > 3)
+		return 0;
+	if (event->action == AE_ACTION_START && !signed_in[controller])
+	{
+		signed_in[controller] = 1;
+		platform_log("ae main menu: player %d signed in (controller %d)", controller + 1, controller + 1);
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		return 1;
+	}
+	if (event->action == AE_ACTION_BACK && signed_in[controller])
+	{
+		signed_in[controller] = 0;
+		platform_log("ae main menu: player %d signed out", controller + 1);
+		ae_sound_request(AE_SOUND_BACK, 0);
+		return 1;
+	}
+	/* (its other buttons do nothing here: the menu is player 1's) */
+	return signed_in[controller] != 0;
+}
+
+void ae_screen_main_menu_join_signed_in(void)
+{
+	short controller;
+
+	for (controller = 1; controller < 4; controller++)
+	{
+		struct ae_result result;
+
+		if (!signed_in[controller] || ae_lobby_controller_plays(controller))
+			continue;
+		result = ae_lobby_join_controller(controller);
+		platform_log("ae main menu: player %d joins the lobby: %s", controller + 1, result.ok ? "ok" : result.reason);
+	}
+}
+
 static void draw_side(struct ae_flow_screen *flow)
 {
 	struct ae_density const *d = &flow->density;
@@ -169,7 +262,9 @@ static void draw_side(struct ae_flow_screen *flow)
 	card.color = main_page.player_color;
 	card.sub_line = "Player 1 \xE2\x80\xA2 this PC";
 	y += ae_widget_roster_card(d, x, y, width, &card, HIT_CARDS, 0) + ae_flow_u(flow, AE_FLOW_CARD_GAP_U);
-	ae_widget_open_card(d, x, y, width, 0, HIT_CARDS);
+	signed_in_cards(flow, x, &y, width);
+	if (signed_in_count() < 3)
+		ae_widget_open_card(d, x, y, width, 0, HIT_CARDS);
 	if (!main_page.last_game[0])
 		return;
 	box = ae_flow_u(flow, 110.0f);
@@ -294,6 +389,8 @@ static int menu_handle(struct ae_screen *instance, struct ae_event const *event)
 	int multiplayer = instance->data == &multiplayer_page;
 	struct ae_flow_screen *flow = multiplayer ? &multiplayer_page.flow : &main_page.flow;
 
+	if (signed_in_press(event))
+		return 1;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
