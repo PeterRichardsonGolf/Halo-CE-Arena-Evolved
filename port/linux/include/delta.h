@@ -42,12 +42,13 @@ is joined by its OpenCE number, as before
 OLDEST COMPATIBLE wire that a released client knows (one that checks
 the bytes for an exact match, as 0.7.5a's does, then joins), and the host's
 own wire and its compatible range follow in the range bytes below. */
-/* (Arena Evolved: from 0.3.9, a byte later, its wire slot 15 bytes: OpenCE's
-network 37 sends the game's kind in the fourth reserved byte,
-HALO_PORT_ADVERTISED_KIND_OFFSET, where ChupathingyCE's major was; the range
-bytes stay where they were) */
-#define DELTA_ADVERTISED_WIRE_OFFSET 4 /* AE hook */
-#define DELTA_ADVERTISED_WIRE_SIZE 15 /* AE hook */
+/* (Arena Evolved: OpenCE's network 37 sends the game's kind in the same
+fourth reserved byte, HALO_PORT_ADVERTISED_KIND_OFFSET: a host that sets
+DELTA_ADVERTISED_FLAG keeps its Delta major there and sends no kind; a client
+takes the kind only from a host without the flag; network_server_message_
+handler.c, network_client_manager.c) */
+#define DELTA_ADVERTISED_WIRE_OFFSET 3
+#define DELTA_ADVERTISED_WIRE_SIZE 16
 /* ... and after the wire, in the six bytes that were free to the end of the
 advertisement's 0x1A reserved bytes (docs/delta.md, "Wire compatibility
 ranges"): the range's layout version (1), the host's own wire (its number, then
@@ -219,8 +220,8 @@ Give each release that changes what the machines send a new one. */
 which ChupathingyCE's releases never reach, keeps it apart from any
 ChupathingyCE wire of 38), as it plays OpenCE's network 38 (build-268: the
 0x2C bytes of PC options, the longer game settings record, Infection's state,
-the host's shield effects, the game's kind in the advertisement, where its
-Delta block starts a byte later) and ChupathingyCE 0.8 plays 32;
+the host's shield effects, the game's kind in the advertisement, which a
+Delta host leaves to its major) and ChupathingyCE 0.8 plays 32;
 its range that wire alone: port/linux/src/ae_delta_wire.h. 0.3.6 to 0.3.8
 were on ChupathingyCE 0.8's chupa-32a (network 32), 0.3.5 on a wire of its
 own, ae-32a, and 0.3.4-beta and earlier on chupa-29a, none of which it

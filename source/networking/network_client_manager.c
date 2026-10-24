@@ -3514,7 +3514,9 @@ byte network_game_client_advertised_game_kind(
 {
 	long game_index = client ? game - client->available_games : NONE;
 
-	return game_index >= 0 && game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES ?
+	/* (AE: none from a Delta host: the byte is its major, delta.h) */
+	return game_index >= 0 && game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES &&
+		!(network_game_client_advertised_versions[game_index].flags & DELTA_ADVERTISED_FLAG) ? /* AE hook */
 		network_game_client_advertised_versions[game_index].kind : 0;
 }
 

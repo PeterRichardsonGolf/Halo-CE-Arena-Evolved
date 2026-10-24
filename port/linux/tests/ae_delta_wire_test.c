@@ -130,16 +130,11 @@ int main(void)
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 1] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 2] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4]);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
-	/* the fourth reserved byte is OpenCE's game kind (network 37): an Arena Evolved host leaves it alone; a
-	ChupathingyCE host's advertisement (its major there, its wire from the fifth) is no Delta host of this layout,
-	so the numbers decide (ChupathingyCE 0.8's 32: refused) */
+	/* the fourth reserved byte, OpenCE's game kind since network 37, stays a Delta host's major (ChupathingyCE's
+	layout: a Delta host sends no kind) */
 	ae_host(reserved);
-	CHECK(DELTA_ADVERTISED_WIRE_OFFSET == 4 && reserved[3] == 0); /* (halo_port_limits.h's HALO_PORT_ADVERTISED_KIND_OFFSET, 3) */
+	CHECK(DELTA_ADVERTISED_WIRE_OFFSET == 3 && reserved[3] == DELTA_MAJOR);
 	CHECK(DELTA_ADVERTISED_RANGE_OFFSET + DELTA_ADVERTISED_RANGE_SIZE == 0x1A);
-	memset(reserved, 0, RESERVED);
-	reserved[3] = DELTA_MAJOR;
-	memcpy(reserved + 4, "chupa-32a", 9);
-	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) != 1);
 	/* ... a host that says nothing of a wire: the numbers decide */
 	memset(reserved, 0, RESERVED);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == -1);

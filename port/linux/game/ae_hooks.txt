@@ -1332,10 +1332,11 @@ port/linux/game/discord_game.c	if (engine == game_engine_bomb) game->mode = vari
 port/linux/game/menu_functions.c	engine = PIN(variant.game_engine_index, 0, 6); /* AE hook */
 port/linux/game/infection.c	#include "networking/network_server_manager_internal.h" /* AE hook */
 port/linux/game/game_modes.c	#include "text/unicode.h" /* AE hook */
-# OpenCE build-268 (network 37) sends the game's kind in the advertisement's fourth reserved byte, where
-# ChupathingyCE's Delta major was: Arena Evolved's Delta block starts a byte later (0.3.9)
-port/linux/include/delta.h	#define DELTA_ADVERTISED_WIRE_OFFSET 4 /* AE hook */
-port/linux/include/delta.h	#define DELTA_ADVERTISED_WIRE_SIZE 15 /* AE hook */
+# OpenCE build-268 (network 37) sends the game's kind in the advertisement's fourth reserved byte, Delta's major:
+# a Delta host keeps its major there (no kind), a client takes a kind only from a host without the Delta flag
+source/networking/network_server_message_handler.c	if (!(advertisement.reserved[HALO_PORT_ADVERTISED_FLAGS_OFFSET] & DELTA_ADVERTISED_FLAG)) /* AE hook */
+source/networking/network_client_manager.c	!(network_game_client_advertised_versions[game_index].flags & DELTA_ADVERTISED_FLAG) ? /* AE hook */
 # OpenCE build-268 (network 37): a LAN game's kind for the AE server browser (ae_screen_browser.c)
 source/networking/network_client_manager.h	byte kind; /* AE hook */
 source/networking/network_client_manager.c	game->kind = network_game_client_advertised_game_kind(client, advertised); /* AE hook */
+source/networking/network_server_message_handler.c	#include "delta.h" /* AE hook */
