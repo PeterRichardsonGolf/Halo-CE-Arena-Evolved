@@ -291,12 +291,13 @@ void ae_buttons_tags_loaded(
 	for (glyph = 0; glyph < glyph_count(); glyph++)
 	{
 		const struct ae_button_glyph *embedded = &ae_button_glyphs[glyph];
-		long group_index = embedded->own ? NONE : tag_loaded(BITMAP_GROUP_TAG, embedded->tag);
+		long group_index = embedded->own || embedded->family == AE_BUTTON_FAMILY_NINTENDO ? NONE : tag_loaded(BITMAP_GROUP_TAG, embedded->tag);
 		long ce_sheet = embedded->sprites ? ce_sheet_of(group_index) : NONE;
 		struct bitmap_data *bitmap;
 
-		/* (AE's own pictures: no map has them; ae_buttons_own_bitmap) */
-		if (embedded->own)
+		/* (AE's own pictures: no map has them; ae_buttons_own_bitmap. The Nintendo pictures are the PlayStation
+		glyphs' bitmaps' other art: found as those are, drawn by ae_buttons.c's drawn_glyph) */
+		if (embedded->own || embedded->family == AE_BUTTON_FAMILY_NINTENDO)
 			continue;
 
 		/* (a Custom Edition map's sheet with the Xbox's copy: the copy's bitmap) */

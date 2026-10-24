@@ -30,6 +30,24 @@ int main(int argc, char **argv)
 		CHECK(!ae_buttons_scheme_playstation(SCHEME_NINTENDO), "a Nintendo pad counts as PlayStation");
 		return 0;
 	}
+	/* one family per device: PlayStation pad, Nintendo pad, nothing for the keyboard and Xbox-like pads; a glyph of a
+	family is drawn only while that family's pad is the last used */
+	CASE("family")
+	{
+		CHECK(ae_buttons_scheme_family(SCHEME_PLAYSTATION) == AE_BUTTON_FAMILY_PLAYSTATION, "a PlayStation pad's family");
+		CHECK(ae_buttons_scheme_family(SCHEME_NINTENDO) == AE_BUTTON_FAMILY_NINTENDO, "a Nintendo pad is not Nintendo");
+		CHECK(ae_buttons_scheme_family(SCHEME_KEYBOARD) == AE_BUTTON_FAMILY_OWN, "the keyboard has a pad family");
+		CHECK(ae_buttons_scheme_family(SCHEME_XBOX) == AE_BUTTON_FAMILY_OWN, "an Xbox-like pad has a family");
+		CHECK(ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_NINTENDO, AE_BUTTON_FAMILY_NINTENDO), "Nintendo art not drawn for it");
+		CHECK(!ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_PLAYSTATION, AE_BUTTON_FAMILY_NINTENDO),
+			"PlayStation art drawn for a Nintendo pad");
+		CHECK(!ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_NINTENDO, AE_BUTTON_FAMILY_PLAYSTATION),
+			"Nintendo art drawn for a PlayStation pad");
+		CHECK(ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_PLAYSTATION, AE_BUTTON_FAMILY_PLAYSTATION), "PlayStation art not drawn for it");
+		CHECK(!ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_OWN, AE_BUTTON_FAMILY_OWN), "art drawn for the Xbox icons' own pad");
+		CHECK(!ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_NINTENDO, AE_BUTTON_FAMILY_OWN), "Nintendo art drawn for an Xbox pad");
+		return 0;
+	}
 	/* a whole icon: PlayStation's texture only with a PlayStation pad */
 	CASE("whole")
 	{

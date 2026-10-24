@@ -65,6 +65,8 @@ int ae_platform_mouse_left_held(void);
 /* the device the player last used: 0 the keyboard (or mouse), 1 an Xbox-like pad, 2 a PlayStation pad, 3 a
 Nintendo pad (1 without the game browser, whose prompts it is) */
 int ae_platform_input_scheme(void);
+/* the test word of debug.ae_message_test that forces the device (2 "playstation", 3 "nintendo"), or -1 */
+int ae_platform_test_scheme(void);
 /* whether the keyboard and mouse were used after any pad (the HUD's key prompts, port/linux/game/ae_key_prompts.c):
 AE's own record, for which a mouse's buttons and motion count too (xinput_sdl.c's scheme takes its keys only, and
 stays as it is for the rest of the game); before either was used, the scheme's (0: the keyboard). xinput_sdl.c's AE

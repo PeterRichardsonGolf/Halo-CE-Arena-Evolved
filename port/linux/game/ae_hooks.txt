@@ -31,6 +31,7 @@ source/interface/ui_widget.c	if (pointer_active && ae_ui_pointer(&pointer)) /* A
 source/interface/ui_widget_event_handler_functions.c	#include "ae_hooks.h" /* AE hook */
 source/interface/ui_widget_event_handler_functions.c	if (ae_ce_map_event_function(widget, event, function_index, widget_deleted, &result)) /* AE hook */\nreturn result;
 source/interface/ui_widget.c	if (ae_ui_takes_pointer()) /* AE hook */\nreturn TRUE;
+port/linux/src/xinput_sdl.c	if (ae_platform_test_scheme() >= 0) return ae_platform_test_scheme(); /* AE hook */
 port/linux/src/xinput_sdl.c	#include "ae_platform.h" /* AE hook */
 port/linux/src/xinput_sdl.c	#include "ae_seats.h" /* AE hook */
 port/linux/src/xinput_sdl.c	if (scancode != SDL_SCANCODE_UNKNOWN && text_typing) ae_platform_test_keystroke((int)scancode); /* AE hook */

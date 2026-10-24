@@ -13,6 +13,21 @@ int ae_buttons_scheme_playstation(int scheme)
 	return scheme == 2;
 }
 
+int ae_buttons_scheme_family(int scheme)
+{
+	/* (the same schemes) */
+	if (scheme == 2)
+		return AE_BUTTON_FAMILY_PLAYSTATION;
+	if (scheme == 3)
+		return AE_BUTTON_FAMILY_NINTENDO;
+	return AE_BUTTON_FAMILY_OWN;
+}
+
+int ae_buttons_glyph_is_drawn(int glyph_family, int family_now)
+{
+	return family_now != AE_BUTTON_FAMILY_OWN && glyph_family == family_now;
+}
+
 int ae_buttons_draw_playstation(int kind, int playstation_now)
 {
 	switch (kind)
