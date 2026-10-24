@@ -35,6 +35,8 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 - SETTINGS has the settings only the classic menus had: AUDIO > SOUND; ONLINE > MAPS > INTERNET SHARING (your maps to
   internet joiners); SYSTEM > FILES > WEAPON PACKS, MODDED DISC (restarts) and MCC FILES; and SYSTEM > CAMPAIGN with
   FALL DAMAGE and HEALTH (HALO CE, REACH, HALO 2, HALO 3). CALLOUT VOICE lists the voices when AUDIO opens.
+- The menus' mouse cursor is half OpenCE's size with Arena Evolved's menus (36 pixels at 1080p, 48 at 1440p), to sit
+  with their rows; the classic menus keep OpenCE's.
 - Menus: left and right go round past a row's ends, as in MCC. CALLOUTS, CALLOUT DETAIL and CALLOUT VOICE moved from
   HUD to AUDIO. SETTINGS > CONTROLS changes the profile's rows before any game.
 - Gametype files: read at each start (a seeded AE or NHE gametype is never read from or written to a file), and

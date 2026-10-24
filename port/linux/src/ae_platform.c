@@ -467,6 +467,15 @@ static int keypad_keys(
 	return result;
 }
 
+int ae_platform_menu_cursor_height(int lines, int height)
+{
+	int ae_height = lines * 16 / 480;
+
+	if (!config_boolean("display.arena_menus"))
+		return height;
+	return ae_height < 16 ? 16 : ae_height;
+}
+
 int ae_platform_keys(void)
 {
 	struct platform_input_state input;

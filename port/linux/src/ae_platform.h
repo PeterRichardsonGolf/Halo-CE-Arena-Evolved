@@ -29,6 +29,10 @@ enum
 Page Up, Page Down and arrows are its 9, 3, 8, 2, 4 and 6: with Num Lock off they count as those keys (Page Up and
 Page Down as AE_KEY_PAGE_UP / _DOWN, the arrows as AE_KEY_UP...); its Enter is the game's Enter already (A) */
 int ae_platform_keys(void);
+/* the menus' cursor height in pixels (sdl_platform.c menu_cursor_fit: height, OpenCE's, is 32 of the menus' 480 lines,
+72 pixels at 1080p): with Arena Evolved's menus (display.arena_menus) half that, 36 pixels at 1080p, never under 16, so
+the arrow sits with AE's rows; OpenCE's otherwise */
+int ae_platform_menu_cursor_height(int lines, int height);
 /* mouse button 4 (back) presses while the menus have the pointer (ae_back_presses.c): sdl_platform.c counts them
 (an AE hook line, since its pointer branch keeps them from the controller), but only while armed: the game's side
 arms the count while an AE screen is open (never with display.arena_menus off) and takes the presses (the count
