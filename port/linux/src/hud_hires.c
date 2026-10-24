@@ -562,6 +562,7 @@ static unsigned int png_pixels_texture(unsigned char *pixels, unsigned long widt
 
 	if (!pixels)
 		return 0;
+	if (!glGenTextures) { free(pixels); return 0; } /* AE hook (no window, no GL: key prompts' preload crashed windowless runs) */
 	*levels = 1;
 	for (largest = width > height ? width : height; largest > 1; largest >>= 1)
 		(*levels)++;
