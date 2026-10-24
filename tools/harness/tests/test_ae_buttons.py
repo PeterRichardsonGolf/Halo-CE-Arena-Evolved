@@ -10,7 +10,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from harness import CHECK_FAILED, build, function, mutated, read, run  # noqa: E402
 
-CASES = ["scheme", "whole", "placeholder", "sprites", "ce_sequence"]
+CASES = ["scheme", "family", "whole", "placeholder", "sprites", "ce_sequence"]
 
 # a fault in ae_buttons_rules.c, the function it is in, and the case that must catch it
 NEGATIVE_CONTROLS = {
@@ -23,12 +23,17 @@ NEGATIVE_CONTROLS = {
     "pixels-unchecked": (("return pixels_match != 0;", "return 1;"), "ae_buttons_sprite_wanted", "sprites"),
     # (a Nintendo pad taken for a PlayStation one)
     "scheme-loose": (("return scheme == 2;", "return scheme >= 2;"), "ae_buttons_scheme_playstation", "scheme"),
+    # (a Nintendo pad taken for a PlayStation one's family, or the reverse)
+    "family-loose": (("return AE_BUTTON_FAMILY_NINTENDO;", "return AE_BUTTON_FAMILY_PLAYSTATION;"),
+                     "ae_buttons_scheme_family", "family"),
+    # (a glyph of another family drawn)
+    "glyph-any-family": (("glyph_family == family_now", "1"), "ae_buttons_glyph_is_drawn", "family"),
     # (a Custom Edition map's sequences not shifted: the map's own A, B, X, Y slots drawn as PlayStation's)
     "ce-unshifted": (("return sequence_index - first_sequence;", "return sequence_index;"), "ae_buttons_ce_sequence",
                      "ce_sequence"),
 }
 
-FUNCTIONS = ("ae_buttons_scheme_playstation", "ae_buttons_draw_playstation", "ae_buttons_sprite_wanted",
+FUNCTIONS = ("ae_buttons_scheme_playstation", "ae_buttons_scheme_family", "ae_buttons_glyph_is_drawn", "ae_buttons_draw_playstation", "ae_buttons_sprite_wanted",
              "ae_buttons_ce_sequence")
 
 
@@ -36,6 +41,7 @@ def generated(fault=None, faulty_function=None):
     header = read("port/linux/src/ae_buttons.h")
     source = read("port/linux/src/ae_buttons_rules.c")
     enum = re.search(r"enum\s*\{[^}]*AE_BUTTONS_NONE[^}]*\};", header).group(0)
+    enum += "\n" + re.search(r"enum\s*\{[^}]*AE_BUTTON_FAMILY_OWN[^}]*\};", header).group(0)
     text = ""
     for name in FUNCTIONS:
         code = function(source, name)

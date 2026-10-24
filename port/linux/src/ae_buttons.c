@@ -48,13 +48,42 @@ static long glyph_count(void)
 	return ae_button_glyph_count < MAXIMUM_GLYPHS ? (long)ae_button_glyph_count : MAXIMUM_GLYPHS;
 }
 
-int ae_buttons_playstation_now(void)
+int ae_buttons_family_now(void)
 {
 #ifdef HALO_GAME_BROWSER
-	return ae_buttons_scheme_playstation(platform_input_scheme());
+	return ae_buttons_scheme_family(platform_input_scheme());
 #else
 	return 0;
 #endif
+}
+
+int ae_buttons_playstation_now(void)
+{
+	return ae_buttons_family_now() != AE_BUTTON_FAMILY_OWN;
+}
+
+/* the picture drawn for a PlayStation glyph (the one the maps' bitmap is found as) with the pad now: its own, or the
+Nintendo glyph of the same bitmap (tag, bitmap and sprites) while a Nintendo pad is the last used; -1: none */
+static long drawn_glyph(long glyph)
+{
+	long index;
+	int family = ae_buttons_family_now();
+
+	if (glyph < 0 || glyph >= glyph_count() || ae_button_glyphs[glyph].family != AE_BUTTON_FAMILY_PLAYSTATION)
+		return glyph;
+	if (ae_buttons_glyph_is_drawn(AE_BUTTON_FAMILY_PLAYSTATION, family))
+		return glyph;
+	for (index = 0; index < glyph_count(); index++)
+	{
+		const struct ae_button_glyph *other = &ae_button_glyphs[index];
+
+		if (ae_buttons_glyph_is_drawn(other->family, family) && other->bitmap == ae_button_glyphs[glyph].bitmap &&
+			other->sprites == ae_button_glyphs[glyph].sprites && !strcmp(other->tag, ae_button_glyphs[glyph].tag))
+		{
+			return index;
+		}
+	}
+	return -1;
 }
 
 int ae_buttons_pixels_match(long glyph, unsigned long address, unsigned long level0_size)
@@ -73,6 +102,8 @@ int ae_buttons_glyph_ready(long glyph)
 {
 	const struct ae_button_glyph *embedded;
 
+	/* (a PlayStation glyph asked for while a Nintendo pad is used: the Nintendo one of the bitmap) */
+	glyph = drawn_glyph(glyph);
 	if (glyph < 0 || glyph >= glyph_count() || glyphs[glyph].failed)
 		return 0;
 	if (glyphs[glyph].texture)
@@ -86,6 +117,9 @@ int ae_buttons_glyph_ready(long glyph)
 	{
 		if (embedded->own)
 			platform_log("AE pictures: could not decode %s", embedded->tag);
+		else if (embedded->family == AE_BUTTON_FAMILY_NINTENDO)
+			platform_log("Nintendo buttons: could not decode the texture for %s bitmap %d", embedded->tag,
+				embedded->bitmap);
 		else
 			platform_log("PlayStation buttons: could not decode the texture for %s bitmap %d", embedded->tag,
 				embedded->bitmap);
@@ -170,14 +204,17 @@ int ae_buttons_drawn(unsigned long data)
 
 	if (kind == AE_BUTTONS_NONE)
 		return 0;
-	return ae_buttons_draw_playstation(kind, ae_buttons_playstation_now()) && ae_buttons_glyph_ready(glyph);
+	return ae_buttons_draw_playstation(kind, ae_buttons_playstation_now()) && ae_buttons_glyph_ready(drawn_glyph(glyph));
 }
 
 unsigned int ae_buttons_entry_texture(unsigned long data, struct xgpu_texture_description *description)
 {
 	long glyph = -1;
 
-	if (entry_kind(data, &glyph) == AE_BUTTONS_NONE || !ae_buttons_glyph_ready(glyph))
+	if (entry_kind(data, &glyph) == AE_BUTTONS_NONE)
+		return 0;
+	glyph = drawn_glyph(glyph);
+	if (!ae_buttons_glyph_ready(glyph))
 		return 0;
 	description->levels = glyphs[glyph].levels;
 	description->hires = TRUE;

@@ -654,6 +654,19 @@ int ae_platform_keyboard_last_used(void)
 	return keyboard_used_at > pad_used_at;
 }
 
+int ae_platform_test_scheme(void)
+{
+	/* (debug.ae_message_test's words "playstation" and "nintendo": the pad whose art the HUD and the menus draw, with
+	no such pad: the headless shots of each family) */
+	const char *test = config_string("debug.ae_message_test");
+
+	if (!test || !test[0])
+		return -1;
+	if (strstr(test, "nintendo"))
+		return 3;
+	return strstr(test, "playstation") ? 2 : -1;
+}
+
 int ae_platform_input_scheme(void)
 {
 #ifdef HALO_GAME_BROWSER

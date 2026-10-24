@@ -46,6 +46,18 @@ struct ae_button_glyph
 	const unsigned int *png;
 	unsigned int png_size;
 	int own;
+	/* which controller's art (AE_BUTTON_FAMILY_*) */
+	int family;
+};
+
+/* a texture's family: the keys' and AE's other own pictures (drawn whatever the pad), PlayStation's, Nintendo's. The
+PlayStation glyphs are the ones AE finds in the maps; a Nintendo glyph is another picture of the same bitmap
+(tools/ae_button_glyphs.py nintendo), drawn in its place while a Nintendo pad is the last used */
+enum
+{
+	AE_BUTTON_FAMILY_OWN = 0,
+	AE_BUTTON_FAMILY_PLAYSTATION = 1,
+	AE_BUTTON_FAMILY_NINTENDO = 2,
 };
 
 extern const struct ae_button_glyph ae_button_glyphs[];
@@ -73,12 +85,20 @@ the button icons name them past first_sequence): the Xbox's sequence a sequence 
 int ae_buttons_ce_sequence(int sequence_index, int first_sequence);
 /* the controller scheme (xinput_sdl.c's platform_input_scheme) is a PlayStation one's */
 int ae_buttons_scheme_playstation(int scheme);
+/* the family (AE_BUTTON_FAMILY_*) of the pad the scheme is: PlayStation's, Nintendo's, or 0 (the keyboard, an Xbox-like
+pad: the game's own Xbox icons stand). The menus' device choice (ui_overlay.c) is the scheme, one family per device */
+int ae_buttons_scheme_family(int scheme);
+/* whether a glyph of that family is the picture drawn while the pad's family is the one now (a glyph is its own's, or
+the alternate of the PlayStation glyph standing for the same bitmap) */
+int ae_buttons_glyph_is_drawn(int glyph_family, int family_now);
 
 /* ---------- the platform's side (ae_buttons.c) */
 
-/* a PlayStation controller is the one last used (1 without the game browser,
-which keeps it: never) */
+/* a PlayStation or a Nintendo controller is the one last used (its art stands in the Xbox icons' place; 0 without
+the game browser, which keeps it) */
 int ae_buttons_playstation_now(void);
+/* the family of the pad last used (ae_buttons_scheme_family of the scheme; 0 without the game browser) */
+int ae_buttons_family_now(void);
 /* whether the pixels at address (guest virtual; first mip level level0_size
 bytes) are those glyph's texture was drawn for */
 int ae_buttons_pixels_match(long glyph, unsigned long address, unsigned long level0_size);

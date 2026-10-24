@@ -406,6 +406,7 @@ static int last_pad_scheme = 1;
 
 int platform_input_scheme(void)
 {
+	if (ae_platform_test_scheme() >= 0) return ae_platform_test_scheme(); /* AE hook */
 	/* (before any input: a pad if one is connected, else the keyboard; on
 	Android the controller's, whose buttons its touch controls are drawn
 	as) */
