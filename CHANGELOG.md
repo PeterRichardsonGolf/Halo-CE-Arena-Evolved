@@ -41,6 +41,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
   opened nothing before). Press a key, mouse button or the wheel; a key another action had moves over and the screen
   says so; RESTORE DEFAULTS per section or all. AUDIO's PUSH TO TALK opens it. BACK PADDLES picks the button each back
   paddle presses (each player's own).
+- SETTINGS > CONTROLS > MOUSE: the sensitivities and the zoomed and vehicle scales go to 0.01: Shift with the arrows,
+  or Ctrl with the wheel, steps 0.01, and Enter or a click on the value types one (held to the row's range). A pad's A
+  still lists every value.
+- CREATE GAME: with bots on, LOBBY SETUP (X) has the classic menus' SHOOTING SKILL, MOVEMENT SKILL, PLAYFIGHT and BOT
+  TEAMS. CAMPAIGN: PLAYERS reads as information, and a line under CO-OP says where co-op is for now.
 - Menus: left and right go round past a row's ends, as in MCC. CALLOUTS, CALLOUT DETAIL and CALLOUT VOICE moved from
   HUD to AUDIO. SETTINGS > CONTROLS changes the profile's rows before any game.
 - Gametype files: read at each start (a seeded AE or NHE gametype is never read from or written to a file), and
