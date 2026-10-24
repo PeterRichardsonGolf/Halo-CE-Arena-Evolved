@@ -74,9 +74,9 @@ static const char *const intensity_texts[] = { "DEFAULT", "LIGHT SHOW" };
 static const char *const intensity_values[] = { "default", "light_show" };
 /* (the host's shield effects in network games: network_shield_effects.c) */
 static const char *const shield_effects_texts[] = { "STOCK", "GLOW", "LIGHT SHOW", "OVERSHIELD", "GLOW + OVERSHIELD",
-	"SHOW + OVERSHIELD" };
+	"SHOW + OVERSHIELD", "PLAYERS' OWN" };
 static const char *const shield_effects_values[] = { "stock", "glow", "light_show", "overshield", "glow_overshield",
-	"light_show_overshield" };
+	"light_show_overshield", "players" };
 static const char *const hud_style_texts[] = { "AE", "CLASSIC" };
 static const char *const hud_style_values[] = { "ae", "classic" };
 static const char *const area_texts[] = { "FULL", "16:9", "4:3" };
@@ -596,7 +596,7 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_WHEN_DISCORD, "Friends can join you from Discord.", 0 },
 	{ AE_SETTINGS_ONLINE, "HOSTING", "SHIELD EFFECTS", AE_SETTINGS_SPINNER, "network.shield_effects",
 		VALUES(shield_effects_texts, shield_effects_values), AE_SETTINGS_ALWAYS,
-		"The shield glow and overshield everyone sees in games you host.", 0 },
+		"What everyone sees in games you host; PLAYERS' OWN: each their own settings.", 0 },
 	{ AE_SETTINGS_ONLINE, "ADVANCED", "PROTOCOL", AE_SETTINGS_SPINNER, "network.protocol",
 		VALUES(protocol_texts, protocol_values), AE_SETTINGS_ALWAYS,
 		"How this PC talks to other machines. AUTO picks the best both have.", 0 },

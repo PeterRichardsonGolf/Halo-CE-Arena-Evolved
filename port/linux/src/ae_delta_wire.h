@@ -1,14 +1,14 @@
 /*
 AE_DELTA_WIRE.H
 
-Arena Evolved on a Delta wire of its own, chupa-36z (delta.h's DELTA_WIRE:
-OpenCE's network 36), with a range from ChupathingyCE 0.8's chupa-32a
+Arena Evolved on a Delta wire of its own, chupa-38z (delta.h's DELTA_WIRE:
+OpenCE's network 38), with a range from ChupathingyCE 0.8's chupa-32a
 (AE_DELTA_WIRE_OLDEST) to it (ae_delta_wire.c). So an Arena Evolved host
-advertises its range as chupa-32a to chupa-36z and its old slot chupa-32a:
+advertises its range as chupa-32a to chupa-38z and its old slot chupa-32a:
 ChupathingyCE 0.8's clients join it, and the host keeps those whose HELLO
 says a network version older than 35 out (ae_chupa_link.c: they can't read
 its game settings record); ChupathingyCE 0.7.5 (chupa-29a) never joins. An
-Arena Evolved client joins a Delta host whose range has chupa-36z, or whose
+Arena Evolved client joins a Delta host whose range has chupa-38z, or whose
 wire is chupa-32a (ChupathingyCE 0.8.0f, which plays by the host's version,
 and older 0.8 builds), whose game it plays by the number the host announces
 (ae_chupa_link.c). Pure C (delta_compat.h only), so the unit tests build it

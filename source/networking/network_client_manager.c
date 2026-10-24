@@ -824,8 +824,9 @@ static unsigned long network_game_client_link_down_time;
 static unsigned long network_game_client_link_checked_time;
 static boolean network_game_client_link_down;
 
-/* each advertised game's host's network version and netcode, by its place
-in the client's available_games (HALO_PORT_NETWORK_VERSION) */
+/* each advertised game's host's network version and netcode, and the game's
+kind (game_modes_kind), by its place in the client's available_games
+(HALO_PORT_NETWORK_VERSION) */
 static struct
 {
 	word version;
@@ -833,6 +834,7 @@ static struct
 	/* (and the advertisement's reserved bytes whole: the game wire a Delta
 	host plays after them, port/linux/include/delta.h) */
 	byte reserved[0x1A];
+	byte kind;
 } network_game_client_advertised_versions[MAXIMUM_NETWORK_ADVERTISED_GAMES];
 
 /* the joined game's host's network version, as it advertised it (0xFFFF: not
@@ -2692,6 +2694,8 @@ static boolean add_advertised_game(
 			csmemcpy(network_game_client_advertised_versions[game_index].reserved,
 				advertisement->__unknown5A,
 				sizeof(network_game_client_advertised_versions[game_index].reserved));
+			network_game_client_advertised_versions[game_index].kind =
+				advertisement->__unknown5A[HALO_PORT_ADVERTISED_KIND_OFFSET];
 		}
 
 		if (advertisement->game_name[0] != L'\0')
@@ -3427,6 +3431,7 @@ boolean network_game_client_version_compatible(
 /* port/linux/src/delta_peer_game.c's */
 int delta_peer_advertised_wire_matches(unsigned char const *reserved, int size, char *theirs, int theirs_size);
 #endif
+#include "delta.h" /* AE hook */
 
 /* whether this client can join the advertised game (its host's network
 version and netcode: network_game_client_version_compatible, which tells
@@ -3515,6 +3520,20 @@ boolean network_game_client_advertised_game_in_progress(
 
 	return game_index >= 0 && game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES &&
 		(network_game_client_advertised_versions[game_index].flags & HALO_PORT_ADVERTISED_IN_PROGRESS_FLAG) != 0;
+}
+
+/* port: the advertised game's kind (an OpenCE gametype's mode, and Hardcore:
+port/linux/game/game_modes.h), for the server browser's name of it */
+byte network_game_client_advertised_game_kind(
+	struct network_game_client *client,
+	struct network_advertised_game const *game)
+{
+	long game_index = client ? game - client->available_games : NONE;
+
+	/* (AE: none from a Delta host: the byte is its major, delta.h) */
+	return game_index >= 0 && game_index < MAXIMUM_NETWORK_ADVERTISED_GAMES &&
+		!(network_game_client_advertised_versions[game_index].flags & DELTA_ADVERTISED_FLAG) ? /* AE hook */
+		network_game_client_advertised_versions[game_index].kind : 0;
 }
 
 /* the searching client, ready to join (none joining or connected), or NULL */
@@ -3617,6 +3636,7 @@ boolean network_game_client_available_game_read(
 	game->teams = advertised->has_teams;
 	game->in_progress = network_game_client_advertised_game_in_progress(client, advertised);
 	game->join_state = network_game_client_advertised_game_join_state(client, advertised, &game->version);
+	game->kind = network_game_client_advertised_game_kind(client, advertised); /* AE hook */
 	return TRUE;
 }
 

@@ -1,7 +1,7 @@
 /*
 AE_DELTA_WIRE_TEST.C
 
-Arena Evolved's range on its own wire, chupa-36z, from ChupathingyCE 0.8's chupa-32a (port/linux/src/ae_delta_wire.c;
+Arena Evolved's range on its own wire, chupa-38z, from ChupathingyCE 0.8's chupa-32a (port/linux/src/ae_delta_wire.c;
 tools/test_ae_delta_wire.py runs it): what an Arena Evolved host advertises,
 what ChupathingyCE's clients (0.8's ranged decision, 0.7.5's exact slot)
 make of it, and which hosts an Arena Evolved client joins.
@@ -125,7 +125,7 @@ int main(void)
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0 && !strcmp(theirs, "chupa-32b"));
 	chupa_host(reserved, "chupa-36a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
-	chupa_host(reserved, "chupa-37a");
+	chupa_host(reserved, "chupa-39a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
 	chupa_host(reserved, "chupa-99a");
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 0);
@@ -135,6 +135,11 @@ int main(void)
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 1] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 2] ^
 		reserved[DELTA_ADVERTISED_RANGE_OFFSET + 3] ^ reserved[DELTA_ADVERTISED_RANGE_OFFSET + 4]);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == 1);
+	/* the fourth reserved byte, OpenCE's game kind since network 37, stays a Delta host's major (ChupathingyCE's
+	layout: a Delta host sends no kind) */
+	ae_host(reserved);
+	CHECK(DELTA_ADVERTISED_WIRE_OFFSET == 3 && reserved[3] == DELTA_MAJOR);
+	CHECK(DELTA_ADVERTISED_RANGE_OFFSET + DELTA_ADVERTISED_RANGE_SIZE == 0x1A);
 	/* ... a host that says nothing of a wire: the numbers decide */
 	memset(reserved, 0, RESERVED);
 	CHECK(ae_decides(reserved, theirs, (int)sizeof(theirs)) == -1);

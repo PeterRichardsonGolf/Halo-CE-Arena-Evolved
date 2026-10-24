@@ -64,6 +64,7 @@ struct ae_lan_game
 	int teams, in_progress;
 	int join_state;             /* HALO_PORT_JOIN_* (halo_port_limits.h): 0 joinable */
 	unsigned int version;
+	unsigned char kind;         /* the game's kind (OpenCE's network 37: game_modes.h's game_modes_kind) */
 };
 enum { AE_LAN_GAMES = 9 };
 struct ae_result ae_lobby_lan_search(void);

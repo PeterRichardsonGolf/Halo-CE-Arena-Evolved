@@ -1027,9 +1027,9 @@ source/interface/hud.c	(void)hud_draw_match_timer; /* AE hook */
 port/linux/game/menu_tags.c	#include "ae_ce_locale.h" /* AE hook */
 # OpenCE build-244's passenger camera calls render_camera_world_to_screen, which the 64-bit builds need declared
 port/linux/game/passenger_camera.c	#include "render/render_cameras_internal.h" /* AE hook */
-# Arena Evolved's Delta wire (network 36, from 0.3.9): its own chupa-36z (0.3.6-0.3.8: ChupathingyCE 0.8's chupa-32a; 0.3.5: ae-32a),
+# Arena Evolved's Delta wire (network 38, from 0.3.9): its own chupa-38z (0.3.6-0.3.8: ChupathingyCE 0.8's chupa-32a; 0.3.5: ae-32a),
 # its range from chupa-32a (ae_delta_wire.h)
-port/linux/include/delta.h	#define DELTA_WIRE "chupa-36z" /* AE hook */
+port/linux/include/delta.h	#define DELTA_WIRE "chupa-38z" /* AE hook */
 # ChupathingyCE 0.8.0f in Arena Evolved's games (0.3.9; ae_chupa_link.c): a client of a ChupathingyCE host plays by
 # the number it announces (32: the 13,120-byte game settings record widened, shield-only scenery no static target,
 # a static target's own damage reported); a host drops a Delta machine whose HELLO says a version under 35
@@ -1352,3 +1352,13 @@ port/linux/game/discord_game.c	if (engine == game_engine_bomb) game->mode = vari
 port/linux/game/menu_functions.c	engine = PIN(variant.game_engine_index, 0, 6); /* AE hook */
 port/linux/game/infection.c	#include "networking/network_server_manager_internal.h" /* AE hook */
 port/linux/game/game_modes.c	#include "text/unicode.h" /* AE hook */
+# OpenCE build-268 (network 37) sends the game's kind in the advertisement's fourth reserved byte, Delta's major:
+# a Delta host keeps its major there (no kind), a client takes a kind only from a host without the Delta flag
+source/networking/network_server_message_handler.c	if (!(advertisement.reserved[HALO_PORT_ADVERTISED_FLAGS_OFFSET] & DELTA_ADVERTISED_FLAG)) /* AE hook */
+source/networking/network_client_manager.c	!(network_game_client_advertised_versions[game_index].flags & DELTA_ADVERTISED_FLAG) ? /* AE hook */
+# OpenCE build-268 (network 37): a LAN game's kind for the AE server browser (ae_screen_browser.c)
+source/networking/network_client_manager.h	byte kind; /* AE hook */
+source/networking/network_client_manager.c	game->kind = network_game_client_advertised_game_kind(client, advertised); /* AE hook */
+source/networking/network_server_message_handler.c	#include "delta.h" /* AE hook */
+# (delta.h in every build, the web one too: DELTA_ADVERTISED_FLAG for the kind byte)
+source/networking/network_client_manager.c	#include "delta.h" /* AE hook */

@@ -145,7 +145,8 @@ static void test_advertisement(void)
 	/* (bytes in the way are cleared) */
 	memset(reserved, 0xEE, sizeof(reserved));
 	delta_compat_advertise(reserved, RESERVED, DELTA_MAJOR, "chupa-29a");
-	CHECK(reserved[DELTA_ADVERTISED_WIRE_OFFSET + 1 + 9] == 0 && reserved[DELTA_ADVERTISED_WIRE_OFFSET + 16] == 0);
+	CHECK(reserved[DELTA_ADVERTISED_WIRE_OFFSET + 1 + 9] == 0 &&
+		reserved[DELTA_ADVERTISED_WIRE_OFFSET + DELTA_ADVERTISED_WIRE_SIZE] == 0);
 }
 
 static void test_range_bytes(void)
@@ -189,7 +190,8 @@ static void test_matrix(void)
 	host(h33wide, "chupa-33a");
 	h33wide[23] = 29;
 	h33wide[25] = (unsigned char)(0xA5 ^ 1 ^ 33 ^ 'a' ^ 29 ^ 'a');
-	memcpy(h33wide + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-29a\0\0\0\0\0\0\0", 16);
+	/* (the slot whole: DELTA_ADVERTISED_WIRE_SIZE, 15 in Arena Evolved) */
+	memcpy(h33wide + DELTA_ADVERTISED_WIRE_OFFSET + 1, "chupa-29a\0\0\0\0\0\0\0", DELTA_ADVERTISED_WIRE_SIZE);
 
 	/* a 32a client */
 	CHECK(decide(h32, "chupa-32a") == 1);

@@ -109,7 +109,7 @@ is newer (network_client_manager.c). A host advertises it, with its netcode,
 in its game's advertisement's reserved bytes (network_server_message_handler.c),
 which hosts built before there was a version send as zeros: version 0.
 Raise it with any change to what the machines send each other. */
-#define HALO_PORT_NETWORK_VERSION 36
+#define HALO_PORT_NETWORK_VERSION 38
 /* ... the versions whose hosts a client joins: its own, and those that differ
 from it only in what the other machines leave out (a message a machine of
 the other version does not know it drops). Which are which is delta.h's
@@ -120,21 +120,23 @@ messages as they were (tools/test_delta.py checks them; they stay numbers
 here, which the command repository reads). A host
 never checks a client's version: the client does (network_client_manager.c),
 so the range is the client's. */
-#define HALO_PORT_NETWORK_VERSION_MINIMUM 36
+#define HALO_PORT_NETWORK_VERSION_MINIMUM 38
 /* (Arena Evolved: its own version, as OpenCE, which joins hosts of its own
-version alone; ChupathingyCE 0.8 (32) joins up to 33, so neither joins the other. A host of OpenCE's next version
+version alone; ChupathingyCE 0.8.0f (32) joins up to 37, so neither joins the other by number. A host of OpenCE's next version
 is shown as newer, never joined until this game follows it; DELTA_LEGACY_PRESUMED is 0 in
 Arena Evolved for the same reason) */
-#define HALO_PORT_NETWORK_VERSION_MAXIMUM 36
+#define HALO_PORT_NETWORK_VERSION_MAXIMUM 38
 /* ... the numbers in use (port/linux/src/delta.c): the three above, until a
 legacy table (docs/delta.md) widens them; code asks these, not the numbers */
 int delta_legacy_announce(void);
 int delta_legacy_minimum(void);
 int delta_legacy_maximum(void);
 /* ... the advertisement's reserved bytes: the version (a little-endian word),
-then flags */
+then flags, then the game's kind (an OpenCE gametype's mode, and Hardcore:
+port/linux/game/game_modes.h's game_modes_kind), for the server browser */
 #define HALO_PORT_ADVERTISED_VERSION_OFFSET 0
 #define HALO_PORT_ADVERTISED_FLAGS_OFFSET 2
+#define HALO_PORT_ADVERTISED_KIND_OFFSET 3
 /* ... the host plays the distributed netcode (always, since the lockstep
 netcode was removed; hosts of version 4 built before then may not) */
 #define HALO_PORT_ADVERTISED_DISTRIBUTED_FLAG 0x01
