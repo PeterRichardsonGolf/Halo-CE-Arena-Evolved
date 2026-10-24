@@ -124,15 +124,15 @@ static const char *const privacy_helps[PRIVACIES] = {
 	"On: anyone can find and join it in the SERVER BROWSER, and your invite works too."
 };
 #define MAXIMUM_HELP "The most players the game takes, bots included."
-#define LOBBY_HELP "Who can join this lobby, and how many: the network, PUBLIC and MAX PLAYERS (X from anywhere)."
-#define INVITE_HELP "A copies your game's invite link (halo://join/...) to paste to friends. Anyone with it can join."
+#define LOBBY_HELP "Who can join this lobby, and how many: the network, PUBLIC and MAX PLAYERS ({X} from anywhere)."
+#define INVITE_HELP "{A} copies your game's invite link (halo://join/...) to paste to friends. Anyone with it can join."
 /* BOTS: OFF and 1-31 (bots.count; config.toml takes up to 127, shown as it is), BOT SKILL: bots.skill's levels (wording
 and help: tools/port_settings.py's Bots screen) */
 enum { BOTS_MENU_MAXIMUM = 31, BOTS_SETTING_MAXIMUM = 127, BOT_SKILLS = 6, BOT_SKILL_DEFAULT = 2 };
 static const char *const bot_skill_values[BOT_SKILLS] = { "recruit", "easy", "normal", "heroic", "legendary", "demon" };
 static const char *const bot_skill_names[BOT_SKILLS] = { "RECRUIT", "EASY", "NORMAL", "HEROIC", "LEGENDARY", "DEMON" };
 #define BOTS_HELP "How many bots, up to 31, play your games; a person who joins a full game takes a bot's " \
-	"place. With bots, X (LOBBY SETUP) has more."
+	"place. With bots, {X} (LOBBY SETUP) has more."
 #define BOT_SKILL_HELP "How soon the bots react, how well they aim and how far they see."
 /* (0.3.9) LOBBY SETUP's bot rows: the settings bots.shooting_skill, bots.movement_skill ("same": BOT SKILL's),
 bots.playfight, bots.teams; their wording tools/port_settings.py's classic BOTS screen's */
@@ -364,7 +364,7 @@ static short setup_rows(struct ae_flow_screen *flow, short count)
 	ae_setup_edit_name(name, sizeof(name));
 	changes = ae_setup_changes(&access);
 	flow->rows[count] = (struct ae_flow_row){ ROW_MAP, -1, "MAP", create.map_name[0] ? create.map_name : "CHOOSE",
-		"The maps in folders, filtered for the gametype (LT / RT change the filter)." };
+		"The maps in folders, filtered for the gametype ({LT} / {RT} change the filter)." };
 	count++;
 	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", name);
 	flow->rows[count] = (struct ae_flow_row){ ROW_GAMETYPE, -1, "GAMETYPE", flow->value_texts[count],
@@ -645,7 +645,7 @@ static void lobby_rows(void)
 		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "GAMETYPE", lobby.have_roster &&
 			lobby.roster.gametype[0] ? lobby.roster.gametype : "THE HOST'S", NULL };
 		flow->rows[count++] = (struct ae_flow_row){ ROW_INFO, -1, "WAITING FOR THE HOST TO START", NULL,
-			"The host picks the map and rules and starts the game. B leaves it." };
+			"The host picks the map and rules and starts the game. {B} leaves it." };
 		flow->count = count;
 		flow->focus = (short)(count - 1);
 		return;
@@ -670,7 +670,7 @@ static void lobby_rows(void)
 	else if (create.start_step == START_FAILED)
 	{
 		start.reason = "NOT OPEN";
-		start.help = "The lobby did not open: A opens it again (X: LOBBY SETUP, another network).";
+		start.help = "The lobby did not open: {A} opens it again ({X}: LOBBY SETUP, another network).";
 	}
 	else
 	{
@@ -1020,6 +1020,7 @@ static void draw_panel_help(float width)
 	float x = ae_flow_left_x(flow), body = ae_flow_u(flow, d->metrics->body), line = ae_flow_u(flow, d->metrics->body_line);
 	float help_gap = ae_flow_u(flow, 28.0f), help_y = ae_flow_content_bottom(flow) - line * 2.0f, rows_end;
 	char lines[2][160];
+	char expanded[320];
 	const char *help;
 	int index, count;
 	short last;
@@ -1036,7 +1037,7 @@ static void draw_panel_help(float width)
 	if (help_y < rows_end + help_gap)
 		return;
 	ae_draw_rect(x, help_y - help_gap * 0.5f, width, ae_flow_u(flow, AE_FLOW_RULE_U), 0.0f, AE_COLOR_RULE);
-	count = ae_wrap_text(AE_FONT_BODY, body, help, width, lines, 2);
+	count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(help, expanded, sizeof(expanded)), width, lines, 2);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, help_y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }
@@ -1574,8 +1575,10 @@ static int setup_help_lines(float width, char lines[SETUP_HELP_LINES][160])
 {
 	struct ae_flow_screen *flow = &lobby.flow;
 
-	return ae_wrap_text(AE_FONT_BODY, ae_flow_u(flow, flow->density.metrics->body), setup_help(setup.kinds[setup.focus]),
-		width, lines, SETUP_HELP_LINES);
+	char expanded[320];
+
+	return ae_wrap_text(AE_FONT_BODY, ae_flow_u(flow, flow->density.metrics->body),
+		ae_help_expand(setup_help(setup.kinds[setup.focus]), expanded, sizeof(expanded)), width, lines, SETUP_HELP_LINES);
 }
 
 static const char *setup_help(short kind)

@@ -521,6 +521,72 @@ const char *ae_prompt_key(int button)
 	return NULL;
 }
 
+/* the plain word a help line uses for a button on a device ("{X}" in a help line): the footer's key cap on the
+keyboard, a family's own name on a pad; Nintendo's face buttons by position (its A is the east button: AE's B) */
+const char *ae_help_button_word(int device, int button)
+{
+	static const char *const xbox_words[4] = { "A", "B", "X", "Y" };
+	static const char *const playstation_words[4] = { "Cross", "Circle", "Square", "Triangle" };
+	static const char *const nintendo_words[4] = { "B", "A", "Y", "X" };
+	const char *words;
+
+	if (device == AE_DEVICE_KEYBOARD_MOUSE)
+		return ae_prompt_key(button);
+	if (button >= AE_BUTTON_A && button <= AE_BUTTON_Y)
+		return (device == AE_DEVICE_PLAYSTATION ? playstation_words : device == AE_DEVICE_NINTENDO ? nintendo_words :
+			xbox_words)[button - AE_BUTTON_A];
+	words = pad_cap_words(device, button);
+	return words ? words : device == AE_DEVICE_NINTENDO ? "+" : "Start";
+}
+
+const char *ae_help_expand_for(int device, const char *text, char *out, size_t size)
+{
+	static const struct { const char *token; int button; } tokens[] =
+	{
+		{ "{A}", AE_BUTTON_A }, { "{B}", AE_BUTTON_B }, { "{X}", AE_BUTTON_X }, { "{Y}", AE_BUTTON_Y },
+		{ "{LB}", AE_BUTTON_LEFT_SHOULDER }, { "{RB}", AE_BUTTON_RIGHT_SHOULDER },
+		{ "{LT}", AE_BUTTON_LEFT_TRIGGER }, { "{RT}", AE_BUTTON_RIGHT_TRIGGER },
+	};
+	size_t used = 0;
+	int index;
+
+	if (!out || !size)
+		return text;
+	if (!text)
+		text = "";
+	while (*text && used + 1 < size)
+	{
+		const char *word = NULL;
+
+		if (*text == '{')
+			for (index = 0; index < (int)(sizeof(tokens) / sizeof(tokens[0])); index++)
+				if (!strncmp(text, tokens[index].token, strlen(tokens[index].token)))
+				{
+					word = ae_help_button_word(device, tokens[index].button);
+					text += strlen(tokens[index].token);
+					break;
+				}
+		if (word)
+		{
+			size_t length = word ? strlen(word) : 0;
+
+			if (length > size - 1 - used)
+				length = size - 1 - used;
+			memcpy(out + used, word, length);
+			used += length;
+		}
+		else
+			out[used++] = *text++;
+	}
+	out[used] = 0;
+	return out;
+}
+
+const char *ae_help_expand(const char *text, char *out, size_t size)
+{
+	return ae_help_expand_for(ae_ui_last_device(), text, out, size);
+}
+
 unsigned int ae_prompt_tint(int device, int button)
 {
 	static const unsigned int xbox_tints[4] = { AE_TINT_XBOX_A, AE_TINT_XBOX_B, AE_TINT_XBOX_X, AE_TINT_XBOX_Y };

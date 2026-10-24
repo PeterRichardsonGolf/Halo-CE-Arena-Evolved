@@ -886,7 +886,7 @@ const char *ae_setup_pack_help(struct ae_setup_access const *access, int option,
 	}
 	if (!ae_setup_pack_on(access, slot))
 	{
-		snprintf(text, (size_t)size, "%s A or left / right turns the pack on.", pack_facts[slot - 1]);
+		snprintf(text, (size_t)size, "%s {A} or left / right turns the pack on.", pack_facts[slot - 1]);
 		return text;
 	}
 	snprintf(text, (size_t)size, "%s On the map; it can also be a start weapon.", pack_facts[slot - 1]);

@@ -394,13 +394,13 @@ static void draw_panel(float x, float y, float width, float bottom)
 	if (ae_setup_map_row_is_group(entry))
 	{
 		int group = ae_setup_map_row_group(entry);
-		char words[96];
+		char words[96], expanded[160];
 
 		ae_draw_text(AE_FONT_ROW, text * NAME_SCALE, x, y, AE_ALIGN_LEFT, AE_COLOR_TITLE, maps.group_names[group]);
 		y += ae_draw_cap_height(AE_FONT_ROW, text * NAME_SCALE) + u(PANEL_GAP_U);
-		snprintf(words, sizeof(words), "%d maps%s. A opens the folder here; LB / RB go from folder to folder.",
+		snprintf(words, sizeof(words), "%d maps%s. {A} opens the folder here; {LB} / {RB} go from folder to folder.",
 			ae_setup_map_group_count(&maps, group, screen.filter), screen.filter == AE_MF_ALL ? "" : " suit the filter");
-		count = ae_wrap_text(AE_FONT_BODY, body, words, width, lines, 3);
+		count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(words, expanded, sizeof(expanded)), width, lines, 3);
 		for (index = 0; index < count; index++)
 			ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 		return;

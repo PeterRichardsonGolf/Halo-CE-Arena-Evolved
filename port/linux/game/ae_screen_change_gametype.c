@@ -619,7 +619,14 @@ static void draw_search(float center_y)
 	float x = panel_x(), width = right_x() - x, height = u(SEARCH_HEIGHT_U), top = center_y - height * 0.5f;
 	float pad = u(SEARCH_PAD_U), minor = ae_size_minor(d), glyph = u(SEARCH_GLYPH_U), pen = x + pad;
 	int device = ae_ui_last_device(), editing = screen.typing || screen.keyboard_open;
-	const char *clears = device == AE_DEVICE_KEYBOARD_MOUSE ? "ESC CLEARS" : "B CLEARS";
+	char clears[32];
+	int at;
+
+	/* (the back button's word for the device, upper case: ESC, B, CIRCLE) */
+	snprintf(clears, sizeof(clears), "%s CLEARS", ae_help_button_word(device, AE_BUTTON_B));
+	for (at = 0; clears[at]; at++)
+		if (clears[at] >= 'a' && clears[at] <= 'z')
+			clears[at] = (char)(clears[at] - 'a' + 'A');
 
 	screen.well.x = x;
 	screen.well.y = top;
@@ -771,7 +778,7 @@ static void draw_folder_panel(int folder, float x, float y, float width)
 {
 	float body = u(screen.density.metrics->body), line = u(screen.density.metrics->body_line);
 	float text = ae_size_text(&screen.density) * NAME_SCALE;
-	char words[200], lines[3][160];
+	char words[200], expanded[240], lines[3][160];
 	short count = ae_gtp_folder_count(&gtp, folder, screen.filter, screen.query);
 	int index, written;
 
@@ -780,12 +787,12 @@ static void draw_folder_panel(int folder, float x, float y, float width)
 	if (folder == AE_GTP_FOLDER_RECENT)
 		snprintf(words, sizeof(words), "The last %d gametypes you picked, with the start you used.", count);
 	else if (folder == AE_GTP_FOLDER_FAVOURITES)
-		snprintf(words, sizeof(words), "%d gametype%s you starred with Y (until the game closes).", count,
+		snprintf(words, sizeof(words), "%d gametype%s you starred with {Y} (until the game closes).", count,
 			count == 1 ? "" : "s");
 	else
-		snprintf(words, sizeof(words), "%d gametype%s%s. A opens the folder here; LT / RT go from folder to folder.",
+		snprintf(words, sizeof(words), "%d gametype%s%s. {A} opens the folder here; {LT} / {RT} go from folder to folder.",
 			count, count == 1 ? "" : "s", screen.filter == AE_GTF_ALL ? "" : " suit the filter");
-	written = ae_wrap_text(AE_FONT_BODY, body, words, width, lines, 3);
+	written = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(words, expanded, sizeof(expanded)), width, lines, 3);
 	for (index = 0; index < written; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }
@@ -902,7 +909,7 @@ static void draw_empty(float x, float y, float width)
 	struct ae_density const *d = &screen.density;
 	float row = ae_size_row(d), gap = u(d->metrics->gap), pad = u(d->metrics->pad), text = ae_size_text(d);
 	float body = u(d->metrics->body), height = row * 2.0f + gap;
-	char words[96], query[AE_GTP_QUERY];
+	char words[96], query[AE_GTP_QUERY], expanded[96];
 	int index;
 
 	for (index = 0; index < AE_GTP_QUERY - 1 && screen.query[index]; index++)
@@ -914,8 +921,7 @@ static void draw_empty(float x, float y, float width)
 	ae_draw_text(AE_FONT_ROW, text, x + pad, cap_top(AE_FONT_ROW, text, y + row * 0.5f + gap * 0.5f), AE_ALIGN_LEFT,
 		AE_COLOR_TEXT, words);
 	ae_draw_text(AE_FONT_BODY, body, x + pad, cap_top(AE_FONT_BODY, body, y + row * 1.5f), AE_ALIGN_LEFT, AE_COLOR_MUTED,
-		ae_ui_last_device() == AE_DEVICE_KEYBOARD_MOUSE ? "Check the spelling, or press Esc to clear the search." :
-		"Check the spelling, or press B to clear the search.");
+		ae_help_expand("Check the spelling, or press {B} to clear the search.", expanded, sizeof(expanded)));
 }
 
 /* the open folder's header, when it scrolled off over its own rows: pinned in the list's first row slot */

@@ -145,6 +145,7 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 	float body = ae_flow_u(flow, d->metrics->body), line = ae_flow_u(flow, d->metrics->body_line), help_y;
 	float more = ae_widget_more_line(d), bottom = ae_flow_content_bottom(flow);
 	char lines[2][160];
+	char expanded[320];
 	short index, last;
 	int count, any_help = 0;
 
@@ -221,7 +222,8 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 		return;
 	ae_draw_rect(x, help_y - ae_flow_u(flow, HELP_GAP_U) * 0.5f, width, ae_flow_u(flow, AE_FLOW_RULE_U), 0.0f,
 		AE_COLOR_RULE);
-	count = ae_wrap_text(AE_FONT_BODY, body, flow->rows[flow->focus].help, width, lines, 2);
+	count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(flow->rows[flow->focus].help, expanded, sizeof(expanded)), width,
+		lines, 2);
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, help_y + line * (float)index, AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
 }

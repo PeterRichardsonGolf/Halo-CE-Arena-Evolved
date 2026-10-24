@@ -503,6 +503,7 @@ void ae_widget_help(struct ae_density const *density, struct ae_rect const *rect
 	short hit_id, struct ae_rect *preview)
 {
 	char lines[12][160], text[200];
+	char expanded[320];
 	float inset = units(density, HELP_INSET_U), gap = units(density, HELP_GAP_U);
 	float x = rect->x + inset, width = rect->width - 2.0f * inset, y = rect->y + inset;
 	float title = floored(density, density->metrics->help_title, TEXT_FLOOR_PIXELS);
@@ -534,7 +535,7 @@ void ae_widget_help(struct ae_density const *density, struct ae_rect const *rect
 	/* the body, 21 on 31 u */
 	room = body_line > 0.0f ? (int)((bottom - y) / body_line) : 0;
 	room = room < 0 ? 0 : room > 12 ? 12 : room;
-	count = help->body && room > 0 ? ae_wrap_text(AE_FONT_BODY, body, help->body, width, lines, room) : 0;
+	count = help->body && room > 0 ? ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(help->body, expanded, sizeof(expanded)), width, lines, room) : 0;
 	for (index = 0; index < count; index++)
 		ae_draw_text(AE_FONT_BODY, body, x, text_top(AE_FONT_BODY, body, y + body_line * ((float)index + 0.5f)),
 			AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);

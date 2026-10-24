@@ -211,20 +211,21 @@ static void page_help(struct page const *page, struct page_parts const *parts, c
 {
 	float body = pu(page, page->density.metrics->body), line = pu(page, page->density.metrics->body_line);
 	char lines[HELP_LINES][160];
+	char expanded[320];
 	int count, index, at = 0;
 
 	ae_draw_rect(parts->list_x, parts->help_y - pu(page, HELP_GAP_U) * 0.5f, parts->list_width, pu(page, RULE_U), 0.0f,
 		AE_COLOR_RULE);
 	if (first && first[0])
 	{
-		count = ae_wrap_text(AE_FONT_BODY, body, first, parts->list_width, lines, second && second[0] ? 1 : HELP_LINES);
+		count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(first, expanded, sizeof(expanded)), parts->list_width, lines, second && second[0] ? 1 : HELP_LINES);
 		for (index = 0; index < count; index++, at++)
 			ae_draw_text(AE_FONT_BODY, body, parts->list_x, parts->help_y + line * (float)at, AE_ALIGN_LEFT, first_color,
 				lines[index]);
 	}
 	if (second && second[0] && at < HELP_LINES)
 	{
-		count = ae_wrap_text(AE_FONT_BODY, body, second, parts->list_width, lines, HELP_LINES - at);
+		count = ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(second, expanded, sizeof(expanded)), parts->list_width, lines, HELP_LINES - at);
 		for (index = 0; index < count; index++, at++)
 			ae_draw_text(AE_FONT_BODY, body, parts->list_x, parts->help_y + line * (float)at, AE_ALIGN_LEFT,
 				AE_COLOR_TEXT, lines[index]);
