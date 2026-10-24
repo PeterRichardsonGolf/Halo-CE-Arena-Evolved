@@ -9,6 +9,9 @@
 # player_ui_set_single_player_local_player_controller gave a pad another player's look sensitivity.
 port/linux/game/menu_functions.c	#include "ae_input.h" /* AE hook */
 port/linux/game/menu_functions.c	ae_input_controller_assigned(0); /* AE hook */
+# (0.3.9) CREATE GAME's ADD PLAYER (ae_glue_lobby.c): the classic lobby's ADD PLAYER state, so pc_menu_split_players gives a
+# lone gamepad its own controller (port 2) and its START joins the AE lobby.
+port/linux/game/menu_functions.c	void pc_menu_lobby_adding(unsigned char adding) { lobby_join.adding = adding != 0; } /* AE hook */
 port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "true", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_reduce_motion", _config_boolean, "false", "HALO_ARENA_MENUS_REDUCE_MOTION", _environment_value, /* AE hook */\n_platform_all,

@@ -58,6 +58,7 @@ players <n>", "lobby: shooting skill|movement skill|playfight|teams <value>", "l
 #include "../src/ae_platform.h"
 #include "ae_glue_lobby.h"
 #include "ae_header_lines.h"
+#include "ae_input.h"
 #include "ae_glue_setup_maps.h"
 #include "ae_glue_setup_options.h"
 #include "ae_hooks.h"
@@ -108,7 +109,8 @@ NETWORK change: the old one closed this frame) */
 enum { START_IDLE, START_JOINING, START_DONE, START_FAILED, START_REOPEN };
 enum { PRIVACY_INVITE_ONLY, PRIVACY_PUBLIC, PRIVACIES };
 /* the panel's rows: LOBBY and INVITE at its top, BOTS and BOT SKILL at its foot */
-enum { PANEL_LOBBY, PANEL_INVITE, PANEL_BOTS, PANEL_BOT_SKILL, PANEL_ROWS };
+/* (0.3.9) ADD PLAYER under them: split screen, a controller's START joins it (a lone pad needs ADD PLAYER first) */
+enum { PANEL_LOBBY, PANEL_INVITE, PANEL_ADD, PANEL_BOTS, PANEL_BOT_SKILL, PANEL_ROWS };
 /* LOBBY SETUP's rows; (0.3.9) under a BOTS heading while there are bots, the classic menus' four more bot settings */
 enum { SETUP_NETWORK, SETUP_PUBLIC, SETUP_MAXIMUM, SETUP_SHOOTING, SETUP_MOVEMENT, SETUP_PLAYFIGHT, SETUP_TEAMS,
 	SETUP_ROWS };
@@ -126,6 +128,8 @@ static const char *const privacy_helps[PRIVACIES] = {
 #define MAXIMUM_HELP "The most players the game takes, bots included."
 #define LOBBY_HELP "Who can join this lobby, and how many: the network, PUBLIC and MAX PLAYERS (X from anywhere)."
 #define INVITE_HELP "A copies your game's invite link (halo://join/...) to paste to friends. Anyone with it can join."
+#define ADD_HELP "Split screen: START on another controller adds its player (B on it takes them out). With one controller " \
+	"and the keyboard, A here first."
 /* BOTS: OFF and 1-31 (bots.count; config.toml takes up to 127, shown as it is), BOT SKILL: bots.skill's levels (wording
 and help: tools/port_settings.py's Bots screen) */
 enum { BOTS_MENU_MAXIMUM = 31, BOTS_SETTING_MAXIMUM = 127, BOT_SKILLS = 6, BOT_SKILL_DEFAULT = 2 };
@@ -195,6 +199,7 @@ static struct
 	int options_open;          /* GAME OPTIONS opened from here: its changes applied when it closes */
 	int leaving;
 	int joiner;                /* joined another's game: the roster, map and gametype only */
+	int adding;                /* (0.3.9) ADD PLAYER on: the next new controller's START joins */
 	int host_started;          /* the host pressed START: the screen stays up until the game runs (a joiner loading
 	                              the map holds the countdown, and the server may cancel it) */
 	char joined_how[32];       /* (a joiner's crumb) how: "JOINED BY INVITE", the browser's own words */
@@ -864,6 +869,50 @@ static void left_step(short row, short direction)
 
 /* ---------- the panel */
 
+/* ADD PLAYER on or off (the game's ADD PLAYER state with it: a lone pad moves to its own controller) */
+static void adding_set(int adding)
+{
+	lobby.adding = adding != 0;
+	ae_lobby_adding_player(lobby.adding);
+	platform_log("ae create game: lobby: add player %s", lobby.adding ? "on" : "off");
+}
+
+/* (0.3.9) split screen: START on a controller (2-4) with no player here joins it; B on one with a player takes it
+out (player 1's controller, the keyboard's, and the pointer keep the lobby's own START and B). 1: taken */
+static int split_screen_press(struct ae_event const *event)
+{
+	short controller = ae_input_event_controller();
+	struct ae_result result;
+
+	if (controller < 1)
+		return 0;
+	if (event->action == AE_ACTION_START && !ae_lobby_controller_plays(controller))
+	{
+		result = ae_lobby_join_controller(controller);
+		if (!result.ok)
+		{
+			ae_flow_error(&lobby.flow, "The player did not join", result.reason);
+			return 1;
+		}
+		lobby.adding = 0;
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		return 1;
+	}
+	if (event->action == AE_ACTION_BACK && ae_lobby_controller_plays(controller) && ae_lobby_local_players() >= 2)
+	{
+		result = ae_lobby_leave_controller(controller);
+		ae_sound_request(result.ok ? AE_SOUND_BACK : AE_SOUND_FAILURE, 0);
+		return 1;
+	}
+	if (event->action == AE_ACTION_BACK && lobby.adding && !ae_lobby_controller_plays(controller))
+	{
+		adding_set(0);
+		ae_sound_request(AE_SOUND_BACK, 0);
+		return 1;
+	}
+	return 0;
+}
+
 static void panel_rows(void)
 {
 	lobby.panel_count = 0;
@@ -872,6 +921,8 @@ static void panel_rows(void)
 		return;
 	if (create.network == NETWORK_ONLINE)
 		lobby.panel_kinds[lobby.panel_count++] = PANEL_INVITE;
+	if (ae_lobby_local_players() < 4)
+		lobby.panel_kinds[lobby.panel_count++] = PANEL_ADD;
 	lobby.panel_kinds[lobby.panel_count++] = PANEL_BOTS;
 	lobby.panel_kinds[lobby.panel_count++] = PANEL_BOT_SKILL;
 	if (lobby.panel_focus >= lobby.panel_count)
@@ -884,6 +935,7 @@ static const char *panel_help(short kind)
 	{
 	case PANEL_LOBBY: return LOBBY_HELP;
 	case PANEL_INVITE: return INVITE_HELP;
+	case PANEL_ADD: return ADD_HELP;
 	case PANEL_BOTS: return BOTS_HELP;
 	case PANEL_BOT_SKILL: return BOT_SKILL_HELP;
 	}
@@ -901,6 +953,10 @@ static void panel_accept(short index)
 		break;
 	case PANEL_INVITE:
 		invite_copy();
+		break;
+	case PANEL_ADD:
+		adding_set(!lobby.adding);
+		ae_sound_request(lobby.adding ? AE_SOUND_FORWARD : AE_SOUND_BACK, 0);
 		break;
 	default:
 		break;
@@ -973,6 +1029,10 @@ static float draw_panel_row(short index, float x, float y, float width)
 		widget.label = "INVITE";
 		widget.value = lobby.invite_shown[0] ? lobby.invite_shown : "BEING MADE...";
 		widget.flags |= lobby.invite[0] ? AE_ROW_LINK : AE_ROW_STATUS;
+		break;
+	case PANEL_ADD:
+		widget.label = "ADD PLAYER";
+		widget.value = lobby.adding ? "PRESS START ON IT" : NULL;
 		break;
 	case PANEL_BOTS:
 		widget.label = "BOTS";
@@ -1060,7 +1120,7 @@ static void draw_panel(float x, float y, float width, float bottom)
 	{
 		short kind = lobby.panel_kinds[index];
 
-		if (kind != PANEL_LOBBY && kind != PANEL_INVITE)
+		if (kind != PANEL_LOBBY && kind != PANEL_INVITE && kind != PANEL_ADD)
 			continue;
 		row_y += draw_panel_row(index, ix, row_y, iw) + gap;
 	}
@@ -1230,6 +1290,8 @@ static int lobby_handle(struct ae_screen *instance, struct ae_event const *event
 	panel_rows();
 	if (lobby.panel_focus >= 0)
 		lobby.panel_last = lobby.panel_focus;
+	if (split_screen_press(event))
+		return 1;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:
@@ -1345,6 +1407,8 @@ static void lobby_leave(struct ae_screen *instance)
 	(void)instance;
 	platform_log("ae create game: lobby: %s", lobby.leaving ? "left" : "off the stack");
 	lobby.leaving = 0;
+	if (lobby.adding)
+		adding_set(0);
 }
 
 static struct ae_screen_class const lobby_class =

@@ -126,6 +126,14 @@ static short player_of(
 	return ae_input_player_of_controller(controller, bindings);
 }
 
+/* the controller of the press being dispatched (ae_input_event_controller) */
+static short dispatching_controller = -1;
+
+short ae_input_event_controller(void)
+{
+	return dispatching_controller;
+}
+
 /* (repeat: a held direction's repeat step, not its press) */
 static void send_step(
 	short controller,
@@ -138,7 +146,9 @@ static void send_step(
 	event.action = (unsigned char)action;
 	event.device = device_of(controller);
 	event.repeat = (unsigned char)(repeat != 0);
+	dispatching_controller = controller;
 	ae_ui_dispatch(&event);
+	dispatching_controller = -1;
 }
 
 static void send_action(

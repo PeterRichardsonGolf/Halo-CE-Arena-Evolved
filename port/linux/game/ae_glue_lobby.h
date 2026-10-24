@@ -25,6 +25,15 @@ M2 whatever network.host_public says; PUBLIC is M4's PRIVACY row) */
 struct ae_result ae_lobby_host(int kind);
 /* a local player for a controller (0-3; logged 1-based) */
 struct ae_result ae_lobby_add_local_player(short controller);
+/* (0.3.9) split screen: whether a controller (0-3) has a player of this machine in the game; how many do; ADD PLAYER
+on or off (a lone gamepad moves off the keyboard's controller to its own, for its START to join); a controller (1-3)
+joining with its profile (a guest's, "Guest n", when it has none or another player here has it); its player leaving
+(never the machine's last: that leaves the lobby) */
+int ae_lobby_controller_plays(short controller);
+int ae_lobby_local_players(void);
+void ae_lobby_adding_player(int adding);
+struct ae_result ae_lobby_join_controller(short controller);
+struct ae_result ae_lobby_leave_controller(short controller);
 /* the roster now, in AE's order (ae_lobby_roster_order) */
 struct ae_result ae_lobby_roster(struct ae_lobby_roster *roster);
 /* the host's map, by its file name: "bloodgulch" -> levels\test\bloodgulch\bloodgulch */

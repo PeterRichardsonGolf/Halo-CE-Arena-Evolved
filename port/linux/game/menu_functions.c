@@ -5931,6 +5931,9 @@ static boolean lobby_add_player(void)
 	return TRUE;
 }
 
+/* (AE: CREATE GAME's ADD PLAYER, as ADD PLAYER here: a lone gamepad gets its own controller, for its START to join) */
+void pc_menu_lobby_adding(unsigned char adding) { lobby_join.adding = adding != 0; } /* AE hook */
+
 /* "port lobby join" (START): a controller not playing joins, choosing its
 profile next (FALSE: no profile screen); a player's START is the focused
 button's */

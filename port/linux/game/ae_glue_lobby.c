@@ -204,6 +204,98 @@ struct ae_result ae_lobby_add_local_player(short controller)
 	return succeeded();
 }
 
+/* (0.3.9) split screen in the AE lobby: menu_functions.c's ADD PLAYER state (a lone gamepad off the keyboard's
+controller onto its own) */
+void pc_menu_lobby_adding(unsigned char adding);
+
+/* this machine's player of the controller in the network game (bots apart), NULL if none */
+static struct network_player *local_player_of(short controller)
+{
+	struct network_game *game = network_game_get_game();
+	short machine = network_game_client_get_local_machine_index();
+	short index;
+
+	for (index = 0; game && machine != NONE && index < (short)NUMBEROF(game->players); index++)
+	{
+		struct network_player *player = &game->players[index];
+
+		if (network_player_is_valid(player) && !ae_lan_bots_network_player(player) &&
+			(short)player->machine_index == machine && (short)player->controller_index == controller)
+			return player;
+	}
+	return NULL;
+}
+
+int ae_lobby_controller_plays(short controller)
+{
+	return controller >= 0 && controller < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS && local_player_of(controller) != NULL;
+}
+
+int ae_lobby_local_players(void)
+{
+	short controller;
+	int count = 0;
+
+	for (controller = 0; controller < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; controller++)
+		count += ae_lobby_controller_plays(controller);
+	return count;
+}
+
+void ae_lobby_adding_player(int adding)
+{
+	pc_menu_lobby_adding((unsigned char)(adding != 0));
+}
+
+struct ae_result ae_lobby_join_controller(short controller)
+{
+	long profile_index;
+	short other;
+	int taken = 0;
+	struct ae_result result;
+
+	if (controller < 1 || controller >= MAXIMUM_NUMBER_OF_LOCAL_PLAYERS)
+		return failed("join controller", AE_STR_ERR_LOBBY_FULL, NULL);
+	if (ae_lobby_controller_plays(controller))
+		return succeeded();
+	/* (its profile when it has one no other player here plays with, else a guest's, "Guest 2": the game's default
+	profile has no name, colour or look speed: release review B1) */
+	profile_index = player_ui_get_active_player_profile_index(controller);
+	for (other = 0; other < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS; other++)
+	{
+		taken |= other != controller && profile_index != NONE && ae_lobby_controller_plays(other) &&
+			player_ui_get_active_player_profile_index(other) == profile_index;
+	}
+	if ((profile_index == NONE && !ae_profile_is_guest(controller)) || taken)
+	{
+		result = ae_profile_guest(controller);
+		if (!result.ok)
+			return result;
+	}
+	player_ui_local_player_joined_multiplayer_game(controller);
+	result = ae_lobby_add_local_player(controller);
+	if (!result.ok)
+	{
+		player_ui_local_player_left_multiplayer_game(controller);
+		return result;
+	}
+	pc_menu_lobby_adding(FALSE);
+	return result;
+}
+
+struct ae_result ae_lobby_leave_controller(short controller)
+{
+	struct network_player *player = local_player_of(controller);
+
+	/* (the machine's last player leaves the lobby itself: ae_lobby_leave) */
+	if (!player || controller < 1 || ae_lobby_local_players() < 2)
+		return failed("leave controller", AE_STR_ERR_NO_GAME, NULL);
+	if (!network_game_client_request_remove_player(global_network_game_client_get(), player))
+		return failed("leave controller", AE_STR_ERR_NO_GAME, NULL);
+	player_ui_local_player_left_multiplayer_game(controller);
+	platform_log("ae lobby: local player left (controller %d)", controller + 1);
+	return succeeded();
+}
+
 /* a path's last part ("levels\test\bloodgulch\bloodgulch" -> "bloodgulch") */
 static const char *file_name(const char *path)
 {

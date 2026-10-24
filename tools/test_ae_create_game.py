@@ -52,6 +52,10 @@ CASES = (
     # comes back to BOTS; the footer's "LB RB Column" at 100 and 130 %)
     ("columns", 32, 100, ("wait", "pad:rb", "pad:down", "pad:right", "pad:lb", "pad:rb", "wait"), 40),
     ("columns-130", 32, 130, ("wait", "pad:rb", "wait"), 32),
+    # (0.3.9 split screen: the keyboard down past START GAME and LOBBY to ADD PLAYER, Enter; the one pad leaves the
+    # keyboard's controller for its own, its START joins it as a guest, its B takes that player out again)
+    ("split", 32, 100, ("wait",) + ("type:Down",) * 12 + ("type:Return", "wait", "wait", "pad:start", "wait", "wait",
+                                                         "pad:b", "wait"), 56),
     # (NETWORK to HOST ONLINE, PUBLIC on, B: the lobby opens again online)
     ("online", 32, 100, ("wait", "pad:x", "pad:right", "pad:down", "pad:right", "pad:b", "wait", "wait"), 36),
     # (the lobby: down to the panel's last row (BOT SKILL), up to BOTS, 3 bots, then BOT SKILL focused)
@@ -156,6 +160,18 @@ def test_columns(runs):
     assert columns == ["lobby: column panel", "lobby: column left", "lobby: column panel"], said
     assert "lobby: bots 1" in said, said
     assert "lobby: column panel" in lines(runs["columns-130"][1], "ae create game: ")
+
+
+def test_split_screen_join(runs):
+    """(0.3.9) ADD PLAYER, then a second controller's START joins it (a guest's profile: no nameless player); its B
+    takes the player out, the lobby stays"""
+    text = runs["split"][1]
+    said = lines(text, "ae create game: ")
+    assert "lobby: add player on" in said, said
+    assert "local player added (controller 2)" in lines(text, "ae lobby: "), lines(text, "ae lobby: ")
+    assert "player 2 guest" in lines(text, "ae profiles: ")
+    assert "local player left (controller 2)" in lines(text, "ae lobby: ")
+    assert "lobby: left" not in said, said
 
 
 def test_the_lobby_starts_the_game(runs):

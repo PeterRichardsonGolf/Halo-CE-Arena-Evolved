@@ -26,5 +26,8 @@ void ae_input_pointer(struct halo_ui_pointer const *pointer);
 most 2 s); ae_input_holding is nonzero while it does */
 void ae_input_hold_begin(void);
 int ae_input_holding(void);
+/* (0.3.9) the controller (0-3) whose press is being dispatched now; -1 outside a controller's dispatch (the pointer, a
+screen's own events): lobbies tell a pad without a player (split screen join) from one with */
+short ae_input_event_controller(void);
 
 #endif
