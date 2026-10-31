@@ -1,0 +1,50 @@
+name: Crash or freeze
+description: "Halo CE: Arena Evolved closes, freezes, or won't start."
+labels: [bug, crash]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Sorry about that. debug.txt from the game's folder is the most useful thing you can attach: it shows the last thing the game did.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, Linux, Steam Deck, macOS (Apple Silicon), Dedicated server, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release you're on (for example 0.7.1-beta). Window's title, or the zip's name.
+    validations:
+      required: true
+  - type: dropdown
+    id: when
+    attributes:
+      label: When
+      options: [At start, before the menus, In the menus, Loading a map, In a game, Joining or hosting online, Other]
+    validations:
+      required: true
+  - type: dropdown
+    id: source
+    attributes:
+      label: Where it gets the game's files
+      options: [MCC on Steam, An Xbox disc image, Both, Not sure]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What you did just before
+      description: The map, gametype and what was happening. Does it happen every time?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: debug.txt
+      description: Attach debug.txt from the game's folder (drag the file here). On macOS, also the crash report from ~/Library/Logs/DiagnosticReports (halo-*.ips).
+    validations:
+      required: true

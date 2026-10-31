@@ -1,5 +1,14 @@
 blank_issues_enabled: false
 contact_links:
+  - name: Questions and help
+    url: https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions/categories/q-a
+    about: Setting up, MCC not found, hosting, controls. Ask in Discussions; other players can answer too.
+  - name: Ideas and feature requests
+    url: https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions/categories/ideas
+    about: New gametypes, weapons, settings, menus. Post them in Discussions, where others can vote on them.
+  - name: Layouts, gametypes and screenshots
+    url: https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions/categories/show-and-tell
+    about: Share your map layouts, gametypes and games in Show and tell (never maps or other game files).
   - name: Bugs that OpenCE has too
     url: https://github.com/OpenCommunityEdition/OpenCE/issues
     about: A bug that is not only Arena Evolved's (OpenCE, which Arena Evolved is built on, has it too) is best reported to OpenCE.
