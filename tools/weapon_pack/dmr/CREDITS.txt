@@ -1,0 +1,24 @@
+AE DMR (weapon pack ae_dmr) - credits
+
+The rifle's model, textures, shaders, effects and sounds are the work of CMT (the Custom Mapping Team), from the
+source release of The Silent Cartographer: Evolved 1.4.1c (the Evolved team: Teh Lag, Ifafudafi, Siliconmaster and
+the contributors their credits.txt names). The first-person animations and reload and ready sounds are CMT's battle
+rifle's, which CMT's DMR weapon uses. They are used under the release's own terms ("Just don't take credit for things you didn't make") and are unchanged but for
+what an Xbox map needs: Open Sauce's extension blocks removed, the multipurpose maps' channels reordered, the Ogg
+Vorbis sounds encoded again as Xbox ADPCM, the models converted.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the lighting values and the brightened base map;
+- the zoom overlay (evo_scope.py, the EVO RIFLE's): a soft dark surround round a wide window, black glass marks and
+  the readouts' frames, drawn from geometry; the zoom and the rounds in them are drawn by the game;
+- the aiming reticle, a bolder form of Kenney's crosshair 033;
+- the weapon's behaviour, which is code in the game and no part of this pack.
+
+The pack holds no pixel, sound or model of the game's own: what the rifle needs of the game (the stock HUD's
+numbers and frames, reflection maps, impact materials, the held weapon's collision) it names, and the map the
+player owns provides.
+
+The aiming reticle follows crosshair 033 of Kenney's Crosshair Pack (www.kenney.nl), released under Creative
+Commons Zero. Thank you, Kenney.
+
+Thank you, CMT.

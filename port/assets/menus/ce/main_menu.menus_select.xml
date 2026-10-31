@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The main menu's MENUS, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/main_menu_item_menus" type="text" width="256" height="33" bitmap="main_menu/menu_menus">
+		<on event="created" run="ae menus item"/>
+		<on event="a" run="ae menus open"/>
+		<on event="start" run="ae menus open"/>
+		<on event="custom_activation" open="main_menu/menus_select/menus_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_screen" width="640" height="480" flags="pass_unhandled_to_focused_child">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/halo_logo" y="28"/>
+		<child widget="main_menu/menus_select/menus_select_list"/>
+		<child widget="main_menu/build_number" x="450" y="430"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_select_list" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_items" description="main_menu/main_menu_list_ext_desc">
+		<data input="main menu fake animate"/>
+		<on event="created" run="ae menus focus"/>
+		<child widget="main_menu/menus_select/menus_item_pc" x="192" y="211"/>
+		<child widget="main_menu/menus_select/menus_item_xbox" x="192" y="246"/>
+		<child widget="main_menu/menus_select/menus_item_arena" x="192" y="281"/>
+		<child widget="main_menu/menus_select/menus_item_back" x="192" y="316"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_item_pc" type="text" width="256" height="33" bitmap="main_menu/menu_style_pc_current">
+		<on event="a" run="ae menus pick"/>
+		<on event="start" run="ae menus pick"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_item_xbox" type="text" width="256" height="33" bitmap="main_menu/menu_style_xbox">
+		<on event="a" run="ae menus pick"/>
+		<on event="start" run="ae menus pick"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_item_arena" type="text" width="256" height="33" bitmap="main_menu/menu_style_arena">
+		<on event="a" run="ae menus pick"/>
+		<on event="start" run="ae menus pick"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/menus_select/menus_item_back" type="text" width="256" height="33" bitmap="main_menu/menu_back">
+		<on event="a" run="mouse emit back event"/>
+		<on event="start" run="mouse emit back event"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+</menus>

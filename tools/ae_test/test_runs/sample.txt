@@ -1,0 +1,25 @@
+# A sample TEST RUN list: three tests, every kind of line.
+list sample
+revision 3
+title SAMPLE LIST
+
+test sling-swap
+title Rifle slung after a swap
+check Pick up the pistol: the rifle shows on your back
+check F2 shoulder cam: no floating or clipping
+map bloodgulch
+gametype AE SLAYER
+set debug.network_test_loadout 2,3
+players 2
+retest 3
+
+test menu-screen
+title The test screen draws
+check The screen shows its title and no clipping
+screen 1
+video
+card bottom
+
+test plain-map
+check The map loads and you can move
+map hangemhigh

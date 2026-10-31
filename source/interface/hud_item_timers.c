@@ -1,0 +1,3789 @@
+/*
+HUD_ITEM_TIMERS.C
+
+port: MATCH CLOCK (display.match_clock), CAMPAIGN TIMER and the power
+list of the gametype's TIMERS and TRAINING, drawn once per local player's
+view from hud_draw_screen (hud.c).
+
+The clock is M:SS in the view's bottom right corner, as the Master Chief
+Collection's (game_engine_match_clock: the time left or the time played, in
+any multiplayer game; with BOTH and a time limit, the time played smaller
+directly above the time left, game_engine_match_clock_elapsed): its right
+edge under the right edge of the shield and health meters at the view's top
+right, its digits' foot level with the motion sensor's background's foot in
+the opposite corner, where the sensor's range ("15m") is. The meters' and
+the sensor's places are as hud_unit.c last drew them in this view
+(hud_item_timers_set_meters, hud_item_timers_set_motion_sensor). With no
+meters seen (or a HUD that has them in the view's left half), the clock is
+as far from the view's right edge as the sensor's background is from its
+left; with no sensor seen (hidden by a script or the gametype), 4% of the
+view's width from its right edge and 6% of its height from its bottom.
+With MATCH CLOCK LABELS (display.match_clock_labels) each line has a
+small heading over it at the text scale, TIME LEFT or ELAPSED
+(hud_item_timers_clock_layout_get stacks them).
+On Halo 1: NHE's maps it keeps out of their countdown's titles (g_*). Its
+digits are tabular (each in a cell as wide as the widest digit), so that it
+keeps still as the seconds tick.
+
+The power list is the rockets', sniper's, shotgun's, overshield's and camo's next
+spawns. In every view (one view's by default: display.power_list "clock")
+it is a column stacked over the clock (hud_item_timers_draw_column), the
+same in every view at every count of views: a line for each class and name
+spawning in a second ("R/B ROCKETS", an item at both bases one line, its R
+and B in the bases' colours; different classes in one second each their
+own line, the time on each), two aligned columns, NAME and TIME. The times
+are flush right on the clock's right edge in the same tabular figures (so
+"1:20" over "0:50" has one colon line), as wide as the widest (10:00 moves
+every name left together); the names flush right a digit's cell before
+them. The soonest is at the foot, a cap (of the text scale) over the
+clock's digits' cap top (or BOTH's time played's), and each line a cap and
+a half over the one under it; with no clock it sits on the clock's
+baseline; with the clock hidden a moment (NHE's countdown titles) it stays
+where it was. At most four lines: the three soonest and "+N" with more, in
+the time column at half alpha. A line ten seconds from its spawn or nearer
+is drawn at full alpha (as the voice's "ten"). Never made smaller: at the
+view's text scale. Not while the view's scoreboard shows (the clock stays).
+
+With one view, display.power_list "top_left" (TOP LEFT) has it as before:
+one line at the text scale in the view's top left corner, in at most half
+its width: at the view's top, under the performance overlay's line where
+the two would meet (main.c's main_framerate_extent: the overlay at the top
+left, drawn at the text scale too, hud_item_timers_overlay_text_scale), and
+under the HUD's own elements in that corner (the ammo, the grenades, as
+hud.c saw them drawn: hud_item_timers_set_top_left) where it would meet
+them (made smaller to stay over them where it nearly fits), the HUD's
+messages under them moved down under it (hud_item_timers_messages_offset).
+A line that does not fit its room is the shorter one (entries spawning
+together grouped), then smaller (down to
+HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE); only at the smallest are its latest
+entries left off.
+
+With HUD AREA (display.hud_area: hud_area_insets), both keep to its part
+of the view: the clock mirrors the sensor (which has moved in with the HUD)
+about that part's middle, the power column with it, and the TOP LEFT line
+(and the clock with no sensor) keeps to that part's sides.
+
+CAMPAIGN TIMER (display.campaign_timer) draws the time played on a
+campaign level as the clock, in the same place (hud_draw_campaign_timer).
+
+Neither is drawn once the game is over (game_engine_game_over: the
+postgame's "You won"/"You lost" view and the scores).
+
+Both are drawn like the performance overlay (main.c frame_statistics_draw):
+the HUD's smaller font, its blue, 0.7 alpha, smaller; placed to fractions of
+a unit (hud_item_timers_draw_text_at). Every text of ours in
+a view (the power list, the waypoints' labels and their distances, BOTH's
+time played, and in the first view the performance overlay) is drawn at one
+size, the view's text scale: HUD_ITEM_TIMERS_TEXT_SCALE in one view,
+smaller in a smaller view (hud_item_timers_view_factor); the clock a step
+larger, HUD_ITEM_TIMERS_CLOCK_SCALE (the Master Chief Collection's size in
+one view), by the same rule. Its right edge is about 10 pixels inside the
+meters' frame at 1080p, the Collection's about 9, being under the bar's own
+end. Unlike the overlay, drawn in the HUD's pass, the bounds are the view's
+relative to itself.
+
+TRAINING's waypoints (hud_draw_item_waypoints) are the game's own nav
+points, as Halo 1: NHE's Training mode's: the "default" arrow (CTF's over
+a flag carrier's own base, where it scores) with the distance by it, over
+each power entry's spawn point while item_timer_waypoint_shown, drawn as
+the game engine draws its goals' (game_engine_render_nav_points): occluded
+or not by a line of sight test from the player's head each frame, at the
+view's edge pointing to it when off screen. For every player (NHE turns
+them on for both teams), only while alive, as the game's nav points, and
+not while the view's scoreboard shows (game_engine_scoreboard_shown). Each
+has a label by its arrow (hud_waypoint_draw_labels): the item's name and
+the time to its spawn, the name alone once it is on the map, in its base's
+colour (item_timers.c's sides). Every arrow is drawn first; the labels are
+then placed soonest first clear of the arrows, their distances, the clock
+and power list and each other, arrows together at the view's edge sharing
+one list beside them.
+
+WAYPOINTS (display.waypoint_style, this machine's display only) is what a
+label shows: TEXT as above; ICONS the distance, the item's picture and,
+while it respawns, its timer; BOTH the distance, the name, the picture, the
+timer, centred (hud_waypoint_line, by
+ae_waypoint_icons.c's rules) on one axis to a fraction of a HUD unit: each
+row's ink (not its text box) and each picture's middle, and a label over its
+arrow on the arrow's ink, which a map's art need not have in its sprite's
+middle (ae_waypoint_ink.c). A weapon's picture is the pickup prompt's
+(its HUD interface's messaging icon, a sprite of the map's own hud_msg_icons
+sheet: nothing is shipped), every index and size checked before it is drawn,
+drawn alone 1.4 capitals high and no wider than its name; a weapon with none (a Custom Edition map, a
+mod) shows Arena Evolved's burst in an outlined hexagon; the overshield's and
+the camouflage's are Arena Evolved's own glyphs (hud_waypoint_glyph_bitmap),
+dark on a filled hexagon 1.8 capitals high. All in the label's colour, at the view's text scale
+as the text.
+
+WAYPOINT SIZE (display.waypoint_size, 50 to 100 percent, default 70; Settings > HUD) is the whole stack's size (the
+text, the picture and the gaps; the arrow, the power list, the clock and the overlay keep theirs): each label's text
+scale is the size times the view's factor (hud_item_timers_view_factor_for: a half screen 0.85, a quarter 0.75) times
+a gentle distance factor (whole to 15 m, a line down to three quarters at 60 m, never below), and a block of labels
+is laid out and drawn at its first label's (hud_waypoint_block_scale_set). No text is smaller than
+HUD_WAYPOINT_MINIMUM_CAP screen pixels in its capitals (hud_waypoint_floor_scale). The distance row is near white
+and whole, outlined, as the timer; the name is the item's (SHOTGUN, in the base's colour: no RED or BLUE, a number
+only where the map has another of the item at the base within ten metres: hud_waypoint_name), the power list's
+names kept. The names over players' heads (hud.c, drawn before the waypoints) are noted per view
+(hud_item_timers_name_tag_note): a label steps aside from them, and is faded where it cannot.
+*/
+
+/* ---------- headers */
+
+#include <math.h>
+#include <string.h>
+
+#include "cseries/cseries.h"
+
+#include "bitmaps/bitmap_color_conversion.h"
+#include "bitmaps/bitmap_group.h"
+#include "bitmaps/bitmaps.h"
+#include "cache/cache_files.h"
+#include "cache/texture_cache.h"
+#include "game/game.h"
+#include "cutscene/cinematics.h"
+#include "game/game_engine.h"
+#include "game/item_timers.h"
+#include "game/players.h"
+#include "interface/hud.h"
+#include "interface/hud_definitions.h"
+#include "interface/hud_draw.h"
+#include "interface/hud_item_timers.h"
+#include "interface/hud_messaging.h"
+#include "interface/ui_widget.h"
+#include "interface/weapon_hud_interface_definition.h"
+#include "items/weapon_definitions.h"
+#include "main/main.h"
+#include "rasterizer/rasterizer.h"
+#include "render/render.h"
+#include "render/render_camera_projection.h"
+#include "text/draw_string.h"
+#include "text/font_group.h"
+#include "text/unicode.h"
+#include "units/units.h"
+#include "rasterizer/xbox/rasterizer_xbox_hardware_bitmaps.h"
+#include "tag_files/tag_groups.h"
+
+/* (the waypoints' pictures' rules and Arena Evolved's glyphs: port/linux/game) */
+#include "ae_waypoint_icons.h"
+#include "ae_waypoint_ink.h"
+#include "ae_power_list.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
+
+/* ---------- constants */
+
+#define HUD_ITEM_TIMERS_ALPHA 0.7f
+#define HUD_WAYPOINT_ARROW_SIZE 0.6f	/* (our waypoint arrows, of CE's nav point size, in one view) */
+#define HUD_ITEM_TIMERS_CLOCK_SCALE 0.9f	/* (the clock in one view: the Master Chief Collection's size, digits 20 pixels tall at 1080p) */
+#define HUD_ITEM_TIMERS_TEXT_SCALE 0.7f	/* (all our other text in one view: the power list, the waypoints' labels, BOTH's time played, the performance overlay) */
+#define HUD_ITEM_TIMERS_TOP 2	/* (the overlay's line's, from the view's top) */
+#define HUD_ITEM_TIMERS_SIDE 4	/* (the power list's room from a view's sides, as the overlay's) */
+#define HUD_ITEM_TIMERS_GAP 12	/* (between the TOP LEFT power list and the overlay) */
+#define HUD_ITEM_TIMERS_CLOCK_RIGHT 0.04f	/* (of the view's width, with no motion sensor) */
+#define HUD_ITEM_TIMERS_CLOCK_BOTTOM 0.06f	/* (of the view's height, with no motion sensor) */
+#define HUD_ITEM_TIMERS_MAXIMUM_ENTRIES 64
+#define HUD_ITEM_TIMERS_LINE_LENGTH 160
+#define HUD_ITEM_TIMERS_LABEL_ALPHA 0.9f	/* (a waypoint's label, over the world) */
+#define HUD_ITEM_TIMERS_LABEL_GAP 2	/* (between a waypoint's arrow and its label) */
+#define HUD_WAYPOINT_NEAR_METRES 15.0f
+#define HUD_WAYPOINT_FAR_METRES 60.0f
+#define HUD_WAYPOINT_FAR_FACTOR 0.75f
+#define HUD_WAYPOINT_MINIMUM_CAP 9.0f	/* (waypoint text's smallest capital height, in screen pixels) */
+#define HUD_WAYPOINT_MERGE_DISTANCE 24	/* (arrows this near each other share their labels) */
+#define HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE 0.4f	/* (the smallest it is made to fit) */
+#define HUD_ITEM_TIMERS_POWER_WIDTH 0.5f	/* (the most of the view's width it takes in its top left corner) */
+#define HUD_ITEM_TIMERS_POWER_ABOVE_SCALE 0.55f	/* (the smallest it is made to stay over the HUD's top left elements) */
+#define HUD_ITEM_TIMERS_HUD_GAP 3	/* (between the power list and the HUD's top left elements) */
+#define HUD_ITEM_TIMERS_COLUMN_LINES 4	/* (the most lines of the power column: the three soonest and "+N" with more) */
+#define HUD_ITEM_TIMERS_COLUMN_PITCH 1.5f	/* (from one line of the column to the next, in caps) */
+#define HUD_ITEM_TIMERS_COLUMN_GAP 1.0f	/* (from the column's foot to the clock's cap top, in caps) */
+#define HUD_ITEM_TIMERS_LABEL_GROUP_GAP 0.5f	/* (MATCH CLOCK LABELS: between the clock's heading and BOTH's time played, in caps) */
+#define HUD_ITEM_TIMERS_SOON_SECONDS 10	/* (a line this near its spawn drawn brighter) */
+#define HUD_ITEM_TIMERS_MORE_ALPHA 0.5f	/* (the column's "+N") */
+
+/* ---------- globals */
+
+/* where each local player's view last had its motion sensor's background
+(hud_item_timers_set_motion_sensor), and the view's size then */
+static struct
+{
+	boolean valid;
+	short view_width;
+	short view_height;
+	rectangle2d bounds;
+} hud_item_timers_motion_sensors[MAXIMUM_LOCAL_PLAYERS];
+
+/* where each local player's view last had its shield and health meters
+(hud_item_timers_set_meters), and the view's size then */
+static struct
+{
+	boolean valid;
+	short view_width;
+	short view_height;
+	rectangle2d bounds;
+} hud_item_timers_meters[MAXIMUM_LOCAL_PLAYERS];
+
+/* where each local player's view has had the HUD's elements in its top
+left corner on this map (hud_item_timers_set_top_left): around all of them
+(another weapon's ammo display adds to it), so that the power list under
+them does not move up and down; and the view's size then */
+static struct
+{
+	boolean valid;
+	short view_width;
+	short view_height;
+	rectangle2d bounds;
+} hud_item_timers_top_left[MAXIMUM_LOCAL_PLAYERS];
+
+/* how far the power list under the HUD's top left elements moves the
+HUD's messages under it down in each local player's view this frame
+(hud_item_timers_messages_offset) */
+static short hud_item_timers_messages_offsets[MAXIMUM_LOCAL_PLAYERS];
+
+/* the lines (MATCH CLOCK, the power list) each local player's view last
+drew (hud_item_timers_draw_line), the view's coordinates: TRAINING's labels,
+drawn before them, keep clear of where they were */
+#define HUD_ITEM_TIMERS_MAXIMUM_LINES 4
+static struct
+{
+	short count;
+	rectangle2d bounds[HUD_ITEM_TIMERS_MAXIMUM_LINES];
+} hud_item_timers_lines[MAXIMUM_LOCAL_PLAYERS];
+
+/* ---------- code */
+
+static long hud_item_timers_line_width_scaled(long font_index, wchar_t const *text, real scale);
+
+static long hud_item_timers_font_index(
+	void)
+{
+	/* (the overlay's: the HUD's smaller font, split screen's, else its own) */
+	return hud_globals->messaging.multi_player_font.index != NONE ?
+		hud_globals->messaging.multi_player_font.index : hud_globals->messaging.single_player_font.index;
+}
+
+/* how much smaller a view's text is than one view's: by the view's size
+on the screen, half way between the same size and the square root of its
+share of the screen's area (a half-screen view 0.85, a quarter 0.75), so
+that every text of ours in a view is drawn at one size (the text scale),
+the clock a step larger, both smaller in smaller views */
+static real hud_item_timers_view_factor_for(
+	long width,
+	long height)
+{
+	long screen_width = rasterizer_globals.reserved04.frame_bounds.x1 - rasterizer_globals.reserved04.frame_bounds.x0;
+	long screen_height = rasterizer_globals.reserved04.frame_bounds.y1 - rasterizer_globals.reserved04.frame_bounds.y0;
+	real share;
+
+	if (screen_width <= 0 || screen_height <= 0 || width <= 0 || height <= 0)
+		return 1.0f;
+	share = ((real)width * (real)height) / ((real)screen_width * (real)screen_height);
+	share = PIN(share, 0.0f, 1.0f);
+
+	return 0.5f + 0.5f * square_root(share);
+}
+
+static real hud_item_timers_view_factor(
+	void)
+{
+	return hud_item_timers_view_factor_for(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0,
+		render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+}
+
+/* this view's text scale (the power list's before it is made smaller to
+fit, the waypoints' labels', BOTH's time played's) and its clock's */
+/* WAYPOINT SIZE (display.waypoint_size): while the waypoints' labels are laid out and drawn, their text scale is
+this block's (hud_waypoint_block_scale_set: the size times the view's factor times the distance's), the power list, the
+clock and the overlay keeping the view's alone */
+static boolean hud_waypoint_scale_active = FALSE;
+static real hud_waypoint_scale = 1.0f;
+
+static real hud_item_timers_text_scale(
+	void)
+{
+	if (hud_waypoint_scale_active)
+		return HUD_ITEM_TIMERS_TEXT_SCALE * hud_waypoint_scale;
+	return HUD_ITEM_TIMERS_TEXT_SCALE * hud_item_timers_view_factor();
+}
+
+static real hud_item_timers_clock_scale(
+	void)
+{
+	return HUD_ITEM_TIMERS_CLOCK_SCALE * hud_item_timers_view_factor();
+}
+
+/* the performance overlay's text scale (main.c): the text scale of the
+first view, in whose top corner it is drawn */
+real hud_item_timers_overlay_text_scale(
+	void)
+{
+	long count = PIN(local_player_count(), 1, MAXIMUM_LOCAL_PLAYERS);
+	rectangle2d view;
+	rectangle2d safe;
+
+	compute_window_bounds(0, count, &view, &safe);
+
+	return HUD_ITEM_TIMERS_TEXT_SCALE * hud_item_timers_view_factor_for(view.x1 - view.x0, view.y1 - view.y0);
+}
+
+static long hud_item_timers_line_height(
+	long font_index)
+{
+	struct font_header *font = font_definition_get(font_index);
+
+	return MAX(font->ascending_height + font->descending_height + font->leading_height, 10);
+}
+
+static void hud_item_timers_set_draw_mode(
+	long font_index,
+	short justification)
+{
+	real_argb_color color = hud_globals->messaging.state_color;
+
+	color.alpha = HUD_ITEM_TIMERS_ALPHA;
+	draw_string_set_draw_mode(font_index, NONE, justification, 0, &color);
+}
+
+static void hud_item_timers_draw_line_scaled(long font_index, short top, short left, short right,
+	wchar_t const *text, real scale);
+
+/* a line (the TOP LEFT power list's) from top, flush left, inset left and
+right from the view's edges, at a scale */
+static void hud_item_timers_draw_line_scaled(
+	long font_index,
+	short top,
+	short left,
+	short right,
+	wchar_t const *text,
+	real scale)
+{
+	rectangle2d bounds;
+	real pivot_x;
+
+	/* (the view's own bounds, relative to it: where this pass draws) */
+	bounds.x0 = left;
+	bounds.x1 = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0 - right);
+	bounds.y0 = top;
+	bounds.y1 = (short)(top + hud_item_timers_line_height(font_index));
+	/* (laid out at full size, so as wide as the line's room is at its
+	scale: a line that fits the room scaled is not cut at its bounds) */
+	pivot_x = (real)bounds.x0;
+	bounds.x1 = (short)(bounds.x0 + (bounds.x1 - bounds.x0) / scale);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	/* (smaller, about the line's top left corner it hangs from) */
+	rasterizer_text_set_scale(scale, pivot_x, (real)bounds.y0);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+
+	/* (where it was drawn, for TRAINING's labels to keep clear of) */
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_lines[render.local_player_index].count < HUD_ITEM_TIMERS_MAXIMUM_LINES)
+	{
+		rectangle2d *drawn = &hud_item_timers_lines[render.local_player_index].bounds[
+			hud_item_timers_lines[render.local_player_index].count++];
+
+		drawn->x0 = (short)pivot_x;
+		drawn->x1 = (short)(drawn->x0 + hud_item_timers_line_width_scaled(font_index, text, scale));
+		drawn->y0 = bounds.y0;
+		drawn->y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index) * scale + 0.5f);
+	}
+}
+
+/* the width a line takes, drawn at a scale */
+static long hud_item_timers_line_width_scaled(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+	if (text_bounds.x1 <= text_bounds.x0)
+		return 0;
+
+	return (long)((text_bounds.x1 - text_bounds.x0) * scale + 0.5f);
+}
+
+/* a line's ink at a scale, unrounded: where it starts from the x it is drawn from (the font's leading) and how wide
+it is (the waypoint labels centre their rows on it to a fraction of a unit) */
+static void hud_item_timers_ink_extent(
+	long font_index,
+	wchar_t const *text,
+	real scale,
+	real *offset,
+	real *width)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	*offset = 0.0f;
+	*width = 0.0f;
+	if (!text[0])
+		return;
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+	if (text_bounds.x1 <= text_bounds.x0)
+		return;
+	*offset = (real)(text_bounds.x0 - bounds.x0) * scale;
+	*width = (real)(text_bounds.x1 - text_bounds.x0) * scale;
+}
+
+/* a character's height over the baseline (its glyph's top: a capital's or
+a digit's, the cap height), at full size */
+static real hud_item_timers_cap_height(
+	long font_index,
+	wchar_t character)
+{
+	struct font_header *font = font_definition_get(font_index);
+	struct font_character const *glyph = font_get_character_by_ascii_code(font, (word)character);
+
+	if (glyph && glyph->bitmap_origin_y > 0 && glyph->bitmap_origin_y <= font->ascending_height + 2)
+		return (real)glyph->bitmap_origin_y;
+
+	return (real)font->ascending_height;
+}
+
+/* how far drawing text moves along at full size (its advance: without the
+font's leading width, which every line drawn starts with), by laying it out */
+static long hud_item_timers_layout_advance(
+	long font_index,
+	wchar_t const *text)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+
+	return cursor_bounds.x0 - bounds.x0 - font_definition_get(font_index)->leading_width;
+}
+
+/* each ASCII character's advance in our font, laid out once (a line's
+advance is its characters' added up: the layout moves each one its own
+width), so that the clock's and the power column's cells and names are
+measured without laying text out every frame; again for another font or
+map (hud_item_timers_initialize_for_new_map) */
+static struct
+{
+	long font_index;
+	short advances[128];	/* (NONE: not laid out yet) */
+} hud_item_timers_advances = { NONE };
+
+static real hud_item_timers_advance(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	long advance = 0;
+	wchar_t const *character;
+
+	if (hud_item_timers_advances.font_index != font_index)
+	{
+		short index;
+
+		hud_item_timers_advances.font_index = font_index;
+		for (index = 0; index < (short)NUMBEROF(hud_item_timers_advances.advances); index++)
+			hud_item_timers_advances.advances[index] = NONE;
+	}
+	for (character = text; *character; character++)
+	{
+		if ((unsigned long)*character >= NUMBEROF(hud_item_timers_advances.advances))
+			return (real)hud_item_timers_layout_advance(font_index, text) * scale;
+		if (hud_item_timers_advances.advances[*character] == NONE)
+		{
+			wchar_t one[2];
+
+			one[0] = *character;
+			one[1] = 0;
+			hud_item_timers_advances.advances[*character] = (short)hud_item_timers_layout_advance(font_index, one);
+		}
+		advance += hud_item_timers_advances.advances[*character];
+	}
+
+	return (real)advance * scale;
+}
+
+/* text at a scale, its first character at x and its line's top at top (the
+view's coordinates, in fractions of a unit: laid out from whole units, and
+scaled about the point that moves that layout to exactly there), in a
+colour */
+static void hud_item_timers_draw_text_at(
+	long font_index,
+	real x,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color)
+{
+	rectangle2d bounds;
+	real pivot_x;
+	real pivot_y;
+
+	if (!text[0])
+		return;
+	/* (the line's layout starts a leading width before its first character) */
+	x -= (real)font_definition_get(font_index)->leading_width * scale;
+	if (scale < 0.999f || scale > 1.001f)
+	{
+		bounds.x0 = (short)floor(x);
+		bounds.y0 = (short)floor(top);
+		pivot_x = (x - (real)bounds.x0 * scale) / (1.0f - scale);
+		pivot_y = (top - (real)bounds.y0 * scale) / (1.0f - scale);
+	}
+	else
+	{
+		bounds.x0 = (short)floor(x + 0.5f);
+		bounds.y0 = (short)floor(top + 0.5f);
+		pivot_x = (real)bounds.x0;
+		pivot_y = (real)bounds.y0;
+		scale = 1.0f;
+	}
+	/* (laid out as wide as it needs, at full size) */
+	bounds.x1 = (short)(bounds.x0 + hud_item_timers_advance(font_index, text, 1.0f) + 16.0f);
+	bounds.y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index));
+	draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, color);
+	rasterizer_text_set_scale(scale, pivot_x, pivot_y);
+	rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+	rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+}
+
+/* tabular figures: the cells every digit and the colon of a time are drawn
+in at a scale (a digit's as wide as the widest digit), so that the colons
+of times drawn one over another line up, and a ticking clock keeps still */
+struct hud_item_timers_cells
+{
+	real digit;
+	real colon;
+};
+
+static void hud_item_timers_cells_get(
+	long font_index,
+	real scale,
+	struct hud_item_timers_cells *cells)
+{
+	wchar_t digit[2];
+
+	cells->digit = 0.0f;
+	digit[1] = 0;
+	for (digit[0] = L'0'; digit[0] <= L'9'; digit[0]++)
+		cells->digit = MAX(cells->digit, hud_item_timers_advance(font_index, digit, scale));
+	cells->colon = hud_item_timers_advance(font_index, L":", scale);
+}
+
+/* a character's cell (a digit's, the colon's, else its own advance) */
+static real hud_item_timers_cell_width(
+	long font_index,
+	wchar_t character,
+	real scale,
+	struct hud_item_timers_cells const *cells)
+{
+	wchar_t text[2];
+
+	if (character >= L'0' && character <= L'9')
+		return cells->digit;
+	if (character == L':')
+		return cells->colon;
+	text[0] = character;
+	text[1] = 0;
+
+	return hud_item_timers_advance(font_index, text, scale);
+}
+
+/* a time's width in tabular figures */
+static real hud_item_timers_tabular_width(
+	long font_index,
+	wchar_t const *text,
+	real scale,
+	struct hud_item_timers_cells const *cells)
+{
+	real width = 0.0f;
+
+	for (; *text; text++)
+		width += hud_item_timers_cell_width(font_index, *text, scale, cells);
+
+	return width;
+}
+
+/* a time in tabular figures, flush right on right (each character at the
+middle of its cell), its line's top at top; returns its width */
+static real hud_item_timers_draw_tabular(
+	long font_index,
+	real right,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color,
+	struct hud_item_timers_cells const *cells)
+{
+	real width = hud_item_timers_tabular_width(font_index, text, scale, cells);
+	real x = right - width;
+
+	for (; *text; text++)
+	{
+		wchar_t character[2];
+		real cell = hud_item_timers_cell_width(font_index, *text, scale, cells);
+
+		character[0] = *text;
+		character[1] = 0;
+		hud_item_timers_draw_text_at(font_index,
+			x + (cell - hud_item_timers_advance(font_index, character, scale)) / 2.0f, top, character, scale, color);
+		x += cell;
+	}
+
+	return width;
+}
+
+/* where the clock (and the power column over it) was drawn in this view,
+for TRAINING's labels to keep clear of (hud_item_timers_lines) */
+static void hud_item_timers_record(
+	real x0,
+	real y0,
+	real x1,
+	real y1)
+{
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_lines[render.local_player_index].count < HUD_ITEM_TIMERS_MAXIMUM_LINES)
+	{
+		rectangle2d *drawn = &hud_item_timers_lines[render.local_player_index].bounds[
+			hud_item_timers_lines[render.local_player_index].count++];
+
+		drawn->x0 = (short)floor(x0);
+		drawn->y0 = (short)floor(y0);
+		drawn->x1 = (short)ceil(x1);
+		drawn->y1 = (short)ceil(y1);
+	}
+}
+
+/* the clock's place in the view's bottom right corner, by the meters' and
+the motion sensor's places: its right edge's inset from the view's right
+edge, and its digits' baseline (the power column stands on it) */
+static void hud_item_timers_clock_place(
+	short *inset_out,
+	long *baseline_out)
+{
+	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	short local_player_index = render.local_player_index;
+	short inset;
+	long baseline;
+	/* (port: HUD AREA's insets of the view's HUD, hud_area_insets) */
+	short area_left;
+	short area_right;
+
+	hud_area_insets(&area_left, &area_right);
+
+	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_motion_sensors[local_player_index].valid &&
+		hud_item_timers_motion_sensors[local_player_index].view_width == view_width &&
+		hud_item_timers_motion_sensors[local_player_index].view_height == view_height)
+	{
+		rectangle2d const *sensor = &hud_item_timers_motion_sensors[local_player_index].bounds;
+
+		/* (the sensor's left inset, mirrored; its background's foot. port:
+		mirrored about the middle of HUD AREA's part of the view, which is
+		the view's own moved by half the difference of its insets) */
+		inset = (short)MAX(sensor->x0 + area_right - area_left, 0);
+		baseline = MIN(sensor->y1, view_height);
+	}
+	else
+	{
+		/* (port: of HUD AREA's part of the view) */
+		inset = (short)(area_right + HUD_ITEM_TIMERS_CLOCK_RIGHT * (view_width - area_left - area_right) + 0.5f);
+		baseline = view_height - (long)(HUD_ITEM_TIMERS_CLOCK_BOTTOM * view_height + 0.5f);
+	}
+	/* (the meters' right edge, where they are in this view's right half;
+	they have moved in with HUD AREA's part of the view already) */
+	if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_timers_meters[local_player_index].valid &&
+		hud_item_timers_meters[local_player_index].view_width == view_width &&
+		hud_item_timers_meters[local_player_index].view_height == view_height &&
+		hud_item_timers_meters[local_player_index].bounds.x1 > view_width / 2 &&
+		hud_item_timers_meters[local_player_index].bounds.x1 <= view_width)
+	{
+		inset = (short)(view_width - hud_item_timers_meters[local_player_index].bounds.x1);
+	}
+	*inset_out = inset;
+	*baseline_out = baseline;
+}
+
+/* our HUD text's colour (the clock's, the power column's): the HUD's
+blue */
+static void hud_item_timers_color(
+	real alpha,
+	real_argb_color *color)
+{
+	*color = hud_globals->messaging.state_color;
+	color->alpha = alpha;
+}
+
+/* a base's colour (red, blue: TRAINING's labels', the power column's R and
+B), else the HUD's text's */
+static void hud_item_timers_side_color(
+	short side,
+	real alpha,
+	real_argb_color *color)
+{
+	switch (side)
+	{
+	case _item_timer_side_red:
+		color->red = 1.0f;
+		color->green = 0.3f;
+		color->blue = 0.3f;
+		break;
+
+	case _item_timer_side_blue:
+		color->red = 0.35f;
+		color->green = 0.55f;
+		color->blue = 1.0f;
+		break;
+
+	default:
+		*color = hud_globals->messaging.text_color;
+		break;
+	}
+	color->alpha = alpha;
+}
+
+/* port_config.c's */
+const char *config_string(const char *name);
+int config_boolean(const char *name);
+unsigned long config_changes(void);
+unsigned long ae_config_player_changes(void); /* AE hook */
+
+/* whether one view's power list is the TOP LEFT line (display.power_list
+"top_left"), not the column over the clock ("clock", as split screen's
+always is) */
+static boolean hud_item_timers_power_list_top_left(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean top_left = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != ae_config_player_changes()) /* AE hook */
+	{
+		read_at = ae_config_player_changes(); /* AE hook */
+		top_left = !csstrcmp(config_string("display.power_list"), "top_left");
+	}
+
+	return top_left;
+}
+
+/* MATCH CLOCK LABELS (display.match_clock_labels): whether the match
+clock's lines have their headings */
+static boolean hud_item_timers_clock_labels(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean labels = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != ae_config_player_changes()) /* AE hook */
+	{
+		read_at = ae_config_player_changes(); /* AE hook */
+		labels = config_boolean("display.match_clock_labels") != 0;
+	}
+
+	return labels;
+}
+
+/* where the clock's lines go over its baseline, bottom up: the clock, its
+heading (labels), BOTH's time played (above), its heading; each line's
+baseline at the top of the line under it. The headings and the time played
+at the text scale, the clock at its own. top_cap: the top line's cap top
+(the power column stands a cap above it) */
+struct hud_item_timers_clock_layout
+{
+	real clock_top;
+	real clock_label_top;
+	real above_top;
+	real above_label_top;
+	real top;	/* (the top line's top) */
+	real top_cap;
+};
+
+static void hud_item_timers_clock_layout_get(
+	long font_index,
+	long baseline,
+	boolean above,
+	boolean labels,
+	struct hud_item_timers_clock_layout *layout)
+{
+	struct font_header *font = font_definition_get(font_index);
+	real clock_scale = hud_item_timers_clock_scale();
+	real text_scale = hud_item_timers_text_scale();
+	real ascent = (real)font->ascending_height;
+	real y;
+
+	/* (the digits' foot, their baseline, there: the line's top an ascent
+	(at the clock's scale) above it) */
+	layout->clock_top = (real)baseline - ascent * clock_scale;
+	layout->top_cap = (real)baseline - hud_item_timers_cap_height(font_index, L'0') * clock_scale;
+	y = layout->clock_top;
+	layout->clock_label_top = y;
+	layout->above_top = y;
+	layout->above_label_top = y;
+	if (labels)
+	{
+		layout->clock_label_top = y - ascent * text_scale;
+		layout->top_cap = y - hud_item_timers_cap_height(font_index, L'H') * text_scale;
+		y = layout->clock_label_top;
+	}
+	if (above)
+	{
+		/* (with headings, half a cap of air between the clock's pair and
+		the time played's, so that each heading reads with its own line) */
+		if (labels)
+			y -= HUD_ITEM_TIMERS_LABEL_GROUP_GAP * hud_item_timers_cap_height(font_index, L'H') * text_scale;
+		layout->above_top = y - ascent * text_scale;
+		layout->top_cap = y - hud_item_timers_cap_height(font_index, L'0') * text_scale;
+		y = layout->above_top;
+		if (labels)
+		{
+			layout->above_label_top = y - ascent * text_scale;
+			layout->top_cap = y - hud_item_timers_cap_height(font_index, L'H') * text_scale;
+			y = layout->above_label_top;
+		}
+	}
+	layout->top = y;
+}
+
+/* a heading, flush right on right; its width */
+static real hud_item_timers_draw_label(
+	long font_index,
+	real right,
+	real top,
+	wchar_t const *text,
+	real scale,
+	real_argb_color const *color)
+{
+	real width = hud_item_timers_advance(font_index, text, scale);
+
+	hud_item_timers_draw_text_at(font_index, right - width, top, text, scale, color);
+
+	return width;
+}
+
+/* the clock (text) at its place (hud_item_timers_clock_place) in tabular
+figures, flush right, and above it a smaller line (above: MATCH CLOCK
+BOTH's time played; NULL for none) flush right to the same edge, its
+baseline at the clock's line's top; with headings (label, above_label:
+MATCH CLOCK LABELS; NULL for none) each over its line */
+static void hud_item_timers_draw_clock(
+	long font_index,
+	wchar_t const *text,
+	wchar_t const *above,
+	wchar_t const *label,
+	wchar_t const *above_label)
+{
+	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	real clock_scale = hud_item_timers_clock_scale();
+	real text_scale = hud_item_timers_text_scale();
+	struct hud_item_timers_clock_layout layout;
+	struct hud_item_timers_cells cells;
+	real_argb_color color;
+	boolean has_above = above && above[0];
+	short inset;
+	long baseline;
+	real right;
+	real width;
+
+	hud_item_timers_clock_place(&inset, &baseline);
+	right = view_width - (real)inset;
+	hud_item_timers_color(HUD_ITEM_TIMERS_ALPHA, &color);
+	hud_item_timers_clock_layout_get(font_index, baseline, has_above, label != NULL, &layout);
+	hud_item_timers_cells_get(font_index, clock_scale, &cells);
+	width = hud_item_timers_draw_tabular(font_index, right, layout.clock_top, text, clock_scale, &color, &cells);
+	if (label)
+		width = MAX(width, hud_item_timers_draw_label(font_index, right, layout.clock_label_top, label, text_scale, &color));
+	if (has_above)
+	{
+		hud_item_timers_cells_get(font_index, text_scale, &cells);
+		width = MAX(width, hud_item_timers_draw_tabular(font_index, right, layout.above_top, above, text_scale, &color,
+			&cells));
+		if (label && above_label)
+		{
+			width = MAX(width, hud_item_timers_draw_label(font_index, right, layout.above_label_top, above_label,
+				text_scale, &color));
+		}
+	}
+	hud_item_timers_record(right - width, layout.top, right,
+		layout.clock_top + (real)hud_item_timers_line_height(font_index) * clock_scale);
+}
+
+/* the power entries (TIMERS' and TRAINING's), soonest first, and the time
+left to each: their count */
+static short hud_item_timers_power_entries(
+	struct item_timer const **entries,
+	long *left)
+{
+	short count = 0;
+	short total = item_timers_count();
+	short index, other;
+
+	for (index = 0; index < total && count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+		long ticks;
+
+		if (!timer || timer->timer_class >= NUMBER_OF_ITEM_TIMER_POWER_CLASSES)
+			continue;
+		ticks = item_timer_ticks_left(timer);
+		/* (insertion sort, soonest first) */
+		for (other = count; other > 0 && left[other - 1] > ticks; other--)
+		{
+			entries[other] = entries[other - 1];
+			left[other] = left[other - 1];
+		}
+		entries[other] = timer;
+		left[other] = ticks;
+		count++;
+	}
+
+	return count;
+}
+
+/* an entry's name in the shorter power line: its label, RED / BLUE as R /
+B (and R/B for both, both TRUE) */
+static void hud_item_timers_short_name(
+	struct item_timer const *timer,
+	boolean both,
+	wchar_t *name,
+	short size)
+{
+	wchar_t const *base = timer->label;
+
+	if (timer->side_prefix)
+	{
+		wchar_t const *space = ustrchr(timer->label, L' ');
+
+		if (space)
+			base = space + 1;
+		usnprintf(name, size, L"%s %s", both ? L"R/B" : timer->side == _item_timer_side_red ? L"R" : L"B", base);
+	}
+	else
+	{
+		usnprintf(name, size, L"%s", base);
+	}
+	name[size - 1] = 0;
+}
+
+/* the power list's shorter line, entries spawning together (the same
+second) grouped: the time once for each such group and its names after it
+("0:10 OS/CAMO ROCKETS R/B SNIPER OS"), an item at both bases as one; as
+many as fit in maximum_width at scale (the latest left off). FALSE when it
+shortens nothing (no two entries share a second), unless always (a group
+for each time then, as the 3 and 4 player views' line has) */
+static boolean hud_item_timers_compact_line(
+	long font_index,
+	long maximum_width,
+	real scale,
+	boolean always,
+	struct item_timer const *const *entries,
+	long const *left,
+	short count,
+	wchar_t *line)
+{
+	short index, other;
+	boolean shared = FALSE;
+	long used = 0;
+	long group_second = -1;
+
+	for (index = 1; index < count; index++)
+	{
+		if ((left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND ==
+			(left[index - 1] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
+		{
+			shared = TRUE;
+		}
+	}
+	if (!shared && !always)
+		return FALSE;
+
+	line[0] = 0;
+	for (index = 0; index < count; index++)
+	{
+		long second = (left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+		wchar_t name[32];
+		boolean both = FALSE;
+		boolean said = FALSE;
+		long before = used;
+
+		/* (said already: the same name in this group, or its other side's
+		R/B) */
+		for (other = 0; other < index; other++)
+		{
+			if ((left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND != second ||
+				entries[other]->timer_class != entries[index]->timer_class)
+			{
+				continue;
+			}
+			if (!ustrcmp(entries[other]->label, entries[index]->label))
+				said = TRUE;
+			if (entries[index]->side_prefix && entries[other]->side_prefix &&
+				entries[other]->side != entries[index]->side)
+			{
+				said = TRUE;
+			}
+		}
+		if (said)
+			continue;
+		if (entries[index]->side_prefix)
+		{
+			for (other = index + 1; other < count; other++)
+			{
+				if ((left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND == second &&
+					entries[other]->timer_class == entries[index]->timer_class && entries[other]->side_prefix &&
+					entries[other]->side != entries[index]->side)
+				{
+					both = TRUE;
+				}
+			}
+		}
+		hud_item_timers_short_name(entries[index], both, name, NUMBEROF(name));
+		if (second != group_second)
+		{
+			wchar_t time_string[32];
+
+			game_engine_format_clock(left[index], TRUE, time_string, NUMBEROF(time_string));
+			usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L"%s%s %s",
+				used ? L"   " : L"", time_string, name);
+			group_second = second;
+		}
+		else
+		{
+			usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L" %s", name);
+		}
+		line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
+		/* (not beyond the line's width: this name and the later left off) */
+		if (before && hud_item_timers_line_width_scaled(font_index, line, scale) > maximum_width)
+		{
+			line[before] = 0;
+			break;
+		}
+		used = (long)ustrlen(line);
+	}
+
+	return used > 0;
+}
+
+/* the power list's line (one view's TOP LEFT), every entry ("SNIPER 0:22
+CAMO 0:52"), no wider than maximum_width: at base scale where it fits; else
+the shorter line (hud_item_timers_compact_line) there; else smaller, as far
+as HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE; only then are the latest groups
+left off. Returns its width, 0 for none, and the scale it is drawn at */
+static long hud_item_timers_power_line(
+	long font_index,
+	long maximum_width,
+	real base,
+	wchar_t *line,
+	real *scale)
+{
+	struct item_timer const *entries[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	long left[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short count = hud_item_timers_power_entries(entries, left);
+	short index, other;
+	long used = 0;
+	long width;
+
+	*scale = base;
+	line[0] = 0;
+	if (!count || maximum_width <= 0)
+		return 0;
+
+	for (index = 0; index < count; index++)
+	{
+		wchar_t time_string[32];
+		boolean merged = FALSE;
+
+		/* (one of a class spawning with another, as the same second, is
+		one; not one at the other team's base: RED SNIPER, BLUE SNIPER) */
+		for (other = 0; other < index; other++)
+		{
+			if (entries[other]->timer_class == entries[index]->timer_class &&
+				!ustrcmp(entries[other]->label, entries[index]->label) &&
+				(left[other] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND == (left[index] + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND)
+			{
+				merged = TRUE;
+				break;
+			}
+		}
+		if (merged)
+			continue;
+		game_engine_format_clock(left[index], TRUE, time_string, NUMBEROF(time_string));
+		usnprintf(line + used, HUD_ITEM_TIMERS_LINE_LENGTH - used, L"%s%s %s",
+			used ? L"   " : L"", entries[index]->label, time_string);
+		line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
+		used = (long)ustrlen(line);
+	}
+	width = hud_item_timers_line_width_scaled(font_index, line, base);
+	if (width <= maximum_width)
+		return width;
+	/* (the shorter line, where it is shorter: else the whole line made
+	smaller) */
+	{
+		wchar_t whole[HUD_ITEM_TIMERS_LINE_LENGTH];
+
+		ustrncpy(whole, line, HUD_ITEM_TIMERS_LINE_LENGTH - 1);
+		whole[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
+		if (!hud_item_timers_compact_line(font_index, 0x7FFFFFFFL, base, FALSE, entries, left, count, line))
+		{
+			ustrncpy(line, whole, HUD_ITEM_TIMERS_LINE_LENGTH - 1);
+			line[HUD_ITEM_TIMERS_LINE_LENGTH - 1] = 0;
+		}
+	}
+	width = hud_item_timers_line_width_scaled(font_index, line, base);
+	if (width <= maximum_width)
+		return width;
+	/* (smaller, to fit) */
+	*scale = MAX(base * (real)(maximum_width - 1) / (real)width, HUD_ITEM_TIMERS_POWER_MINIMUM_SCALE);
+	width = hud_item_timers_line_width_scaled(font_index, line, *scale);
+	if (width <= maximum_width)
+		return width;
+	/* (at the smallest: the latest groups left off) */
+	hud_item_timers_compact_line(font_index, maximum_width, *scale, TRUE, entries, left, count, line);
+
+	return hud_item_timers_line_width_scaled(font_index, line, *scale);
+}
+
+/* port: one view's TOP LEFT power list (display.power_list "top_left";
+see this file's head): a line in its top left corner, under the
+performance overlay's line where they would meet and under the HUD's own
+elements there (the ammo, the grenades) where it would meet them */
+static void hud_item_timers_draw_powers_top_left(
+	long font_index)
+{
+	wchar_t line[HUD_ITEM_TIMERS_LINE_LENGTH];
+	short local_player_index = render.local_player_index;
+	long view_width = render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0;
+	long view_height = render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0;
+	boolean in_range = local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS;
+	/* (the room from the view's sides: in HUD AREA's part of it,
+	hud_area_insets) */
+	short area_left;
+	short area_right;
+	long left;
+	long right;
+	long width;
+	long line_height;
+	long top;
+	real scale;
+
+	hud_area_insets(&area_left, &area_right);
+	left = HUD_ITEM_TIMERS_SIDE + area_left;
+	right = HUD_ITEM_TIMERS_SIDE + area_right;
+
+	/* (one view: the top left corner) */
+	width = hud_item_timers_power_line(font_index,
+		(long)((view_width - area_left - area_right) * HUD_ITEM_TIMERS_POWER_WIDTH) - HUD_ITEM_TIMERS_SIDE,
+		hud_item_timers_text_scale(), line, &scale);
+	if (!width)
+		return;
+	line_height = (long)(hud_item_timers_line_height(font_index) * scale + 0.5f);
+	top = HUD_ITEM_TIMERS_TOP;
+	/* (the screen's top view: under the overlay's line where they would
+	meet, in the screen's coordinates) */
+	{
+		rectangle2d extent;
+
+		if (render.camera.viewport_bounds.y0 <= 0 && main_framerate_shown() && main_framerate_extent(&extent))
+		{
+			long x0 = left + render.camera.viewport_bounds.x0;
+			long x1 = x0 + width;
+
+			if (x0 < extent.x1 + HUD_ITEM_TIMERS_GAP && x1 > extent.x0 - HUD_ITEM_TIMERS_GAP)
+				top = MAX(extent.y1 - render.camera.viewport_bounds.y0, 0) + HUD_ITEM_TIMERS_TOP;
+		}
+	}
+	/* (under the HUD's elements in the corner, where it would meet them) */
+	if (in_range && hud_item_timers_top_left[local_player_index].valid &&
+		hud_item_timers_top_left[local_player_index].view_width == view_width &&
+		hud_item_timers_top_left[local_player_index].view_height == view_height)
+	{
+		rectangle2d const *corner = &hud_item_timers_top_left[local_player_index].bounds;
+
+		if (left < corner->x1 + HUD_ITEM_TIMERS_GAP && left + width > corner->x0 - HUD_ITEM_TIMERS_GAP &&
+			top < corner->y1 + HUD_ITEM_TIMERS_HUD_GAP && top + line_height > corner->y0 - HUD_ITEM_TIMERS_HUD_GAP)
+		{
+			/* (over them where it has nearly room, made smaller to fit;
+			else under them, the HUD's messages under those ("Hold BACK
+			for score") moved down under it where they would meet:
+			hud_item_timers_messages_offset) */
+			long full_height = hud_item_timers_line_height(font_index);
+			long above = corner->y0 - HUD_ITEM_TIMERS_HUD_GAP - top;
+			long messages = hud_messaging_top(local_player_index);
+			long room;
+
+			if (above >= full_height * HUD_ITEM_TIMERS_POWER_ABOVE_SCALE)
+			{
+				scale = MIN(scale, (real)above / (real)full_height);
+				line_height = (long)(full_height * scale + 0.5f);
+			}
+			else
+			{
+				top = corner->y1 + HUD_ITEM_TIMERS_HUD_GAP;
+				room = top + line_height + HUD_ITEM_TIMERS_HUD_GAP - messages;
+				if (in_range && messages > corner->y1 && room > 0)
+					hud_item_timers_messages_offsets[local_player_index] = (short)room;
+			}
+		}
+	}
+	hud_item_timers_draw_line_scaled(font_index, (short)top, (short)left, (short)right,
+		line, scale);
+}
+
+/* ---------- the power column */
+
+/* a line of the power column: the entries of one class and name spawning
+in the same second (an item at both bases one line, R/B) */
+struct hud_item_timers_column_line
+{
+	struct item_timer const *timer;	/* (its first) */
+	long ticks;
+	boolean red;
+	boolean blue;
+	short entries;	/* (how many: one of a numbered label's shows its number, RED ROCKETS 2) */
+};
+
+/* the second a time left is shown as (rounded up, as the clock's) */
+static long hud_item_timers_second(
+	long ticks)
+{
+	return (MAX(ticks, 0) + TICKS_PER_SECOND - 1) / TICKS_PER_SECOND;
+}
+
+/* an entry's name without its base's word (RED SNIPER: SNIPER) */
+static wchar_t const *hud_item_timers_base_name(
+	struct item_timer const *timer)
+{
+	if (timer->side_prefix)
+	{
+		wchar_t const *space = ustrchr(timer->label, L' ');
+
+		if (space)
+			return space + 1;
+	}
+
+	return timer->label;
+}
+
+/* the power column's lines, soonest first: their count */
+static short hud_item_timers_column_lines(
+	struct hud_item_timers_column_line *lines)
+{
+	struct item_timer const *entries[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	long left[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short count = hud_item_timers_power_entries(entries, left);
+	short line_count = 0;
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = entries[index];
+		short line;
+
+		for (line = 0; line < line_count; line++)
+		{
+			if (hud_item_timers_second(lines[line].ticks) == hud_item_timers_second(left[index]) &&
+				lines[line].timer->timer_class == timer->timer_class &&
+				lines[line].timer->side_prefix == timer->side_prefix &&
+				!ustrcmp(hud_item_timers_base_name(lines[line].timer), hud_item_timers_base_name(timer)))
+			{
+				break;
+			}
+		}
+		if (line == line_count)
+		{
+			lines[line].timer = timer;
+			lines[line].ticks = left[index];
+			lines[line].red = FALSE;
+			lines[line].blue = FALSE;
+			lines[line].entries = 0;
+			line_count++;
+		}
+		lines[line].entries++;
+		if (timer->side_prefix && timer->side == _item_timer_side_red)
+			lines[line].red = TRUE;
+		if (timer->side_prefix && timer->side == _item_timer_side_blue)
+			lines[line].blue = TRUE;
+	}
+
+	return line_count;
+}
+
+/* a line's name ("R/B ROCKETS", "R SNIPER", "OS/CAMO", "B SHOTGUN 2"), flush right on
+right, its R and B in their bases' colours and the rest the HUD's; returns
+its left edge */
+static real hud_item_timers_draw_column_name(
+	long font_index,
+	real right,
+	real top,
+	struct hud_item_timers_column_line const *line,
+	real alpha,
+	real scale)
+{
+	wchar_t texts[4][24];
+	real_argb_color colors[4];
+	short count = 0;
+	short index;
+	real width = 0.0f;
+	real x;
+
+	if (line->red || line->blue)
+	{
+		if (line->red)
+		{
+			ustrncpy(texts[count], L"R", NUMBEROF(texts[count]));
+			hud_item_timers_side_color(_item_timer_side_red, alpha, &colors[count++]);
+		}
+		if (line->red && line->blue)
+		{
+			ustrncpy(texts[count], L"/", NUMBEROF(texts[count]));
+			hud_item_timers_color(alpha, &colors[count++]);
+		}
+		if (line->blue)
+		{
+			ustrncpy(texts[count], L"B", NUMBEROF(texts[count]));
+			hud_item_timers_side_color(_item_timer_side_blue, alpha, &colors[count++]);
+		}
+		usnprintf(texts[count], NUMBEROF(texts[count]), L" %s", hud_item_timers_base_name(line->timer));
+	}
+	else
+	{
+		usnprintf(texts[count], NUMBEROF(texts[count]), L"%s", line->timer->label);
+	}
+	texts[count][NUMBEROF(texts[count]) - 1] = 0;
+	/* (one entry of a label the map has twice on a side: its number) */
+	if (line->entries == 1 && line->timer->number > 0)
+	{
+		short used = (short)ustrlen(texts[count]);
+
+		usnprintf(texts[count] + used, NUMBEROF(texts[count]) - used, L" %d", (int)line->timer->number);
+		texts[count][NUMBEROF(texts[count]) - 1] = 0;
+	}
+	hud_item_timers_color(alpha, &colors[count++]);
+
+	for (index = 0; index < count; index++)
+		width += hud_item_timers_advance(font_index, texts[index], scale);
+	x = right - width;
+	for (index = 0; index < count; index++)
+	{
+		hud_item_timers_draw_text_at(font_index, x, top, texts[index], scale, &colors[index]);
+		x += hud_item_timers_advance(font_index, texts[index], scale);
+	}
+
+	return right - width;
+}
+
+/* port: the power column (see this file's head), stacked over the clock in
+the view's bottom right corner: two aligned columns, NAME  TIME, the times
+flush right on the clock's right edge in tabular figures (their colons in
+one line), the names flush right a digit's cell before the widest time;
+the soonest at the foot, a cap over the clock's digits (or BOTH's time
+played), each line a cap and a half over the one under it; at most four
+lines, the three soonest and "+N" over them with more. Not while this
+view's scoreboard shows (the clock stays) */
+static void hud_item_timers_draw_column(
+	long font_index)
+{
+	struct hud_item_timers_column_line lines[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	struct font_header *font = font_definition_get(font_index);
+	real view_width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	real scale = hud_item_timers_text_scale();
+	real cap = hud_item_timers_cap_height(font_index, L'H') * scale;
+	real ascent = (real)font->ascending_height * scale;
+	real pitch = HUD_ITEM_TIMERS_COLUMN_PITCH * cap;
+	struct hud_item_timers_cells cells;
+	real_argb_color color;
+	wchar_t clock[32];
+	wchar_t elapsed[32];
+	wchar_t time[32];
+	short count;
+	short shown;
+	short line;
+	short inset;
+	long baseline;
+	real right;
+	real lowest;
+	real time_width = 0.0f;
+	real name_right;
+	real x0;
+	real y0;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		game_engine_scoreboard_shown(render.local_player_index) > 0.0f ||
+		game_engine_scoreboard_held(render.local_player_index))
+	{
+		return;
+	}
+	count = hud_item_timers_column_lines(lines);
+	if (!count)
+		return;
+	shown = count > HUD_ITEM_TIMERS_COLUMN_LINES ? HUD_ITEM_TIMERS_COLUMN_LINES - 1 : count;
+
+	/* (the clock's right edge, and its place: its digits' cap top, or BOTH's
+	time played's, whether the clock is drawn this moment or not (Halo 1:
+	NHE's countdown titles hide it), so that the column keeps still; with
+	no clock, its baseline) */
+	hud_item_timers_clock_place(&inset, &baseline);
+	right = view_width - (real)inset;
+	lowest = (real)baseline;
+	if (game_engine_match_clock(clock, NUMBEROF(clock)))
+	{
+		struct hud_item_timers_clock_layout layout;
+
+		hud_item_timers_clock_layout_get(font_index, baseline,
+			game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed)), hud_item_timers_clock_labels(), &layout);
+		lowest = layout.top_cap - HUD_ITEM_TIMERS_COLUMN_GAP * cap;
+	}
+
+	/* (the widest time's cell: all the names a digit's cell before it) */
+	hud_item_timers_cells_get(font_index, scale, &cells);
+	for (line = 0; line < shown; line++)
+	{
+		game_engine_format_clock(lines[line].ticks, TRUE, time, NUMBEROF(time));
+		time_width = MAX(time_width, hud_item_timers_tabular_width(font_index, time, scale, &cells));
+	}
+	name_right = right - time_width - cells.digit;
+	x0 = right - time_width;
+	y0 = lowest;
+
+	for (line = 0; line < shown; line++)
+	{
+		real top = lowest - pitch * (real)line - ascent;
+		/* (one ten seconds away or nearer, as the voice's "ten", brighter) */
+		real alpha = hud_item_timers_second(lines[line].ticks) <= HUD_ITEM_TIMERS_SOON_SECONDS ? 1.0f :
+			HUD_ITEM_TIMERS_ALPHA;
+
+		hud_item_timers_color(alpha, &color);
+		game_engine_format_clock(lines[line].ticks, TRUE, time, NUMBEROF(time));
+		hud_item_timers_draw_tabular(font_index, right, top, time, scale, &color, &cells);
+		x0 = MIN(x0, hud_item_timers_draw_column_name(font_index, name_right, top, &lines[line], alpha, scale));
+		y0 = top;
+	}
+	if (count > shown)
+	{
+		real top = lowest - pitch * (real)shown - ascent;
+		real width;
+
+		usnprintf(time, NUMBEROF(time), L"+%d", (int)(count - shown));
+		time[NUMBEROF(time) - 1] = 0;
+		hud_item_timers_color(HUD_ITEM_TIMERS_MORE_ALPHA, &color);
+		width = hud_item_timers_draw_tabular(font_index, right, top, time, scale, &color, &cells);
+		x0 = MIN(x0, right - width);
+		y0 = top;
+	}
+	/* (one rectangle round it all, for TRAINING's labels to keep clear of) */
+	hud_item_timers_record(x0, y0, right, lowest + 1.0f);
+}
+
+/* how far the HUD's messages move down in this local player's view, under
+the power list (drawn before them, hud_draw_screen), this frame: read once,
+then 0 until the power list moves them again */
+short hud_item_timers_messages_offset(
+	short local_player_index)
+{
+	short offset;
+
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return 0;
+	offset = hud_item_timers_messages_offsets[local_player_index];
+	hud_item_timers_messages_offsets[local_player_index] = 0;
+
+	return offset;
+}
+
+void hud_draw_item_timers(
+	void)
+{
+	long font_index = hud_item_timers_font_index();
+	wchar_t clock[32];
+	wchar_t elapsed[32];
+
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+	{
+		hud_item_timers_lines[render.local_player_index].count = 0;
+		hud_item_timers_messages_offsets[render.local_player_index] = 0;
+	}
+	if (font_index == NONE)
+		return;
+	/* (not over Halo 1: NHE's maps' countdown) */
+	if (!ae_power_list_hides_clock(render.local_player_index)) /* AE hook */
+	if (game_engine_match_clock(clock, NUMBEROF(clock)) && !cinematic_nhe_countdown_title_showing())
+	{
+		boolean has_elapsed = game_engine_match_clock_elapsed(elapsed, NUMBEROF(elapsed));
+		/* (MATCH CLOCK LABELS: the clock's heading by what it counts) */
+		wchar_t const *label = !hud_item_timers_clock_labels() ? NULL :
+			game_engine_match_clock_counts_down() ? L"TIME LEFT" : L"ELAPSED";
+
+		hud_item_timers_draw_clock(font_index, clock, has_elapsed ? elapsed : NULL, label,
+			has_elapsed ? L"ELAPSED" : NULL);
+	}
+	/* (the gametype's TIMERS and TRAINING; not once the game is over, over
+	the postgame's view, as the clock is not) */
+	if (!ae_power_list_draw(font_index)) /* AE hook */
+	if (game_engine_item_timers() && !game_engine_game_over())
+	{
+		if (local_player_count() <= 1 && hud_item_timers_power_list_top_left())
+			hud_item_timers_draw_powers_top_left(font_index);
+		else
+			hud_item_timers_draw_column(font_index);
+	}
+
+	return;
+}
+
+/* ---------- CAMPAIGN TIMER */
+
+/* port: CAMPAIGN TIMER (display.campaign_timer), the Master Chief
+Collection's campaign play clock: the time played on this level, M:SS where
+MATCH CLOCK's clock is. Game time: a tick at a time (game_tick), so it
+stops with the game (the pause menu, loading) and counts the cutscenes
+(drawn with no HUD over them, as MCC's scoreboard is not). Kept outside the
+game state, so a revert to a checkpoint does not take back the time played
+since it (played again, it is played twice); a new level, or the mission
+started again, starts it at 0:00, and a saved game resumed from the main
+menu at its game time (hud_campaign_timer_game_state_loaded). Every view
+of co-op has it, the same */
+static long hud_campaign_timer_ticks = 0;
+
+void hud_campaign_timer_tick(
+	void)
+{
+	if (!game_engine_running() && !main_menu_is_active())
+		hud_campaign_timer_ticks++;
+
+	return;
+}
+
+/* a game state loaded (game_state.c's after load procs): a revert keeps the
+time played, but a saved game loaded before any tick of this map (the
+campaign's resume) starts from the saved game's time */
+void hud_campaign_timer_game_state_loaded(
+	void)
+{
+	if (hud_campaign_timer_ticks == 0)
+		hud_campaign_timer_ticks = MAX(game_time_get(), 0);
+
+	return;
+}
+
+static boolean hud_campaign_timer_shown(
+	void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean shown = FALSE;
+
+	/* (read again when Settings changes it) */
+	if (read_at != ae_config_player_changes()) /* AE hook */
+	{
+		read_at = ae_config_player_changes(); /* AE hook */
+		shown = config_boolean("display.campaign_timer") != 0;
+	}
+
+	return shown;
+}
+
+/* whether a clock is drawn now: MATCH CLOCK's (game_engine_match_clock),
+or CAMPAIGN TIMER's (hud_draw_campaign_timer) */
+boolean hud_item_timers_clock_shown(
+	void)
+{
+	wchar_t clock[32];
+
+	if (game_engine_running())
+		return game_engine_match_clock(clock, NUMBEROF(clock));
+	return !main_menu_is_active() && hud_campaign_timer_shown();
+}
+
+void hud_draw_campaign_timer(
+	void)
+{
+	long font_index;
+	wchar_t clock[32];
+
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		hud_item_timers_lines[render.local_player_index].count = 0;
+	/* (not on the main menu's map, whose player the menus stand over) */
+	if (game_engine_running() || main_menu_is_active() || !hud_campaign_timer_shown())
+		return;
+	font_index = hud_item_timers_font_index();
+	if (font_index == NONE)
+		return;
+	game_engine_format_clock(hud_campaign_timer_ticks, FALSE, clock, NUMBEROF(clock));
+	if (!ae_power_list_campaign_clock(render.local_player_index, hud_campaign_timer_ticks)) /* AE hook */
+	hud_item_timers_draw_clock(font_index, clock, NULL, NULL, NULL);
+
+	return;
+}
+
+/* ---------- the waypoints' pictures (display.waypoint_style) */
+
+char const *config_string(char const *name);
+unsigned long config_changes(void);
+void platform_log(char const *format, ...);
+
+#define weapon_hud_interface_definition_get(index) \
+	((struct weapon_hud_interface_definition *)tag_get('wphi', (index)))
+
+/* (ae_waypoint_icons.h numbers the power classes as item_timers.h does) */
+typedef char hud_waypoint_classes_agree[
+	_item_timer_rockets == AE_WAYPOINT_ROCKETS && _item_timer_sniper == AE_WAYPOINT_SNIPER &&
+	_item_timer_shotgun == AE_WAYPOINT_SHOTGUN && _item_timer_overshield == AE_WAYPOINT_OVERSHIELD &&
+	_item_timer_camo == AE_WAYPOINT_CAMO ? 1 : -1];
+
+/* a label's picture: none or one of ours; its bitmap and
+the part of it drawn, and the size it is drawn at in a row (the view's
+units) */
+struct hud_waypoint_icon
+{
+	short source;	/* AE_WAYPOINT_ICON_NONE: its text */
+	short sequence;	/* which of ours */
+	struct bitmap_data const *bitmap;
+	real_rectangle2d clip;
+	long width;	/* the picture drawn inside its badge */
+	long height;
+	real scale;
+	long badge_width;	/* the badge around it */
+	long badge_height;
+	char const *why_none;	/* (the log's) */
+};
+
+/* display.waypoint_style, read again when a setting has been written */
+static short hud_waypoint_style(
+	void)
+{
+	static boolean read = FALSE;
+	static unsigned long read_at;
+	static short style;
+
+	if (!read || read_at != ae_config_player_changes()) /* AE hook */
+	{
+		read = TRUE;
+		read_at = ae_config_player_changes(); /* AE hook */
+		style = (short)ae_waypoint_style_from_text(config_string("display.waypoint_style"));
+	}
+
+	return style;
+}
+
+/* debug.waypoint_icons (the automated tests'), read again when a setting has
+been written */
+static char const *hud_waypoint_icons_test(
+	void)
+{
+	static boolean read = FALSE;
+	static unsigned long read_at;
+	static char test[16];
+
+	if (!read || read_at != config_changes())
+	{
+		char const *text = config_string("debug.waypoint_icons");
+
+		read = TRUE;
+		read_at = config_changes();
+		strncpy(test, text ? text : "", sizeof(test) - 1);
+		test[sizeof(test) - 1] = 0;
+	}
+
+	return test;
+}
+
+/* (bitmaps.c's _bitmap_format_a8r8g8b8, which no header has: menu_tags.c's too) */
+#define HUD_WAYPOINT_GLYPH_FORMAT 11
+
+/* Arena Evolved's glyphs (ae_waypoint_glyphs.c) as bitmaps of the game's,
+the glyph's coverage as both brightness and alpha (as the HUD's own sheets
+are: black and clear around a sprite), made the first time one is asked for
+and kept (as the text cache's bitmap is); NULL where it cannot be drawn (no
+renderer, no memory) */
+static struct bitmap_data const *hud_waypoint_glyph_bitmap(
+	short glyph)
+{
+	static struct bitmap_data *bitmaps[AE_WAYPOINT_GLYPH_COUNT];
+	static boolean failed[AE_WAYPOINT_GLYPH_COUNT];
+
+	if (glyph < 0 || glyph >= AE_WAYPOINT_GLYPH_COUNT)
+		return NULL;
+	if (!bitmaps[glyph] && !failed[glyph])
+	{
+		struct bitmap_data *bitmap = bitmap_2d_new(AE_WAYPOINT_GLYPH_SIZE, AE_WAYPOINT_GLYPH_SIZE, 0,
+			HUD_WAYPOINT_GLYPH_FORMAT);
+
+		if (bitmap && (!bitmap->base_address || !rasterizer_bitmap_new(bitmap)))
+		{
+			bitmap_delete(bitmap);
+			bitmap = NULL;
+		}
+		if (bitmap)
+		{
+			short x, y;
+
+			for (y = 0; y < AE_WAYPOINT_GLYPH_SIZE; y++)
+			{
+				pixel32 *row = (pixel32 *)bitmap_2d_address(bitmap, 0, y, 0);
+
+				for (x = 0; x < AE_WAYPOINT_GLYPH_SIZE; x++)
+					row[x] = (pixel32)ae_waypoint_glyphs[glyph][y * AE_WAYPOINT_GLYPH_SIZE + x] * 0x01010101;
+			}
+			rasterizer_bitmap_changed(bitmap);
+			bitmaps[glyph] = bitmap;
+		}
+		else
+		{
+			failed[glyph] = TRUE;
+			platform_log("waypoint icons: no bitmap for Arena Evolved's glyph %d: its text is shown", (int)glyph);
+		}
+	}
+	/* (none without a renderer: debug.null_renderer) */
+	return bitmaps[glyph] && _texture_cache_bitmap_get_hardware_format(bitmaps[glyph], FALSE, TRUE) ?
+		bitmaps[glyph] : NULL;
+}
+
+/* the pickup prompt's picture of the entry's weapon (hud.c's
+_player_action_result_swap_for_weapon: its HUD interface's messaging icon,
+a sequence of the HUD globals' messaging icons), as
+hud_messaging.c's render_state_bitmap draws it; every step checked: a
+Custom Edition map's or a mod's tags may lack any of them. FALSE (and why)
+when it cannot be drawn */
+static boolean hud_waypoint_stock_sprite(
+	struct item_timer const *timer,
+	struct hud_waypoint_icon *icon,
+	long *sprite_width,
+	long *sprite_height)
+{
+	long group_index = hud_globals->messaging.messaging_icons.index;
+	long definition_index = item_timer_waypoint_definition(timer);
+	char const *test = hud_waypoint_icons_test();
+	long hud_interface_index;
+	struct bitmap_group *group;
+	struct bitmap_group_sequence *sequence;
+	struct bitmap_data const *bitmap = NULL;
+	real_rectangle2d const *clip = NULL;
+	short sequence_index;
+	int width, height;
+
+	icon->why_none = "the item is not a weapon";
+	if (definition_index == NONE || tag_get_group_tag(definition_index) != WEAPON_DEFINITION_TAG)
+		return FALSE;
+	icon->why_none = "the weapon has no HUD interface";
+	hud_interface_index = weapon_definition_get(definition_index)->weapon.interface_definition.hud_interface.index;
+	if (hud_interface_index == NONE || tag_get_group_tag(hud_interface_index) != 'wphi')
+		return FALSE;
+	icon->why_none = "the weapon's HUD interface has no messaging icon";
+	sequence_index = weapon_hud_interface_definition_get(hud_interface_index)->messaging_icon.sequence_index;
+	if (sequence_index < 0)
+		return FALSE;
+	/* (debug.waypoint_icons: as a map without the sheet, or with a weapon
+	naming a picture past its end) */
+	if (!strcmp(test, "no_sheet"))
+		group_index = NONE;
+	if (!strcmp(test, "bad_sequence"))
+		sequence_index = (short)(sequence_index + 1000);
+	icon->sequence = sequence_index;
+	icon->why_none = "the map's HUD has no messaging icons";
+	if (group_index == NONE)
+		return FALSE;
+	group = bitmap_group_get(group_index);
+	icon->why_none = "the messaging icons have no such sequence";
+	if (sequence_index >= group->sequences.count)
+		return FALSE;
+	sequence = TAG_BLOCK_GET_ELEMENT(&group->sequences, sequence_index, struct bitmap_group_sequence);
+	icon->why_none = "the icon's sequence has no sprite";
+	if (sequence->sprites.count < 1)
+		return FALSE;
+	hud_retrieve_bitmap_and_bounding_rect(group_index, sequence_index, 0, &bitmap, &clip);
+	icon->why_none = "the icon's sprite has no bitmap";
+	if (!bitmap || !clip)
+		return FALSE;
+	icon->why_none = "the icon's sprite has bad bounds";
+	if (!ae_waypoint_sprite_size(bitmap->width, bitmap->height, clip->x0, clip->x1, clip->y0, clip->y1, &width, &height))
+		return FALSE;
+	icon->why_none = "the icon's bitmap is not loaded";
+	if (!_texture_cache_bitmap_get_hardware_format((struct bitmap_data *)bitmap, FALSE, TRUE))
+		return FALSE;
+	icon->why_none = NULL;
+	icon->bitmap = bitmap;
+	icon->clip = *clip;
+	*sprite_width = width;
+	*sprite_height = height;
+
+	return TRUE;
+}
+
+/* an entry's picture: a weapon's the map's pickup sprite, drawn alone, as
+high as 1.4 capitals and no wider than max_width (its name); one without one (a map, a mod) our burst in an outlined badge; the
+overshield's shield and the camouflage's struck eye ours, dark on a filled
+badge; source AE_WAYPOINT_ICON_NONE: none, its text. width and badge_width are
+what the picture's slot in the row takes */
+static void hud_waypoint_icon_get(
+	struct item_timer const *timer,
+	long cap_height,
+	long max_width,
+	struct hud_waypoint_icon *icon)
+{
+	short timer_class = item_timer_waypoint_class(timer);
+	long sprite_width = 0;
+	long sprite_height = 0;
+	boolean stock = FALSE;
+	struct bitmap_data const *glyph_bitmap = NULL;
+	int glyph = NONE;
+	int width, height;
+	float scale;
+	struct ae_waypoint_badge badge;
+
+	csmemset(icon, 0, sizeof(*icon));
+	icon->source = AE_WAYPOINT_ICON_NONE;
+	icon->sequence = NONE;
+	if (timer_class == NONE)
+	{
+		icon->why_none = "its item is not known yet";
+		return;
+	}
+	if (timer_class == AE_WAYPOINT_OVERSHIELD || timer_class == AE_WAYPOINT_CAMO)
+	{
+		/* (a powerup's: ours whatever the map has) */
+		ae_waypoint_icon_source(timer_class, FALSE, TRUE, &glyph);
+		glyph_bitmap = hud_waypoint_glyph_bitmap((short)glyph);
+		if (!glyph_bitmap)
+			icon->why_none = "Arena Evolved's glyph cannot be drawn";
+	}
+	else
+	{
+		stock = hud_waypoint_stock_sprite(timer, icon, &sprite_width, &sprite_height);
+		if (!stock)
+		{
+			/* (no sprite on this map: our burst, not an empty row) */
+			char const *why = icon->why_none;
+
+			glyph = AE_WAYPOINT_GLYPH_POWER_WEAPON;
+			glyph_bitmap = hud_waypoint_glyph_bitmap((short)glyph);
+			icon->why_none = glyph_bitmap ? NULL : why;
+		}
+	}
+	switch (ae_waypoint_icon_source(timer_class, stock, glyph_bitmap != NULL, &glyph))
+	{
+	case AE_WAYPOINT_ICON_GLYPH:
+		if (!ae_waypoint_badge_layout((int)cap_height, AE_WAYPOINT_GLYPH_SIZE, AE_WAYPOINT_GLYPH_SIZE, &badge))
+		{
+			icon->why_none = "there is no room to draw it";
+			return;
+		}
+		icon->bitmap = glyph_bitmap;
+		icon->clip.x0 = 0.0f;
+		icon->clip.x1 = 1.0f;
+		icon->clip.y0 = 0.0f;
+		icon->clip.y1 = 1.0f;
+		icon->sequence = (short)glyph;
+		icon->source = AE_WAYPOINT_ICON_GLYPH;
+		icon->width = badge.icon_width;
+		icon->height = badge.icon_height;
+		icon->scale = badge.scale;
+		icon->badge_width = badge.badge_width;
+		icon->badge_height = badge.badge_height;
+		return;
+
+	case AE_WAYPOINT_ICON_STOCK:
+		icon->source = AE_WAYPOINT_ICON_STOCK;
+		break;
+
+	default:
+		return;
+	}
+	if (!ae_waypoint_stock_layout((int)cap_height, (int)sprite_width, (int)sprite_height, (int)max_width, &width,
+		&height, &scale))
+	{
+		icon->source = AE_WAYPOINT_ICON_NONE;
+		icon->why_none = "there is no room to draw it";
+		return;
+	}
+	icon->width = width;
+	icon->height = height;
+	icon->scale = scale;
+	icon->badge_width = width;	/* (the slot it takes; no badge: badge_height 0) */
+	icon->badge_height = 0;
+}
+
+/* ---------- TRAINING's waypoint labels */
+
+/* a waypoint's label: its item's name and time (empty once the item is on
+the map), where its arrow is, and the block of lines it is drawn in */
+struct hud_waypoint_label
+{
+	struct item_timer const *timer;
+	struct hud_nav_point_placement arrow;
+	real ink_x;	/* the middle of its arrow's ink across (the map's art need not sit in its sprite's middle) */
+	long ticks_left;	/* to the next spawn: the soonest first */
+	real distance;	/* from the camera: of a tie, the nearest first */
+	wchar_t name[24];
+	wchar_t time[12];
+	wchar_t distance_text[12];	/* "6.9m" (a stack's top row) */
+	real scale;	/* of the text scale of one view: WAYPOINT SIZE, the view's and the distance's factors */
+	struct hud_waypoint_icon icon;	/* its picture (WAYPOINTS ICONS and BOTH), else none */
+	short block;	/* NONE: not drawn (the same as one by it, or no room) */
+	short line;	/* its line in the block */
+};
+
+/* labels drawn together: one label, or the arrows at the view's edge by
+each other as one list, a line per time (soonest first), the first line
+by the arrow and the rest toward the view's middle */
+struct hud_waypoint_block
+{
+	short first;	/* its soonest label */
+	short line_count;
+	boolean edge;
+	short horizontal;	/* -1 its lines' left at its left, 1 right at its right, 0 centred */
+	short vertical;	/* -1 the first line at its bottom (the rest above), 1 at its top */
+	long width;
+	long height;	/* its lines' (a line with pictures is taller) */
+	rectangle2d arrows;	/* around its labels' arrows */
+	rectangle2d bounds;	/* where it is drawn (the view's coordinates) */
+	boolean placed;
+};
+
+/* the separator between names on a line: a middle dot where the HUD's
+font has one */
+static wchar_t const *hud_waypoint_separator(
+	long font_index)
+{
+	struct font_header *font = font_definition_get(font_index);
+
+	if (font->character_tables.count > 0)
+	{
+		struct font_character_table *table = TAG_BLOCK_GET_ELEMENT(
+			&font->character_tables,
+			0,
+			struct font_character_table);
+
+		if (table->character_indices.count == 256 &&
+			*TAG_BLOCK_GET_ELEMENT(&table->character_indices, 0xB7, short) != NONE)
+		{
+			return L" \x00B7 ";
+		}
+	}
+
+	return L" + ";
+}
+
+/* how far drawing text moves along (its advance, trailing spaces too), at
+four fifths */
+static long hud_item_timers_text_advance(
+	long font_index,
+	wchar_t const *text)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	if (!text[0])
+		return 0;
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+
+	return (long)((cursor_bounds.x0 - bounds.x0) * hud_item_timers_text_scale() + 0.5f);
+}
+
+/* the advance of text at a scale, unrounded */
+static real hud_item_timers_text_advance_exact(
+	long font_index,
+	wchar_t const *text,
+	real scale)
+{
+	rectangle2d bounds;
+	rectangle2d text_bounds;
+	rectangle2d cursor_bounds;
+
+	if (!text[0])
+		return 0.0f;
+	bounds.x0 = 0;
+	bounds.y0 = 0;
+	bounds.x1 = SHORT_MAX / 2;
+	bounds.y1 = (short)hud_item_timers_line_height(font_index);
+	hud_item_timers_set_draw_mode(font_index, _text_justification_left);
+	draw_unicode_string_compute_bounds(&bounds, text, &text_bounds, &cursor_bounds);
+
+	return (real)(cursor_bounds.x0 - bounds.x0) * scale;
+}
+
+/* a stack's rows (WAYPOINTS BOTH and ICONS), top to bottom: the distance, the
+name, the pictures, the respawn timer; PLAIN is a text line's own */
+enum
+{
+	HUD_WAYPOINT_ROW_PLAIN,
+	HUD_WAYPOINT_ROW_DISTANCE,
+	HUD_WAYPOINT_ROW_NAME,
+	HUD_WAYPOINT_ROW_TIMER
+};
+
+/* a block's colours' alpha, 1 but where it gives way to a player's name over their head */
+static real hud_waypoint_block_fade = 1.0f;
+#define HUD_WAYPOINT_DISTANCE_WHITE 0.96f
+#define HUD_WAYPOINT_TAG_FADE 0.3f	/* (a block's alpha where a name over a head is behind it) */
+
+/* a respawning item's colour faded (ae_waypoint_fade) */
+static void hud_waypoint_fade_color(
+	int part,
+	real_argb_color *color)
+{
+	float in[4];
+	float out[4];
+
+	in[0] = color->red;
+	in[1] = color->green;
+	in[2] = color->blue;
+	in[3] = color->alpha;
+	ae_waypoint_fade(part, in, out);
+	color->red = out[0];
+	color->green = out[1];
+	color->blue = out[2];
+	color->alpha = out[3];
+}
+
+/* a label's colour (every part of a stack and a plain line alike): its base's
+(red, blue), else the HUD's text; a respawning item's distance faded toward grey,
+its name a little fainter, its timer as it is */
+static void hud_waypoint_label_color(
+	struct item_timer const *timer,
+	short row_kind,
+	boolean respawning,
+	real_argb_color *color)
+{
+	hud_item_timers_side_color(timer ? timer->side : _item_timer_side_middle, HUD_ITEM_TIMERS_LABEL_ALPHA, color);
+	color->alpha *= hud_waypoint_block_fade;
+	if (row_kind == HUD_WAYPOINT_ROW_DISTANCE)
+	{
+		/* (near white and whole, in its outline: it was grey on grey, hard to read far away, and stays so
+		while the item respawns) */
+		color->red = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->green = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->blue = HUD_WAYPOINT_DISTANCE_WHITE;
+		color->alpha = hud_waypoint_block_fade;
+	}
+	else if (row_kind == HUD_WAYPOINT_ROW_TIMER)
+	{
+		color->alpha = hud_waypoint_block_fade;
+	}
+	else if (respawning && row_kind == HUD_WAYPOINT_ROW_NAME)
+	{
+		hud_waypoint_fade_color(AE_WAYPOINT_FADE_NAME, color);
+	}
+}
+
+/* a label's text line's height in this view, and its pictures' row's (every
+picture row of the view alike: WAYPOINTS ICONS and BOTH) */
+static long hud_waypoint_text_height(
+	long font_index)
+{
+	return (long)(hud_item_timers_line_height(font_index) * hud_item_timers_text_scale() + 0.5f);
+}
+
+/* the name's capital height, about seven tenths of its line */
+static real hud_waypoint_floor_scale(
+	long font_index);
+
+static long hud_waypoint_cap_height(
+	long font_index)
+{
+	/* (the pictures follow the capitals, with the same readability floor as the text) */
+	long floor_cap = (long)(hud_waypoint_floor_scale(font_index) * hud_item_timers_cap_height(font_index, L'H') + 0.5f);
+
+	return MAX(hud_waypoint_text_height(font_index) * 7 / 10, floor_cap);
+}
+
+/* the gap between a stack's rows: about 2 pixels at 1080p, by the view's text size */
+static long hud_waypoint_row_gap(
+	long font_index)
+{
+	return MAX(1, hud_waypoint_text_height(font_index) / 7);
+}
+
+/* WAYPOINT SIZE (display.waypoint_size, 50 to 100 percent), read again when a setting has been written */
+double config_real(char const *name);
+
+static real hud_waypoint_size(
+	void)
+{
+	static boolean read = FALSE;
+	static unsigned long read_at;
+	static real size = 0.7f;
+
+	if (!read || read_at != ae_config_player_changes()) /* AE hook */
+	{
+		read = TRUE;
+		read_at = ae_config_player_changes(); /* AE hook */
+		size = PIN((real)config_real("display.waypoint_size"), 50.0f, 100.0f) / 100.0f;
+	}
+
+	return size;
+}
+
+/* the distance's factor (gentle): whole to 15 m, shrinking in a line to three quarters at 60 m, not below */
+static real hud_waypoint_distance_factor(
+	real world_units)
+{
+	real metres = world_units * 3.048f;
+
+	if (metres <= HUD_WAYPOINT_NEAR_METRES)
+		return 1.0f;
+	if (metres >= HUD_WAYPOINT_FAR_METRES)
+		return HUD_WAYPOINT_FAR_FACTOR;
+
+	return 1.0f - (1.0f - HUD_WAYPOINT_FAR_FACTOR) * (metres - HUD_WAYPOINT_NEAR_METRES) /
+		(HUD_WAYPOINT_FAR_METRES - HUD_WAYPOINT_NEAR_METRES);
+}
+
+/* the text scale of the block whose first label this is, from here on */
+static void hud_waypoint_block_scale_set(
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	short block)
+{
+	short index;
+
+	/* (a block with no label: the size's and the view's, never a stale scale) */
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
+	for (index = 0; index < label_count; index++)
+	{
+		if (labels[index].block == block)
+		{
+			hud_waypoint_scale = labels[index].scale;
+			return;
+		}
+	}
+}
+
+/* the text scale (of the font's own size) under which no waypoint text is drawn: its capitals are at least
+HUD_WAYPOINT_MINIMUM_CAP screen pixels high. A view is 480 units high on the screen (the drawable's height in
+pixels), so a unit is that many divided by 480 pixels */
+void platform_video_drawable_size(int *width, int *height);
+
+static real hud_waypoint_pixels_per_unit(
+	void)
+{
+	int width = 0;
+	int height = 0;
+
+	platform_video_drawable_size(&width, &height);
+
+	return height > 0 ? (real)height / 480.0f : 1080.0f / 480.0f;
+}
+
+static real hud_waypoint_floor_scale(
+	long font_index)
+{
+	return HUD_WAYPOINT_MINIMUM_CAP / hud_waypoint_pixels_per_unit() /
+		MAX(hud_item_timers_cap_height(font_index, L'H'), 1.0f);
+}
+
+/* where the scale's origin is moved to draw a text a part of a view unit aside (the text moves the part of what
+the origin does that the scale leaves: one minus the scale) */
+#define HUD_WAYPOINT_OUTLINE 1.0f	/* (screen pixels) */
+static real hud_waypoint_outline_step(
+	real row_scale)
+{
+	/* (one screen pixel is 480 / the drawable's height units; the origin moves 1 / (1 - scale) of it) */
+	return HUD_WAYPOINT_OUTLINE / hud_waypoint_pixels_per_unit() / MAX(1.0f - row_scale, 0.05f);
+}
+struct bitmap_data const *hud_item_timers_ae_glyph(short glyph) { return hud_waypoint_glyph_bitmap(glyph); } /* AE hook */
+long hud_item_timers_ae_font_index(void) { return hud_globals ? hud_item_timers_font_index() : NONE; } /* AE hook */
+short hud_item_timers_ae_waypoint_style(void) { return hud_waypoint_style(); } /* AE hook */
+real hud_item_timers_ae_waypoint_scale(real world_units) { return HUD_ITEM_TIMERS_TEXT_SCALE * hud_waypoint_size() * hud_item_timers_view_factor() * hud_waypoint_distance_factor(world_units); } /* AE hook */
+real hud_item_timers_ae_outline_step(real row_scale) { return hud_waypoint_outline_step(row_scale); } /* AE hook */
+
+/* a stack's distance row is small (4/5 of the name's), its timer 9/10 */
+#define HUD_WAYPOINT_DISTANCE_SCALE 0.8f
+#define HUD_WAYPOINT_TIMER_SCALE 0.9f
+
+/* a picture's badge (ae_waypoint_icons.h): its fill and its outline as two
+bitmaps of the game's (the coverage as brightness and alpha, in the next
+power of two size, the badge in its corner), made the first time a size is
+asked for and kept, a few sizes (a view's, a sprite's) at most; NULL where it
+cannot be drawn (no memory, no renderer, too many sizes): the picture is then
+drawn alone */
+#define HUD_WAYPOINT_MAXIMUM_BADGES 24
+struct hud_waypoint_badge_bitmaps
+{
+	long width;
+	long height;
+	struct bitmap_data *fill;
+	struct bitmap_data *outline;
+	boolean failed;
+};
+
+static struct bitmap_data *hud_waypoint_badge_bitmap_new(
+	long width,
+	long height,
+	boolean outline,
+	long *texture_width,
+	long *texture_height)
+{
+	long w = 1;
+	long h = 1;
+	struct bitmap_data *bitmap;
+	static unsigned char coverage[512 * 96];
+	long x, y;
+
+	while (w < width)
+		w <<= 1;
+	while (h < height)
+		h <<= 1;
+	bitmap = width * height <= (long)sizeof(coverage) && w <= 1024 && h <= 128 ?
+		bitmap_2d_new((short)w, (short)h, 0, HUD_WAYPOINT_GLYPH_FORMAT) : NULL;
+	if (bitmap && (!bitmap->base_address || !rasterizer_bitmap_new(bitmap)))
+	{
+		bitmap_delete(bitmap);
+		bitmap = NULL;
+	}
+	if (bitmap)
+	{
+		ae_waypoint_badge_coverage((int)width, (int)height, outline, coverage);
+		for (y = 0; y < h; y++)
+		{
+			pixel32 *row = (pixel32 *)bitmap_2d_address(bitmap, 0, (short)y, 0);
+
+			for (x = 0; x < w; x++)
+				row[x] = x < width && y < height ? (pixel32)coverage[y * width + x] * 0x01010101 : 0;
+		}
+		rasterizer_bitmap_changed(bitmap);
+	}
+	*texture_width = w;
+	*texture_height = h;
+
+	return bitmap;
+}
+
+static boolean hud_waypoint_badge_get(
+	long width,
+	long height,
+	struct bitmap_data const **fill,
+	struct bitmap_data const **outline,
+	real_rectangle2d *clip)
+{
+	static struct hud_waypoint_badge_bitmaps badges[HUD_WAYPOINT_MAXIMUM_BADGES];
+	static short count = 0;
+	short index;
+	long texture_width, texture_height;
+	struct hud_waypoint_badge_bitmaps *badge = NULL;
+
+	for (index = 0; index < count; index++)
+	{
+		if (badges[index].width == width && badges[index].height == height)
+			badge = &badges[index];
+	}
+	if (!badge)
+	{
+		if (count >= HUD_WAYPOINT_MAXIMUM_BADGES)
+			return FALSE;
+		badge = &badges[count++];
+		badge->width = width;
+		badge->height = height;
+		badge->fill = hud_waypoint_badge_bitmap_new(width, height, FALSE, &texture_width, &texture_height);
+		badge->outline = hud_waypoint_badge_bitmap_new(width, height, TRUE, &texture_width, &texture_height);
+		badge->failed = !badge->fill || !badge->outline;
+		if (badge->failed)
+			platform_log("waypoint icons: no bitmap for a %ld by %ld badge: its picture is drawn alone", width, height);
+	}
+	if (badge->failed || !_texture_cache_bitmap_get_hardware_format(badge->fill, FALSE, TRUE) ||
+		!_texture_cache_bitmap_get_hardware_format(badge->outline, FALSE, TRUE))
+	{
+		return FALSE;
+	}
+	*fill = badge->fill;
+	*outline = badge->outline;
+	clip->x0 = 0.0f;
+	clip->y0 = 0.0f;
+	clip->x1 = (real)width / (real)badge->fill->width;
+	clip->y1 = (real)height / (real)badge->fill->height;
+
+	return TRUE;
+}
+
+/* a block's line, as ae_waypoint_line_plan lays it out for the style: TEXT
+one row, one label's "NAME 0:07" (or its name), several sharing a time
+"0:07 A · B"; BOTH and ICONS (where a label has a picture) stacked and
+centred, top to bottom: the time, the names, the pictures side by side
+(in order). Each piece is some of a text row's characters, with its
+colour's entry (the time's and the separators' the HUD's) and where it starts
+in the row; each picture is a label's with where it starts in its row.
+Returns the line's width and fills the layout */
+#define HUD_WAYPOINT_MAXIMUM_PARTS 16
+struct hud_waypoint_piece
+{
+	short begin;	/* its characters of the row's text */
+	short end;
+	struct item_timer const *timer;
+	real start;	/* from the row's left (unrounded) */
+};
+
+struct hud_waypoint_picture
+{
+	short label;	/* the label whose picture it is */
+	long start;	/* from the picture row's left */
+};
+
+struct hud_waypoint_text_row
+{
+	wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];
+	short count;
+	struct hud_waypoint_piece pieces[HUD_WAYPOINT_MAXIMUM_PARTS];
+	long width;
+	long height;
+	real scale;	/* of the view's text scale */
+	short kind;	/* HUD_WAYPOINT_ROW_ */
+	boolean respawning;
+	real ink_offset;	/* where its first ink is from its origin, */
+	real ink_width;	/* and how wide its ink is (unrounded: the row centres on it) */
+	long y_offset;	/* its capitals' top below its line's top (so drawn this much higher) */
+};
+
+struct hud_waypoint_line_layout
+{
+	short row_count;	/* text rows: 1 to 3 */
+	short rows_above;	/* the text rows over the pictures' row (the rest, the timer, under it) */
+	struct hud_waypoint_text_row rows[3];
+	short icons;	/* how many pictures */
+	struct hud_waypoint_picture pictures[HUD_WAYPOINT_MAXIMUM_PARTS];
+	long row_width;	/* the pictures' row */
+	long picture_height;	/* its height: its tallest picture's (a badge 1.8 capitals, a weapon's own 1.4) */
+	long width;	/* the widest row */
+	long height;	/* the rows' */
+};
+
+/* a text row of these parts */
+static void hud_waypoint_text_row_build(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short const *member_labels,
+	short members,
+	wchar_t const *time,	/* (the text of its time part) */
+	struct ae_waypoint_part const *parts,
+	int part_count,
+	short row_kind,
+	boolean respawning,
+	struct hud_waypoint_text_row *row)
+{
+	wchar_t const *separator = hud_waypoint_separator(font_index);
+	short text_size = (short)NUMBEROF(row->text);
+	int index;
+
+	row->text[0] = 0;
+	row->count = 0;
+	row->width = 0;
+	row->kind = row_kind;
+	row->respawning = respawning;
+	row->scale = row_kind == HUD_WAYPOINT_ROW_DISTANCE ? HUD_WAYPOINT_DISTANCE_SCALE :
+		row_kind == HUD_WAYPOINT_ROW_TIMER ? HUD_WAYPOINT_TIMER_SCALE : 1.0f;
+	/* (the readability floor: never smaller than the minimum capital height, whatever the size, the split
+	view and the distance make of the text scale) */
+	row->scale = MAX(row->scale, hud_waypoint_floor_scale(font_index) / hud_item_timers_text_scale());
+	row->height = (long)(hud_waypoint_text_height(font_index) * row->scale + 0.5f);
+	row->ink_offset = 0.0f;
+	row->ink_width = 0.0f;
+	row->y_offset = 0;
+	if (row_kind != HUD_WAYPOINT_ROW_PLAIN)
+	{
+		/* (a stack's rows are as high as their capitals, drawn up by the room over them) */
+		int top, ink;
+
+		ae_waypoint_row_ink(font_definition_get(font_index)->ascending_height,
+			(int)(hud_item_timers_cap_height(font_index, L'H') + 0.5f),
+			hud_item_timers_text_scale() * row->scale, &top, &ink);
+		row->y_offset = top;
+		row->height = ink;
+	}
+	for (index = 0; index < part_count; index++)
+	{
+		struct hud_waypoint_piece *piece = &row->pieces[row->count];
+		short used = (short)ustrlen(row->text);
+		short member = parts[index].member;
+		wchar_t before[HUD_ITEM_TIMERS_LINE_LENGTH];
+
+		if (member < 0 || member >= members || row->count >= HUD_WAYPOINT_MAXIMUM_PARTS)
+			continue;
+		piece->begin = used;
+		piece->timer = NULL;
+		/* (where it starts: the advance of the text before it) */
+		ustrncpy(before, row->text, used);
+		before[used] = 0;
+		piece->start = hud_item_timers_text_advance_exact(font_index, before, hud_item_timers_text_scale() * row->scale);
+		switch (parts[index].kind)
+		{
+		case AE_WAYPOINT_PART_NAME:
+			usnprintf(row->text + used, text_size - used, L"%s", labels[member_labels[member]].name);
+			piece->timer = labels[member_labels[member]].timer;
+			break;
+
+		case AE_WAYPOINT_PART_TIME:
+			usnprintf(row->text + used, text_size - used, L"%s", time);
+			break;
+
+		case AE_WAYPOINT_PART_SEPARATOR:
+			usnprintf(row->text + used, text_size - used, L"%s", separator);
+			break;
+
+		default:
+			usnprintf(row->text + used, text_size - used, L" ");
+			break;
+		}
+		row->text[text_size - 1] = 0;
+		piece->end = (short)ustrlen(row->text);
+		row->count++;
+	}
+	row->width = row->text[0] ?
+		hud_item_timers_line_width_scaled(font_index, row->text, hud_item_timers_text_scale() * row->scale) : 0;
+	hud_item_timers_ink_extent(font_index, row->text, hud_item_timers_text_scale() * row->scale, &row->ink_offset,
+		&row->ink_width);
+}
+
+static long hud_waypoint_line(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	short block,
+	short line,
+	struct hud_waypoint_line_layout *layout)
+{
+	short member_labels[HUD_WAYPOINT_MAXIMUM_PARTS];
+	int member_icons[HUD_WAYPOINT_MAXIMUM_PARTS];
+	struct ae_waypoint_part parts[HUD_WAYPOINT_MAXIMUM_PARTS];
+	struct ae_waypoint_plan plan;
+	short members = 0;
+	short index;
+	wchar_t const *time = L"";
+	int picture_widths[HUD_WAYPOINT_MAXIMUM_PARTS];
+	int picture_starts[HUD_WAYPOINT_MAXIMUM_PARTS];
+	int picture_row_width = 0;
+	short rows;
+
+	hud_waypoint_block_scale_set(labels, label_count, block);
+	layout->row_count = 0;
+	layout->icons = 0;
+	layout->width = 0;
+	layout->row_width = 0;
+	layout->picture_height = 0;
+	layout->height = 0;
+	for (index = 0; index < label_count; index++)
+	{
+		if (labels[index].block == block && labels[index].line == line)
+		{
+			time = labels[index].time;
+			if (members < HUD_WAYPOINT_MAXIMUM_PARTS)
+			{
+				member_labels[members] = index;
+				member_icons[members] = labels[index].icon.source != AE_WAYPOINT_ICON_NONE;
+				members++;
+			}
+		}
+	}
+	ae_waypoint_line_plan(hud_waypoint_style(), members, member_icons, time[0] != 0, &plan);
+	if (!plan.stacked)
+	{
+		hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts,
+			ae_waypoint_line_parts(members, time[0] != 0, parts, HUD_WAYPOINT_MAXIMUM_PARTS),
+			HUD_WAYPOINT_ROW_PLAIN, FALSE, &layout->rows[0]);
+		layout->row_count = 1;
+		layout->rows_above = 1;
+	}
+	else
+	{
+		/* (top to bottom: the distance, the names, the pictures, the timer) */
+		if (plan.distance_row && members > 0)
+		{
+			parts[0].kind = AE_WAYPOINT_PART_TIME;
+			parts[0].member = 0;
+			hud_waypoint_text_row_build(font_index, labels, member_labels, members,
+				labels[member_labels[0]].distance_text, parts, 1, HUD_WAYPOINT_ROW_DISTANCE, time[0] != 0,
+				&layout->rows[layout->row_count]);
+			/* (in its item's colour) */
+			layout->rows[layout->row_count++].pieces[0].timer = labels[member_labels[0]].timer;
+		}
+		if (plan.name_count)
+		{
+			hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts,
+				ae_waypoint_name_parts(plan.name_count, plan.names, parts, HUD_WAYPOINT_MAXIMUM_PARTS),
+				HUD_WAYPOINT_ROW_NAME, time[0] != 0, &layout->rows[layout->row_count++]);
+		}
+		layout->rows_above = layout->row_count;
+		if (plan.time_row)
+		{
+			parts[0].kind = AE_WAYPOINT_PART_TIME;
+			parts[0].member = 0;
+			hud_waypoint_text_row_build(font_index, labels, member_labels, members, time, parts, 1,
+				HUD_WAYPOINT_ROW_TIMER, TRUE, &layout->rows[layout->row_count]);
+			layout->rows[layout->row_count++].pieces[0].timer = labels[member_labels[0]].timer;
+		}
+		/* (the pictures side by side, a space apart) */
+		layout->icons = (short)plan.picture_count;
+		for (index = 0; index < layout->icons; index++)
+		{
+			layout->pictures[index].label = member_labels[plan.pictures[index]];
+			picture_widths[index] = (int)labels[member_labels[plan.pictures[index]]].icon.badge_width;
+		}
+		ae_waypoint_picture_row(layout->icons, picture_widths, (int)hud_item_timers_text_advance(font_index, L" "),
+			picture_starts, &picture_row_width);
+		for (index = 0; index < layout->icons; index++)
+			layout->pictures[index].start = picture_starts[index];
+		layout->row_width = picture_row_width;
+		for (index = 0; index < layout->icons; index++)
+		{
+			struct hud_waypoint_icon const *icon = &labels[layout->pictures[index].label].icon;
+
+			layout->picture_height = MAX(layout->picture_height, icon->badge_height > 0 ? icon->badge_height : icon->height);
+		}
+	}
+	layout->width = layout->row_width;
+	/* (the rows a gap apart) */
+	rows = layout->row_count + (layout->icons ? 1 : 0);
+	for (index = 0; index < layout->row_count; index++)
+	{
+		layout->width = MAX(layout->width, layout->rows[index].width);
+		layout->height += layout->rows[index].height;
+	}
+	if (layout->icons)
+		layout->height += layout->picture_height;
+	if (rows > 1)
+		layout->height += (rows - 1) * hud_waypoint_row_gap(font_index);
+
+	return layout->width;
+}
+
+/* a block's width (its widest line) */
+static long hud_waypoint_block_width(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	struct hud_waypoint_block const *blocks,
+	short block)
+{
+	long width = 0;
+	short line;
+
+	for (line = 0; line < blocks[block].line_count; line++)
+	{
+		struct hud_waypoint_line_layout layout;
+		long line_width = hud_waypoint_line(font_index, labels, label_count, block, line, &layout);
+
+		width = MAX(width, line_width);
+	}
+
+	return width;
+}
+
+/* a block's lines' height, lines from..to-1 (line_count of them: all) */
+static long hud_waypoint_lines_height(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	short block,
+	short from,
+	short to)
+{
+	long height = 0;
+	short line;
+
+	for (line = from; line < to; line++)
+	{
+		struct hud_waypoint_line_layout layout;
+
+		hud_waypoint_line(font_index, labels, label_count, block, line, &layout);
+		height += layout.height;
+	}
+
+	return height;
+}
+
+/* the names over heads this view drew this frame (hud.c's hud_draw_player_names, before the waypoints), which the
+waypoints' labels keep clear of, or fade under */
+#define HUD_WAYPOINT_MAXIMUM_TAGS 32
+static struct
+{
+	short count;
+	rectangle2d bounds[HUD_WAYPOINT_MAXIMUM_TAGS];
+} hud_waypoint_name_tags[MAXIMUM_LOCAL_PLAYERS];
+
+void hud_item_timers_name_tags_begin(
+	void)
+{
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+		hud_waypoint_name_tags[render.local_player_index].count = 0;
+}
+
+void hud_item_timers_name_tag_note(
+	rectangle2d const *bounds,
+	wchar_t const *name,
+	short x,
+	short y,
+	real scale)
+{
+	rectangle2d text;
+	rectangle2d cursor;
+	rectangle2d *tag;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS ||
+		hud_waypoint_name_tags[render.local_player_index].count >= HUD_WAYPOINT_MAXIMUM_TAGS)
+	{
+		return;
+	}
+	draw_unicode_string_compute_bounds(bounds, name, &text, &cursor);
+	if (text.x1 <= text.x0)
+		return;
+	/* (scaled about its bottom's middle, a margin round it) */
+	tag = &hud_waypoint_name_tags[render.local_player_index].bounds[hud_waypoint_name_tags[render.local_player_index].count++];
+	tag->x0 = (short)(x + (text.x0 - x) * scale - 2.0f);
+	tag->x1 = (short)(x + (text.x1 - x) * scale + 2.0f);
+	tag->y0 = (short)(y + (text.y0 - y) * scale - 2.0f);
+	tag->y1 = (short)(y + 2.0f);
+}
+
+/* whether a rectangle meets a name over a head drawn in this view */
+static boolean hud_waypoint_meets_name_tag(
+	rectangle2d const *bounds)
+{
+	short index;
+
+	if (render.local_player_index < 0 || render.local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return FALSE;
+	for (index = 0; index < hud_waypoint_name_tags[render.local_player_index].count; index++)
+	{
+		rectangle2d const *tag = &hud_waypoint_name_tags[render.local_player_index].bounds[index];
+
+		if (bounds->x0 < tag->x1 && tag->x0 < bounds->x1 && bounds->y0 < tag->y1 && tag->y0 < bounds->y1)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+/* whether a rectangle meets another, the second widened by margin across */
+static boolean hud_waypoint_rectangles_meet(
+	rectangle2d const *a,
+	rectangle2d const *b,
+	long margin)
+{
+	return a->x0 < b->x1 + margin && b->x0 - margin < a->x1 && a->y0 < b->y1 && b->y0 < a->y1;
+}
+
+/* the first of the arrows, their distances, the clock's and power list's
+lines (as last drawn) and the blocks placed so far a block's rectangle
+meets: the block's index, else -2 for an arrow, a distance or a line, NONE
+for none */
+static short hud_waypoint_obstacle(
+	rectangle2d const *bounds,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	struct hud_waypoint_block const *blocks,
+	short block_count,
+	short self,
+	long gap)
+{
+	short index;
+
+	for (index = 0; index < label_count; index++)
+	{
+		rectangle2d arrow;
+
+		arrow.x0 = (short)(labels[index].arrow.x - labels[index].arrow.half_width);
+		arrow.x1 = (short)(labels[index].arrow.x + labels[index].arrow.half_width);
+		arrow.y0 = (short)(labels[index].arrow.y - labels[index].arrow.half_height);
+		arrow.y1 = (short)(labels[index].arrow.y + labels[index].arrow.half_height);
+		if (hud_waypoint_rectangles_meet(bounds, &arrow, 1))
+			return -2;
+		if (labels[index].arrow.number && hud_waypoint_rectangles_meet(bounds, &labels[index].arrow.number_bounds, 1))
+			return -2;
+	}
+	/* (a name over a head: the label steps aside) */
+	if (hud_waypoint_meets_name_tag(bounds))
+		return -2;
+	if (render.local_player_index >= 0 && render.local_player_index < MAXIMUM_LOCAL_PLAYERS)
+	{
+		for (index = 0; index < hud_item_timers_lines[render.local_player_index].count; index++)
+		{
+			if (hud_waypoint_rectangles_meet(bounds, &hud_item_timers_lines[render.local_player_index].bounds[index], gap))
+				return -2;
+		}
+	}
+	for (index = 0; index < block_count; index++)
+	{
+		if (index != self && blocks[index].placed && hud_waypoint_rectangles_meet(bounds, &blocks[index].bounds, gap))
+			return index;
+	}
+
+	return NONE;
+}
+
+/* a block's rectangle at a shift (in half lines, down; up negative), kept
+in its room: across, pinned to the room; up and down, FALSE where it would
+leave it */
+static boolean hud_waypoint_block_bounds(
+	struct hud_waypoint_block const *block,
+	struct hud_waypoint_label const *anchor,
+	long line_height,
+	long shift,
+	rectangle2d const *room,
+	rectangle2d *bounds)
+{
+	long height = block->height;
+	long gap = HUD_ITEM_TIMERS_LABEL_GAP;
+	long x0;
+	long y0;
+
+	/* (beside or over its arrows, all of them) */
+	if (block->horizontal < 0)
+		x0 = block->arrows.x1 + gap;
+	else if (block->horizontal > 0)
+		x0 = block->arrows.x0 - gap - block->width;
+	else
+		x0 = (long)floor(anchor->ink_x - block->width / 2.0f);
+	if (block->edge && block->horizontal)
+	{
+		/* (beside them: the first line level with the soonest's arrow) */
+		y0 = block->vertical > 0 ? anchor->arrow.y - line_height / 2 :
+			anchor->arrow.y + line_height / 2 - height;
+	}
+	else
+	{
+		/* (over them, or under them) */
+		y0 = block->vertical > 0 ? block->arrows.y1 + gap : block->arrows.y0 - gap - height;
+	}
+	y0 += shift * line_height / 2;
+
+	x0 = PIN(x0, room->x0, MAX(room->x1 - block->width, room->x0));
+	if (y0 < room->y0 || y0 + height > room->y1)
+		return FALSE;
+	bounds->x0 = (short)x0;
+	bounds->x1 = (short)(x0 + block->width);
+	bounds->y0 = (short)y0;
+	bounds->y1 = (short)(y0 + height);
+
+	return TRUE;
+}
+
+/* a block placed where it meets nothing, its first place or moved up to
+HUD_WAYPOINT_MAXIMUM_SHIFT lines (by half lines) the way it grows, else the
+other way (an arrow in sight's: over it, else under it); FALSE for no room,
+and
+*obstacle the block it met (NONE for none, -2 an arrow or a distance) */
+#define HUD_WAYPOINT_MAXIMUM_SHIFT 2
+static boolean hud_waypoint_place_block(
+	long font_index,
+	struct hud_waypoint_label const *labels,
+	short label_count,
+	struct hud_waypoint_block *blocks,
+	short block_count,
+	short block,
+	long line_height,
+	long gap,
+	rectangle2d const *room,
+	short *obstacle)
+{
+	struct hud_waypoint_block *self = &blocks[block];
+	short vertical = self->vertical;
+	short side;
+
+	*obstacle = NONE;
+	self->width = hud_waypoint_block_width(font_index, labels, label_count, blocks, block);
+	self->height = hud_waypoint_lines_height(font_index, labels, label_count, block, 0, self->line_count);
+	for (side = 0; side < 2; side++)
+	{
+		/* (an arrow in sight's: over it, else under it; at the edge, moved
+		toward the middle, else away from it) */
+		short direction = self->edge ? (short)(side ? -vertical : vertical) : (short)(side ? 1 : -1);
+		long shift;
+
+		if (!self->edge)
+			self->vertical = direction;
+		for (shift = 0; shift <= 2 * HUD_WAYPOINT_MAXIMUM_SHIFT; shift++)
+		{
+			rectangle2d bounds;
+			short met;
+
+			if (!hud_waypoint_block_bounds(self, &labels[self->first], line_height, direction * shift, room, &bounds))
+				continue;
+			met = hud_waypoint_obstacle(&bounds, labels, label_count, blocks, block_count, block, gap);
+			if (met == NONE)
+			{
+				self->bounds = bounds;
+				self->placed = TRUE;
+				return TRUE;
+			}
+			if (*obstacle == NONE)
+				*obstacle = met;
+		}
+	}
+	self->vertical = vertical;
+
+	return FALSE;
+}
+
+/* (debug.waypoint_log: this view's lines are logged this frame) */
+static boolean hud_waypoint_log_lines = FALSE;
+
+/* the labels' blocks: identical labels by each other drawn once, the
+arrows at the view's edge by each other as one block (a line per time,
+soonest first), the rest a block each; placed soonest first, then nearest,
+each clear of every arrow, distance and block placed before it, moved at
+most HUD_WAYPOINT_MAXIMUM_SHIFT lines; one that finds no room is put on the
+line of the label it meets (sharing its time), else its latest lines are
+left off. In the view (an arrow in sight), or HUD AREA's part of it (an
+arrow at the edge) */
+static void hud_waypoint_draw_labels(
+	long font_index,
+	struct hud_waypoint_label *labels,
+	short label_count)
+{
+	struct hud_waypoint_block blocks[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short block_count = 0;
+	/* (the unit a block is moved by: a text line; a line with pictures has
+	their row over its text; at the size and the view's, not a distance's) */
+	long text_height;
+	long line_height;
+	long gap;
+	rectangle2d view;
+	rectangle2d area;
+	long middle_x;
+	long middle_y;
+	short index, other;
+
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
+	text_height = hud_waypoint_text_height(font_index);
+	line_height = text_height;
+	gap = hud_item_timers_text_advance(font_index, L" ");
+
+	view.x0 = 0;
+	view.y0 = 0;
+	view.x1 = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	view.y1 = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	area.x0 = (short)(render.camera.window_bounds.x0 - render.camera.viewport_bounds.x0);
+	area.x1 = (short)(render.camera.window_bounds.x1 - render.camera.viewport_bounds.x0);
+	area.y0 = (short)(render.camera.window_bounds.y0 - render.camera.viewport_bounds.y0);
+	area.y1 = (short)(render.camera.window_bounds.y1 - render.camera.viewport_bounds.y0);
+	middle_x = (area.x0 + area.x1) / 2;
+	middle_y = (area.y0 + area.y1) / 2;
+	gap = MAX(gap, 2);
+
+	/* (soonest first, then nearest) */
+	for (index = 1; index < label_count; index++)
+	{
+		struct hud_waypoint_label moving = labels[index];
+
+		for (other = index; other > 0 &&
+			(labels[other - 1].ticks_left > moving.ticks_left ||
+			(labels[other - 1].ticks_left == moving.ticks_left && labels[other - 1].distance > moving.distance));
+			other--)
+		{
+			labels[other] = labels[other - 1];
+		}
+		labels[other] = moving;
+	}
+
+	/* (the blocks) */
+	for (index = 0; index < label_count; index++)
+		labels[index].block = NONE;
+	for (index = 0; index < label_count && block_count < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; index++)
+	{
+		struct hud_waypoint_block *block;
+		boolean grew;
+		short line;
+		struct hud_waypoint_line_layout layout;
+
+		if (labels[index].block != NONE)
+			continue;
+		/* (the same as an earlier label by it: drawn once) */
+		for (other = 0; other < index; other++)
+		{
+			if (labels[other].block != NONE && labels[other].block != -3 &&
+				!ustrcmp(labels[other].name, labels[index].name) && !ustrcmp(labels[other].time, labels[index].time) &&
+				labels[other].timer->side == labels[index].timer->side &&
+				ABS(labels[other].arrow.x - labels[index].arrow.x) <= HUD_WAYPOINT_MERGE_DISTANCE &&
+				ABS(labels[other].arrow.y - labels[index].arrow.y) <= HUD_WAYPOINT_MERGE_DISTANCE)
+			{
+				break;
+			}
+		}
+		if (other < index)
+		{
+			labels[index].block = -3;
+			continue;
+		}
+
+		block = &blocks[block_count];
+		csmemset(block, 0, sizeof(*block));
+		block->first = index;
+		block->edge = labels[index].arrow.off_screen;
+		labels[index].block = block_count;
+		/* (the edge's arrows by it, and by those) */
+		grew = block->edge;
+		while (grew)
+		{
+			grew = FALSE;
+			for (other = index + 1; other < label_count; other++)
+			{
+				short member;
+
+				if (labels[other].block != NONE || !labels[other].arrow.off_screen)
+					continue;
+				for (member = index; member < other; member++)
+				{
+					if (labels[member].block == block_count &&
+						ABS(labels[other].arrow.x - labels[member].arrow.x) <= HUD_WAYPOINT_MERGE_DISTANCE &&
+						ABS(labels[other].arrow.y - labels[member].arrow.y) <= HUD_WAYPOINT_MERGE_DISTANCE)
+					{
+						break;
+					}
+				}
+				if (member < other)
+				{
+					short same;
+
+					/* (drawn once where it is the same as one in the block) */
+					for (same = index; same < other; same++)
+					{
+						if (labels[same].block == block_count && !ustrcmp(labels[same].name, labels[other].name) &&
+							!ustrcmp(labels[same].time, labels[other].time) &&
+							labels[same].timer->side == labels[other].timer->side)
+						{
+							break;
+						}
+					}
+					labels[other].block = same < other ? -3 : block_count;
+					grew = TRUE;
+				}
+			}
+		}
+		/* (around its arrows) */
+		block->arrows.x0 = SHORT_MAX;
+		block->arrows.y0 = SHORT_MAX;
+		block->arrows.x1 = SHORT_MIN;
+		block->arrows.y1 = SHORT_MIN;
+		for (other = index; other < label_count; other++)
+		{
+			if (labels[other].block != block_count)
+				continue;
+			block->arrows.x0 = (short)MIN(block->arrows.x0, labels[other].arrow.x - labels[other].arrow.half_width);
+			block->arrows.x1 = (short)MAX(block->arrows.x1, labels[other].arrow.x + labels[other].arrow.half_width);
+			block->arrows.y0 = (short)MIN(block->arrows.y0, labels[other].arrow.y - labels[other].arrow.half_height);
+			block->arrows.y1 = (short)MAX(block->arrows.y1, labels[other].arrow.y + labels[other].arrow.half_height);
+		}
+		/* (a line per time, soonest first; one no wider than half the
+		room, the rest of that time on the next) */
+		block->line_count = 0;
+		for (other = index; other < label_count; other++)
+		{
+			if (labels[other].block != block_count)
+				continue;
+			labels[other].line = NONE;
+			for (line = 0; line < block->line_count; line++)
+			{
+				short member;
+
+				for (member = index; member < other; member++)
+				{
+					if (labels[member].block == block_count && labels[member].line == line &&
+						!ustrcmp(labels[member].time, labels[other].time))
+					{
+						break;
+					}
+				}
+				if (member >= other)
+					continue;
+				labels[other].line = line;
+				if (hud_waypoint_line(font_index, labels, label_count, block_count, line, &layout) <=
+					(area.x1 - area.x0) / 2)
+				{
+					break;
+				}
+				labels[other].line = NONE;
+			}
+			if (line == block->line_count)
+			{
+				labels[other].line = line;
+				block->line_count++;
+			}
+		}
+		/* (which way it grows: from the arrow toward the middle) */
+		if (block->edge)
+		{
+			long half_width = MAX((area.x1 - area.x0) / 2, 1);
+			long half_height = MAX((area.y1 - area.y0) / 2, 1);
+			long across = labels[index].arrow.x - middle_x;
+			long down = labels[index].arrow.y - middle_y;
+
+			if (ABS(across) * half_height >= ABS(down) * half_width)
+				block->horizontal = across > 0 ? 1 : -1;
+			block->vertical = down > 0 ? -1 : 1;
+		}
+		else
+		{
+			block->vertical = -1;
+		}
+		block_count++;
+	}
+
+	/* (placed soonest first) */
+	for (index = 0; index < block_count; index++)
+	{
+		struct hud_waypoint_block *block = &blocks[index];
+		rectangle2d const *room = block->edge ? &area : &view;
+		short obstacle;
+
+		if (hud_waypoint_place_block(font_index, labels, label_count, blocks, block_count, index, line_height, gap,
+			room, &obstacle))
+		{
+			continue;
+		}
+		/* (no room: an arrow in sight's label onto the line of the block it
+		met where they share a time, if that still fits) */
+		if (!block->edge && block->line_count == 1 && obstacle >= 0 && blocks[obstacle].line_count == 1 &&
+			!ustrcmp(labels[blocks[obstacle].first].time, labels[block->first].time))
+		{
+			short first = block->first;
+			short merged_obstacle;
+
+			labels[first].block = obstacle;
+			labels[first].line = 0;
+			blocks[obstacle].placed = FALSE;
+			if (hud_waypoint_place_block(font_index, labels, label_count, blocks, block_count, obstacle, line_height,
+				gap, blocks[obstacle].edge ? &area : &view, &merged_obstacle))
+			{
+				continue;
+			}
+			/* (not that either: as it was, this one left off) */
+			labels[first].block = NONE;
+			hud_waypoint_place_block(font_index, labels, label_count, blocks, block_count, obstacle, line_height,
+				gap, blocks[obstacle].edge ? &area : &view, &merged_obstacle);
+			continue;
+		}
+		/* (else its latest lines left off, until it fits) */
+		while (block->line_count > 1)
+		{
+			block->line_count--;
+			for (other = 0; other < label_count; other++)
+			{
+				if (labels[other].block == index && labels[other].line >= block->line_count)
+					labels[other].block = NONE;
+			}
+			if (hud_waypoint_place_block(font_index, labels, label_count, blocks, block_count, index, line_height,
+				gap, room, &obstacle))
+			{
+				break;
+			}
+		}
+	}
+
+	/* (an arrow must not be left without a label: one that found no clear
+	place goes by the arrow, over or under it, clear of the labels placed
+	if it can be, else on them) */
+	for (index = 0; index < block_count; index++)
+	{
+		struct hud_waypoint_block *block = &blocks[index];
+		rectangle2d const *room = block->edge ? &area : &view;
+		short side;
+
+		if (block->placed)
+			continue;
+		block->width = hud_waypoint_block_width(font_index, labels, label_count, blocks, index);
+		block->height = hud_waypoint_lines_height(font_index, labels, label_count, index, 0, block->line_count);
+		for (other = 0; other < label_count; other++)
+		{
+			if (labels[other].block == index && labels[other].line >= block->line_count)
+				labels[other].block = NONE;
+		}
+		for (side = 0; side < 4 && !block->placed; side++)
+		{
+			short direction = (short)(side & 1 ? 1 : -1);
+			long shift;
+
+			if (!block->edge)
+				block->vertical = direction;
+			for (shift = 0; shift <= 4 && !block->placed; shift++)
+			{
+				rectangle2d bounds;
+				short met;
+
+				if (!hud_waypoint_block_bounds(block, &labels[block->first], line_height, direction * shift, room, &bounds))
+					continue;
+				/* (side 0 and 1: clear of the blocks; 2 and 3: wherever) */
+				met = NONE;
+				if (side < 2)
+				{
+					short test;
+
+					for (test = 0; test < block_count; test++)
+					{
+						if (test != index && blocks[test].placed &&
+							hud_waypoint_rectangles_meet(&bounds, &blocks[test].bounds, 1))
+						{
+							met = test;
+							break;
+						}
+					}
+				}
+				if (met == NONE)
+				{
+					block->bounds = bounds;
+					block->placed = TRUE;
+				}
+			}
+		}
+	}
+
+	/* (drawn: each part of each line in its colour) */
+	for (index = 0; index < block_count; index++)
+	{
+		struct hud_waypoint_block const *block = &blocks[index];
+		short line;
+
+		if (!block->placed)
+			continue;
+		/* (this block's size; its colours whole, but faded where a name over a head is behind it, if it
+		could not step aside) */
+		hud_waypoint_block_scale_set(labels, label_count, index);
+		hud_waypoint_block_fade = hud_waypoint_meets_name_tag(&block->bounds) ? HUD_WAYPOINT_TAG_FADE : 1.0f;
+		hud_waypoint_block_fade *= ae_panels_label_alpha(render.local_player_index, &block->bounds); /* AE hook */
+		for (line = 0; line < block->line_count; line++)
+		{
+			struct hud_waypoint_line_layout layout;
+			long width = hud_waypoint_line(font_index, labels, label_count, index, line, &layout);
+			/* (each row centred on the line's axis, to a fraction of a unit: a centred block's on its arrow's ink) */
+			real axis = block->horizontal < 0 ? block->bounds.x0 + width / 2.0f :
+				block->horizontal > 0 ? block->bounds.x1 - width / 2.0f :
+				ae_waypoint_block_axis(block->bounds.x0, (int)block->width, labels[block->first].ink_x);
+			long x = (long)floor(axis - width / 2.0f + 0.5f);
+			long top = block->vertical > 0 ?
+				block->bounds.y0 + hud_waypoint_lines_height(font_index, labels, label_count, index, 0, line) :
+				block->bounds.y1 - hud_waypoint_lines_height(font_index, labels, label_count, index, 0, line + 1);
+			/* (top to bottom, each centred in the line, a gap apart: the text rows
+			over the pictures' row, then the rows under it) */
+			long row_top = top;
+			long row_gap = hud_waypoint_row_gap(font_index);
+			short row;
+			short part;
+
+			for (row = 0; row <= layout.row_count; row++)
+			{
+				struct hud_waypoint_text_row const *text_row = row < layout.row_count ? &layout.rows[row] : NULL;
+
+				/* (the pictures' row where the rows over it end) */
+				if (layout.icons && row == layout.rows_above)
+				{
+					long picture_row = layout.picture_height;
+					real row_x = axis - layout.row_width / 2.0f;
+					boolean respawning = layout.row_count > 0 && layout.rows[layout.row_count - 1].kind == HUD_WAYPOINT_ROW_TIMER;
+
+					for (part = 0; part < layout.icons; part++)
+					{
+						struct hud_waypoint_icon const *icon = &labels[layout.pictures[part].label].icon;
+						struct item_timer const *timer = labels[layout.pictures[part].label].timer;
+						real_argb_color color;
+						real_argb_color shade;
+						real_point2d point;
+						struct bitmap_data const *fill;
+						struct bitmap_data const *outline;
+						real_rectangle2d clip;
+						boolean badge = icon->badge_height > 0;
+						boolean powerup = badge && icon->sequence != AE_WAYPOINT_GLYPH_POWER_WEAPON;
+						real left = row_x + layout.pictures[part].start;
+
+						/* (every part in the label's colour: a base's red or blue, else the
+						HUD's text) */
+						hud_waypoint_label_color(timer, HUD_WAYPOINT_ROW_PLAIN, FALSE, &color);
+						point.x = left + icon->badge_width / 2.0f;
+						point.y = (real)(row_top + picture_row / 2);
+						/* (a powerup's badge, a regular hexagon: filled, its glyph dark; our
+						burst standing for a weapon the map has no picture of: dark and
+						translucent, outlined, its burst in the colour; a weapon's own picture
+						no badge; the badge none where its bitmaps cannot be made: the
+						picture alone) */
+						if (badge && hud_waypoint_badge_get(icon->badge_width, icon->badge_height, &fill, &outline, &clip))
+						{
+							shade = color;
+							if (!powerup)
+							{
+								shade.red = 0.0f;
+								shade.green = 0.0f;
+								shade.blue = 0.0f;
+							}
+							shade.alpha = color.alpha * (powerup ? 0.95f : 0.55f);
+							if (respawning)
+								hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &shade);
+							ae_waypoint_sprite_draw(fill, &clip, point.x, point.y, 1.0f, real_argb_color_to_pixel32(&shade));
+							shade = color;
+							if (respawning)
+								hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &shade);
+							ae_waypoint_sprite_draw(outline, &clip, point.x, point.y, 1.0f,
+								real_argb_color_to_pixel32(&shade));
+						}
+						if (powerup)
+						{
+							color.red = 0.1f;
+							color.green = 0.08f;
+							color.blue = 0.05f;
+						}
+						if (respawning)
+							hud_waypoint_fade_color(AE_WAYPOINT_FADE_MARK, &color);
+						ae_waypoint_sprite_draw(icon->bitmap, &icon->clip, point.x, point.y, icon->scale,
+							real_argb_color_to_pixel32(&color));
+					}
+					row_top += picture_row + row_gap;
+				}
+				if (!text_row)
+					break;
+				{
+					real row_scale = hud_item_timers_text_scale() * text_row->scale;
+					real text_x = ae_waypoint_row_left(axis, text_row->ink_width, text_row->ink_offset);
+
+					for (part = 0; part < text_row->count; part++)
+					{
+						struct hud_waypoint_piece const *piece = &text_row->pieces[part];
+						wchar_t text[HUD_ITEM_TIMERS_LINE_LENGTH];
+						real_argb_color color;
+						rectangle2d bounds;
+						real piece_x = text_x + piece->start;
+						real whole = (real)floor(piece_x);
+						real shift = ae_waypoint_scaled_shift(piece_x - whole, row_scale);
+
+						if (piece->end <= piece->begin)
+							continue;
+						/* (drawn from a whole unit, its scale's origin moved for the fraction; at a scale too near 1
+						for that, from the nearest whole unit) */
+						if (shift == 0.0f && piece_x - whole >= 0.5f)
+							whole += 1.0f;
+						hud_waypoint_label_color(piece->timer, text_row->kind, text_row->respawning, &color);
+						ustrncpy(text, text_row->text + piece->begin, piece->end - piece->begin);
+						text[piece->end - piece->begin] = 0;
+						/* (laid out at full size from its left, drawn at the
+						view's text scale about its top left corner) */
+						bounds.x0 = (short)whole;
+						bounds.y0 = (short)(row_top - text_row->y_offset);
+						bounds.x1 = (short)(bounds.x0 + hud_item_timers_line_width_scaled(font_index, text, row_scale) / row_scale + 8);
+						bounds.y1 = (short)(bounds.y0 + hud_item_timers_line_height(font_index));
+						/* (the distance and the timer in a dark outline, to read over any world) */
+						if (text_row->kind == HUD_WAYPOINT_ROW_DISTANCE || text_row->kind == HUD_WAYPOINT_ROW_TIMER)
+						{
+							static short const outline[4][2] = { { -1, 0 }, { 1, 0 }, { 0, -1 }, { 0, 1 } };
+							real_argb_color dark;
+							real step = hud_waypoint_outline_step(row_scale);
+							short side;
+
+							dark.alpha = color.alpha * 0.85f;
+							dark.red = 0.0f;
+							dark.green = 0.0f;
+							dark.blue = 0.0f;
+							draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &dark);
+							for (side = 0; side < 4; side++)
+							{
+								/* (the scale's origin moved: the text moves a part of it) */
+								rasterizer_text_set_scale(row_scale, (real)bounds.x0 + shift + outline[side][0] * step,
+									(real)bounds.y0 + outline[side][1] * step);
+								rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+							}
+						}
+						draw_string_set_draw_mode(font_index, NONE, _text_justification_left, 0, &color);
+						rasterizer_text_set_scale(row_scale, (real)bounds.x0 + shift, (real)bounds.y0);
+						rasterizer_draw_unicode_string(&bounds, NULL, NULL, 0, text);
+						rasterizer_text_set_scale(1.0f, 0.0f, 0.0f);
+					}
+					row_top += text_row->height + row_gap;
+				}
+			}
+			/* (debug.waypoint_log: what each line showed) */
+			if (hud_waypoint_log_lines)
+			{
+				char shown[2 * HUD_ITEM_TIMERS_LINE_LENGTH];
+				short character;
+
+				short row;
+
+				shown[0] = 0;
+				/* (the rows' text, a bar between rows) */
+				for (row = 0, character = 0; row < layout.row_count; row++)
+				{
+					short at;
+
+					if (row && character < (short)sizeof(shown) - 1)
+						shown[character++] = '|';
+					for (at = 0; at < HUD_ITEM_TIMERS_LINE_LENGTH && layout.rows[row].text[at] &&
+						character < (short)sizeof(shown) - 1; at++)
+					{
+						shown[character++] = layout.rows[row].text[at] < 0x80 ? (char)layout.rows[row].text[at] : '.';
+					}
+				}
+				shown[character] = 0;
+				platform_log("waypoint: view %d line \"%s\" style %s: %d picture%s, %ld by %ld at %ld,%ld",
+					(int)render.local_player_index, shown, ae_waypoint_style_name(hud_waypoint_style()),
+					(int)layout.icons, layout.icons == 1 ? "" : "s", width, layout.height, x, top);
+			}
+		}
+	}
+}
+
+/* LINE OF SIGHT (item_timers_waypoints_in_sight_only): per view and entry,
+when the spot was last tested and last seen (game ticks; NONE: never). A
+waypoint shows only while its spot is on screen and was seen within
+HUD_ITEM_WAYPOINT_SEEN_TICKS; the spot is tested (one ray from the view's
+head, the viewer's unit left out, to ITEM_TIMER_SIGHT_HEIGHT over the spawn
+point: walls, vehicles, scenery and machines block it, items do not) at
+most every HUD_ITEM_WAYPOINT_TEST_TICKS, and only while on screen */
+#define HUD_ITEM_WAYPOINT_TEST_TICKS 3
+#define HUD_ITEM_WAYPOINT_SEEN_TICKS ((long)(0.3f * TICKS_PER_SECOND))
+#define ITEM_TIMER_SIGHT_HEIGHT 0.25f
+static struct
+{
+	long tested_at;
+	long seen_at;
+	/* (drawn last frame: the log tells when a hold ends) */
+	boolean drawn;
+} hud_item_waypoint_sight[MAXIMUM_LOCAL_PLAYERS][HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+/* (debug.waypoint_log: the second each view last logged) */
+static long hud_item_waypoint_logged_at[MAXIMUM_LOCAL_PLAYERS];
+
+int config_boolean(char const *name);
+unsigned long config_changes(void);
+void platform_log(char const *format, ...);
+
+/* whether a point is in this view's picture (in front of the camera,
+within the viewport): the projection the waypoint arrow uses */
+static boolean hud_item_waypoint_on_screen(
+	real_point3d const *position)
+{
+	real_point3d view_point;
+	real_point2d screen_position;
+
+	matrix4x3_transform_point(&render.frustum.world_to_view, position, &view_point);
+	return render_camera_view_to_screen(&render.camera, &render.frustum, &view_point, &screen_position);
+}
+
+/* LINE OF SIGHT: whether the entry's spot counts as seen in this view now
+(on screen, and seen by a ray within the last 0.3 s); *ray_seen the last
+ray's answer */
+static boolean hud_item_waypoint_in_sight(
+	short local_player_index,
+	short entry_index,
+	struct item_timer const *timer,
+	real_point3d const *head_position,
+	boolean on_screen,
+	boolean *ray_seen)
+{
+	long now = game_time_get();
+	short local = (short)PIN(local_player_index, 0, MAXIMUM_LOCAL_PLAYERS - 1);
+	short entry = (short)PIN(entry_index, 0, HUD_ITEM_TIMERS_MAXIMUM_ENTRIES - 1);
+	long *tested_at = &hud_item_waypoint_sight[local][entry].tested_at;
+	long *seen_at = &hud_item_waypoint_sight[local][entry].seen_at;
+
+	*ray_seen = *seen_at != NONE && *seen_at == *tested_at;
+	if (!on_screen)
+		return FALSE;
+	/* (a new map's or game's clock: tested again) */
+	if (*tested_at == NONE || now < *tested_at || now - *tested_at >= HUD_ITEM_WAYPOINT_TEST_TICKS)
+	{
+		real_point3d spot = timer->position;
+
+		spot.z += ITEM_TIMER_SIGHT_HEIGHT;
+		*tested_at = now;
+		/* (hud_nav_points.c's: nothing in the way but the viewer and the
+		vehicle it is in) */
+		*ray_seen = hud_nav_point_in_sight(local_player_index, head_position, &spot, NONE);
+		if (*ray_seen)
+			*seen_at = now;
+	}
+	return *seen_at != NONE && now >= *seen_at && now - *seen_at < HUD_ITEM_WAYPOINT_SEEN_TICKS;
+}
+
+/* the waypoints over the power entries (TRAINING's, or the TIMERS level's:
+HUD + WAYPOINTS through walls, LINE OF SIGHT only while in view), in this
+local player's view (from hud_draw_screen, where the game's nav points are
+drawn): every arrow first, then their labels (hud_waypoint_draw_labels)
+clear of them */
+/* a waypoint's name: the item's (SNIPER, ROCKETS, OVERSHIELD), without RED / BLUE (its colour tells the base)
+and without a number, unless the map has another of the same item at the same base within HUD_WAYPOINT_NEAR_NUMBER
+world units of it (RED ROCKETS 2: the power list keeps its full names) */
+#define HUD_WAYPOINT_NEAR_NUMBER 3.28f	/* (ten metres) */
+
+static void hud_waypoint_name(
+	struct item_timer const *timer,
+	wchar_t *name,
+	short size)
+{
+	wchar_t full[32];
+	wchar_t const *from = full;
+	short length;
+	short index;
+	short count = item_timers_count();
+	boolean near_same = FALSE;
+
+	item_timer_waypoint_name(timer, full, NUMBEROF(full));
+	if (!ustrncmp(from, L"RED ", 4))
+		from += 4;
+	else if (!ustrncmp(from, L"BLUE ", 5))
+		from += 5;
+	ustrncpy(name, from, size);
+	name[size - 1] = 0;
+	length = (short)ustrlen(name);
+	/* (the number after it, " 2") */
+	for (index = length; index > 0 && name[index - 1] >= L'0' && name[index - 1] <= L'9'; index--)
+		;
+	if (index < length && index > 0 && name[index - 1] == L' ')
+	{
+		name[index - 1] = 0;
+		if (timer->number > 0)
+		{
+			for (index = 0; index < count; index++)
+			{
+				struct item_timer const *other = item_timers_get(index);
+
+				if (other != timer && other->side == timer->side && other->timer_class == timer->timer_class &&
+					distance3d(&other->position, &timer->position) <= HUD_WAYPOINT_NEAR_NUMBER)
+				{
+					near_same = TRUE;
+					break;
+				}
+			}
+		}
+		if (near_same)
+			usnprintf(name + ustrlen(name), size - (short)ustrlen(name), L" %d", (int)timer->number);
+	}
+}
+
+/* port: NEAREST COPY (owner 2026-10-22): of the entries of one power class
+on one side whose waypoints show now, only the one nearest this view's
+player gets a TIMERS waypoint (Death Island's four red snipers: one); the
+power list keeps them all. TRAINING's waypoints show every spawn */
+static boolean hud_item_waypoint_nearest_copy(
+	short count,
+	short index,
+	real_point3d const *from)
+{
+	struct item_timer const *timer = item_timers_get(index);
+	real best = distance_squared3d(from, &timer->position);
+	short other;
+
+	if (game_engine_training())
+		return TRUE;
+	for (other = 0; other < count; other++)
+	{
+		struct item_timer const *copy = item_timers_get(other);
+		real distance;
+
+		if (other == index || copy->timer_class != timer->timer_class || copy->side != timer->side ||
+			!item_timer_waypoint_shown(copy))
+		{
+			continue;
+		}
+		distance = distance_squared3d(from, &copy->position);
+		if (distance < best || (distance == best && other < index))
+			return FALSE;
+	}
+	return TRUE;
+}
+
+static void hud_draw_item_waypoints_inner(
+	short local_player_index);
+
+void hud_draw_item_waypoints(
+	short local_player_index)
+{
+	/* (WAYPOINT SIZE: the stack's text scale, the labels' own from here) */
+	hud_waypoint_scale = hud_waypoint_size() * hud_item_timers_view_factor();
+	hud_waypoint_scale_active = TRUE;
+	hud_draw_item_waypoints_inner(local_player_index);
+	hud_waypoint_scale_active = FALSE;
+	hud_waypoint_block_fade = 1.0f;
+}
+
+static void hud_draw_item_waypoints_inner(
+	short local_player_index)
+{
+	short count = item_timers_count();
+	short nav_index = NONE;
+	long font_index;
+	struct hud_waypoint_label labels[HUD_ITEM_TIMERS_MAXIMUM_ENTRIES];
+	short label_count = 0;
+	long player_index;
+	long unit_index;
+	real_point3d head_position;
+	boolean in_sight_only;
+	boolean log_now;
+	short index;
+
+	if (!count || local_player_index == NONE || !hud_globals ||
+		hud_globals->waypoint.arrow_bitmap.index == NONE)
+	{
+		return;
+	}
+	/* (none while this view's scoreboard shows, even fading, or opens this
+	frame: they would be drawn over its text) */
+	if (game_engine_scoreboard_shown(local_player_index) > 0.0f || game_engine_scoreboard_held(local_player_index))
+		return;
+	font_index = hud_item_timers_font_index();
+	player_index = local_player_get_player_index(local_player_index);
+	unit_index = player_index == NONE ? NONE : player_get(player_index)->unit_index;
+	if (unit_index == NONE)
+		return;
+	unit_get_head_position(unit_index, &head_position);
+	in_sight_only = item_timers_waypoints_in_sight_only();
+	/* (debug.waypoint_log: each second, per view and entry in its window) */
+	log_now = hud_debug_flag(_hud_debug_waypoint_log) && local_player_index >= 0 &&
+		local_player_index < MAXIMUM_LOCAL_PLAYERS &&
+		hud_item_waypoint_logged_at[local_player_index] != game_time_get() / TICKS_PER_SECOND;
+	if (log_now)
+		hud_item_waypoint_logged_at[local_player_index] = game_time_get() / TICKS_PER_SECOND;
+
+	for (index = 0; index < count; index++)
+	{
+		struct item_timer const *timer = item_timers_get(index);
+		struct hud_waypoint_label *label = &labels[label_count];
+		real_point3d position;
+		short render_type;
+		boolean on_screen = FALSE;
+		boolean ray_seen = FALSE;
+		boolean in_sight = TRUE;
+
+		/* (an entry not drawn in sight this frame: not drawn, for the log's
+		hold ends) */
+		boolean shown = item_timer_waypoint_shown(timer) &&
+			hud_item_waypoint_nearest_copy(count, index, &head_position);
+
+		if ((!in_sight_only || !shown) && local_player_index >= 0 &&
+			local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+		{
+			hud_item_waypoint_sight[local_player_index][index].drawn = FALSE;
+		}
+		if (!shown)
+			continue;
+		if (in_sight_only || log_now)
+		{
+			real_point3d spot = timer->position;
+
+			spot.z += ITEM_TIMER_SIGHT_HEIGHT;
+			on_screen = hud_item_waypoint_on_screen(&spot);
+		}
+		if (in_sight_only)
+		{
+			in_sight = hud_item_waypoint_in_sight(local_player_index, index, timer, &head_position, on_screen, &ray_seen);
+			if (local_player_index >= 0 && local_player_index < MAXIMUM_LOCAL_PLAYERS && index < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+			{
+				boolean *drawn = &hud_item_waypoint_sight[local_player_index][index].drawn;
+
+				/* (the hold's end, in the log: when it was last seen) */
+				if (*drawn && !in_sight && hud_debug_flag(_hud_debug_waypoint_log))
+				{
+					long seen_at = hud_item_waypoint_sight[local_player_index][index].seen_at;
+
+					platform_log("waypoint: view %d entry %d hidden at tick %ld, last seen at tick %ld (held %ld ticks)",
+						(int)local_player_index, (int)index, game_time_get(), seen_at, game_time_get() - seen_at);
+				}
+				*drawn = in_sight;
+			}
+		}
+		if (log_now)
+		{
+			char text[32];
+			wchar_t name[32];
+			short character;
+
+			item_timer_waypoint_name(timer, name, NUMBEROF(name));
+			for (character = 0; character < (short)sizeof(text) - 1 && name[character]; character++)
+				text[character] = (char)name[character];
+			text[character] = 0;
+			platform_log("waypoint: view %d entry %d %s: in window, on screen %s, %s, drawn %s", (int)local_player_index,
+				(int)index, text, on_screen ? "yes" : "no",
+				!in_sight_only ? "through walls" : !on_screen ? "no ray (off screen)" :
+					ray_seen ? "ray visible" : "ray blocked",
+				in_sight ? "yes" : "no");
+		}
+		/* (LINE OF SIGHT: hidden out of view, no arrow, label or edge
+		arrow) */
+		if (!in_sight)
+			continue;
+		/* (the arrow NHE's calls have on a stock map's HUD globals) */
+		if (nav_index == NONE)
+		{
+			nav_index = hud_nav_point_index("default");
+			if (nav_index == NONE)
+				return;
+		}
+		position = timer->position;
+		position.z += ITEM_TIMER_WAYPOINT_HEIGHT;
+		render_type = hud_get_nav_point_render_type(local_player_index, &head_position, &position, NONE);
+		/* (no distance by the arrow where its label has one: a stack's top
+		row (BOTH, ICONS); TEXT's, while its label shows the time to the
+		spawn, the label says what matters then, and the game's distance
+		digits were larger than it) */
+		ae_waypoint_arrow_forget();
+		custom_render_nav_point_placed(local_player_index, &position, nav_index, render_type,
+			HUD_WAYPOINT_ARROW_SIZE * hud_item_timers_view_factor(),
+			font_index == NONE || (hud_waypoint_style() == AE_WAYPOINT_TEXT &&
+			item_timer_ticks_left(timer) > ITEM_TIMER_WAYPOINT_BEFORE_TICKS), &label->arrow);
+		if (!label->arrow.drawn || font_index == NONE || label_count >= HUD_ITEM_TIMERS_MAXIMUM_ENTRIES)
+			continue;
+		/* (its label centres on the arrow's ink, not its sprite's middle) */
+		label->ink_x = (real)label->arrow.x + ae_waypoint_arrow_ink_x();
+
+		label->timer = timer;
+		label->ticks_left = item_timer_ticks_left(timer);
+		label->distance = distance3d(&render.camera.position, &position);
+		hud_waypoint_name(timer, label->name, NUMBEROF(label->name));
+		/* (WAYPOINT SIZE, the view's and the distance's factors: the stack's whole text scale) */
+		label->scale = hud_waypoint_size() * hud_item_timers_view_factor() * hud_waypoint_distance_factor(label->distance);
+		hud_waypoint_scale = label->scale;
+		label->time[0] = 0;
+		/* (the distance in metres, a world unit being ten feet, 3.048 metres: one decimal) */
+		{
+			long tenths = (long)(label->distance * 30.48f + 0.5f);
+
+			if (tenths > 99999)
+				tenths = 99999;
+			usnprintf(label->distance_text, NUMBEROF(label->distance_text), L"%d.%dm", (int)(tenths / 10),
+				(int)(tenths % 10));
+		}
+		if (label->ticks_left <= ITEM_TIMER_WAYPOINT_BEFORE_TICKS)
+			game_engine_format_clock(label->ticks_left, TRUE, label->time, NUMBEROF(label->time));
+		/* (WAYPOINTS: its picture, none in TEXT) */
+		label->icon.source = AE_WAYPOINT_ICON_NONE;
+		if (hud_waypoint_style() != AE_WAYPOINT_TEXT)
+		{
+			hud_waypoint_icon_get(timer, hud_waypoint_cap_height(font_index),
+				hud_item_timers_line_width_scaled(font_index, label->name,
+					MAX(hud_item_timers_text_scale(), hud_waypoint_floor_scale(font_index))),
+				&label->icon);
+			if (log_now && label->icon.source == AE_WAYPOINT_ICON_NONE)
+			{
+				platform_log("waypoint: view %d entry %d picture none (%s): its text", (int)local_player_index,
+					(int)index, label->icon.why_none ? label->icon.why_none : "no reason");
+			}
+			else if (log_now)
+			{
+				platform_log("waypoint: view %d entry %d picture %s %d, drawn %ld by %ld", (int)local_player_index,
+					(int)index, label->icon.source == AE_WAYPOINT_ICON_STOCK ? "the map's sequence" : "Arena Evolved's glyph",
+					(int)label->icon.sequence, label->icon.width, label->icon.height);
+			}
+		}
+		label_count++;
+	}
+
+	if (label_count)
+	{
+		hud_waypoint_log_lines = log_now;
+		hud_waypoint_draw_labels(font_index, labels, label_count);
+		hud_waypoint_log_lines = FALSE;
+	}
+}
+
+/* where hud_unit.c drew the motion sensor's background in this local
+player's view (the view's coordinates) */
+void hud_item_timers_set_motion_sensor(
+	short local_player_index,
+	rectangle2d const *bounds)
+{
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return;
+	hud_item_timers_motion_sensors[local_player_index].valid = TRUE;
+	hud_item_timers_motion_sensors[local_player_index].view_width =
+		(short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	hud_item_timers_motion_sensors[local_player_index].view_height =
+		(short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	hud_item_timers_motion_sensors[local_player_index].bounds = *bounds;
+}
+
+/* where hud_unit.c drew the player's shield and health meters in this
+local player's view (the view's coordinates) */
+void hud_item_timers_set_meters(
+	short local_player_index,
+	rectangle2d const *bounds)
+{
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS)
+		return;
+	hud_item_timers_meters[local_player_index].valid = TRUE;
+	hud_item_timers_meters[local_player_index].view_width =
+		(short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	hud_item_timers_meters[local_player_index].view_height =
+		(short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+	hud_item_timers_meters[local_player_index].bounds = *bounds;
+}
+
+/* where the weapon's and unit's HUD drew their elements in this local
+player's view's top left corner (hud.c; the view's coordinates), NULL for
+none: added to those seen before in a view of this size */
+void hud_item_timers_set_top_left(
+	short local_player_index,
+	rectangle2d const *bounds)
+{
+	short view_width = (short)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0);
+	short view_height = (short)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0);
+
+	if (local_player_index < 0 || local_player_index >= MAXIMUM_LOCAL_PLAYERS || !bounds)
+		return;
+	if (hud_item_timers_top_left[local_player_index].valid &&
+		hud_item_timers_top_left[local_player_index].view_width == view_width &&
+		hud_item_timers_top_left[local_player_index].view_height == view_height)
+	{
+		rectangle2d *seen = &hud_item_timers_top_left[local_player_index].bounds;
+
+		seen->x0 = MIN(seen->x0, bounds->x0);
+		seen->x1 = MAX(seen->x1, bounds->x1);
+		seen->y0 = MIN(seen->y0, bounds->y0);
+		seen->y1 = MAX(seen->y1, bounds->y1);
+		return;
+	}
+	hud_item_timers_top_left[local_player_index].valid = TRUE;
+	hud_item_timers_top_left[local_player_index].view_width = view_width;
+	hud_item_timers_top_left[local_player_index].view_height = view_height;
+	hud_item_timers_top_left[local_player_index].bounds = *bounds;
+}
+
+/* a new map: no motion sensor or meters seen yet */
+void hud_item_timers_initialize_for_new_map(
+	void)
+{
+	csmemset(hud_item_timers_motion_sensors, 0, sizeof(hud_item_timers_motion_sensors));
+	csmemset(hud_item_timers_meters, 0, sizeof(hud_item_timers_meters));
+	csmemset(hud_item_timers_top_left, 0, sizeof(hud_item_timers_top_left));
+	ae_waypoint_ink_forget_all();
+	/* (LINE OF SIGHT: nothing tested or seen yet) */
+	{
+		short local;
+		short entry;
+
+		for (local = 0; local < MAXIMUM_LOCAL_PLAYERS; local++)
+		{
+			hud_item_waypoint_logged_at[local] = NONE;
+			for (entry = 0; entry < HUD_ITEM_TIMERS_MAXIMUM_ENTRIES; entry++)
+			{
+				hud_item_waypoint_sight[local][entry].tested_at = NONE;
+				hud_item_waypoint_sight[local][entry].seen_at = NONE;
+				hud_item_waypoint_sight[local][entry].drawn = FALSE;
+			}
+		}
+	}
+	/* (and the meters' texels read for it) */
+	hud_element_bounds_new_map();
+	/* (our font's advances, laid out again on this map) */
+	hud_item_timers_advances.font_index = NONE;
+	/* (port: CAMPAIGN TIMER's level starts) */
+	hud_campaign_timer_ticks = 0;
+	csmemset(hud_item_timers_lines, 0, sizeof(hud_item_timers_lines));
+}
+
+void hud_item_timers_ae_place(short *inset, long *baseline) { hud_item_timers_clock_place(inset, baseline); } /* AE hook */
+boolean hud_item_timers_ae_corner(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_top_left[v].valid) return FALSE; *b = hud_item_timers_top_left[v].bounds; return TRUE; } /* AE hook */
+void hud_item_timers_ae_record(real x0, real y0, real x1, real y1) { hud_item_timers_record(x0, y0, x1, y1); } /* AE hook */
+boolean hud_item_timers_ae_meters(short v, rectangle2d *b) { if (v < 0 || v >= MAXIMUM_LOCAL_PLAYERS || !hud_item_timers_meters[v].valid) return FALSE; *b = hud_item_timers_meters[v].bounds; return TRUE; } /* AE hook */

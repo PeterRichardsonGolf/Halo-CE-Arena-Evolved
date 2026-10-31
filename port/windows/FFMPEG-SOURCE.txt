@@ -1,0 +1,16 @@
+ffmpeg.exe (recording)
+
+Arena Evolved's recording (Settings > CAPTURE) runs ffmpeg.exe from the game's folder. This is an unmodified FFmpeg
+9.0.2 static build for 64-bit Windows, release "9.0.2" of https://github.com/GyanD/codexffmpeg (the
+ffmpeg-9.0.2-essentials_build.zip there, built by www.gyan.dev), licensed under the GNU General Public License
+version 3: FFmpeg-LICENSE.txt. Its build configuration and the libraries in it: FFmpeg-README.txt.
+
+Source code:
+- FFmpeg: https://github.com/FFmpeg/FFmpeg/commit/946fcce07b (the 9.0.2 release), also https://ffmpeg.org/download.html
+- the libraries the build includes (listed in FFmpeg-README.txt, "External libraries"): each from its own project
+
+If you need the source and cannot get it from those links, open an issue on Arena Evolved's releases page and we will
+send it to you, for three years from this release.
+
+Deleting ffmpeg.exe turns recording off; screenshots still work. Your own FFmpeg can be used instead: put it in this
+folder, or set capture.ffmpeg_path in config.toml.

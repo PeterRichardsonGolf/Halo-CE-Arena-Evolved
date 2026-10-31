@@ -1,0 +1,257 @@
+{
+  "comment": "Known Xbox-format map packs (each in its maps_<id> folder) and their maps, by their files' fingerprints. Format: port/assets/maps/README.md. After editing, run tools/xbox_mod_maps.py.",
+  "packs": {
+    "cex": {
+      "aliases": ["ceplus", "ce+"],
+      "name": "Halo CE+",
+      "tag": "CE+",
+      "team": "VKMT",
+      "credits": "Halo CE+ X (Original Xbox) by VKMT: Sean T (project lead, tagging, Xbox porting, design and balancing), Ludus (project lead, 3D art), Elote (Canyon, the singleplayer level), and the others the release's ModDB page credits.",
+      "source": ""
+    },
+    "pe": {
+      "aliases": ["patchedition"],
+      "name": "Halo 1: Patch Edition",
+      "tag": "PE",
+      "team": "Patch Edition team",
+      "credits": "Halo 1: Patch Edition (Original Xbox, 2020) by Patch (creator, producer) and hirsute (lead developer), with Bonesaw (concepts); built on Neutral Host Edition (NHE) by dds, insidi0us and the NHE team.",
+      "source": ""
+    }
+  },
+  "maps": [
+    {
+      "fingerprint": "77188ba8",
+      "pack": "cex",
+      "file": "beavercreek",
+      "name": "Delta Ruined",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "92f96180",
+      "pack": "cex",
+      "file": "bloodgulch",
+      "name": "Abyss",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "abc9226b",
+      "pack": "cex",
+      "file": "boardingaction",
+      "name": "Nitra",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "35d05b03",
+      "pack": "cex",
+      "file": "carousel",
+      "name": "Magnitude",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "307de412",
+      "pack": "cex",
+      "file": "cex_museum",
+      "name": "CE+ Museum",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "c759da54",
+      "pack": "cex",
+      "file": "chillout",
+      "name": "CO2",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "da1229a7",
+      "pack": "cex",
+      "file": "damnation",
+      "name": "Fissure Fall",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "30974033",
+      "pack": "cex",
+      "file": "hangemhigh",
+      "name": "Fallout",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "65f52524",
+      "pack": "cex",
+      "file": "longest",
+      "name": "Intensity",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "94652288",
+      "pack": "cex",
+      "file": "prisoner",
+      "name": "Hektik",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "2cd590fa",
+      "pack": "cex",
+      "file": "putput",
+      "name": "Chiron TL35",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "5d4ca835",
+      "pack": "cex",
+      "file": "ratrace",
+      "name": "Underground",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "cfc37153",
+      "pack": "cex",
+      "file": "sidewinder",
+      "name": "Retribution",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "8058870e",
+      "pack": "cex",
+      "file": "ui",
+      "name": "Menus",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "d984d506",
+      "pack": "cex",
+      "file": "wizard",
+      "name": "Gothra",
+      "pack_version": "1.01",
+      "author": "VKMT",
+      "source": ""
+    },
+    {
+      "fingerprint": "80042d23",
+      "pack": "pe",
+      "file": "badcreek",
+      "name": "Better Creek",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "0766b450",
+      "pack": "pe",
+      "file": "chillout",
+      "name": "Chill Out",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "50f6e863",
+      "pack": "pe",
+      "file": "dammy",
+      "name": "Clonky",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "d1289cac",
+      "pack": "pe",
+      "file": "derelict",
+      "name": "Dreadnought",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "586e6e5e",
+      "pack": "pe",
+      "file": "downrush",
+      "name": "Downrush",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "657a401f",
+      "pack": "pe",
+      "file": "hangemhigh",
+      "name": "Hang 'Em High",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "8c03bb53",
+      "pack": "pe",
+      "file": "imminent",
+      "name": "Imminent",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "cd2996c4",
+      "pack": "pe",
+      "file": "overflow",
+      "name": "Overflow",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "2c9311f3",
+      "pack": "pe",
+      "file": "prisoner",
+      "name": "Prisoner",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "01918a42",
+      "pack": "pe",
+      "file": "ratrace",
+      "name": "Pat Race",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    },
+    {
+      "fingerprint": "821b99c4",
+      "pack": "pe",
+      "file": "ui",
+      "name": "Menus",
+      "pack_version": "2020-01-29",
+      "author": "Patch Edition team",
+      "source": ""
+    }
+  ]
+}

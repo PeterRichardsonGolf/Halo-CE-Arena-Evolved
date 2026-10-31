@@ -1,0 +1,803 @@
+name: Build
+
+# Debug and release builds of the native ports (Linux and Windows, 32- and
+# 64-bit, Android, macOS), and release builds of the dedicated server (Linux
+# x86, x64 and arm64) and its container, for every pushed commit and pull
+# request, uploaded as artifacts: whether a change builds. tools/ci_build.py does each build; see it for the options.
+#
+# Nightlies are not made here (tools/version.py). A branch's builds are
+# VERSION's -dev, named arena-evolved-<platform>-<configuration> (the
+# dedicated server keeps chupathingyce-server, the name its documentation
+# and container use), and never look for updates. The run of a release's tag,
+# v<VERSION>, builds VERSION itself, a release's build: its Linux and
+# Windows games look for newer releases (port/linux/src/updater.c), and the
+# release's assets are made from its artifacts (the release kit).
+#
+# Kept cheap:
+# - one job per platform builds both configurations, so its set-up (tools,
+#   downloads, caches) is paid once;
+# - compiles go through ccache, whose cache carries over from run to run, so
+#   a commit only recompiles what it changed; downloads (SDL, musl, Gradle,
+#   the Linux build's system root) are cached too;
+# - a newer push to the same branch cancels a run still going;
+# - pushes that only change documentation do not build;
+# - Windows, whose minutes cost twice Linux's, builds only Windows;
+# - artifacts are kept for three days.
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: "Also build the profiling flavour (configure.py --profile) on Linux"
+        type: boolean
+        default: false
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  CI_COMPILER_LAUNCHER: ccache
+  CCACHE_DIR: ${{ github.workspace }}/.ccache
+  CCACHE_BASEDIR: ${{ github.workspace }}
+  CCACHE_MAXSIZE: 1G
+
+jobs:
+  linux:
+    # Arch Linux has what the build needs as packages: clang 22 (for the
+    # profile-guided optimisation in pgo/), and CMake, pkg-config and
+    # wayland-scanner for the SDL 3 that the portable build brings. The build
+    # links against Debian 11's 32-bit glibc (tools/linux_sysroot.py), not
+    # Arch's, so that it starts on SteamOS and older distributions; Arch's
+    # 32-bit glibc is for the tests.
+    # make and diffutils (cmp) are for the movies' FFmpeg, which the build
+    # makes from source (tools/ffmpeg_build.py: its configure and make).
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
+    timeout-minutes: 40
+    steps:
+      - name: Install the toolchain
+        run: |
+          printf '\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n' >> /etc/pacman.conf
+          pacman -Syu --noconfirm --needed git zstd python python-pytest ninja ccache \
+            clang lld gcc lib32-glibc lib32-gcc-libs cmake pkgconf wayland make diffutils
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-linux-${{ github.sha }}
+          restore-keys: ccache-linux-
+
+      # the system root and SDL's source, which the build downloads
+      - uses: actions/cache@v4
+        with:
+          path: build/linux/third_party
+          key: linux-third-party-${{ hashFiles('tools/linux_sysroot.py') }}
+
+      - name: Debug
+        run: python tools/ci_build.py linux debug
+
+      # (the profiling build, configure.py --profile, which no other step
+      # compiles: only when a run started by hand asks for it, as it costs a
+      # build of its own)
+      - name: Profile
+        if: github.event_name == 'workflow_dispatch' && inputs.profile
+        run: python tools/ci_build.py linux profile
+
+      - name: Release
+        run: python tools/ci_build.py linux release
+
+      - name: Test
+        run: |
+          # (OpenCE build-167's new unit tests compile pieces of the game's
+          # sources alone, as OpenCE's tree has them; where Arena Evolved's
+          # sources differ, each test file has stand-ins of its own. All harness
+          # tests run, and our own two sound tests, which are programs, run below)
+          python -m pytest -q tools/harness tools/test_linux_port.py tools/test_android_asm_convert.py tools/test_android_mirror_uploads.py tools/test_host_watch_hash.py tools/test_touch_menu.py tools/test_ui_point.py tools/test_server_control.py tools/test_delta.py tools/test_delta_peer.py tools/test_ae_test.py tools/test_ae_units.py tools/test_ae_test_run.py tools/test_ae_hooks.py tools/test_ae_fonts.py tools/test_ae_title_font.py tools/test_ae_lp64_literals.py tools/test_ae_saved_limits.py tools/test_ae_mixer_linear.py tools/test_profile.py tools/test_weapon_pack_format.py tools/test_weapon_pack_build.py tools/test_weapon_pack_tools.py tools/test_weapon_pack_smg.py tools/test_weapon_pack_carbine.py tools/test_weapon_pack_ar_silenced.py tools/test_weapon_pack_vehicle_damage.py tools/test_weapon_pack_bomb.py tools/test_p2p_copies.py tools/test_ae_checks.py tools/test_ae_debug_defaults.py tools/test_ae_bot_report.py tools/test_ae_map_pictures.py tools/test_ae_menu_pictures.py tools/test_map_families.py tools/test_map_packs.py tools/test_gametype_folder.py tools/test_ae_seat_pictures.py tools/test_ae_key_pictures.py tools/test_net_compare.py tools/test_ping.py tools/test_save_folder.py tools/test_map_download.py tools/test_map_report.py tools/test_event_log.py tools/test_update_manifest.py tools/test_ae_updater.py tools/test_delta_compat.py tools/test_ae_delta_wire.py tools/test_discord_activity.py tools/test_network_rules.py tools/test_port_folders.py tools/test_server_sim.py tools/test_egg.py tools/test_deploy_gametypes.py tools/test_ae_gametype_audit.py tools/test_ae_gametype_change.py tools/test_ae_optin_pictures.py tools/test_ce_effect_flags.py
+          # the dedicated server: --version, and --server without maps refused (exit code 2); its cases with
+          # clients need the retail maps, and are skipped
+          python -m pytest -q tools/test_dedicated_server.py
+          python tools/test_ae_sound_lifecycle.py
+          python tools/test_ae_sound_transition.py
+          python -m unittest tools.test_custom_maps tools.test_virtual_keyboard_input
+          python -m unittest tools.test_halo_mcp
+          python tools/test_light_storage.py
+          python tools/test_rendered_lights_storage.py
+          python tools/test_port_config.py
+          python tools/test_tick_input.py
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux-debug
+          path: dist/arena-evolved-linux-debug
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux-release
+          path: dist/arena-evolved-linux-release
+          retention-days: 3
+
+  linux64:
+    # The native 64-bit Linux build (ninja linux64), on Arch Linux as the
+    # 32-bit one, with 64-bit SDL 3, and make and diffutils for the movies'
+    # FFmpeg as there.
+    runs-on: ubuntu-24.04
+    container: archlinux:latest
+    timeout-minutes: 40
+    steps:
+      - name: Install the toolchain
+        run: |
+          pacman -Syu --noconfirm --needed git zstd python ninja ccache clang lld gcc sdl3 make diffutils
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-linux64-${{ github.sha }}
+          restore-keys: ccache-linux64-
+
+      - name: Debug
+        run: python tools/ci_build.py linux64 debug
+
+      - name: Release
+        run: python tools/ci_build.py linux64 release
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux64-debug
+          path: dist/arena-evolved-linux64-debug
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux64-release
+          path: dist/arena-evolved-linux64-release
+          retention-days: 3
+
+  linux64-portable:
+    # (AE) The 64-bit Linux download for every distribution: the linux64 job
+    # above is built on Arch Linux, whose glibc is the newest there is
+    # (GLIBC_2.43), and links the system's SDL3, which Ubuntu, Zorin, Mint,
+    # Pop!_OS and Debian 12 do not have. This one is built in Ubuntu 22.04's
+    # container, so that it asks for glibc 2.35 at most (Ubuntu 22.04 and
+    # everything since: Zorin 17 and 18, Mint 21 and 22, Pop!_OS, Debian 12),
+    # with a clang from apt.llvm.org (22, as the Arch job's) and the SDL3 of
+    # the other ports built from source (tools/linux64_portable_deps.py: the
+    # same release and options as the 32-bit build's), which goes into the
+    # zip beside halo (rpath $ORIGIN). Chosen over the Steam Runtime
+    # "sniper" SDK, which is Debian 11 and also a Docker image but one that
+    # needs registry access and a clang of our own inside it: a plain Ubuntu
+    # container is the system most of the players have. The release build
+    # only; the Arch job keeps both configurations, for the Arch download.
+    runs-on: ubuntu-24.04
+    container: ubuntu:22.04
+    timeout-minutes: 60
+    env:
+      LLVM: "22"
+      PORTABLE_SDL3: ${{ github.workspace }}/.portable-sdl3
+    steps:
+      - name: Install the toolchain
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl gnupg git zstd python3 \
+            build-essential cmake meson ninja-build pkg-config ccache
+          # clang and lld, pinned to one release of apt.llvm.org's
+          curl -fsSL https://apt.llvm.org/llvm-snapshot.gpg.key | gpg --dearmor -o /usr/share/keyrings/apt.llvm.org.gpg
+          echo "deb [signed-by=/usr/share/keyrings/apt.llvm.org.gpg] https://apt.llvm.org/jammy/ llvm-toolchain-jammy-$LLVM main" \
+            > /etc/apt/sources.list.d/llvm.list
+          apt-get update
+          apt-get install -y --no-install-recommends clang-$LLVM lld-$LLVM llvm-$LLVM
+          echo "/usr/lib/llvm-$LLVM/bin" >> "$GITHUB_PATH"
+          # SDL3's build: the headers of what it loads when it starts (X11,
+          # Wayland, PipeWire, PulseAudio, ALSA, udev, D-Bus), and what
+          # libdecor's build asks for
+          apt-get install -y --no-install-recommends wayland-protocols libwayland-dev libxkbcommon-dev \
+            libx11-dev libxext-dev libxcursor-dev libxi-dev libxfixes-dev libxrandr-dev libxrender-dev \
+            libxss-dev libgl-dev libegl-dev libpipewire-0.3-dev libpulse-dev libasound2-dev libudev-dev \
+            libdbus-1-dev libcairo2-dev libpango1.0-dev
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-linux64-portable-${{ github.sha }}
+          restore-keys: ccache-linux64-portable-
+
+      # SDL3 and libdecor, built once
+      - uses: actions/cache@v4
+        with:
+          path: .portable-sdl3
+          key: portable-sdl3-${{ hashFiles('tools/linux64_portable_deps.py', 'tools/linux_sysroot.py', 'tools/linux_build.py') }}
+
+      - name: Build SDL3
+        run: python3 tools/linux64_portable_deps.py "$PORTABLE_SDL3"
+
+      - name: Release
+        env:
+          # (the SDL3 just built: its headers and library for the compile,
+          # and its library and license into the zip)
+          CPATH: ${{ github.workspace }}/.portable-sdl3/include
+          LIBRARY_PATH: ${{ github.workspace }}/.portable-sdl3/lib
+          HALO_BUNDLE_SDL3: ${{ github.workspace }}/.portable-sdl3
+        run: |
+          python3 tools/ci_build.py linux64 release
+          mv dist/arena-evolved-linux64-release dist/arena-evolved-linux64-portable-release
+          ls -l dist/arena-evolved-linux64-portable-release
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-linux64-portable-release
+          path: dist/arena-evolved-linux64-portable-release
+          retention-days: 3
+
+  linux64-portable-check:
+    # (AE) The portable download, as a player gets it, on the systems it is
+    # for and nothing installed for it: unpacked, its libraries all found (the
+    # SDL3 beside it), no symbol asking for a glibc after 2.35, and halo
+    # starts (tools/ci_check_linux_portable.sh). Ubuntu 22.04 is the oldest,
+    # 24.04 the Zorin 18 one, Debian 12 the stable one.
+    needs: linux64-portable
+    strategy:
+      fail-fast: false
+      matrix:
+        image: ["ubuntu:22.04", "ubuntu:24.04", "debian:12"]
+    runs-on: ubuntu-24.04
+    container: ${{ matrix.image }}
+    timeout-minutes: 15
+    steps:
+      - name: Install the tools of the check (not the game's libraries)
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates git binutils
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: arena-evolved-linux64-portable-release
+          path: portable
+
+      - name: Check it
+        run: |
+          # (an artifact loses the executable bit)
+          chmod +x portable/halo
+          sh tools/ci_check_linux_portable.sh portable
+
+  server:
+    # The dedicated server (tools/server_build.py): one static program for
+    # each architecture, built against musl in Alpine Linux's container of
+    # that architecture (tools/ci_build.py --alpine; x86 on the x86-64
+    # runner, arm64 on GitHub's arm64 one), then started on the runner's
+    # Ubuntu, which it shares nothing with: it prints its version, refuses
+    # to start without a playlist, and stops with a clear error without maps.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86
+            runner: ubuntu-24.04
+          - arch: x64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-server-${{ matrix.arch }}-${{ github.sha }}
+          restore-keys: ccache-server-${{ matrix.arch }}-
+
+      # SDL's headers, which configure.py fetches
+      - uses: actions/cache@v4
+        with:
+          path: build/server/third_party
+          key: server-third-party-${{ matrix.arch }}-${{ hashFiles('tools/server_build.py') }}
+
+      - name: Release
+        run: python3 tools/ci_build.py server-${{ matrix.arch }} release --alpine
+
+      - name: Start it
+        run: |
+          smoke="$RUNNER_TEMP/smoke"
+          server="$smoke/chupathingyce-server"
+          mkdir -p "$smoke/data/playlists"
+          cp dist/chupathingyce-server-linux-${{ matrix.arch }}/chupathingyce-server "$server"
+          file "$server"
+          # (a release's download is without its debug information)
+          if file "$server" | grep -q "with debug_info"; then echo "not stripped"; exit 1; fi
+          "$server" --version
+          # no playlist: how to start one, and status 2
+          status=0; "$server" || status=$?
+          test "$status" = 2
+          # a playlist, but no maps: a clear error, and status 1
+          echo "bloodgulch slayer" > "$smoke/data/playlists/test.txt"
+          status=0
+          HALO_DATA_ROOT="$smoke/data" HALO_SAVE_ROOT="$smoke/saves" HALO_DEDICATED=playlists/test.txt \
+            HALO_NET_ONLINE=false HALO_NET_LIST_GAMES=false \
+            timeout 60 "$server" 2> "$smoke/error.txt" || status=$?
+          cat "$smoke/error.txt"
+          test "$status" = 1
+          grep -q "no maps" "$smoke/error.txt"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chupathingyce-server-linux-${{ matrix.arch }}
+          path: dist/chupathingyce-server-linux-${{ matrix.arch }}
+          retention-days: 3
+
+  server-container:
+    # The server's container (server/deploy/Dockerfile) for the three
+    # architectures at once, from the server job's programs, as buildx makes
+    # it (nothing runs while it builds); then each started once, as above
+    # (arm64 emulated). Not pushed anywhere.
+    needs: server
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: chupathingyce-server-linux-*
+          path: artifacts
+
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Build
+        run: |
+          context="$RUNNER_TEMP/context"
+          mkdir -p "$context"
+          cp server/deploy/Dockerfile "$context/"
+          for pair in x86:386 x64:amd64 arm64:arm64; do
+            arch=${pair%%:*}; platform=${pair#*:}
+            mkdir -p "$context/bin/$platform"
+            cp "artifacts/chupathingyce-server-linux-$arch/chupathingyce-server" "$context/bin/$platform/"
+            chmod +x "$context/bin/$platform/chupathingyce-server"
+          done
+          docker buildx build --platform linux/386,linux/amd64,linux/arm64 \
+            --output type=oci,dest="$RUNNER_TEMP/chupathingyce-server.oci.tar" "$context"
+          ls -l "$RUNNER_TEMP/chupathingyce-server.oci.tar"
+
+      - name: Start each
+        run: |
+          for platform in 386 amd64 arm64; do
+            docker buildx build --platform linux/$platform --load -t chupathingyce-server:$platform "$RUNNER_TEMP/context"
+            docker run --rm --platform linux/$platform --cap-drop ALL --security-opt no-new-privileges \
+              chupathingyce-server:$platform --version
+            # (not root)
+            test "$(docker image inspect -f '{{.Config.User}}' chupathingyce-server:$platform)" = 1000:1000
+          done
+          docker image ls chupathingyce-server
+
+  android:
+    # The runner image has the Android SDK and NDK, a JDK and CMake.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - name: Install the toolchain
+        run: |
+          mkdir -p "$RUNNER_TEMP/tools"
+          # (each download checked against the hash it had when it was pinned)
+          curl -fsSL -o ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-linux.zip
+          curl -fsSL -o ccache.tar.xz https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-linux-x86_64.tar.xz
+          sha256sum -c - <<'EOF'
+          6f98805688d19672bd699fbbfa2c2cf0fc054ac3df1f0e6a47664d963d530255  ninja.zip
+          80cab87bd510eca796467aee8e663c398239e0df1c4800a0b5dff11dca0b4f18  ccache.tar.xz
+          EOF
+          unzip -q ninja.zip -d "$RUNNER_TEMP/tools" && rm ninja.zip
+          tar -xJf ccache.tar.xz -C "$RUNNER_TEMP/tools" --strip-components=1 ccache-4.10.2-linux-x86_64/ccache && rm ccache.tar.xz
+          echo "$RUNNER_TEMP/tools" >> "$GITHUB_PATH"
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-android-${{ github.sha }}
+          restore-keys: ccache-android-
+
+      # musl and SDL, which configure.py fetches
+      - uses: actions/cache@v4
+        with:
+          path: build/android/third_party
+          key: android-third-party-${{ hashFiles('tools/android_build.py', 'port/android/patches/**') }}
+
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('port/android/**/*.gradle*', 'port/android/gradle/wrapper/gradle-wrapper.properties') }}
+
+      # No keystore.properties here (pull requests and forks have no
+      # secrets): the debug app has the runner's own debug key
+      # (arena-evolved-android-debug-testkey.apk), which does not install
+      # over a build signed with another key, and the release app is
+      # unsigned, only checked to build (port/android/README.md).
+      - name: Debug
+        run: python3 tools/ci_build.py android debug
+
+      - name: Release
+        run: python3 tools/ci_build.py android release
+
+      # the touch controls' layout and gyroscope maths (the runner's JDK)
+      - name: Test the touch layout
+        run: python3 tools/test_touch_layout.py
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-android-debug-testkey
+          path: dist/arena-evolved-android-debug
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-android-release-unsigned
+          path: dist/arena-evolved-android-release
+          retention-days: 3
+
+  windows:
+    # The runner image has LLVM, Python, MSYS2 (the movies' FFmpeg builds
+    # under its shell) and Visual Studio's x86 libraries and Windows SDK.
+    runs-on: windows-2025
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install the toolchain
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
+          Invoke-WebRequest -OutFile ccache.zip https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-windows-x86_64.zip
+          # (each download checked against the hash it had when it was pinned)
+          if ((Get-FileHash ninja.zip -Algorithm SHA256).Hash -ne "F550FEC705B6D6FF58F2DB3C374C2277A37691678D6ABA463ADCBB129108467A") { throw "ninja.zip: unexpected SHA-256" }
+          if ((Get-FileHash ccache.zip -Algorithm SHA256).Hash -ne "6252F081876A9A9F700FAE13A5AEC5D0D486B28261D7F1F72AC11C7AD9DF4DA9") { throw "ccache.zip: unexpected SHA-256" }
+          Expand-Archive ninja.zip -DestinationPath "$env:RUNNER_TEMP\tools"
+          Expand-Archive ccache.zip -DestinationPath $env:RUNNER_TEMP
+          Copy-Item "$env:RUNNER_TEMP\ccache-4.10.2-windows-x86_64\ccache.exe" "$env:RUNNER_TEMP\tools"
+          Remove-Item ninja.zip, ccache.zip
+          "$env:RUNNER_TEMP\tools" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-windows-${{ github.sha }}
+          restore-keys: ccache-windows-
+
+      # SDL's development package, which configure.py fetches
+      - uses: actions/cache@v4
+        with:
+          path: build/windows/third_party
+          key: windows-third-party-${{ hashFiles('tools/windows_build.py') }}
+
+      # the movies' FFmpeg (tools/ffmpeg_build.py), built once and cached:
+      # its configure and make run under the runner's MSYS2, which needs make
+      - name: MSYS2 make
+        run: /c/msys64/usr/bin/pacman.exe -S --noconfirm --needed make diffutils
+
+      - uses: actions/cache@v4
+        with:
+          path: build/windows/ffmpeg
+          key: windows-ffmpeg-${{ hashFiles('tools/ffmpeg_build.py') }}
+
+      - name: Debug
+        run: python tools/ci_build.py windows debug
+
+      - name: Release
+        run: python tools/ci_build.py windows release
+
+      - name: Test light storage
+        run: |
+          python tools/test_light_storage.py
+          python tools/test_rendered_lights_storage.py
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-windows-debug
+          path: dist/arena-evolved-windows-debug
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-windows-release
+          path: dist/arena-evolved-windows-release
+          retention-days: 3
+
+      # (halo.exe's symbols and map, which ChupathingyCE's release keeps
+      # privately for the crash reports; not published)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-windows-debug
+          path: dist/arena-evolved-windows-debug-symbols
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-windows-release
+          path: dist/arena-evolved-windows-release-symbols
+          retention-days: 3
+
+  web:
+    # Emscripten (emsdk, the version below, cached) builds the web port's
+    # site (port/web/README.md); the tests check its graph, the page's
+    # importer and service worker, its sockets, that it starts in a
+    # headless Chromium (with no game data, as far as the menus' map), and
+    # that two browsers join a room through a local MQTT broker.
+    # (Arena Evolved: upstream's platform, kept as upstream has it; not one of
+    # AE's vetted platforms, so its result does not fail the workflow)
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      EMSDK_VERSION: 6.0.10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}-${{ hashFiles('port/web/halo_sdl3.py') }}
+
+      - name: Install the toolchain
+        run: |
+          if [ ! -x ~/emsdk/upstream/emscripten/emcc ]; then
+            rm -rf ~/emsdk
+            git clone --depth 1 https://github.com/emscripten-core/emsdk.git ~/emsdk
+            ~/emsdk/emsdk install "$EMSDK_VERSION"
+          fi
+          ~/emsdk/emsdk activate "$EMSDK_VERSION"
+          sudo apt-get update -q
+          sudo apt-get install -y -q ninja-build ccache python3-pytest mosquitto
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-web-${{ github.sha }}
+          restore-keys: ccache-web-
+
+      - name: Debug
+        run: |
+          source ~/emsdk/emsdk_env.sh
+          python3 tools/ci_build.py web debug
+
+      - name: Release
+        run: |
+          source ~/emsdk/emsdk_env.sh
+          python3 tools/ci_build.py web release
+
+      - name: Test
+        run: |
+          source ~/emsdk/emsdk_env.sh
+          node --test "port/web/tests/*.test.js"
+          # (the dedicated server's admin page, port/assets/server_ui, against tools/server_sim.py)
+          node --test tools/server_ui_tests/
+          python3 -m pytest -q tools/test_web_build.py
+
+      - name: Test in Chromium and Firefox
+        run: |
+          npm install --no-save --prefix "$RUNNER_TEMP/playwright" playwright@1.58
+          "$RUNNER_TEMP/playwright/node_modules/.bin/playwright" install --with-deps chromium firefox
+          NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node port/web/tests/smoke.mjs dist/halo-web-release
+          NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node port/web/tests/rooms.mjs dist/halo-web-release
+          # (the native builds' WebRTC, port/linux/src/p2p_webrtc.c, with both)
+          NODE_PATH="$RUNNER_TEMP/playwright/node_modules" node port/web/tests/webrtc_native.mjs chromium firefox
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halo-web-debug
+          path: dist/halo-web-debug
+          include-hidden-files: true
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: halo-web-release
+          path: dist/halo-web-release
+          include-hidden-files: true
+          retention-days: 3
+
+  windows64:
+    # The native 64-bit Windows build (ninja windows64), on the same runner
+    # image as the 32-bit one, with Visual Studio's x64 libraries.
+    runs-on: windows-2025
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Install the toolchain
+        shell: pwsh
+        run: |
+          Invoke-WebRequest -OutFile ninja.zip https://github.com/ninja-build/ninja/releases/download/v1.12.1/ninja-win.zip
+          Invoke-WebRequest -OutFile ccache.zip https://github.com/ccache/ccache/releases/download/v4.10.2/ccache-4.10.2-windows-x86_64.zip
+          # (each download checked against the hash it had when it was pinned)
+          if ((Get-FileHash ninja.zip -Algorithm SHA256).Hash -ne "F550FEC705B6D6FF58F2DB3C374C2277A37691678D6ABA463ADCBB129108467A") { throw "ninja.zip: unexpected SHA-256" }
+          if ((Get-FileHash ccache.zip -Algorithm SHA256).Hash -ne "6252F081876A9A9F700FAE13A5AEC5D0D486B28261D7F1F72AC11C7AD9DF4DA9") { throw "ccache.zip: unexpected SHA-256" }
+          Expand-Archive ninja.zip -DestinationPath "$env:RUNNER_TEMP\tools"
+          Expand-Archive ccache.zip -DestinationPath $env:RUNNER_TEMP
+          Copy-Item "$env:RUNNER_TEMP\ccache-4.10.2-windows-x86_64\ccache.exe" "$env:RUNNER_TEMP\tools"
+          Remove-Item ninja.zip, ccache.zip
+          "$env:RUNNER_TEMP\tools" | Out-File -Append -Encoding utf8 $env:GITHUB_PATH
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-windows64-${{ github.sha }}
+          restore-keys: ccache-windows64-
+
+      # SDL's development package, which configure.py fetches (the 32-bit
+      # job's: it holds both builds' libraries)
+      - uses: actions/cache@v4
+        with:
+          path: build/windows/third_party
+          key: windows-third-party-${{ hashFiles('tools/windows_build.py') }}
+
+      # the movies' FFmpeg (tools/ffmpeg_build.py), built once and cached:
+      # its configure and make run under the runner's MSYS2, which needs make
+      - name: MSYS2 make
+        run: /c/msys64/usr/bin/pacman.exe -S --noconfirm --needed make diffutils
+
+      - uses: actions/cache@v4
+        with:
+          path: build/windows64/ffmpeg
+          key: windows64-ffmpeg-${{ hashFiles('tools/ffmpeg_build.py') }}
+
+      - name: Debug
+        run: python tools/ci_build.py windows64 debug
+
+      - name: Release
+        run: python tools/ci_build.py windows64 release
+
+      # (AE) recording (capture.c: ffmpeg beside the game, libx264): a
+      # pinned, checked FFmpeg build goes into the release download, with
+      # its licence (GPL v3) and where its source is. Bump the version, its
+      # SHA-256 and port/windows/FFMPEG-SOURCE.txt together (shipped
+      # binaries are kept current: an FFmpeg security fix means a new pin)
+      - name: FFmpeg for recording
+        shell: pwsh
+        run: |
+          $version = "9.0.2"
+          $zip = "ffmpeg-$version-essentials_build.zip"
+          Invoke-WebRequest -OutFile $zip "https://github.com/GyanD/codexffmpeg/releases/download/$version/$zip"
+          if ((Get-FileHash $zip -Algorithm SHA256).Hash -ne "60F467265B1E312373DBCD92200C2618A74850F98D3D078E94296BB3FA2047BA") { throw "${zip}: unexpected SHA-256" }
+          Expand-Archive $zip -DestinationPath "$env:RUNNER_TEMP\ffmpeg"
+          $from = "$env:RUNNER_TEMP\ffmpeg\ffmpeg-$version-essentials_build"
+          $dist = "dist\arena-evolved-windows64-release"
+          Copy-Item "$from\bin\ffmpeg.exe" "$dist\ffmpeg.exe"
+          Copy-Item "$from\LICENSE" "$dist\FFmpeg-LICENSE.txt"
+          Copy-Item "$from\README.txt" "$dist\FFmpeg-README.txt"
+          Copy-Item "port\windows\FFMPEG-SOURCE.txt" "$dist\FFMPEG-SOURCE.txt"
+          Remove-Item $zip
+
+      # (AE) the self-updater from end to end on Windows (win32_update.c:
+      # WinHTTP, the running halo.exe replaced): the test's certificate
+      # authority goes into this runner's machine store for the run
+      - name: Updater test
+        env:
+          AE_UPDATE_TEST_TRUST_CA: "1"
+        run: |
+          python -m pip install --quiet pytest
+          python -m pytest -q -p no:cacheprovider tools/test_update_install_windows.py
+
+      - name: Compile cache
+        run: ccache --show-stats
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-windows64-debug
+          path: dist/arena-evolved-windows64-debug
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-windows64-release
+          path: dist/arena-evolved-windows64-release
+          retention-days: 3
+
+      # (halo.exe's symbols and map, which ChupathingyCE's release keeps
+      # privately for the crash reports; not published)
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-windows64-debug
+          path: dist/arena-evolved-windows64-debug-symbols
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: symbols-windows64-release
+          path: dist/arena-evolved-windows64-release-symbols
+          retention-days: 3
+
+  macos:
+    # Apple silicon, with Xcode's clang: the universal application (Apple
+    # silicon and Intel, self-contained: tools/macos_build.py, --portable),
+    # with its own SDL3 and the movies' FFmpeg, built once and cached. The application goes up as
+    # a tar, which keeps its symbolic links and permissions (its signature
+    # needs them).
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Install the toolchain
+        run: brew install ninja ccache
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: .ccache
+          key: ccache-macos-${{ github.sha }}
+          restore-keys: ccache-macos-
+
+      - uses: actions/cache@v4
+        with:
+          path: build/macos/third_party
+          key: macos-sdl3-${{ hashFiles('tools/android_build.py', 'tools/macos_build.py', 'tools/ffmpeg_build.py') }}
+
+      - name: Debug
+        run: python3 tools/ci_build.py macos debug
+
+      - name: Release
+        run: python3 tools/ci_build.py macos release
+
+      - name: Package
+        run: |
+          tar -C dist -cf arena-evolved-macos-debug.tar arena-evolved-macos-debug
+          tar -C dist -cf arena-evolved-macos-release.tar arena-evolved-macos-release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-macos-debug
+          path: arena-evolved-macos-debug.tar
+          retention-days: 3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arena-evolved-macos-release
+          path: arena-evolved-macos-release.tar
+          retention-days: 3

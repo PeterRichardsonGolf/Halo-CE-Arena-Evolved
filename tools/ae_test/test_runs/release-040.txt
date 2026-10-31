@@ -1,0 +1,122 @@
+# 0.4.0 candidate: what landed on release-040 since 0.3.9.1 that a game can show.
+list release-040
+revision 4
+title 0.4.0 CANDIDATE
+
+test pause-1080
+title The pause menu fits at 1080p
+check START: AE's pause opens; no row or value cut off
+check The right card shows map, gametype and scores
+check B closes it and the game goes on
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 3
+
+test change-teams-asks
+title CHANGE TEAMS asks first
+check START, CHANGE TEAMS: a confirm box opens with CANCEL focused
+check CANCEL keeps your team; CONFIRM moves you
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test oddball-times
+title Oddball scores read as times
+check After a while with the ball, hold the scoreboard
+check The team bars read times like 0:35, not big numbers
+check Players' scores read 0:12, never :12
+map bloodgulch
+gametype AE 2V2 BALL
+set bots.count 3
+
+test turret-bots
+title Bots on the rocket Warthog's gun fire steadily
+check Watch a bot in a rocket Warthog gun (F6 helps)
+check It fires whenever an enemy is in view, no pauses
+map deathisland@ce
+gametype AE BTB HVY
+set bots.count 7
+video
+
+test suppressed-names
+title The silenced packs are called SUPPRESSED
+check GAME OPTIONS > WEAPON PACKS: SUPPRESSED SMG and AR
+check No row says SILENCED
+map bloodgulch
+gametype AE FFA SLAY
+set bots.count 0
+
+test menu-timing
+title The full performance line shows menu time
+check A second performance line: MENU x.x ms
+check START: the MENU number moves with the pause open
+map bloodgulch
+gametype AE FFA SLAY
+set bots.count 0
+set display.performance full
+
+test postgame-team
+title Team post-game: winner's colour
+check START, END GAME: the result title in the winner's colour
+check FINAL SCORE card on the right; CARNAGE has B Leave
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 3
+
+test postgame-ffa
+title FFA post-game: your place spelled out
+check Get a kill or two, then START, END GAME, confirm
+check The title spells your place, in your armour colour
+check CARNAGE shows a BEST SPREE column
+map bloodgulch
+gametype AE FFA SLAY
+set bots.count 3
+
+test ball-carrier-cover
+title Bot ball carriers hide and hold
+check Watch a bot with the ball (F6 free camera helps)
+check It goes to a covered spot, not the open middle
+check It holds there and moves when you come near
+map xbox_zerohour@ce
+gametype AE 2V2 BALL
+set bots.count 3
+video
+
+test madhouse-floors
+title Madhouse: bots move between floors
+check Bots take the stairs and ramps between floors
+check Few bots jumping in place under the hill
+check Few bots falling into the pit
+map xbox_madhouse@ce
+gametype AE KING
+set bots.count 3
+
+test bots-squads
+title Bots squad up: one pins you, others flank
+check Fight 2+ enemy bots: one holds and fires, one goes round
+check Stand near a teammate bot in a fight: it flanks with you
+check NORMAL feels fair; HEROIC hard
+map sidewinder
+gametype AE BTB SLY
+set bots.count 11
+
+test bots-vehicles
+title Bots drive: laps, wait for you, flip back
+check A bot Warthog circles enemies; its gunner keeps firing
+check Walk to (or shoot) a bot's Warthog: it waits for you
+check Hold action at a bot's seat: it gets out for you
+map sidewinder
+gametype AE BTB SLY
+set bots.count 11
+set debug.bot_vehicles 2
+
+test wheelman
+title Wheelman: your gunner's kill is your assist
+check Drive a Warthog with a bot on the gun
+check Its kill shows "Wheelman assist: <name>"
+check The scoreboard ASSISTS column counts it
+map sidewinder
+gametype AE BTB SLY
+set bots.count 11
+set debug.bot_vehicles 2
+

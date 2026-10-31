@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+<style>
+.b { fill:#000; stroke:#2896FF; stroke-width:2.477; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2.477; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.715; stroke-linecap:round; stroke-linejoin:round }
+.e { fill:none; stroke:#2896FF; stroke-width:2.477; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:6.192 }
+.f { fill:#2896FF; stroke:none }
+.red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
+</style>
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.86"/></filter></defs>
+<g transform="translate(79.40 42.16) scale(1.2919)">
+<g filter="url(#glow)" opacity="0.9"><g transform="translate(50 62) rotate(-22)">
+<path d="M0,-54 Q-8.5,-56.5 -17.0,-54 Q-25.5,-51.5 -34,-54 V-24 Q-25.5,-21.5 -17.0,-24 Q-8.5,-26.5 0,-24 Z" class="b red red-fill"/>
+<line x1="0" y1="-55" x2="0" y2="20" class="w red"/>
+<circle cx="0" cy="-57" r="3.2" class="f red-fill"/>
+</g>
+<g transform="translate(50 62) rotate(22)">
+<path d="M0,-54 Q8.5,-56.5 17.0,-54 Q25.5,-51.5 34,-54 V-24 Q25.5,-21.5 17.0,-24 Q8.5,-26.5 0,-24 Z" class="b blue-fill"/>
+<line x1="0" y1="-55" x2="0" y2="20" class="w"/>
+<circle cx="0" cy="-57" r="3.2" class="f blue-fill"/>
+</g></g>
+<g transform="translate(50 62) rotate(-22)">
+<path d="M0,-54 Q-8.5,-56.5 -17.0,-54 Q-25.5,-51.5 -34,-54 V-24 Q-25.5,-21.5 -17.0,-24 Q-8.5,-26.5 0,-24 Z" class="b red red-fill"/>
+<line x1="0" y1="-55" x2="0" y2="20" class="w red"/>
+<circle cx="0" cy="-57" r="3.2" class="f red-fill"/>
+</g>
+<g transform="translate(50 62) rotate(22)">
+<path d="M0,-54 Q8.5,-56.5 17.0,-54 Q25.5,-51.5 34,-54 V-24 Q25.5,-21.5 17.0,-24 Q8.5,-26.5 0,-24 Z" class="b blue-fill"/>
+<line x1="0" y1="-55" x2="0" y2="20" class="w"/>
+<circle cx="0" cy="-57" r="3.2" class="f blue-fill"/>
+</g>
+</g>
+</svg>

@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/header_mods"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/header_mods" controller="1" left="35" top="11" width="605" height="59" type="text" text="GAME OPTIONS" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_disc" x="54" y="73" platform="desktop"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_weapon_packs" x="54" y="97"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_fall_damage" x="54" y="121"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_health" x="54" y="145"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callouts" x="54" y="169"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_detail" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" x="54" y="217"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_spawn_heat" x="54" y="241"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_mode" x="54" y="265"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_reset" x="54" y="289"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_bots" x="54" y="313"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_defaults" y="1"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_disc" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF" platform="desktop">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/disc_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/disc_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/disc_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/disc_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="STOCK" setting="game.disc" values="" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_weapon_packs" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/weapon_packs_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/weapon_packs_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/weapon_packs_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/weapon_packs_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="game.weapon_packs" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_fall_damage" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/fall_damage_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/fall_damage_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/fall_damage_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/fall_damage_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="game.fall_damage" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_health" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/health_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/health_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/health_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/health_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="HALO CE|REACH|HALO 2|HALO 3" setting="game.health" values="classic|reach|halo2|halo3" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callouts" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callouts_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callouts_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callouts_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callouts_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ITEMS|ITEMS+CLOCK" setting="game.callouts" values="off|items|items_clock" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_detail" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_detail_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="MINIMAL|STANDARD|VERBOSE" setting="game.callout_detail" values="minimal|standard|verbose" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_callout_voice" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/callout_voice_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NHE" setting="game.callout_voice" values="nhe" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_spawn_heat" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/spawn_heat_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/spawn_heat_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/spawn_heat_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="7" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/spawn_heat_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|MINE|ENEMY" setting="display.spawn_heat" values="off|mine|enemy" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_mode" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="8" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_mode_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="TOGGLE|HOLD|BOTH" setting="input.zoom_mode" values="toggle|hold|both" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_zoom_reset" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_reset_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_reset_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_reset_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/zoom_reset_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="FIRST LEVEL|LAST USED" setting="input.zoom_reset" values="first|last" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/op_bots" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/bots_settings_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots/bots_settings_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/bots_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/labels">
+		<string text="MODDED DISCS:"/>
+		<string text="WEAPON PACKS:"/>
+		<string text="CAMPAIGN FALL DAMAGE:"/>
+		<string text="CAMPAIGN HEALTH:"/>
+		<string text="CALLOUTS:"/>
+		<string text="CALLOUT DETAIL:"/>
+		<string text="VOICE:"/>
+		<string text="SPAWN HEAT:"/>
+		<string text="ZOOM:"/>
+		<string text="ZOOM RESET:"/>
+		<string text="BOTS:"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/help_strings">
+		<string text=""/>
+		<string text="The maps played: a modded disc's replace the\nstock maps it has. OK starts the game again with it."/>
+		<string text="The battle rifle and other packs in the packs\nfolder. A gametype's ITEM OPTIONS give them to\nplayers. A change applies from the next start."/>
+		<string text="Off: landings never hurt in the campaign. Gametypes\nhave their own, in Arena Options."/>
+		<string text="How health comes back in the campaign. Gametypes\nhave their own, in Arena Options."/>
+		<string text="Spoken power item spawns, in any gametype; with\nthe clock, Halo 1: NHE's talking timer too."/>
+		<string text="@12"/>
+		<string text="The callouts' voice: a folder of voices/, next\nto maps/."/>
+		<string text="@15"/>
+		<string text="@18"/>
+		<string text="@21"/>
+		<string text="Computer players in every mode: split screen\ngames and games you host, LAN or internet."/>
+		<string text="One short line for the items spawning together,\nand the first one up. No beeps."/>
+		<string text="Items spawning together in one line where the\nvoice has one, the item beep and five to one."/>
+		<string text="Every item spawning together named, then each\none up in turn."/>
+		<string text="TRAINING's spawn markers stay plain green."/>
+		<string text="TRAINING's spawn markers glow where you would\nspawn next: hot is likely, dark red can't."/>
+		<string text="TRAINING's spawn markers glow where the other\nteam would spawn next (in team games)."/>
+		<string text="Each press of the zoom button zooms in a level,\nthen out, as Halo does."/>
+		<string text="Zoomed while held: the wheel or the flashlight steps\nthe level; a tap then a hold starts at the second."/>
+		<string text="Tap to toggle, hold to zoom while held: the wheel or\nthe flashlight steps the level of a hold."/>
+		<string text="A hold of the zoom button starts at the weapon's\nfirst zoom level."/>
+		<string text="A hold of the zoom button starts at the level you\nlast used on that weapon."/>
+	</strings>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/mods_profile_item" type="text" left="51" top="294" width="232" height="27" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="10" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4" platform="desktop">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/mods_setup/mods_settings_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+</menus>

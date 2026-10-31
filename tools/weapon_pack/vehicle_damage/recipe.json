@@ -1,0 +1,1280 @@
+{
+ "format": 1,
+ "about": "The AE vehicle damage pack: CMT's TSC:E 1.4.1c vehicle damage effects and wrecks (credited) for the stock multiplayer warthog, ghost and banshee under VEHICLES DESTRUCTIBLE. make_pack.py runs it.",
+ "pack": {
+  "id": "ae_vehicle_damage",
+  "revision": 1,
+  "display": "VEHICLE DAMAGE",
+  "prefix": "ae\\packs\\vehicle_damage\\",
+  "roots": [
+   "effe:cmt\\vehicles\\_shared\\warthog\\effects\\warthog_body_damaged",
+   "effe:cmt\\vehicles\\_shared\\warthog\\effects\\warthog_damaged_loop",
+   "effe:cmt\\vehicles\\_shared\\warthog\\effects\\warthog_glass_destroyed",
+   "effe:cmt\\vehicles\\_shared\\warthog\\_warthog_chaingun\\effects\\warthog_chaingun_body_depleted",
+   "effe:cmt\\vehicles\\_shared\\warthog\\_warthog_chaingun\\effects\\warthog_chaingun_hood_destroyed",
+   "scen:cmt\\vehicles\\_shared\\warthog\\scenery\\warthog_chaingun_damaged_smoking",
+   "effe:cmt\\vehicles\\_shared\\ghost\\effects\\ghost_body_damaged",
+   "effe:cmt\\vehicles\\_shared\\ghost\\effects\\ghost_damaged_loop",
+   "effe:cmt\\vehicles\\evolved\\ghost\\effects\\ghost_body_depleted",
+   "effe:cmt\\vehicles\\_shared\\ghost\\effects\\ghost_left_wing_destroyed",
+   "effe:cmt\\vehicles\\_shared\\ghost\\effects\\ghost_right_wing_destroyed",
+   "effe:cmt\\vehicles\\_shared\\banshee\\effects\\banshee_body_damaged",
+   "effe:cmt\\vehicles\\_shared\\banshee\\effects\\banshee_damaged_loop",
+   "effe:cmt\\vehicles\\evolved\\banshee\\effects\\banshee_body_depleted",
+   "scen:cmt\\vehicles\\_shared\\banshee\\scenery\\banshee_damaged_smoking"
+  ],
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {}
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4.1c source release",
+  "file": "tsce_1-4-1c_source_release.zip",
+  "sha256": "311518659c4551342c867da2bb83c4f9c3b8c798604169a4301422970fede8a9",
+  "root": "tsce_1-4-1c_source_release/tags/",
+  "verbatim": [
+   "cmt/effects/lights/large explosion.lens_flare",
+   "cmt/effects/lights/large explosion.light",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particles/air/bitmaps/fire_covie.bitmap",
+   "cmt/effects/particles/air/bitmaps/fire_human.bitmap",
+   "cmt/effects/particles/air/bitmaps/light_animated_smoke_1.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke new generic.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/bitmaps/weird_smoke_fade.bitmap",
+   "cmt/effects/particles/energy/bitmaps/emp_cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sharp_plasma.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparky_fade.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new c sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/point physics/smoke explosion.point_physics",
+   "cmt/effects/shared effects/damage_effects/medium explosion shockwave.damage_effect",
+   "cmt/scenarios/singleplayer/b30_revamp/newbsp/bitmaps/nature/b30r_beach_cube_ext.bitmap",
+   "cmt/scenarios/singleplayer/b30_revamp/sky/2_day/bitmaps/2_day_cube.bitmap",
+   "cmt/sounds/sfx/vehicles/covenant/_shared/fx/covenant_explosion_med.sound",
+   "cmt/sounds/sfx/vehicles/covenant/_shared/fx/covenant_explosion_small.sound",
+   "cmt/sounds/sfx/vehicles/human/_shared/fx/human_explosion_large.sound",
+   "cmt/sounds/sfx/vehicles/human/_shared/fx/human_explosion_med.sound",
+   "cmt/textures/damage/covenant/covenant_damage_chunk_diff.bitmap",
+   "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.model_collision_geometry",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_diff.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_illum-color.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_diff.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_illum-color.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_illum.bitmap",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull-dmg_lights.shader_transparent_chicago",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull_lights.shader_transparent_chicago",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.model_collision_geometry",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_body_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_turret_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_wheel_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_hood_destroyed.effect",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_displays.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_glass_broken_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_parts_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/shaders/warthog_glass-dmg.shader_transparent_chicago"
+  ],
+  "allowlist": [
+   "cmt/effects/lights/large explosion.lens_flare",
+   "cmt/effects/lights/large explosion.light",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particle systems/vehicle damage/covenant small fire.particle_system",
+   "cmt/effects/particle systems/vehicle damage/covenant small smoke.particle_system",
+   "cmt/effects/particle systems/vehicle damage/human med fire.particle_system",
+   "cmt/effects/particle systems/vehicle damage/human med smoke.particle_system",
+   "cmt/effects/particle systems/vehicle damage/human small fire.particle_system",
+   "cmt/effects/particle systems/vehicle damage/human small smoke.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/covenant med electricity.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/covenant med fire.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/covenant med smoke.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/covenant small fire.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/covenant small smoke.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/human med fire.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/human med smoke.particle_system",
+   "cmt/effects/particles/air/bitmaps/fire_covie.bitmap",
+   "cmt/effects/particles/air/bitmaps/fire_human.bitmap",
+   "cmt/effects/particles/air/bitmaps/light_animated_smoke_1.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke new generic.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/bitmaps/weird_smoke_fade.bitmap",
+   "cmt/effects/particles/air/dense smoke puff cturret.particle",
+   "cmt/effects/particles/air/dense smoke puff light cturret.particle",
+   "cmt/effects/particles/air/fire covenant.particle",
+   "cmt/effects/particles/air/fire human large.particle",
+   "cmt/effects/particles/air/fire human.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke new generic.particle",
+   "cmt/effects/particles/energy/bitmaps/emp_cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sharp_plasma.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparky_fade.bitmap",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/energy/sparks energy trail.particle",
+   "cmt/effects/particles/flash/bitmaps/new c sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/explosion flare long.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/point physics/smoke explosion.point_physics",
+   "cmt/effects/shared effects/damage_effects/medium explosion shockwave.damage_effect",
+   "cmt/scenarios/singleplayer/b30_revamp/newbsp/bitmaps/nature/b30r_beach_cube_ext.bitmap",
+   "cmt/scenarios/singleplayer/b30_revamp/sky/2_day/bitmaps/2_day_cube.bitmap",
+   "cmt/sounds/sfx/vehicles/covenant/_shared/fx/covenant_explosion_med.sound",
+   "cmt/sounds/sfx/vehicles/covenant/_shared/fx/covenant_explosion_small.sound",
+   "cmt/sounds/sfx/vehicles/human/_shared/fx/human_explosion_large.sound",
+   "cmt/sounds/sfx/vehicles/human/_shared/fx/human_explosion_med.sound",
+   "cmt/textures/damage/covenant/covenant_damage_chunk_diff.bitmap",
+   "cmt/textures/damage/covenant/covenant_damage_chunk_multi.bitmap",
+   "cmt/textures/damage/covenant/shaders/covenant_damage_chunk.shader_model",
+   "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.gbxmodel",
+   "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.model_collision_geometry",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_diff.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_illum-color.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_multi.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_diff.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_illum-color.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_illum.bitmap",
+   "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_multi.bitmap",
+   "cmt/vehicles/_shared/banshee/effects/banshee_body_damaged.effect",
+   "cmt/vehicles/_shared/banshee/effects/banshee_damaged_loop.effect",
+   "cmt/vehicles/_shared/banshee/scenery/banshee_damaged_smoking.scenery",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull-dmg.shader_model",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull-dmg_lights.shader_transparent_chicago",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull.shader_model",
+   "cmt/vehicles/_shared/banshee/shaders/banshee_hull_lights.shader_transparent_chicago",
+   "cmt/vehicles/_shared/ghost/effects/ghost_body_damaged.effect",
+   "cmt/vehicles/_shared/ghost/effects/ghost_damaged_loop.effect",
+   "cmt/vehicles/_shared/ghost/effects/ghost_left_wing_destroyed.effect",
+   "cmt/vehicles/_shared/ghost/effects/ghost_right_wing_destroyed.effect",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.gbxmodel",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.model_collision_geometry",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_body_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_turret_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_turret_multi.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_wheel_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_hood_destroyed.effect",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_body.shader_model",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_turret-dmg.shader_model",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_wheel-dmg_metal.shader_model",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_body_multi.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_displays.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_glass_broken_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_parts_diff.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_parts_multi.bitmap",
+   "cmt/vehicles/_shared/warthog/bitmaps/warthog_wheel_multi.bitmap",
+   "cmt/vehicles/_shared/warthog/effects/warthog_body_damaged.effect",
+   "cmt/vehicles/_shared/warthog/effects/warthog_damaged_loop.effect",
+   "cmt/vehicles/_shared/warthog/effects/warthog_glass_destroyed.effect",
+   "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.garbage",
+   "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.gbxmodel",
+   "cmt/vehicles/_shared/warthog/scenery/warthog_chaingun_damaged_smoking.scenery",
+   "cmt/vehicles/_shared/warthog/shaders/warthog_glass-dmg.shader_transparent_chicago",
+   "cmt/vehicles/_shared/warthog/shaders/warthog_parts-dmg.shader_model",
+   "cmt/vehicles/_shared/warthog/shaders/warthog_sensor-dmg_base.shader_model",
+   "cmt/vehicles/evolved/banshee/effects/banshee_body_depleted.effect",
+   "cmt/vehicles/evolved/ghost/effects/ghost_body_depleted.effect"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/roots_1.scenery",
+   "op": "edit",
+   "from": [
+    "stock",
+    "scenery/small beacon/small red beacon.scenery"
+   ],
+   "edits": [
+    [
+     "erase",
+     "attachments[*]"
+    ],
+    [
+     "insert",
+     "attachments",
+     8,
+     "end"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "cmt/vehicles/_shared/warthog/effects/warthog_body_damaged.effect"
+    ],
+    [
+     "set",
+     "attachments[1].type",
+     "cmt/vehicles/_shared/warthog/effects/warthog_damaged_loop.effect"
+    ],
+    [
+     "set",
+     "attachments[2].type",
+     "cmt/vehicles/_shared/warthog/effects/warthog_glass_destroyed.effect"
+    ],
+    [
+     "set",
+     "attachments[3].type",
+     "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect"
+    ],
+    [
+     "set",
+     "attachments[4].type",
+     "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_hood_destroyed.effect"
+    ],
+    [
+     "set",
+     "attachments[5].type",
+     "cmt/vehicles/_shared/ghost/effects/ghost_body_damaged.effect"
+    ],
+    [
+     "set",
+     "attachments[6].type",
+     "cmt/vehicles/_shared/ghost/effects/ghost_damaged_loop.effect"
+    ],
+    [
+     "set",
+     "attachments[7].type",
+     "cmt/vehicles/evolved/ghost/effects/ghost_body_depleted.effect"
+    ]
+   ],
+   "why": "the donor map only (not in the pack): a scenery whose attachments (8 at most) are the pack's effects, so that the donor holds them"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/roots_2.scenery",
+   "op": "edit",
+   "from": [
+    "stock",
+    "scenery/small beacon/small red beacon.scenery"
+   ],
+   "edits": [
+    [
+     "erase",
+     "attachments[*]"
+    ],
+    [
+     "insert",
+     "attachments",
+     5,
+     "end"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "cmt/vehicles/_shared/ghost/effects/ghost_left_wing_destroyed.effect"
+    ],
+    [
+     "set",
+     "attachments[1].type",
+     "cmt/vehicles/_shared/ghost/effects/ghost_right_wing_destroyed.effect"
+    ],
+    [
+     "set",
+     "attachments[2].type",
+     "cmt/vehicles/_shared/banshee/effects/banshee_body_damaged.effect"
+    ],
+    [
+     "set",
+     "attachments[3].type",
+     "cmt/vehicles/_shared/banshee/effects/banshee_damaged_loop.effect"
+    ],
+    [
+     "set",
+     "attachments[4].type",
+     "cmt/vehicles/evolved/banshee/effects/banshee_body_depleted.effect"
+    ]
+   ],
+   "why": "the donor map only (not in the pack): a scenery whose attachments (8 at most) are the pack's effects, so that the donor holds them"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "scenery_palette",
+     4,
+     "end"
+    ],
+    [
+     "set",
+     "scenery_palette[19].name",
+     "ae_pack/donor/roots_1.scenery"
+    ],
+    [
+     "set",
+     "scenery_palette[20].name",
+     "ae_pack/donor/roots_2.scenery"
+    ],
+    [
+     "set",
+     "scenery_palette[21].name",
+     "cmt/vehicles/_shared/warthog/scenery/warthog_chaingun_damaged_smoking.scenery"
+    ],
+    [
+     "set",
+     "scenery_palette[22].name",
+     "cmt/vehicles/_shared/banshee/scenery/banshee_damaged_smoking.scenery"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the pack's wrecks and the effects' holder in its scenery palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/covenant small fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/covenant small fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/covenant small smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/covenant small smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/human med fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/human med fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/human med smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/human med smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/human small fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/human small fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle damage/human small smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle damage/human small smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/covenant med electricity.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/covenant med electricity.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/covenant med fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/covenant med fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/covenant med smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/covenant med smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/covenant small fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/covenant small fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/covenant small smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/covenant small smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/human med fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/human med fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/vehicle explosion/human med smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/vehicle explosion/human med smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/dense smoke puff cturret.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/dense smoke puff cturret.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/dense smoke puff light cturret.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/dense smoke puff light cturret.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/fire covenant.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/fire covenant.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/fire human large.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/fire human large.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/fire human.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/fire human.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke h fp.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke h fp.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke impact dusty.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke impact dusty.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke new generic.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke new generic.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/plasma electric arcs.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/sparkly sparkles quick.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/sparks energy trail.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/sparks energy trail.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/explosion flare long.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/explosion flare long.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/sparks trail.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/sparks trail.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/textures/damage/covenant/covenant_damage_chunk_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/textures/damage/covenant/covenant_damage_chunk_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/textures/damage/covenant/shaders/covenant_damage_chunk.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/textures/damage/covenant/shaders/covenant_damage_chunk.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull-dmg_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/bitmaps/banshee_hull_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/effects/banshee_body_damaged.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/effects/banshee_body_damaged.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].particles[0-3]"
+    ],
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       ""
+      ],
+      [
+       "locations[2].marker_name",
+       ""
+      ]
+     ]
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); its places on a map's own banshee: CMT's markers but the engine's at the banshee's origin (no stock multiplayer map has a banshee to read its markers from)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/effects/banshee_damaged_loop.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/effects/banshee_damaged_loop.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       ""
+      ],
+      [
+       "locations[2].marker_name",
+       ""
+      ],
+      [
+       "locations[3].marker_name",
+       ""
+      ]
+     ]
+    ]
+   ],
+   "why": "its places on a map's own banshee: CMT's markers but the engine's at the banshee's origin (no stock multiplayer map has a banshee to read its markers from)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/scenery/banshee_damaged_smoking.scenery",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/scenery/banshee_damaged_smoking.scenery"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/vehicles/_shared/banshee/_scenery_damaged/_scenery_damaged.model"
+    ],
+    [
+     "erase",
+     "attachments[1]"
+    ]
+   ],
+   "why": "no damaged-engine loop sound (its sounds are campaign tags no multiplayer map has)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/shaders/banshee_hull-dmg.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/shaders/banshee_hull-dmg.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/banshee/shaders/banshee_hull.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/banshee/shaders/banshee_hull.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/ghost/effects/ghost_body_damaged.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/ghost/effects/ghost_body_damaged.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].particles[0-3]"
+    ],
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       ""
+      ],
+      [
+       "locations[2].marker_name",
+       "driver"
+      ]
+     ]
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); its places on the map's own ghost: CMT's markers that the stock model lacks moved to ones it has (the gunner and the seat to the driver, sparks to the engine, smoke to the fire, the vents to the engine, the hull to its origin)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/ghost/effects/ghost_damaged_loop.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/ghost/effects/ghost_damaged_loop.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "locations[2].marker_name",
+       "engine"
+      ],
+      [
+       "locations[3].marker_name",
+       "fire"
+      ]
+     ]
+    ]
+   ],
+   "why": "its places on the map's own ghost: CMT's markers that the stock model lacks moved to ones it has (the gunner and the seat to the driver, sparks to the engine, smoke to the fire, the vents to the engine, the hull to its origin)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/ghost/effects/ghost_left_wing_destroyed.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/ghost/effects/ghost_left_wing_destroyed.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].particles[0-1]"
+    ],
+    [
+     "sets",
+     [
+      [
+       "locations[0].marker_name",
+       "engine"
+      ]
+     ]
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); its places on the map's own ghost: CMT's markers that the stock model lacks moved to ones it has (the gunner and the seat to the driver, sparks to the engine, smoke to the fire, the vents to the engine, the hull to its origin)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/ghost/effects/ghost_right_wing_destroyed.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/ghost/effects/ghost_right_wing_destroyed.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].particles[0-1]"
+    ],
+    [
+     "sets",
+     [
+      [
+       "locations[0].marker_name",
+       "engine"
+      ]
+     ]
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); its places on the map's own ghost: CMT's markers that the stock model lacks moved to ones it has (the gunner and the seat to the driver, sparks to the engine, smoke to the fire, the vents to the engine, the hull to its origin)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_turret_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/bitmaps/warthog_chaingun_turret_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].parts[1]"
+    ],
+    [
+     "erase",
+     "events[0].parts[6-7]"
+    ],
+    [
+     "erase",
+     "events[0].particles[4]"
+    ]
+   ],
+   "why": "no wheel thrown off (CMT's wheel is a vehicle, which a network game would send to machines that do not have the pack); the underwater explosion's bubbles left out (their bitmaps are campaign tags no multiplayer map has)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_body.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_body.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_turret-dmg.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_turret-dmg.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_wheel-dmg_metal.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/_warthog_chaingun/shaders/warthog_chaingun_wheel-dmg_metal.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/bitmaps/warthog_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/bitmaps/warthog_body_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/bitmaps/warthog_parts_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/bitmaps/warthog_parts_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/bitmaps/warthog_wheel_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/bitmaps/warthog_wheel_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/effects/warthog_body_damaged.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/effects/warthog_body_damaged.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       "engine"
+      ],
+      [
+       "locations[5].marker_name",
+       "gunner"
+      ],
+      [
+       "locations[6].marker_name",
+       "engine"
+      ],
+      [
+       "locations[7].marker_name",
+       "headlights"
+      ]
+     ]
+    ]
+   ],
+   "why": "its places on the map's own vehicle: CMT's markers that the stock model lacks moved to ones it has (hood and damage to the engine, the shield to the gunner, the small damage to the headlights)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/effects/warthog_damaged_loop.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/effects/warthog_damaged_loop.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       "engine"
+      ],
+      [
+       "locations[5].marker_name",
+       "gunner"
+      ],
+      [
+       "locations[6].marker_name",
+       "engine"
+      ],
+      [
+       "locations[7].marker_name",
+       "headlights"
+      ]
+     ]
+    ]
+   ],
+   "why": "its places on the map's own vehicle: CMT's markers that the stock model lacks moved to ones it has (hood and damage to the engine, the shield to the gunner, the small damage to the headlights)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/effects/warthog_glass_destroyed.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/effects/warthog_glass_destroyed.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "locations[0].marker_name",
+       "driver"
+      ]
+     ]
+    ]
+   ],
+   "why": "its place on the map's own warthog: the windshield's marker (the stock model has none) moved to the driver's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.garbage",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.garbage"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.model"
+    ]
+   ],
+   "why": "the Xbox model's name"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/garbage/warthog_chaingun_hood/warthog_chaingun_hood.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/scenery/warthog_chaingun_damaged_smoking.scenery",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/scenery/warthog_chaingun_damaged_smoking.scenery"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/vehicles/_shared/warthog/_warthog_chaingun/_scenery_damaged/_scenery_damaged.model"
+    ],
+    [
+     "erase",
+     "attachments[0-2]"
+    ],
+    [
+     "erase",
+     "widgets[*]"
+    ],
+    [
+     "set",
+     "attachments[0].primary_scale",
+     "none"
+    ]
+   ],
+   "why": "a wreck with its lights out and no antenna: no headlight and taillight lights, flares and light volumes (the flare's bitmap is a campaign tag no multiplayer map has), no antenna (its physics a tag only the stock maps have: a map without it would refuse the pack); the smoke and fire always on (scaled by none: a wreck carried by the dead vehicle runs no functions of its own)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/shaders/warthog_parts-dmg.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/shaders/warthog_parts-dmg.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/_shared/warthog/shaders/warthog_sensor-dmg_base.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/vehicles/_shared/warthog/shaders/warthog_sensor-dmg_base.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/evolved/banshee/effects/banshee_body_depleted.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/evolved/banshee/effects/banshee_body_depleted.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].parts[10-11]"
+    ],
+    [
+     "erase",
+     "events[0].particles[5]"
+    ],
+    [
+     "erase",
+     "events[0].particles[0-3]"
+    ],
+    [
+     "erase",
+     "events[0].parts[0]"
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); the underwater explosion's bubbles left out (their bitmaps are campaign tags no multiplayer map has); no damage of its own (the turret's explosion, 15-25 around it): the host's death explosion, the map's, deals the damage, with the pack or without"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/vehicles/evolved/ghost/effects/ghost_body_depleted.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/vehicles/evolved/ghost/effects/ghost_body_depleted.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[1].parts[9-10]"
+    ],
+    [
+     "erase",
+     "events[1].particles[5]"
+    ],
+    [
+     "erase",
+     "events[1].particles[0-3]"
+    ],
+    [
+     "erase",
+     "events[1].parts[0]"
+    ],
+    [
+     "sets",
+     [
+      [
+       "locations[1].marker_name",
+       ""
+      ],
+      [
+       "locations[2].marker_name",
+       "driver"
+      ],
+      [
+       "locations[3].marker_name",
+       "driver"
+      ],
+      [
+       "locations[4].marker_name",
+       "driver"
+      ],
+      [
+       "locations[5].marker_name",
+       "driver"
+      ],
+      [
+       "locations[6].marker_name",
+       ""
+      ],
+      [
+       "locations[7].marker_name",
+       "driver"
+      ]
+     ]
+    ]
+   ],
+   "why": "the panel debris and panel impact particles left out (their bitmaps and effects are campaign tags no multiplayer map has); the underwater explosion's bubbles left out (their bitmaps are campaign tags no multiplayer map has); no damage of its own (the turret's explosion, 15-25 around it): the host's death explosion, the map's, deals the damage, with the pack or without; its places on the map's own ghost: CMT's markers that the stock model lacks moved to ones it has (the gunner and the seat to the driver, sparks to the engine, smoke to the fire, the vents to the engine, the hull to its origin)"
+  }
+ ],
+ "expected": {
+  "about": "the pack the owner reviews (2026-10-23, revision 1); re-pinned when a step changes",
+  "donor_sha256": "f154b41191144fb50bbe2c88a24b9d4effd16c4d398a45d261b214803d2fda2b",
+  "donor_size": 26124288,
+  "pack_sha256": "0e18917caaf1a01986eaea4c99fcbf47a2576170eb5b387ff1f0f1b5549aa45c",
+  "pack_own_sha256": "e31279c6ed46efec72b79afc5c1c56f1f76783752878eab2246de4412419b025",
+  "pack_size": 14932220,
+  "own_tags": 106,
+  "external_tags": 18
+ }
+}

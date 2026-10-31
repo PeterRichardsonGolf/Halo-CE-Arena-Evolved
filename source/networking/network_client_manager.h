@@ -1,0 +1,288 @@
+/*
+NETWORK_CLIENT_MANAGER.H
+
+header included in hcex build.
+*/
+
+#ifndef __NETWORK_CLIENT_MANAGER_H
+#define __NETWORK_CLIENT_MANAGER_H
+#pragma once
+
+/* ---------- constants */
+
+/* ---------- macros */
+
+/* ---------- structures */
+
+/* port: a game this client found, as a probe tells it (halo --probe:
+port/linux/game/network_test.c) */
+struct network_advertised_game_summary
+{
+	wchar_t name[16];
+	char map_name[0x80];
+	short engine_type;
+	short player_count;
+	short maximum_player_count;
+	boolean open;
+	boolean has_teams;
+	boolean in_progress;
+	boolean dedicated;
+	word version;
+	byte kind;
+};
+
+struct network_advertised_game;
+struct network_connection;
+struct network_game;
+struct network_game_client;
+struct network_join_parameters;
+struct network_machine;
+struct network_player;
+struct transport_address;
+struct message_server_game_advertise;
+struct message_server_machine_accepted;
+struct message_server_game_update;
+
+/* ---------- prototypes/NETWORK_CLIENT_MANAGER.C */
+
+void network_game_client_dispose(
+	struct network_game_client *client);
+void network_game_client_keep_alive(
+	struct network_game_client *client);
+short network_game_client_get_state(
+	struct network_game_client *client,
+	short *state_data);
+boolean network_game_client_join_first_available_game(
+	void);
+boolean network_game_client_split_teams(void);
+boolean network_game_client_set_team(
+	char team_index);
+/* whether the advertised game's host has this machine's network version
+(else the player is told, and it is not to be joined) */
+/* port: whether the advertised game is under way, not in its lobby */
+boolean network_game_client_advertised_game_in_progress(
+	struct network_game_client *client,
+	struct network_advertised_game const *game);
+/* port: the advertised game's kind (port/linux/game/game_modes.h's
+game_modes_kind) */
+byte network_game_client_advertised_game_kind(
+	struct network_game_client *client,
+	struct network_advertised_game const *game);
+boolean network_game_client_advertised_game_compatible(
+	struct network_game_client *client,
+	struct network_advertised_game const *game,
+	boolean tell);
+/* AE: the same of a host's advertised version and flags alone, and what the
+game lists say of an advertised game (halo_port_limits.h's HALO_PORT_JOIN_*) */
+boolean network_game_client_version_compatible(
+	unsigned int theirs,
+	unsigned int flags,
+	boolean tell);
+short network_game_client_advertised_game_join_state(
+	struct network_game_client *client,
+	struct network_advertised_game const *game,
+	unsigned int *version);
+/* port (AE's LAN GAMES, port/linux/game/ae_glue_lobby.c): the games the
+searching client hears, by their index (0 to
+NETWORK_GAME_CLIENT_AVAILABLE_GAMES - 1), in plain words; join_state is
+network_game_client_advertised_game_join_state's (HALO_PORT_JOIN_*) */
+enum { NETWORK_GAME_CLIENT_AVAILABLE_GAMES = 9 };
+struct network_available_game
+{
+	byte nonce[8]; /* AE hook */
+	wchar_t name[16];
+	char map[0x80];
+	short engine;
+	short players;
+	short maximum_players;
+	boolean open;
+	boolean teams;
+	boolean in_progress;
+	short join_state;
+	unsigned int version;
+	byte kind; /* AE hook */
+};
+/* FALSE when no live game of this platform is at the index, or no client
+searches */
+boolean network_game_client_available_game_read(
+	long game_index,
+	struct network_available_game *game);
+/* joins the game at the index, as network_game_client_join_first_available_game
+joins the first (no message: the caller checked join_state) */
+boolean network_game_client_join_available_game(
+	long game_index);
+#ifdef HALO_GAME_BROWSER
+/* the advertisement of the game an invite's host advertises (the game
+list's probe, server/src/probe.c) */
+struct network_invite_advertisement
+{
+	/* (NETWORK_GAME_NAME_LENGTH's 16) */
+	wchar_t game_name[16];
+	char map_name[0x80];
+	short engine_type;
+	short player_count;
+	short maximum_player_count;
+	boolean open;
+	boolean has_teams;
+	unsigned short network_version;
+	boolean compatible;
+	/* the machines in it, the score to win, and whether it is under way
+	(not in its lobby) */
+	short machine_count;
+	short score_limit;
+	boolean in_progress;
+	/* its map's version (a Halo PC map's header checksum, which the host
+	advertises: cache_files_map_version; 0 for the Xbox's maps) */
+	unsigned long map_version;
+};
+
+/* the host of the game last joined, by its identifier (its XNADDR's abEnet,
+as an invite's first 12 hex digits name it), into text (13 bytes): what
+network_game_client_join_invite_host joins it again by */
+void network_game_client_joined_host_identifier(
+	char *text,
+	long size);
+/* 1: the game the invite's host advertises through the tunnel, written to
+advertisement; 0: not advertised yet; -1: not an invite */
+long network_game_client_invite_host_advertisement(
+	char const *invite,
+	struct network_invite_advertisement *advertisement);
+/* a game of the game list (network.browser_url) picked: joins its invite,
+TRUE; FALSE for any other game (network_client_manager.c) */
+boolean network_game_client_browser_join(
+	struct network_game_client *client,
+	void const *game);
+#endif
+/* port: the player told why a host of this network version (and netcode)
+cannot be joined (the server browser's rows of another version too) */
+void network_game_client_tell_version(
+	unsigned int theirs,
+	boolean distributed);
+/* port: whether the advertised game's host is a dedicated server */
+boolean network_game_client_advertised_game_dedicated(
+	struct network_game_client *client,
+	struct network_advertised_game const *game);
+/* port: the client's index'th advertised game, if it is a game: TRUE */
+boolean network_game_client_port_advertised_game_summary(
+	long index,
+	struct network_advertised_game_summary *summary);
+boolean network_game_client_initiate_join_game(
+	struct network_game_client *client,
+	struct network_advertised_game *game,
+	struct network_join_parameters *join_parameters,
+	struct transport_address *address);
+boolean network_game_client_set_machine(
+	struct network_game_client *client,
+	struct network_machine *machine);
+struct network_machine *network_game_client_get_machine(
+	struct network_game_client *client);
+short network_game_client_get_machine_index(
+	struct network_game_client *client);
+/* port: the joined game's host's network version (0xFFFF: not known) */
+unsigned int network_game_client_host_network_version(
+	void);
+boolean network_game_client_advertised_game_is_valid(
+	struct network_advertised_game *advertised_game);
+struct network_advertised_game *network_game_client_get_available_games(
+	struct network_game_client *client);
+short network_game_client_get_error(
+	struct network_game_client *client);
+short network_game_client_get_seconds_to_game_start(
+	struct network_game_client *client);
+boolean network_game_client_write(
+	struct network_connection *connection,
+	word *message,
+	word message_size,
+	struct transport_address *address,
+	boolean reliable);
+boolean network_game_client_idle(
+	struct network_game_client *client);
+boolean network_game_client_add_player(
+	struct network_game_client *client,
+	short local_player_index);
+boolean network_game_client_address_matches_server(
+	struct network_game_client *client,
+	struct transport_address *address);
+void network_game_client_new_advertised_game(
+	struct network_game_client *client,
+	struct message_server_game_advertise *message_packet);
+void network_game_client_ponged(
+	struct network_game_client *client,
+	struct transport_address *source_address,
+	long timestamp);
+void network_game_client_accepted_into_game(
+	struct network_game_client *client,
+	struct transport_address *source_address,
+	struct message_server_machine_accepted *message_packet);
+void network_game_client_rejected_by_game(
+	struct network_game_client *client,
+	struct transport_address *source_address,
+	word rejection_code);
+boolean network_game_client_game_settings_updated(
+	struct network_game_client *client,
+	struct network_game *message_packet);
+void network_game_client_countdown_timer_update(
+	struct network_game_client *client,
+	short seconds_to_game_start);
+boolean network_game_client_game_has_started(
+	struct network_game_client *client);
+void network_game_client_game_shutdown(
+	struct network_game_client *client);
+boolean network_game_client_handle_game_update(
+	struct network_game_client *client,
+	struct message_server_game_update *game_update);
+boolean network_game_client_add_player_to_game(
+	struct network_game_client *client,
+	struct network_player *player);
+boolean network_game_client_remove_player(
+	struct network_game_client *client,
+	struct network_player *player,
+	long reason);
+boolean network_game_client_update_local_player_data(
+	struct network_game_client *client,
+	struct network_player *player);
+boolean network_game_client_request_remove_player(
+	struct network_game_client *client,
+	struct network_player *player);
+boolean network_game_client_request_start_time_change(
+	struct network_game_client *client,
+	short request_type);
+void network_game_client_switch_to_postgame(
+	struct network_game_client *client);
+boolean network_game_client_switch_to_pregame(
+	struct network_game_client *client);
+void network_game_client_reset(
+	struct network_game_client *client,
+	boolean teardown_connection);
+struct network_game_client *network_game_client_create(
+	void);
+struct network_connection *network_game_client_get_connection(
+	struct network_game_client *client);
+void network_game_client_get_remote_server_address(
+	struct network_game_client *client,
+	struct transport_address *address);
+struct network_game *network_game_client_get_game(
+	struct network_game_client *client);
+boolean network_game_client_server_has_started_game(
+	struct network_game_client *client);
+long network_game_client_get_next_update_number(
+	struct network_game_client *client);
+long unstrip_player_index(
+	long player_index);
+
+/* ---------- globals */
+
+extern boolean allow_out_of_sync;
+/* the host's game time when it told this client to start a game in progress,
+16 bits of it (network_client_message_handler.c sets it) */
+extern long network_game_client_late_join_time;
+/* port: the host's start: the game loaded now, or once the map is there if it
+is being downloaded (map sharing) */
+boolean network_game_client_begin_game(
+	struct network_game_client *client);
+extern boolean network_game_client_dont_use_directly_in_use;
+extern struct network_game_client network_game_client_dont_use_directly;
+
+/* ---------- public code */
+
+#endif // __NETWORK_CLIENT_MANAGER_H

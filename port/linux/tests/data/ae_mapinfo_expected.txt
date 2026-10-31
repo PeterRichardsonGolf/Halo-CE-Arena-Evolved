@@ -1,0 +1,18 @@
+# The stock Xbox maps (Halo CE, build 01.10.12.2276), as tools read them (the AE menus map reader,
+# port/linux/game/ae_mapinfo.c, must agree): one map a line, tab-separated. Columns: file, family
+# (1 Xbox), modes (CSOKR: ctf slayer oddball king race; - not supported), spawns for ctf, slayer, oddball,
+# king, race, hills, race checkpoints, netgame equipment, vehicle placements, BSPs, play extent (world
+# units, 0.1 either way), protected (0/1). Stock maps only: no third-party data in the repository.
+beavercreek.map	1	CSOKR	60	22	22	22	22	10	11	35	0	1	44.2	0
+bloodgulch.map	1	CSOKR	38	16	16	16	17	10	5	35	8	1	156.2	0
+boardingaction.map	1	CSOKR	57	16	16	16	16	9	13	52	0	1	50.3	0
+carousel.map	1	CSOKR	36	27	27	27	27	10	10	37	0	1	44.8	0
+chillout.map	1	CSOKR	33	25	25	25	25	4	12	33	0	1	28.0	0
+damnation.map	1	CSOKR	37	30	30	30	30	8	4	46	0	1	39.2	0
+hangemhigh.map	1	CSOKR	39	28	28	28	28	14	11	45	0	1	47.5	0
+longest.map	1	CSOKR	43	28	28	28	28	9	5	40	0	1	36.0	0
+prisoner.map	1	CSOKR	34	24	24	24	24	6	9	51	0	1	26.0	0
+putput.map	1	CSOKR	32	27	27	27	27	9	9	40	0	1	65.1	0
+ratrace.map	1	CSOKR	31	48	48	48	48	4	4	30	0	1	43.5	0
+sidewinder.map	1	CSOKR	44	16	16	16	16	10	5	47	8	1	149.6	0
+wizard.map	1	CSOKR	32	16	16	16	16	9	4	44	0	1	34.3	0

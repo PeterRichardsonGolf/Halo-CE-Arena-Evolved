@@ -1,0 +1,18 @@
+arena-evolved: network test: cheat_all_weapons at tick 33: the map's list has 16 weapons
+arena-evolved: network test:   weapon 0: weapons\assault rifle\assault rifle
+arena-evolved: network test:   weapon 1: weapons\flamethrower\flamethrower
+arena-evolved: network test:   weapon 2: weapons\gravity rifle\gravity rifle
+arena-evolved: network test:   weapon 3: weapons\needler\needler
+arena-evolved: network test:   weapon 4: weapons\pistol\pistol
+arena-evolved: network test:   weapon 5: weapons\plasma pistol\plasma pistol
+arena-evolved: network test:   weapon 6: weapons\plasma rifle\plasma rifle
+arena-evolved: network test:   weapon 7: weapons\rocket launcher\rocket launcher
+arena-evolved: network test:   weapon 8: weapons\shotgun\shotgun
+arena-evolved: network test:   weapon 9: weapons\sniper rifle\sniper rifle
+arena-evolved: network test:   weapon 10: weapons\ball\ball
+arena-evolved: network test:   weapon 11: weapons\flag\flag
+arena-evolved: network test:   weapon 12: weapons\frag grenade\frag grenade
+arena-evolved: network test:   weapon 13: weapons\plasma grenade\plasma grenade
+arena-evolved: network test:   weapon 14: weapons\plasma_cannon\plasma_cannon
+arena-evolved: network test:   weapon 15: weapons\needler\mp_needler
+arena-evolved: network test: cheat_all_weapons created 16 weapon and equipment objects (27 before, 43 after)

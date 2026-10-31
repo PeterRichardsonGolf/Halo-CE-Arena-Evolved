@@ -1,0 +1,2255 @@
+[
+ {
+  "revision": 15,
+  "why": "no respawn time growth in AE FFA SNPR: the stock Snipers' adds 5 s to a player's respawn per death, up to 25 s, earned back by kills; no other AE gametype has it, Team AE SNIPERS included",
+  "decided": "owner, 2026-10-20",
+  "gametypes": [
+   "AE FFA SNPR"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.respawn_time_growth",
+    "0"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth"
+  },
+  "old_block_hashes": {
+   "AE FFA SNPR": "ff8bea99060536a7399abd8d7e268d52e9183557"
+  },
+  "golden": "golden_seeds_rev15.json",
+  "seed_rules": {
+   "AE FFA SNPR": {
+    "respawn growth": "0 ticks"
+   }
+  }
+ },
+ {
+  "revision": 18,
+  "why": "AE SWAT starts with no grenades but the map's grenade pickups still spawned: MAP GRENADES off",
+  "decided": "owner, 2026-10-08",
+  "gametypes": [
+   "AE SWAT"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_no_map_grenades"
+   ]
+  ],
+  "adjusts": {
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades"
+  },
+  "old_block_hashes": {
+   "AE SWAT": "4a9e009fcb596af350561fcb10356d780cc99e05"
+  },
+  "golden": "golden_seeds_rev18.json",
+  "seed_rules": {}
+ },
+ {
+  "revision": 19,
+  "why": "the owner's play test: a 10 m motion sensor is easier to track; 10 m in every AE gametype with the motion sensor on",
+  "decided": "owner, 2026-10-20",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE ELIM",
+   "AE ENDURE",
+   "AE JUGGER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_sensor_range_10"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE CTF": "arena_gametype_sensor_range_10",
+   "AE KING": "arena_gametype_sensor_range_10",
+   "AE FFA BALL": "arena_gametype_sensor_range_10",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10",
+   "AE TEAM OB": "arena_gametype_sensor_range_10",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10",
+   "AE FFA KING": "arena_gametype_sensor_range_10",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10",
+   "AE RACE": "arena_gametype_sensor_range_10",
+   "AE RALLY": "arena_gametype_sensor_range_10",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR FBALL": "arena_gametype_sensor_range_10",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10",
+   "AE BR FKING": "arena_gametype_sensor_range_10",
+   "AE BR CKING": "arena_gametype_sensor_range_10",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR CTF": "arena_gametype_sensor_range_10",
+   "AE BR KING": "arena_gametype_sensor_range_10",
+   "AE BR TM OB": "arena_gametype_sensor_range_10",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "8cb6ed7baaf3a4d2457bb4ae1e21520c50e2a3de",
+   "AE TEAM SLY": "1f66a2092b721e90d13e59d009fc6e30d8b849a3",
+   "AE CTF": "2dabcd5d6d2629cca3ece6688cec01ee912bed30",
+   "AE KING": "f490038ab54aa0c8df51d5b409f531f1e9efc844",
+   "AE FFA BALL": "766544a5fe2076262d6c7129ae8a4bf53e3b26b6",
+   "AE 2V2 SLY": "0cf14c5c42771d1a70c890efd5a02f08db0c4f01",
+   "AE 2V2 CTF": "f0c7d0b7267f1aca8e8d1d2832dde3928ed00a71",
+   "AE 2V2 KING": "5856554d3599a69ffb17be8b62eef9d736a5be76",
+   "AE 2V2 BALL": "790d48d8190a6a0eb73ad6bc6a422e7ab8bd9284",
+   "AE TEAM OB": "f64f9895b3076e11aa4a8bf6397a537cf87cfc23",
+   "AE PRACTICE": "afa479f6ab2510cec1dcb2e123262bd7e9d97cc0",
+   "AE ROCKETS": "08fda88c7722cdbc1d3018eeb2d42c05b9ec8d8f",
+   "AE SHOTGUNS": "7db7945445824f0d4ee0768e97b0e306088c19f7",
+   "AE HEAVIES": "038e094c4fc81137a3762629a3611a0821172482",
+   "AE ELIM": "0f810cbc2aac67e73dcd13fea7592a75ac677ae5",
+   "AE ENDURE": "126c8b0f48ef5d5148595f1480e32ae8623b6f23",
+   "AE JUGGER": "e6e45439312885d0b557fbeb8bc3c4516a38edd2",
+   "AE FFA KING": "964ddea14c3ad503846771126e7fe07842c940c1",
+   "AE CRAZYKNG": "83075577f71b05a1c04b0cb1a44a9784ece85331",
+   "AE RACE": "6ef7d3a5dd13d08dc8792641d4ed5344400798fe",
+   "AE RALLY": "446ff8325242dd19b70a5f9aa3548dab3eeda606",
+   "AE TRAINING": "a86902365bea5a7d3364db23818017db390e6f07",
+   "AE BR FFA": "217710314e8780f02cbaed9a2494e583dd1089f3",
+   "AE BR ELIM": "aabf5202c1f261598c249b2c05788da41f7b5101",
+   "AE BR ENDUR": "d19379cf1de2bed073c3a04fb5bbac1bf1478df0",
+   "AE BR FBALL": "57e8f6e5206bf65b87f34e1d073be6ab23bee6d2",
+   "AE BR JUGG": "c87f0bdd8ee1d06e26ca948baac27b30a9444eb5",
+   "AE BR FKING": "9086e00ed8b8c338bf1ce0566b61b3e16a88f6ce",
+   "AE BR CKING": "8f1aaf2ec813230a0250b59646b26d0b424810c6",
+   "AE BR PRAC": "0d2a96b5e58deb6e438e382cd263c23f3bea8fe9",
+   "AE BR TS": "39d77b9f0fd09243a158c590b940859daed6f5de",
+   "AE BR CTF": "0baf314695ceb47703b5eaac556933ee837881ad",
+   "AE BR KING": "e850aeb640ffb19c30cb16537b5296e4d598e787",
+   "AE BR TM OB": "9186156252c8dcb16ab1f4942614d64b4d8f16ce",
+   "AE BR 2V2 S": "22126cf0115ea4cf946336ca306f90cd5d5d3cbf",
+   "AE BR 2V2 C": "cfc14806ead38c8fbd46cddd3b119e99e9862de9",
+   "AE BR 2V2 K": "4e8302276d6ad1ec0cd148fb0024163a18add8bc",
+   "AE BR 2V2 B": "21fbddd1efbbb5297e275fe9817a42d98cc62cd7",
+   "AE OCT BR": "cbde8345f8bac8048715b766762f3babed164392",
+   "AE OCT BRSN": "a5f2d5b3bfcb6d56e7f65b29dcee06488ecc3c3b",
+   "AE OCT MAG": "be2d2393f4378509f95ae975e17e1ff4b470fe4c",
+   "AE OCT MGSN": "ef53b5989fd7b30d849d758f7349dd685b4ff3ad",
+   "AE OCT TBR": "b0da1dbdf34aa05745898884a25bc165ec615053",
+   "AE OCT TBSN": "f7f0a3e47770819f33c08cbc08d151e88b8ae60e",
+   "AE OCT TMAG": "e76d8fd5b0cfacccf9799ed55590bba557850449",
+   "AE OCT TMSN": "ee2073876b6a0b41adaa49858fda1983f0d07a76"
+  },
+  "golden": "golden_seeds_rev19.json",
+  "seed_rules": {}
+ },
+ {
+  "revision": 20,
+  "why": "the drills are no-grenade games: map grenades off too (owner 10-21 ask-me: OCTAGON DRILLS map grenades OFF)",
+  "decided": "owner, 2026-10-21",
+  "gametypes": [
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_no_map_grenades"
+   ]
+  ],
+  "adjusts": {
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades"
+  },
+  "old_block_hashes": {
+   "AE OCT BR": "e2ad7350bdec89197c6206de36d879a3760baaf9",
+   "AE OCT BRSN": "5163624a547b4bca900f7cda8dafdecabc3f0438",
+   "AE OCT MAG": "87c4ece73d551272279fd6feecd21acbc4c55d4e",
+   "AE OCT MGSN": "88a8cc5ef3da47d559fa74c2f8c05b33504bf492",
+   "AE OCT TBR": "5ed242fc2a068ceb4525a5f0cc5af2528437f755",
+   "AE OCT TBSN": "22c587c3e5c35a50fd5e9cf70f9034c7b4758e68",
+   "AE OCT TMAG": "4d2e6f32cb1cc69eec106b1aafc299d7648bde0e",
+   "AE OCT TMSN": "047e685dcf13bccd219a1fa005397c4cacc99585"
+  },
+  "golden": "golden_seeds_rev20.json",
+  "seed_rules": {}
+ },
+ {
+  "revision": 21,
+  "why": "CONTROLLER CROUCH STAYS DOWN in every AE gametype: a controller's held crouch keeps you down at full stick; the NHE set keeps HALO CE",
+  "decided": "owner, 2026-10-21",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE REV TAG",
+   "AE ACCUM",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE COMP FFA",
+   "AE COMP TS",
+   "AE COMP CTF",
+   "AE COMP KOH",
+   "AE COMP OB",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR RTAG",
+   "AE BR ACCUM",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR C FFA",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE BR C TS",
+   "AE BR C CTF",
+   "AE BR C KOH",
+   "AE BR C OB",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.flags.controller_crouch",
+    "1"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE FFA BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TEAM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE REV TAG": "arena_gametype_controller_crouch_stays_down",
+   "AE ACCUM": "arena_gametype_controller_crouch_stays_down",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE COMP FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE COMP TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE COMP CTF": "arena_gametype_controller_crouch_stays_down",
+   "AE COMP KOH": "arena_gametype_controller_crouch_stays_down",
+   "AE COMP OB": "arena_gametype_controller_crouch_stays_down",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR FBALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR RTAG": "arena_gametype_controller_crouch_stays_down",
+   "AE BR ACCUM": "arena_gametype_controller_crouch_stays_down",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR C FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR TM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down",
+   "AE BR C TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down",
+   "AE BR C CTF": "arena_gametype_controller_crouch_stays_down",
+   "AE BR C KOH": "arena_gametype_controller_crouch_stays_down",
+   "AE BR C OB": "arena_gametype_controller_crouch_stays_down",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "5890f916a0536e6a245e7ca6191e4f013bf6e24c",
+   "AE TEAM SLY": "64fe4ecad34b113c232dfd8c39c3c90dc0a4a991",
+   "AE CTF": "11c2141ceb71aa451034c277f68843319121edc6",
+   "AE KING": "51cd9e1fbe85d2dccde64afe7b16147bebdea66a",
+   "AE FFA BALL": "8c73ccb9de33cc635c1f9a86c4adb172a596242c",
+   "AE 2V2 SLY": "14e776730818987a648e88e2510bef73c9a8f7f5",
+   "AE 2V2 CTF": "c92b6548c6aa510e1160d38e1678f5db965d6225",
+   "AE 2V2 KING": "ebdeb2eb3af07126f91b1c5db9d3b1a56b7a3568",
+   "AE 2V2 BALL": "b441eeb5af7c5cf7da13466b1a567bede4c1b23a",
+   "AE TEAM OB": "6ef15842b964086f96035d0d380a40606ac738d7",
+   "AE PRACTICE": "bcb6c10d95d32118eb21addd3b6a5a3fb2ca24f9",
+   "AE SNIPERS": "f42ff59b8952a23235d8f8a491a40ed529fa6ab4",
+   "AE SHOTSNIP": "dda1384caf800de3b0844dc71d50f7c69fc2da81",
+   "AE SWAT": "22d41ea82a72834aa88e441a2600ece0b3c213e2",
+   "AE ROCKETS": "f4fea7a256eb10bbb3f3000b20df62c4cf44b9fc",
+   "AE SHOTGUNS": "43451972934716050a79d03263659a31044bd7e9",
+   "AE HEAVIES": "fb7ee7afcc205566eca745d318a09f1c229e37de",
+   "AE ELIM": "1baa009ece397504c7ddd4e48cd4a07802688b62",
+   "AE PHANTOMS": "2b446c6d3010a86c3dfbbe1716d5de85ba19da29",
+   "AE ENDURE": "2a0c66d35c0e6f78bed8da3fe36991d47d018c7c",
+   "AE FFA ROCK": "fe58144d4055d8017b91fa407c04ef9117252206",
+   "AE FFA SNPR": "87eba344ef6155c477ff517ab9b2cb12d0bfacc1",
+   "AE JUGGER": "f0066f926101c888155d6b52c39e3f724962b0a4",
+   "AE REV TAG": "2aeb8fe38bf8e57ce5ffbb0584af43a04263984c",
+   "AE ACCUM": "c77c09684e49d738a6930b6bb3f2054bf0144d50",
+   "AE STALKER": "4324c375e9b32dafc3ef979ef616bf8a93e99ea2",
+   "AE FFA KING": "a0f5ff707384f60fb51cbe5117f1862563a81e23",
+   "AE CRAZYKNG": "900b56551c6a400c4b1db008a1b8f8ece598759e",
+   "AE RACE": "d2c7a17136671715a007d4095fb9d7490dc816cc",
+   "AE RALLY": "40393d4450c014e500989c471970a60b3b1dde38",
+   "AE TRAINING": "9ff1fa3570c47b6c3a6f62dd8c2c2c767ffcdc60",
+   "AE COMP FFA": "706561368538f532ce782dcdfe960c4427dc1ffd",
+   "AE COMP TS": "01a53783a776786b8b3a41b94a388752a306bcae",
+   "AE COMP CTF": "c3cd2c801af6f8c8197f5ed66582c6ede497f2fc",
+   "AE COMP KOH": "cc8dd048145c559f430e1983118fc30766337840",
+   "AE COMP OB": "60c90d31217c8d1eaeed5392159ea1f6bf770392",
+   "AE BR FFA": "a0d31a797aaacba7a0859731918945a560abd265",
+   "AE BR ELIM": "f49e0b924b2eb9b34c00ecb62db7bbad093a6d0d",
+   "AE BR PHANT": "0f5d698be9f31379c12895fe6bbc1d70f2372ab7",
+   "AE BR ENDUR": "7f7f2b93e68b540bcf9e05fa5569929f595471c3",
+   "AE BR FBALL": "0ae84e1a3cda89493d8c2aa15aa756c5f71f543a",
+   "AE BR JUGG": "b40f5e966ab5c95b32ee43b6ac7268c64874aa54",
+   "AE BR RTAG": "57f0cd6e7eecb5e6713151642104fb15ac750f6c",
+   "AE BR ACCUM": "f404ce4821bba70de0fee6c08b7e3517e43089ab",
+   "AE BR STALK": "5d5d29d5e06bc8a27d53776b63232a5a1c4def90",
+   "AE BR FKING": "290fe80502a63e4fa3a7176d99a4edc9ba7aa381",
+   "AE BR CKING": "a3dfb3a793117cb49bcdf13cf0bfcae7fa9055fb",
+   "AE BR PRAC": "29d44400662f5e0935079932bf787ef5184fea87",
+   "AE BR C FFA": "73c5f24784fb04ea703a8138d20918622c73ecfb",
+   "AE BR TS": "e5df36907bfcf12c3898075268de56ce98d04fef",
+   "AE BR CTF": "9102f7b6f71cf2a7e869c4c67a9e756f82bbe491",
+   "AE BR KING": "c42a9e36c854fd019b919a33664f9b4adc8a4d80",
+   "AE BR TM OB": "aa9231a6061a2aaaeee344ba55c895c8179093dd",
+   "AE BR 2V2 S": "c61b556a4e66b8260783de19fc0859872efee165",
+   "AE BR 2V2 C": "e964489d531c1971ee65e191fbc8253fca77bf3b",
+   "AE BR 2V2 K": "d391b379fa9cb044cf45e0570fa78235db28fb0a",
+   "AE BR 2V2 B": "92e7504da998858d0575d1e8c789d192c263ad39",
+   "AE BR C TS": "089c49703f6fca408e5f291117958f77bbd00454",
+   "AE BR C CTF": "74f4db7c6d74500a9245e8d5770c364499e83126",
+   "AE BR C KOH": "8ed1b8f04fa68e42402b81da2e39ae13a4813eb3",
+   "AE BR C OB": "f140eef05c0364e24b046b8f4ba27fe83618f89f",
+   "AE OCT BR": "cff736ee40ee1ed438c608ff7f2876d433cc717b",
+   "AE OCT BRSN": "083627ec3b599329d156c350430f07e48e0438bd",
+   "AE OCT MAG": "08a1a6dd9b6587d5170c6fa77216ec40d508f8ae",
+   "AE OCT MGSN": "117aa706a3136d5beb1cf4f483cb48330179f7c4",
+   "AE OCT TBR": "6465a8201dcaa0072527557d6ee931e35422912d",
+   "AE OCT TBSN": "8529e833658548712f4010a8a3392d93a314330b",
+   "AE OCT TMAG": "a0e74bf9be1a67022b4ca314c76f02018b1d4b58",
+   "AE OCT TMSN": "da90bfd5796c7a7031152b4aee42da5d9b249c8e"
+  },
+  "golden": "golden_seeds_rev21.json",
+  "seed_rules": {
+   "AE FFA SLAY": {
+    "controller crouch": "stays down"
+   },
+   "AE TEAM SLY": {
+    "controller crouch": "stays down"
+   },
+   "AE CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE KING": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA BALL": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 SLY": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 KING": {
+    "controller crouch": "stays down"
+   },
+   "AE 2V2 BALL": {
+    "controller crouch": "stays down"
+   },
+   "AE TEAM OB": {
+    "controller crouch": "stays down"
+   },
+   "AE PRACTICE": {
+    "controller crouch": "stays down"
+   },
+   "AE SNIPERS": {
+    "controller crouch": "stays down"
+   },
+   "AE SHOTSNIP": {
+    "controller crouch": "stays down"
+   },
+   "AE SWAT": {
+    "controller crouch": "stays down"
+   },
+   "AE ROCKETS": {
+    "controller crouch": "stays down"
+   },
+   "AE SHOTGUNS": {
+    "controller crouch": "stays down"
+   },
+   "AE HEAVIES": {
+    "controller crouch": "stays down"
+   },
+   "AE ELIM": {
+    "controller crouch": "stays down"
+   },
+   "AE PHANTOMS": {
+    "controller crouch": "stays down"
+   },
+   "AE ENDURE": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA ROCK": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA SNPR": {
+    "controller crouch": "stays down"
+   },
+   "AE JUGGER": {
+    "controller crouch": "stays down"
+   },
+   "AE REV TAG": {
+    "controller crouch": "stays down"
+   },
+   "AE ACCUM": {
+    "controller crouch": "stays down"
+   },
+   "AE STALKER": {
+    "controller crouch": "stays down"
+   },
+   "AE FFA KING": {
+    "controller crouch": "stays down"
+   },
+   "AE CRAZYKNG": {
+    "controller crouch": "stays down"
+   },
+   "AE RACE": {
+    "controller crouch": "stays down"
+   },
+   "AE RALLY": {
+    "controller crouch": "stays down"
+   },
+   "AE TRAINING": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP TS": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP KOH": {
+    "controller crouch": "stays down"
+   },
+   "AE COMP OB": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ELIM": {
+    "controller crouch": "stays down"
+   },
+   "AE BR PHANT": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ENDUR": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FBALL": {
+    "controller crouch": "stays down"
+   },
+   "AE BR JUGG": {
+    "controller crouch": "stays down"
+   },
+   "AE BR RTAG": {
+    "controller crouch": "stays down"
+   },
+   "AE BR ACCUM": {
+    "controller crouch": "stays down"
+   },
+   "AE BR STALK": {
+    "controller crouch": "stays down"
+   },
+   "AE BR FKING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR CKING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR PRAC": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C FFA": {
+    "controller crouch": "stays down"
+   },
+   "AE BR TS": {
+    "controller crouch": "stays down"
+   },
+   "AE BR CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE BR KING": {
+    "controller crouch": "stays down"
+   },
+   "AE BR TM OB": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 S": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 C": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 K": {
+    "controller crouch": "stays down"
+   },
+   "AE BR 2V2 B": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C TS": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C CTF": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C KOH": {
+    "controller crouch": "stays down"
+   },
+   "AE BR C OB": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT BR": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT BRSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT MAG": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT MGSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TBR": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TBSN": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TMAG": {
+    "controller crouch": "stays down"
+   },
+   "AE OCT TMSN": {
+    "controller crouch": "stays down"
+   }
+  }
+ },
+ {
+  "revision": 22,
+  "why": "feel rules as host gametype rules: a melee while zoomed takes the zoom off (MELEE UNZOOMS ON) and no aim assist for the mouse (MOUSE AIM ASSIST OFF) in every AE gametype; the NHE set and stock gametypes keep Halo CE's",
+  "decided": "owner, 2026-10-22",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE REV TAG",
+   "AE ACCUM",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE COMP FFA",
+   "AE COMP TS",
+   "AE COMP CTF",
+   "AE COMP KOH",
+   "AE COMP OB",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR RTAG",
+   "AE BR ACCUM",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR C FFA",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE BR C TS",
+   "AE BR C CTF",
+   "AE BR C KOH",
+   "AE BR C OB",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.flags.melee_unzoom",
+    "1"
+   ],
+   [
+    "set",
+    "universal_variant.flags.mouse_aim_assist_off",
+    "1"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE FFA BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE TEAM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE REV TAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE COMP FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE COMP TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE COMP CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE COMP KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE COMP OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR FBALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR RTAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR C FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR TM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR C TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR C CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR C KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE BR C OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "1f87bb56be6fb6359aaa10f6fff25889f29c18d1",
+   "AE TEAM SLY": "4012b98cbec50481819a6164218b5b48dc83cf7d",
+   "AE CTF": "4b17eb54b3dc430344c5d1cba162e80bf4278450",
+   "AE KING": "e2bcccc9719e15b4174654f12f4e4adb5a0ba358",
+   "AE FFA BALL": "a4a6e2fc14e267f774441fc7a15bcf57c808019a",
+   "AE 2V2 SLY": "c1f7d774695192bd148c71cbc8a4037d8b1cdd95",
+   "AE 2V2 CTF": "8e4516851a028f5a9c1627eb1b4e5f0198b8b6ec",
+   "AE 2V2 KING": "e32cab2451e6317126d39ac6cc7c34976ddb4e45",
+   "AE 2V2 BALL": "c5d7babb28d7e496f3961f881d1cdd2ffb275f9c",
+   "AE TEAM OB": "777a48745f3fe2ca7f3124e81000b611709e43d9",
+   "AE PRACTICE": "359f21de33e10fb608026dde4eb596392e4b6381",
+   "AE SNIPERS": "6a3db22995727552c8af5cb1e677ca26dc94ccb0",
+   "AE SHOTSNIP": "97d9ebdf3cc0fb4717bbcfcb924f5804b04a4d51",
+   "AE SWAT": "e19f91ff7317adde68427491dba30fddf2177948",
+   "AE ROCKETS": "317b25bcd1cb9b8b31f35a83d5114c65b8889b31",
+   "AE SHOTGUNS": "ca8d836b32e5fd9a865b3faaf29c8f89a2cbe7e1",
+   "AE HEAVIES": "47f0b1463a0d39cb9df842de24b48f33f9cbb3e9",
+   "AE ELIM": "3933f91638c2cc8ead8782b7f5e9d684acda4ae1",
+   "AE PHANTOMS": "ee083233ba9bc84afdab74a326e48544f1c72b03",
+   "AE ENDURE": "b50e9d8a169386f36b04c366b0dee9fcf3861e6a",
+   "AE FFA ROCK": "5e11c6ced0dcbe6d7ffaf6cd7bcff870e9ade920",
+   "AE FFA SNPR": "b4285b52abbc0ed20762420b15cc22f89cb03bf6",
+   "AE JUGGER": "37af82096cfd91d1a268f74268e20d58ce7dccc7",
+   "AE REV TAG": "15ed0b9c209193ba746d9e9de16d7ab26d948f10",
+   "AE ACCUM": "3b92c5742e46ffcf7ce31fcd51f114a0b320a4ba",
+   "AE STALKER": "9b5990be9d277a8e1e3209b83ea57c34b21a456a",
+   "AE FFA KING": "7de6957027b924a23ebbebed20a84a3e63ec9f2a",
+   "AE CRAZYKNG": "5e119b0f6e943a4c1ac951900d228146c9ddd6e4",
+   "AE RACE": "fc5d81fb548d839ab101de073dd7f605aae8b172",
+   "AE RALLY": "6d3e64d44210c2e01c41bea090a654cdd472a262",
+   "AE TRAINING": "ad8e7008e8d76e72cd23c8f73b3f81e7875499b8",
+   "AE COMP FFA": "6fd9e1b83fcd419adfa70bb72118d5f6e768e7e7",
+   "AE COMP TS": "70107639e6f95a99af54eb331c72c5316fd09e93",
+   "AE COMP CTF": "09e24f6f8cf98cd8c8e8d741f77c7f6ca35c720f",
+   "AE COMP KOH": "3f9486533bd71d9da7cb304d65f3effbc76850d4",
+   "AE COMP OB": "f9244c2abcb2036a31be2c745236da4395040e20",
+   "AE BR FFA": "dfc7587310f934982a62b64442715166375207f4",
+   "AE BR ELIM": "cee0557ba20c65c74024ee5a5144f2592bff5eeb",
+   "AE BR PHANT": "8850f7c7fe6d8bd1d267cd564986d6726f48fdab",
+   "AE BR ENDUR": "44ae9957299c6b3a31edeb57986a6585ea4d685f",
+   "AE BR FBALL": "61d4133ab471d0aaac6ada0e2b65dca8cd0c4cd0",
+   "AE BR JUGG": "968824359c63a9c8fba3a1e0df00f51ffd01592f",
+   "AE BR RTAG": "dfad27622947c8f43780cac4dd0bcac9c68b4e70",
+   "AE BR ACCUM": "9109f0cb593ef64ef502cd2e6a14269b6a2dcf54",
+   "AE BR STALK": "9cd186319111a84f46e21292cdb53e40fa05a658",
+   "AE BR FKING": "8fdaed1b278460ce20b06047484e255c4000457d",
+   "AE BR CKING": "deb6b23564287f97640c82d439e1cb21912ddee7",
+   "AE BR PRAC": "8c0f8f7dbd5c229d28dd116c752ccdb61929d85c",
+   "AE BR C FFA": "39cdf54e9b8e89b51372692bd1fd7c9314c7f39f",
+   "AE BR TS": "73bac1f03ccfbbb50aaa76c5cfa4804474c75384",
+   "AE BR CTF": "490125a5b9d08d19873d6802c4f32dd6a158cc69",
+   "AE BR KING": "9b4e54fdf88b869da284118266b805ba506fcf4b",
+   "AE BR TM OB": "d493dce6632c14604de5821e9c2f2f3e98cbc734",
+   "AE BR 2V2 S": "9d97a34ea16529021fade8155636a3b52635d07b",
+   "AE BR 2V2 C": "b3813919f4a806cc8f80e76393dae523859dcb43",
+   "AE BR 2V2 K": "28865b55b7fda6376cd896627c26b1e9fc9e6e33",
+   "AE BR 2V2 B": "66d2ac5de973898163839df542042b8f71a82872",
+   "AE BR C TS": "f44a98eb53bf2bf592802ac826a4a622ed3a7c5d",
+   "AE BR C CTF": "6cd87d09119d73fd1ec14b00ac9e0d05427b8d0d",
+   "AE BR C KOH": "ec9c18ae43d326571b2209d3299ca31798479632",
+   "AE BR C OB": "1ecc4a761be8f0b13720b1bb7ac4cf504024cf2a",
+   "AE OCT BR": "d7d6b1e5cb1128d2fadd059e9b18dcfacb07dd18",
+   "AE OCT BRSN": "7961a1ffd3bf978dbef5f256860442302f05af15",
+   "AE OCT MAG": "bf5379c1b0b2f6c910ef6325489a8db4bb939f61",
+   "AE OCT MGSN": "e2b9d2465ad59cb2392b113f2f174eed29b200a6",
+   "AE OCT TBR": "d9184f7d3d081d856e13765a47a4e4ccaf9e2dd8",
+   "AE OCT TBSN": "1cc4be17a4610f63c0ef47ec62683f55b33756be",
+   "AE OCT TMAG": "6bd8849bdc81586d9fdff4c0dc4f7e2a519973ba",
+   "AE OCT TMSN": "25e1f853801ec6ccce354cb33c7cd75fc5873dbb"
+  },
+  "golden": "golden_seeds_rev22.json",
+  "seed_rules": {
+   "AE FFA SLAY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE TEAM SLY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE KING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE FFA BALL": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE 2V2 SLY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE 2V2 CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE 2V2 KING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE 2V2 BALL": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE TEAM OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE PRACTICE": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE SNIPERS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE SHOTSNIP": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE SWAT": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE ROCKETS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE SHOTGUNS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE HEAVIES": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BTB SLY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BTB CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BTB KING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BTB BALL": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BTB HVY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE ELIM": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE PHANTOMS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE ENDURE": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE FFA ROCK": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE FFA SNPR": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE JUGGER": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE REV TAG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE ACCUM": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE STALKER": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE FFA KING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE CRAZYKNG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE RACE": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE RALLY": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE TRAINING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE COMP FFA": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE COMP TS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE COMP CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE COMP KOH": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE COMP OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE C2V2 TS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE C2V2 CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE C2V2 KOH": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE C2V2 OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR FFA": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR ELIM": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR PHANT": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR ENDUR": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR FBALL": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR JUGG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR RTAG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR ACCUM": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR STALK": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR FKING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR CKING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR PRAC": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C FFA": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR TS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR KING": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR TM OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR 2V2 S": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR 2V2 C": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR 2V2 K": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR 2V2 B": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C TS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C KOH": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR BTB S": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR BTB C": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR BTB K": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR BTB B": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR BTB H": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C2 TS": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C2CTF": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C2KOH": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE BR C2 OB": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT BR": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT BRSN": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT MAG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT MGSN": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT TBR": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT TBSN": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT TMAG": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   },
+   "AE OCT TMSN": {
+    "melee unzooms": "on",
+    "mouse aim assist": "off"
+   }
+  },
+  "added_seeds": [
+   "AE BR BTB B",
+   "AE BR BTB C",
+   "AE BR BTB H",
+   "AE BR BTB K",
+   "AE BR BTB S",
+   "AE BR C2 OB",
+   "AE BR C2 TS",
+   "AE BR C2CTF",
+   "AE BR C2KOH",
+   "AE BTB BALL",
+   "AE BTB CTF",
+   "AE BTB HVY",
+   "AE BTB KING",
+   "AE BTB SLY",
+   "AE C2V2 CTF",
+   "AE C2V2 KOH",
+   "AE C2V2 OB",
+   "AE C2V2 TS"
+  ]
+ },
+ {
+  "revision": 23,
+  "why": "VEHICLES DESTRUCTIBLE ON in every AE gametype with vehicles (vehicle set not NONE): explosives only, no death while occupied",
+  "decided": "owner, 2026-10-22",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE BTB SLY",
+   "AE BTB CTF",
+   "AE BTB KING",
+   "AE BTB BALL",
+   "AE BTB HVY",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE TRAINING",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR JUGG",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR BTB S",
+   "AE BR BTB C",
+   "AE BR BTB K",
+   "AE BR BTB B",
+   "AE BR BTB H",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "set",
+    "universal_variant.flags.vehicles_destructible",
+    "1"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BTB HVY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE BR BTB H": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "de0430e4b099e93e1ebc6c5b4a66ff373fbc41a1",
+   "AE TEAM SLY": "a4945a40e235054cdb60ce66599b5200e1202559",
+   "AE CTF": "63f372d8e49932c19b218f9fd8471525355a3d41",
+   "AE KING": "73cd136639528fbeb690d87f35231464b330e90a",
+   "AE 2V2 SLY": "7f609722501858b4ac149a07220718f4456fa9bb",
+   "AE 2V2 CTF": "76fce9fd59706d1b0a734661db88d79fba3ee093",
+   "AE 2V2 KING": "587f805882f18fae7b8b7609ad6464a7b2bd8e40",
+   "AE PRACTICE": "f511be7c89a387448a01994006affc2b24c6ed8a",
+   "AE SNIPERS": "6053f3874e4b10fb36699a801f73143566c00723",
+   "AE SHOTSNIP": "a4983f7585f8654cb4e272aa96ff8d659906c511",
+   "AE SWAT": "30d184b61e40d3ba9390447aa8adbe726ca9bedb",
+   "AE ROCKETS": "73eb54e07cfe30f96a7f37f94e1ade335446f457",
+   "AE SHOTGUNS": "c617708dd9be34b2951c04ca393d69d19101b612",
+   "AE HEAVIES": "944e12d70cff4f99ec6e83ec8e6ab168f022d22b",
+   "AE BTB SLY": "a58a79132767857590a73f8026c027e94a0c847c",
+   "AE BTB CTF": "de63b999fcb582d0c2e140f28b43389771b66325",
+   "AE BTB KING": "1c0a838d82c34c69e5b65fb267cfd9aa0710b701",
+   "AE BTB BALL": "aff7390121986def6e69935c5fe2323e08e3d143",
+   "AE BTB HVY": "8fbd40ce92e3306ce96fcab19112787e379a1791",
+   "AE ELIM": "3b624f82187c38f9e4d4f8449a89dc115202810c",
+   "AE PHANTOMS": "ebd9d22a4f406d1b869d89ce8cc76f56deeb1c48",
+   "AE ENDURE": "867f68f4fc88cf3aba551ba493757d67cf56cc0d",
+   "AE FFA ROCK": "c656d6fd3b5d7efac72cc0890a180aedbe100cb2",
+   "AE FFA SNPR": "67325072f76c089e4eca70156ca5eb0ccd984789",
+   "AE JUGGER": "07c0efafa2daf5fbbf04d322544465e2dad2763a",
+   "AE STALKER": "0c313e475cb4c1b6da621bff0d78e3fd4f1077d7",
+   "AE FFA KING": "705cd1bf16f190b7b6ac5402402df769513a936b",
+   "AE CRAZYKNG": "bf37bc29b125c6d5b6c70e5dd8c2c9b006333a37",
+   "AE RACE": "142a5b2baeb6ec2d2801993ad0e26883d39c89d1",
+   "AE RALLY": "8e0bdb4fdc35f4a2f43cbfe2e320bc41db4c1198",
+   "AE TRAINING": "c6822e450a2d066e86af80b79007c3a866d129a4",
+   "AE BR FFA": "4cdceb05679a77b3bbc91e26306b6c700e365414",
+   "AE BR ELIM": "cb3c9e8464748650ccc112ee3be54ade4500f041",
+   "AE BR PHANT": "7d42a1220d91a5352a70e81876bcfa01846a302a",
+   "AE BR ENDUR": "1f5f76fb85dee3fab86b305c8ef83fa34f66c11c",
+   "AE BR JUGG": "25e66f3cbf11e459c8122304c1df662ab70f67cb",
+   "AE BR STALK": "145c685426078e953bd9e8882c0d30aa2a6ebc2e",
+   "AE BR FKING": "901fe461b96040a5f4a35e07f5ed1421638a6971",
+   "AE BR CKING": "c9fe8d76d3d3eb6cba01c64f49c7ba7f3b78b3c8",
+   "AE BR PRAC": "8c63b3971fb6794d7bdcb73d2f56b79259aecbef",
+   "AE BR TS": "f14ea297be59a9dacdb115f6cc64ae1fe6df8458",
+   "AE BR CTF": "2dfaeb46d0b1a137f085acaba824cf1d385590a1",
+   "AE BR KING": "d53223a6baca0f8d051259f18bfa0f1f1d032002",
+   "AE BR 2V2 S": "0565873144b43cd04bea86c1ded5a0ccf6604f42",
+   "AE BR 2V2 C": "182a03ad09a4a8db5afd75bd8b70914d75a011d9",
+   "AE BR 2V2 K": "df3068d59c19c0ac24d44c68433b6c5b0679f97e",
+   "AE BR BTB S": "39de516acf7081af11e3a6f194b0103af4f1de20",
+   "AE BR BTB C": "08f5afa0e68c45dbcf1449b57e8374c937e779f8",
+   "AE BR BTB K": "10bb0c58145dbfaeb96468690af43f525c8670b3",
+   "AE BR BTB B": "53ca79c4b50924833d1359a0b86d5704db771d1b",
+   "AE BR BTB H": "e9a9a86609baba5d7fa184f8d04982c06e77a7d9",
+   "AE OCT BR": "4d290642ebcfcd54b2c95e79efa133efd58cf185",
+   "AE OCT BRSN": "31712e1ebce2014994d923f7ed2f062ca9f11f67",
+   "AE OCT MAG": "5154b528007b8b3ecd962cc486e020c5c1321a61",
+   "AE OCT MGSN": "adcb641139383fd9fdeee317ba503efbe6148341",
+   "AE OCT TBR": "222042fb6fa6abaf51b5d1ba2d62b8ab89606405",
+   "AE OCT TBSN": "4a72930448aa42d3706fca831170790370ab4f6a",
+   "AE OCT TMAG": "38ab72148f2ab7f1c783fd3e9a885bd5a62e3164",
+   "AE OCT TMSN": "edfaf9cdeec6134709e88a869b1e400186b7ffcd"
+  },
+  "golden": "golden_seeds_rev23.json",
+  "seed_rules": {
+   "AE FFA SLAY": {
+    "vehicles destructible": "on"
+   },
+   "AE TEAM SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE KING": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE 2V2 KING": {
+    "vehicles destructible": "on"
+   },
+   "AE PRACTICE": {
+    "vehicles destructible": "on"
+   },
+   "AE SNIPERS": {
+    "vehicles destructible": "on"
+   },
+   "AE SHOTSNIP": {
+    "vehicles destructible": "on"
+   },
+   "AE SWAT": {
+    "vehicles destructible": "on"
+   },
+   "AE ROCKETS": {
+    "vehicles destructible": "on"
+   },
+   "AE SHOTGUNS": {
+    "vehicles destructible": "on"
+   },
+   "AE HEAVIES": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB SLY": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB KING": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB BALL": {
+    "vehicles destructible": "on"
+   },
+   "AE BTB HVY": {
+    "vehicles destructible": "on"
+   },
+   "AE ELIM": {
+    "vehicles destructible": "on"
+   },
+   "AE PHANTOMS": {
+    "vehicles destructible": "on"
+   },
+   "AE ENDURE": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA ROCK": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA SNPR": {
+    "vehicles destructible": "on"
+   },
+   "AE JUGGER": {
+    "vehicles destructible": "on"
+   },
+   "AE STALKER": {
+    "vehicles destructible": "on"
+   },
+   "AE FFA KING": {
+    "vehicles destructible": "on"
+   },
+   "AE CRAZYKNG": {
+    "vehicles destructible": "on"
+   },
+   "AE RACE": {
+    "vehicles destructible": "on"
+   },
+   "AE RALLY": {
+    "vehicles destructible": "on"
+   },
+   "AE TRAINING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR FFA": {
+    "vehicles destructible": "on"
+   },
+   "AE BR ELIM": {
+    "vehicles destructible": "on"
+   },
+   "AE BR PHANT": {
+    "vehicles destructible": "on"
+   },
+   "AE BR ENDUR": {
+    "vehicles destructible": "on"
+   },
+   "AE BR JUGG": {
+    "vehicles destructible": "on"
+   },
+   "AE BR STALK": {
+    "vehicles destructible": "on"
+   },
+   "AE BR FKING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR CKING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR PRAC": {
+    "vehicles destructible": "on"
+   },
+   "AE BR TS": {
+    "vehicles destructible": "on"
+   },
+   "AE BR CTF": {
+    "vehicles destructible": "on"
+   },
+   "AE BR KING": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 S": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 C": {
+    "vehicles destructible": "on"
+   },
+   "AE BR 2V2 K": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB S": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB C": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB K": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB B": {
+    "vehicles destructible": "on"
+   },
+   "AE BR BTB H": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT BR": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT BRSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT MAG": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT MGSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TBR": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TBSN": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TMAG": {
+    "vehicles destructible": "on"
+   },
+   "AE OCT TMSN": {
+    "vehicles destructible": "on"
+   }
+  }
+ },
+ {
+  "revision": 25,
+  "why": "FRIENDLY SPLATTER FAST ONLY (a teammate is hurt by a vehicle only when it hits fast) and the 5 shipped weapon packs on in every AE gametype",
+  "decided": "owner, 2026-10-26",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE BTB SLY",
+   "AE BTB CTF",
+   "AE BTB KING",
+   "AE BTB BALL",
+   "AE BTB HVY",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE REV TAG",
+   "AE ACCUM",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE GRIFBALL",
+   "AE BOMB",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR RTAG",
+   "AE BR ACCUM",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE BR BTB S",
+   "AE BR BTB C",
+   "AE BR BTB K",
+   "AE BR BTB B",
+   "AE BR BTB H"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_friendly_splatter_fast"
+   ],
+   [
+    "call",
+    "arena_gametype_weapon_packs_on"
+   ]
+  ],
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE FFA BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE TEAM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BTB SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BTB CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BTB KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BTB BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BTB HVY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE REV TAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE GRIFBALL": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BOMB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR FBALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR RTAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR TM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR BTB S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR BTB C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR BTB K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR BTB B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on",
+   "AE BR BTB H": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "878140360ae65621b066e05925077210fa198bbb",
+   "AE TEAM SLY": "193eed50b3a1c9a6e0378cc336647c6fc66aa833",
+   "AE CTF": "f2bec0a68f83836d514a4582d8ed14b6c462a548",
+   "AE KING": "6dd5c92a194b4bd2a3b323802dcdca2adf89ac6b",
+   "AE FFA BALL": "e1c21f08c73ab8dd45bbe351b7912e9a85fd85af",
+   "AE 2V2 SLY": "3aec765ba1c5e3595abae8c361d2561874914c72",
+   "AE 2V2 CTF": "103d7a1c7c0627e02730ee37731b71091ca03707",
+   "AE 2V2 KING": "2be92480b62e4dd0e302a0d7dfa24d81f1f939b8",
+   "AE 2V2 BALL": "8e2d5cbf90d171e0571a74d13d69ec5ed1b04e20",
+   "AE TEAM OB": "2792e6b71081b619c03e8d4b6eac22637d64a5a5",
+   "AE PRACTICE": "54ea9fddb650ecc00bdca1ebd3537ff12f984d79",
+   "AE SNIPERS": "da2a5779df4d1aaf58327d17ee682dbf62a15721",
+   "AE SHOTSNIP": "b5442eabaede2d152a36534e2fc811ee782061a9",
+   "AE SWAT": "632f0feee36110566c04ab8350cb892cc529f2de",
+   "AE ROCKETS": "796bd5c666447fcca55d3fbb8b8fa130e416bcf8",
+   "AE SHOTGUNS": "a72e3d7627660b059c1e473a111d0adb011dd1c8",
+   "AE HEAVIES": "fec91b0945bf2ffe9c11f0979551c2a805b6854b",
+   "AE BTB SLY": "37956aa4d4d66a01330df5893a2c699345daccd4",
+   "AE BTB CTF": "c957aa6cf885e49f3d5b7317e02aaad507b920d7",
+   "AE BTB KING": "5d8880ae89aaaacd4232016b12fcbebdf43cfedb",
+   "AE BTB BALL": "ce0bbc5de034a011ddc7ea79473607879fa4f2ae",
+   "AE BTB HVY": "76d46cdda4fb233cb064e031c32d08e98b27b791",
+   "AE ELIM": "61fc900e21c259ac6b95ed24cfbb46145847c980",
+   "AE PHANTOMS": "2cee7dfd8526a1e4f3ad0add65c78406ee737281",
+   "AE ENDURE": "1668d67787c79c9c0a15af6d9648e750f7073748",
+   "AE FFA ROCK": "7347b6e978b65ac0c5d6792b02ced46f1b7ed740",
+   "AE FFA SNPR": "8f59f1f037470969596f0c041045137fff1d93e2",
+   "AE JUGGER": "8075389aaea912c593630f5c6087f38bb6b2fc6a",
+   "AE REV TAG": "dac4bd6280dd50946d1a8efe27973c927f7ceb73",
+   "AE ACCUM": "de9d8f4cd75785db6489614efa55b770eeee3f0a",
+   "AE STALKER": "f988b7b598a96b0dfe9e972b823ac7d3582c473a",
+   "AE FFA KING": "5eeadf93c386dbe0911032e19ba70b9c7f2c41a7",
+   "AE CRAZYKNG": "52354c29aaebfa3c1574f8c671d1e5e193eef87e",
+   "AE RACE": "9abd17f5886a7b2de1b90c5f94adf159d165f0a9",
+   "AE RALLY": "9d64466686004a37519b98e380059e94212b74a0",
+   "AE GRIFBALL": "06ad06d77ff8c2eda3759ab14499ef078b70f698",
+   "AE BOMB": "05623692989e635d3c99a22b26375c393ca91071",
+   "AE BR FFA": "66d440343947083d3e26da60b3826daca17be553",
+   "AE BR ELIM": "79e7288199a17aa6385ea850a900a4c521e01e96",
+   "AE BR PHANT": "88e840bcae16b06a31194390f664be722f075114",
+   "AE BR ENDUR": "1dac2db6a9ba817adcb67144714d34060de0a237",
+   "AE BR FBALL": "76a7f6d4e8b92116303bc99fd23f4fbb507d4441",
+   "AE BR JUGG": "8c721ebe61a73bf7f0bc94f20ecacda842f8aee0",
+   "AE BR RTAG": "ae25d8adc295e91076830fa83f600fe3fba01d37",
+   "AE BR ACCUM": "0c2ffd6aad48f233be4464de8870ea609c9204a1",
+   "AE BR STALK": "5011525a0d9a4ba120ef68956d021878b1ea5c76",
+   "AE BR FKING": "f26f22a65caba620025bc95e6da17e8b93313cd6",
+   "AE BR CKING": "565f9ada6bde6edd3d355ed664dbc1e55a7acbc4",
+   "AE BR PRAC": "f107e36faf53e20c8e77a59ac5afacf1a388e99b",
+   "AE BR TS": "03c8748020dcdaa0f32f521d702ae9c7175df0de",
+   "AE BR CTF": "134153f863864e7880f9cd4f5df00d7c675dffbc",
+   "AE BR KING": "093fba4b14583759a91570daf13be2cc4d8c3630",
+   "AE BR TM OB": "b9ebb079e297f9c489550ffd7c948cea890d1e43",
+   "AE BR 2V2 S": "f09a031a1ea959e12cfcae168d7aaef9bd53a1d2",
+   "AE BR 2V2 C": "e837405bcf8d40a671cac629a28b1280aeffc4d7",
+   "AE BR 2V2 K": "f1a9a2435f8f14ada6672ca49304bf4a7f05ab40",
+   "AE BR 2V2 B": "df41b6eb1eac5e6e1bf4b02c5be1f2f4af829f67",
+   "AE BR BTB S": "c8012f288e1a90ab48bea45453ef216650fd680f",
+   "AE BR BTB C": "1f18a628788bd572776ab4ee7cccc282a1d730b4",
+   "AE BR BTB K": "0b8a13bcfcdf17717af1f28b4d2810c71528c93c",
+   "AE BR BTB B": "b3bad6639e7dcd4be32f81c7eee2a224a092beea",
+   "AE BR BTB H": "1dec3048b54fbf11ee90404b97d34024d52a1128"
+  },
+  "golden": "golden_seeds_rev25.json",
+  "seed_rules": {}
+ },
+ {
+  "revision": 27,
+  "why": "AE MODERN SPAWNS in every AE gametype (the NHE set and the stock gametypes keep CLASSIC); the EVO rifle start in the AE BTB and AE COMP sets",
+  "decided": "owner, 2026-10-30",
+  "gametypes": [
+   "AE FFA SLAY",
+   "AE TEAM SLY",
+   "AE CTF",
+   "AE KING",
+   "AE FFA BALL",
+   "AE 2V2 SLY",
+   "AE 2V2 CTF",
+   "AE 2V2 KING",
+   "AE 2V2 BALL",
+   "AE TEAM OB",
+   "AE PRACTICE",
+   "AE SNIPERS",
+   "AE SHOTSNIP",
+   "AE SWAT",
+   "AE ROCKETS",
+   "AE SHOTGUNS",
+   "AE HEAVIES",
+   "AE BTB SLY",
+   "AE BTB CTF",
+   "AE BTB KING",
+   "AE BTB BALL",
+   "AE BTB HVY",
+   "AE ELIM",
+   "AE PHANTOMS",
+   "AE ENDURE",
+   "AE FFA ROCK",
+   "AE FFA SNPR",
+   "AE JUGGER",
+   "AE REV TAG",
+   "AE ACCUM",
+   "AE STALKER",
+   "AE FFA KING",
+   "AE CRAZYKNG",
+   "AE RACE",
+   "AE RALLY",
+   "AE GRIFBALL",
+   "AE BOMB",
+   "AE SND",
+   "AE TRAINING",
+   "AE COMP FFA",
+   "AE COMP TS",
+   "AE COMP CTF",
+   "AE COMP KOH",
+   "AE COMP OB",
+   "AE C2V2 TS",
+   "AE C2V2 CTF",
+   "AE C2V2 KOH",
+   "AE C2V2 OB",
+   "AE BR FFA",
+   "AE BR ELIM",
+   "AE BR PHANT",
+   "AE BR ENDUR",
+   "AE BR FBALL",
+   "AE BR JUGG",
+   "AE BR RTAG",
+   "AE BR ACCUM",
+   "AE BR STALK",
+   "AE BR FKING",
+   "AE BR CKING",
+   "AE BR PRAC",
+   "AE BR C FFA",
+   "AE BR TS",
+   "AE BR CTF",
+   "AE BR KING",
+   "AE BR TM OB",
+   "AE BR 2V2 S",
+   "AE BR 2V2 C",
+   "AE BR 2V2 K",
+   "AE BR 2V2 B",
+   "AE BR C TS",
+   "AE BR C CTF",
+   "AE BR C KOH",
+   "AE BR C OB",
+   "AE BR BTB S",
+   "AE BR BTB C",
+   "AE BR BTB K",
+   "AE BR BTB B",
+   "AE BR BTB H",
+   "AE BR C2 TS",
+   "AE BR C2CTF",
+   "AE BR C2KOH",
+   "AE BR C2 OB",
+   "AE OCT BR",
+   "AE OCT BRSN",
+   "AE OCT MAG",
+   "AE OCT MGSN",
+   "AE OCT TBR",
+   "AE OCT TBSN",
+   "AE OCT TMAG",
+   "AE OCT TMSN"
+  ],
+  "row": {},
+  "steps": [
+   [
+    "call",
+    "arena_gametype_spawns_modern"
+   ]
+  ],
+  "also": {
+   "AE COMP FFA": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE COMP TS": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE COMP CTF": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE COMP KOH": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE COMP OB": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE C2V2 TS": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE C2V2 CTF": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE C2V2 KOH": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE C2V2 OB": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE BTB SLY": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE BTB CTF": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE BTB KING": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE BTB BALL": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ],
+   "AE BTB HVY": [
+    [
+     "call",
+     "arena_gametype_evo_start"
+    ]
+   ]
+  },
+  "adjusts": {
+   "AE FFA SLAY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE TEAM SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE FFA BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE 2V2 SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE 2V2 CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE 2V2 KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE 2V2 BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE TEAM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE PRACTICE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE SNIPERS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE SHOTSNIP": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE SWAT": "arena_gametype_no_speed_changes_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE ROCKETS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE SHOTGUNS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE HEAVIES": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BTB SLY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern_and_evo_start",
+   "AE BTB CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern_and_evo_start",
+   "AE BTB KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern_and_evo_start",
+   "AE BTB BALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern_and_evo_start",
+   "AE BTB HVY": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern_and_evo_start",
+   "AE ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE PHANTOMS": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE ENDURE": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE FFA ROCK": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE FFA SNPR": "arena_gametype_no_speed_changes_and_no_respawn_growth_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE JUGGER": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE REV TAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE STALKER": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE FFA KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE CRAZYKNG": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE RACE": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE RALLY": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE GRIFBALL": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BOMB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE SND": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_search_and_destroy_and_spawns_modern",
+   "AE TRAINING": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE COMP FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE COMP TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE COMP CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE COMP KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE COMP OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE C2V2 TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE C2V2 CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE C2V2 KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE C2V2 OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern_and_evo_start",
+   "AE BR FFA": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR ELIM": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR PHANT": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR ENDUR": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR FBALL": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR JUGG": "arena_gametype_juggernaut_h2_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR RTAG": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR ACCUM": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR STALK": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR FKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR CKING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR PRAC": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR C FFA": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR TS": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR CTF": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR KING": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR TM OB": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR 2V2 S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR 2V2 C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR 2V2 K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR 2V2 B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR C TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR BTB S": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR BTB C": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR BTB K": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR BTB B": "arena_gametype_sensor_range_10_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR BTB H": "arena_gametype_no_speed_changes_and_sensor_range_10_and_controller_crouch_stays_down_and_heavy_vehicles_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_friendly_splatter_fast_and_weapon_packs_on_and_spawns_modern",
+   "AE BR C2 TS": "arena_gametype_no_speed_changes_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C2CTF": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C2KOH": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE BR C2 OB": "arena_gametype_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_spawns_modern",
+   "AE OCT BR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT BRSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT MAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT MGSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT TBR": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT TBSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT TMAG": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern",
+   "AE OCT TMSN": "arena_gametype_octagon_drill_and_sensor_range_10_and_no_map_grenades_and_controller_crouch_stays_down_and_melee_unzooms_and_mouse_aim_assist_off_and_vehicles_destructible_1_and_spawns_modern"
+  },
+  "old_block_hashes": {
+   "AE FFA SLAY": "77fbf7bc489c03088d2aed0d3e329070c1b92dbb",
+   "AE TEAM SLY": "2e29e7d43346d684db5ae4e662706a04862bd898",
+   "AE CTF": "58624b73a54a8cd3c881b7d85eb7b83ebcb7aade",
+   "AE KING": "a9daf82fa062f947d53bb64f1a47a48878be99a0",
+   "AE FFA BALL": "0d84ac878faa7796abbd982b6c3cacf832bb0244",
+   "AE 2V2 SLY": "051a85c691ddd303b74b1fa21866698adad2ef22",
+   "AE 2V2 CTF": "c2ceb9a6e822ebd5ce5b40344abe8094e3ed5909",
+   "AE 2V2 KING": "a463a441f0f3009a33f597ca2e2e4418b94fe6ad",
+   "AE 2V2 BALL": "5d43d0b89d50e31a752e55c2e503f9d179dcb233",
+   "AE TEAM OB": "b811b29db704c431abbbd79c26e4a89bd7561f43",
+   "AE PRACTICE": "d43b1724ab13783d94bc3a5d419245ed498251fd",
+   "AE SNIPERS": "df8ff2feba9fe123829b5c7d466e2fab912b32bf",
+   "AE SHOTSNIP": "26bef3638a95f63dc2c87b96dc8972dc45397b23",
+   "AE SWAT": "3a309a4cdff345127ef034e9a7c3868f895c7ae0",
+   "AE ROCKETS": "ca1bcac83cdc1071aa90c3e7d3c617f35e033223",
+   "AE SHOTGUNS": "7b882cac32654e986f8f479756b7ce2e8fc98a04",
+   "AE HEAVIES": "55ee7f97d40ad9daf7afd3c74064dc76125236e3",
+   "AE BTB SLY": "f0de600921fb0f8c698cdf5f3d82b47164a5f967",
+   "AE BTB CTF": "2bc9892900b9911a668f54f011b4eb1a9b2cb602",
+   "AE BTB KING": "e1544f87efd7048426d8b4919d96f92d7edd0f05",
+   "AE BTB BALL": "7ce42818476d8575c0bb5af44721f5f317d512ce",
+   "AE BTB HVY": "2e1860b8873d31362dd8d1bb1de17eee5a499aa0",
+   "AE ELIM": "894d2dcc41c70efbaaf0df81e4628c42976c434d",
+   "AE PHANTOMS": "da548b8ae0afb3a5fd203864674f3326909e5aed",
+   "AE ENDURE": "4979fe2c047744718e627e77980af76e8c467ad3",
+   "AE FFA ROCK": "3d00a2f6c3c6da6ba6ed266e47986ff860b87abb",
+   "AE FFA SNPR": "5f66d8fae743b40720ff02d8d574d69688453be5",
+   "AE JUGGER": "25bb0f14f736e7947a17e9202d6f1b47c9fa621f",
+   "AE REV TAG": "27cfa50d0809ae2e7f1ff060c99f46d149812182",
+   "AE ACCUM": "b10dcd8c614cc5cebd1b66c4dc70e69dd1bb0b11",
+   "AE STALKER": "9e1d32cde865535deeb16a6a6e68860cbeaf5a1c",
+   "AE FFA KING": "7c01b62fc165770ca36cb9f72f8ae889bb325bea",
+   "AE CRAZYKNG": "b24a1b009d2329c05420c27b964c83e23f7f9a41",
+   "AE RACE": "b70d2a9952f71d4210392fa5b53f8e570346f325",
+   "AE RALLY": "5bc59b625dc1df4226dcbf69babd9cff55c8705b",
+   "AE GRIFBALL": "628d6d271cd497b8141f3d16d7ae6cf075e1cb09",
+   "AE BOMB": "3ded2974415ef928431887b728cd8e9e7715e64f",
+   "AE SND": "32fbdb804ca69e4b5c191a95177db900a1257e9c",
+   "AE TRAINING": "8770a814b173cf322d7eaf3dba8c9b8b8c480d01",
+   "AE COMP FFA": "67de2bd23e74ebacf346762c4f799d47090425fa",
+   "AE COMP TS": "e96b136e238f8a2971028fcbff9f4d8eea79520b",
+   "AE COMP CTF": "8b00468a26a7dd65396c26c193578f4675bd5d5b",
+   "AE COMP KOH": "2beeaf6a7b5fb96f6c3bf5138277cba99e6a287b",
+   "AE COMP OB": "f241cc39a8f9b72c10b2dbab391e424a9d7d7208",
+   "AE C2V2 TS": "19535e285901064a006b3254edad2caab8759e51",
+   "AE C2V2 CTF": "6ebc83223a705e9bcd5b860ee5f338ea6f0474ae",
+   "AE C2V2 KOH": "b64d99925cb290c37363227c9dad1e56e7165f04",
+   "AE C2V2 OB": "ebcbf79cd8ed97bcc8a7097af5b8cdd5f07ac4bd",
+   "AE BR FFA": "8b9155ff0eb16336d7c2cf00e01bfe9c268258ad",
+   "AE BR ELIM": "e4a164f16c809cad24b676040cf6a6821f0ebf7f",
+   "AE BR PHANT": "8e8582615c2eee61f8bf8fc6327df77b0173d004",
+   "AE BR ENDUR": "916433f88815ec47fcf8849e1274e1f43676d305",
+   "AE BR FBALL": "6ab61a03aa56f0c54ca0cd9f4481924cefbada2b",
+   "AE BR JUGG": "91f84ed4ed2b41f9ce060442f9071c8d780592d6",
+   "AE BR RTAG": "e87e62aaf9b0b1cf575fe185f011861ae4de24eb",
+   "AE BR ACCUM": "44edcf52fedade7f4eff02eec0b8d5f3cd9508d6",
+   "AE BR STALK": "22f52e600d100ec69fc7cef284a4edbf0275220d",
+   "AE BR FKING": "9fa1d374065d2556490c0ffcbe28c7e6ff57534c",
+   "AE BR CKING": "14cc15591453b66197139ccca06384cf5fbbe081",
+   "AE BR PRAC": "01f8676eabd1b9cc8570ec31a578079901120c88",
+   "AE BR C FFA": "d0896bb5221df6d01b54bb7cfe24085f4bda43b6",
+   "AE BR TS": "3a49f314fe92339d7b98a1d3254ca8f0c0985cb8",
+   "AE BR CTF": "2573bd4247662a70f17e22d97732261af3938db3",
+   "AE BR KING": "711d0c585bbf44125f4d6ca9c2ee031a5b449239",
+   "AE BR TM OB": "52f5f39109506c8791f43ba42af5bf5205fb19de",
+   "AE BR 2V2 S": "28f356770fc06f9783f478dbc38eee83147f4dd7",
+   "AE BR 2V2 C": "fab6aca7b0949e0b0654932d41e510b9fd70e3a5",
+   "AE BR 2V2 K": "d335df16ed33d8a7b65c9de2e2aa53c16c81b470",
+   "AE BR 2V2 B": "ecfb6cda5f36615347d2ea303bb0914dcc480cb0",
+   "AE BR C TS": "7c67c7a45853635bf97ff263c43e763f4f6b21f5",
+   "AE BR C CTF": "08831acabe6b4eb36230d3ccfae14df72a9c2f75",
+   "AE BR C KOH": "269702e754a0613c7ade1c2187cd714737529a7d",
+   "AE BR C OB": "2322a9554599d080d0cd425e08cabc96f78e9137",
+   "AE BR BTB S": "044ac01f3681327d41f3cd8ddbd60dd93b28f18a",
+   "AE BR BTB C": "fd96a91aa3e27327801921d9c2177582d01eaa1a",
+   "AE BR BTB K": "4824937b7c11a971d0065b584528d292bf3f7018",
+   "AE BR BTB B": "6a3eb2d855e5d28822e72e25fd3f7c516efee525",
+   "AE BR BTB H": "374eb2d734ce1b4928616868030e93f52355a918",
+   "AE BR C2 TS": "1cef4c227e62d3695a2bdc11b23ad18dcb684482",
+   "AE BR C2CTF": "b27f268fee1b53b58637ed20c5357f0280d14a12",
+   "AE BR C2KOH": "2e7c07d984ff7d324e4ac2ef8c8854a916bb8fe0",
+   "AE BR C2 OB": "08ae3e524177b1172f9a7877f9e1e9615e38c4b1",
+   "AE OCT BR": "e0273c65eeb69225f0d7079e1f869b5c85fe62e3",
+   "AE OCT BRSN": "2fbd81462997ed59fb967faa8b8953d376d4baba",
+   "AE OCT MAG": "15a28996454b523a5a4250efebb44911e04d3e07",
+   "AE OCT MGSN": "ee9d8d776ce0047e8aa725cff35d054a8099abc7",
+   "AE OCT TBR": "ccc29362b6c8250787adcd237c767651cab874bc",
+   "AE OCT TBSN": "120795e24f0c1adb8269a5d71c429e1455d549f5",
+   "AE OCT TMAG": "6873dd9176b5c786e74976add2e86c1190427238",
+   "AE OCT TMSN": "f8dd40b21e6f0bb6d9626ecc32dd60c04ead56c8"
+  },
+  "golden": "golden_seeds_rev27.json",
+  "seed_rules": {}
+ }
+]

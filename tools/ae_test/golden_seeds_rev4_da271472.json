@@ -1,0 +1,296 @@
+{
+ "1 V 1 NR": {
+  "block": "8a16b5d59c060d39c0b57b0f99c01b0906f23dda",
+  "content": "b6754dcca8829f822ea09fe7dc6c2a4718c4368a",
+  "file": "58e66b77a9dd359e22d64c5a5fa739713cbfb635",
+  "folder": "64F4E82028D1"
+ },
+ "1 V 1 R": {
+  "block": "60a63d0625f739a38dde458a31e68aa1f8ab800d",
+  "content": "7a2395b3e1f391aafefc15635e6ea8438026eec4",
+  "file": "a4b31b91c6d0f1e686db4ca7897d5941a3597b2c",
+  "folder": "629B570B70CD"
+ },
+ "AE 2V2 BALL": {
+  "block": "8f34e1990df8f57a876c3c300fbfb45021a4cf99",
+  "content": "b221ec4e3db41937affa65b272a630f08029542d",
+  "file": "863535d78e010e463eedd0fd3d813b2f533223ca",
+  "folder": "3FB29C9874FC"
+ },
+ "AE 2V2 CTF": {
+  "block": "bf99ffe812341143168ee9e6d8d9d6afe76de261",
+  "content": "26cbede0e174ed1535666bade089a2baa5fdaa9f",
+  "file": "95d62cd07dfb3613c36034699dc8cccf27c94216",
+  "folder": "E512A1058804"
+ },
+ "AE 2V2 KING": {
+  "block": "346c601729f9307efbad5b0e33baeb19943ffed8",
+  "content": "93a1efacd46b3a69f9a1e4e030666ef5b8bec053",
+  "file": "8becc8debb7a228465230a6f2333f8df4687e210",
+  "folder": "7E6551E2525E"
+ },
+ "AE 2V2 SLY": {
+  "block": "9b31914b85e211d747c3bb29781057a9ef1d256b",
+  "content": "ea1e60af17def67007d9f736be3d1450baf560e1",
+  "file": "f6d2bf755540ab64795e61e4e15b53b0e3e01abe",
+  "folder": "5C12529CA751"
+ },
+ "AE COMP CTF": {
+  "block": "395315d4327dbf299a69ad0930a156764b52c46c",
+  "content": "790076d1b86f9d371175c4406c7dd0c5c1cac53a",
+  "file": "9a217906dc4ddc7cd125441ce8479ebb25c4939a",
+  "folder": "677B3BCE075B"
+ },
+ "AE COMP FFA": {
+  "block": "847e55c5c8eb0f86fbde7dd371137324f880be97",
+  "content": "8cc106533ab2af23cb21e56f82ffe3adaff2f848",
+  "file": "f26b4e96a5e281c0a0d8453089530a23d53c7373",
+  "folder": "737B4AAE7B7F"
+ },
+ "AE COMP KOH": {
+  "block": "293e8e5c01828efc30a5ce5d940c2f5b69f8d87c",
+  "content": "842d0e1da55bd2c7725d6a48e1dac3ebdea3880d",
+  "file": "85de33ad0f6790fccc79204a62fa9efd01d72052",
+  "folder": "B37B161A943E"
+ },
+ "AE COMP OB": {
+  "block": "36b8064cee361f91c7f095fbc9a3a1b466af5052",
+  "content": "37085a684fb112605c6e6ea0764c2286346d90eb",
+  "file": "c5b4eaa6091d8350dae8b76ffaa175bc618ec69c",
+  "folder": "A6F3ECACE4A5"
+ },
+ "AE COMP TS": {
+  "block": "b25d34b2752866bb09622e06e0d764a9399b5c76",
+  "content": "137920cef5e9c8a3e0c639a41b8c0d0a9ae96f73",
+  "file": "cdc6cbcce1c082c98d73c3e3bef758abae9c9b2d",
+  "folder": "F5F3ECE96D85"
+ },
+ "AE CTF": {
+  "block": "404b1b1dc1ebe66e932a15286b802860601cef22",
+  "content": "26cbede0e174ed1535666bade089a2baa5fdaa9f",
+  "file": "ac82dafeafa019871dc752b06987f6ad79d8f0fa",
+  "folder": "D3F81FEFF5B6"
+ },
+ "AE FFA BALL": {
+  "block": "a2875b6d759840b2a92fccced03e505a33204f62",
+  "content": "0233077538ff14cd3b3b01929bff64e2c41f52aa",
+  "file": "509547055b1251a399296d0e2b8086207d3b5302",
+  "folder": "D217F14F9FF3"
+ },
+ "AE FFA SLAY": {
+  "block": "c8f070c6822f102f3247d56e67ece3861e0d3d69",
+  "content": "b307e2cf9ac8b4534e09f5633e7b195dd19360a1",
+  "file": "c868813e520f576ea855c59b09e0f9e5b0707c6f",
+  "folder": "DEA36CB440D7"
+ },
+ "AE HEAVIES": {
+  "block": "01ae17ad57f6bd2e20d59864e2af6fc250dda7d7",
+  "content": "75640230e62a56f0d961b84b6a378d5d8dd83bbb",
+  "file": "79b85fe380f337fffc267f667c0b23ed322f6701",
+  "folder": "B3AE21AEFBBE"
+ },
+ "AE KING": {
+  "block": "19b06079fea70429be74a66b4005088508faf9e1",
+  "content": "93a1efacd46b3a69f9a1e4e030666ef5b8bec053",
+  "file": "48ea33d83d9936b573e8740fde007f5d3e3ee256",
+  "folder": "5C5B5D0CA918"
+ },
+ "AE PRACTICE": {
+  "block": "14ffdc5522d9ed8c55b83dc1e0d871e5bd56bde3",
+  "content": "d493083efa5c07c0baa860150e899b59c7303b86",
+  "file": "0ddba8f9841dc3cf07cb5d4b33dd930df86deeb1",
+  "folder": "4F8AA5047062"
+ },
+ "AE ROCKETS": {
+  "block": "3171dd59012243d4c1d93b215232601d45c86970",
+  "content": "d6e11f3d2c8f03514ffe1348385b4b421091e056",
+  "file": "5196edba1e0f735f543e33fca7bce84f6c5996f0",
+  "folder": "87B22E02FB10"
+ },
+ "AE SHOTGUNS": {
+  "block": "4510d923b68db2d9caa978526dac95cc61f87fc9",
+  "content": "c2c59fd884d3d09159806a738b3119b201bc2c66",
+  "file": "2434bc698a8b06993123ee6e51b8c12493cd964c",
+  "folder": "49E9D889C41C"
+ },
+ "AE SHOTSNIP": {
+  "block": "514fbcf2f960bfc7c4d7bd2420470567afcfdc4f",
+  "content": "8d75a7e872413269c750f5c819c04fa0537b8b98",
+  "file": "23e08fbafcc677e8215cd49bbc17611603e3b406",
+  "folder": "0143712C98B3"
+ },
+ "AE SNIPERS": {
+  "block": "b1877224d04812b9d899730b82a7828281e89bcd",
+  "content": "158beae3f033535114605d2855e819198b40e48e",
+  "file": "83aea976cb4393cd810eed5f79c3b9edf8d1261a",
+  "folder": "6E8E821286D9"
+ },
+ "AE SWAT": {
+  "block": "745fe6a2cc653deb823a76a49e981d463acce170",
+  "content": "5ef10e693e912b247617b3b728f87e28260ef343",
+  "file": "973cca42c53a421bc1704273b61b929c8864fc13",
+  "folder": "4715DDAD25C0"
+ },
+ "AE TEAM OB": {
+  "block": "e68edf81dbb93ab66b9c6b7bf85620bac318645a",
+  "content": "3d4ae5bea3bfb89fba2660296defa2c8f1fa0b45",
+  "file": "1c1e8552ec6484659ea846c1310b91dc39a1b483",
+  "folder": "819B3397349B"
+ },
+ "AE TEAM SLY": {
+  "block": "a21d779566cbf1c979743cfdc0af7a6feb8e4845",
+  "content": "2f5a8ae90724d85f2301c8d83caea17b2d16a93f",
+  "file": "1210fdad402f93dd998a287eae1aa8f527211a5a",
+  "folder": "04B847B13D90"
+ },
+ "AE TRAINING": {
+  "block": "712f8cb5dfa5753d175ed994bb60ee8f446766dd",
+  "content": "c3f386311713fefa8ac1f0ba5c842f695a4666ae",
+  "file": "774a937fd759547da2664420ebe80f88a87e2a36",
+  "folder": "97F7183D996D"
+ },
+ "BALL 5M 10S": {
+  "block": "49d2687f8531a89f4e21adec83a6873a3fbe08da",
+  "content": "1ca60ce81960f0f3209badd8e74de0ae1b4ce7fe",
+  "file": "0380b2fc942357038003e0f91e6f336cbba3c72a",
+  "folder": "E19B1A2C7166"
+ },
+ "BALL 5M 7S": {
+  "block": "b91896f000647f777618e8374f0cbd521b0d4939",
+  "content": "6801839507c27e0202f5ffa114de9b999cde40fc",
+  "file": "66d932a17fe094ff9b89159ec9eafa7b373df20b",
+  "folder": "42A523709BBA"
+ },
+ "CTF 3 10S R": {
+  "block": "ae30612695b8a4c31284834ab82ae72e5ad3b226",
+  "content": "f57bee2684d82dcccfd788e486fb35a614687009",
+  "file": "c83b2f01d6f013c3eab436916e4299bf9b0f623e",
+  "folder": "D11A3A57DF9B"
+ },
+ "CTF 3C 10S": {
+  "block": "13d06d69a9d98018f69bba12c93caa87f6e3bf0b",
+  "content": "199b81b5eb8e0f0323bd426deecdceb2f08c0a37",
+  "file": "5c801e1f46d6ff5472193dadc7a1292e74ed177f",
+  "folder": "A23D10175876"
+ },
+ "CTF 3C 7S": {
+  "block": "27b313b7f11c4f0a61662599ea76a8797d877d3e",
+  "content": "45896796ef48a21de1397b9efc0daea0929429d2",
+  "file": "867a8a5f55b1c6bce840a5451a7fd1470e7973b7",
+  "folder": "FEB5FD2916CA"
+ },
+ "CTF 3C 7S R": {
+  "block": "c9f7ca53b4dc97b7ffe767c96bf3f8bc586ab764",
+  "content": "f47f6afad7ef6a205a5224f3c1bed15c0e5b9d35",
+  "file": "fc489698deeba16f7dd780c2a0e9f4e4fc0f818e",
+  "folder": "8EF328BA77A4"
+ },
+ "CTF 5 10S R": {
+  "block": "20d535e039af69f8a030d0156da5995662d91738",
+  "content": "2b57732a09a8f46c97f200f1173f59e6b6ccb358",
+  "file": "3650a2c12dd13395e0d3b78ddd25045c9052c038",
+  "folder": "95BAD4521DDD"
+ },
+ "CTF 5C 10S": {
+  "block": "8f9817dcbe869f5c2bcc7768dacbf701725bb56a",
+  "content": "4eddcb5a1b8f7794472c5296e7b40d79e2990539",
+  "file": "5113635f45d7bfefb07079a44dec32b8085fdc92",
+  "folder": "795606588BCC"
+ },
+ "CTF 5C 7S": {
+  "block": "04af578a56e7a19ee8d04cb7953c85a1fa158cb8",
+  "content": "b3136202193c85291ea7d13bb70afb94ab12453f",
+  "file": "4de5e2a8c2767141327d639384a2015e8f58bf63",
+  "folder": "DA015FDF8F48"
+ },
+ "CTF 5C 7S R": {
+  "block": "bcfbaca6b8605f5fbfc8664423cbb884a9a81d59",
+  "content": "c95888bede2b9997260a8481cf6759003ec1656b",
+  "file": "e20a7ea3555ea0668532b12003c3e5340f25b0f5",
+  "folder": "83FAB5C7849E"
+ },
+ "CTF WIZARD": {
+  "block": "67192c7218961081c4b9c2c9078c7ee693293927",
+  "content": "c8f8a43d405f27ad08cefe83c10ea5f7c9842fa1",
+  "file": "2eb98f910bad20a2fa08f5eebb9d2972262acaa6",
+  "folder": "281BB82A3965"
+ },
+ "FFA 50 NR": {
+  "block": "a00b1ee98bc2444ab9bb8c609d4ac64be43d6a70",
+  "content": "51ef2a8748efcf4c6e2937583168ede7c2064c8b",
+  "file": "6819b2308764c7b3eff48d0ed3eb13bd09c7cbfd",
+  "folder": "CB78FBC4E7D9"
+ },
+ "FFA 50 R": {
+  "block": "31e9492a16b9ed83ec37d404d088fe9d71686ecf",
+  "content": "ccdad4b1331e85f7acba398fa268de6be4438a16",
+  "file": "43d027b56345deae577d9dda4a17524d3215c1b1",
+  "folder": "5E1DB412C675"
+ },
+ "KOTH 5M 10S": {
+  "block": "d817c85565b9ae181b703374b17815ec5d3d0dab",
+  "content": "3a7492e7b78b6d7d662830a2456cda00e784b70e",
+  "file": "aefb656cff9dd9be663647404b44c0e2dd12a0f8",
+  "folder": "142A1822322F"
+ },
+ "KOTH 5M 7S": {
+  "block": "78824d95f81b3646f96c817d9196b3f7080c4052",
+  "content": "20e6fb0595eb3120acbf321231431937e57f9f5e",
+  "file": "2c9ae7e971f0e58d71e4066b5674142eb21819ca",
+  "folder": "DE68D9BBBD29"
+ },
+ "NHE POWERUP": {
+  "block": "5983b3c2cac78def220bd4f42f03e4eb924a054e",
+  "content": "dabdfcf1646af27542d4d15fdbe522d16c78be5f",
+  "file": "92036d422d9870c211dca3dbf624d9eb1cb4b14b",
+  "folder": "1364F1E41784"
+ },
+ "NHE TRAIN": {
+  "block": "bb05e4644a9f10a5f80318c1f692d2a80ca3508a",
+  "content": "9ed952c66bae4e0b8ac3dd11b1c0e5fc4e66613f",
+  "file": "1961cb6d6d489cff4e67ba4ccd0349bc5ac7b54a",
+  "folder": "682C154111EA"
+ },
+ "NHE VANILLA": {
+  "block": "8a9d058b6f15b05a0faed94cf3792aedb4b76806",
+  "content": "4efc68b8a687f0dfe5ff196d904ebd64d2b3cd55",
+  "file": "5169cdadbd360b5a5469237dcb52362d83a85c25",
+  "folder": "F8FE29884D4F"
+ },
+ "TS 100": {
+  "block": "d97cdcb620cd275b9c1035c043d48c149ffa7150",
+  "content": "fc33ffbf2bfc80569bc574952bf34748b2e88fee",
+  "file": "98ad706defb9fa8b57628ab44817c5b4becf7f9a",
+  "folder": "C6EAB90E90CD"
+ },
+ "TS 50": {
+  "block": "54326e39f4ec2ea3d4dbd29546f945e8efba429c",
+  "content": "f9d491a8db91db2e58a49b3bde21f7565c264e09",
+  "file": "b3449e5a8f0614f841339f3c86221809dad755a6",
+  "folder": "4722AC38B38B"
+ },
+ "TS ON-OFF": {
+  "block": "f2107aca7c7b84bc6caf25fe31d269ef781607e5",
+  "content": "3c9e21fe2dbc80c23594a004c5459c15c2640824",
+  "file": "844224b0ae596c020d2913852ef2fd6ddcfc2846",
+  "folder": "A378D11361E3"
+ },
+ "TS PRACTICE": {
+  "block": "c08014d166904a97cfb081a27936359974addd24",
+  "content": "c72e3b8ab9c9684929e25b8c4939a93a2cab3888",
+  "file": "d735567b2c8bd2716aeecf50b9f0c32a9cdfc355",
+  "folder": "46A756BD96E3"
+ },
+ "TS SNIPERS": {
+  "block": "dc717277eb02fee193d5ed2300cf83be762337b9",
+  "content": "5788c123af39bf31da2ec455a1abff94697383ea",
+  "file": "267e352a32c72cf4b42743b72d634ef9a3abd738",
+  "folder": "B2E6189A4E2A"
+ },
+ "TS TRAINING": {
+  "block": "04973e138bfce6cbab9b08e4c9e9db73e618cd1c",
+  "content": "c210801695b4d01d83d52a9b7a28401fcbe188ec",
+  "file": "ae831a53b6295a35a12d512841e5662b41a47bdf",
+  "folder": "88734D634D0C"
+ }
+}
