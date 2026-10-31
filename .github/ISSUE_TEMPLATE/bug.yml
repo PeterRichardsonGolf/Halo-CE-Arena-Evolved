@@ -1,0 +1,41 @@
+name: Bug report
+description: "Something in Halo CE: Arena Evolved doesn't work as it should."
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. One bug per issue, please. Arena Evolved never provides maps or other game content, so please don't attach maps or disc images.
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options: [Windows, macOS (Apple Silicon), Linux, Steam Deck, Dedicated server, Other]
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: The release you're on, as the window's title shows it (for example 0.7.0-beta).
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options: [Crash, Online play, Online Games list, Custom Edition maps, Campaign, Menus, Controls, Graphics, Sound, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Steps to get there, what you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: For a crash, attach debug.txt from the game's data folder, and on macOS the crash report from ~/Library/Logs/DiagnosticReports (halo-*.ips).
