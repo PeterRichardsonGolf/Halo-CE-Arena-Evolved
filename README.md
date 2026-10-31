@@ -85,6 +85,8 @@ Take the zip for your system from the [Releases](../../releases) page:
 
 Only the latest release is kept here.
 
+Or get it with [Quiver](https://quiverlauncher.com/): Arena Evolved is listed in the Quiver launcher.
+
 ## You need your own copy of the game
 
 Arena Evolved includes none of the game's maps, sounds or art. It plays from either of these, or both:
