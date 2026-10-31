@@ -24,14 +24,17 @@ is attached to it.
   aside when a player joins. PLAYFIGHT bots aim but never shoot, for practice.
 - **Split screen on PC:** up to four players on one PC, locally, on a LAN and online, each with their own profile,
   controller layout, settings and pause menu; a controller picker sorts four pads fast.
-- **Search and Destroy, Grifball and Bomb:** one life a round, a real bomb carried on the back, held to pick up, a fuse
-  timer on its face, a blast that hurts by distance; only the attackers hear about it.
-- **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the EVO RIFLE (single shot, 2x scope with
-  live zoom and rounds), the DMR (steady marksman rifle), SMG, carbine, and suppressed SMG and AR, as weapon packs that
-  work on stock, Custom Edition and MCC maps. A gametype picks what you start with.
-- **Ready-made gametypes in playlist folders:** AE FFA, 2V2, 4V4, BTB (big team, with heavy-vehicle versions), COMP,
-  ACTION SACK (Frag Nation, One in the Chamber, Melee Only, Needles, Snowball Fight, Grifball, Bomb, Search and
-  Destroy), PRACTICE with OCTAGON warm-up drills; Halo 1: NHE's gametypes as an option.
+- **Search and Destroy and Bomb, AE's round modes:** one life a round, a real bomb carried on the back, held to pick
+  up, a fuse timer on its face, a blast that hurts by distance; only the attackers hear about it. Built on the
+  ChupathingyCE team's Bomb engine. Grifball, their original mode too, is in ACTION SACK and still a work in progress.
+- **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the EVO RIFLE (single shot, tuned for competitive
+  play, a 2x scope with its zoom and rounds live), the DMR (steady marksman rifle), SMG, carbine, and suppressed SMG and
+  AR, as weapon packs that work on stock, Custom Edition and MCC maps. Each pack turns on or off in a gametype's GAME
+  OPTIONS, and a gametype picks what you start with.
+- **Ready-made gametypes in playlist folders:** AE FFA, 2V2, 4V4 (casual and COMP), BTB (big team, with heavy-vehicle
+  versions), OBJECTIVE (Search and Destroy, Bomb), ACTION SACK (Phantoms, Juggernaut, Stalker, Crazy King, Elimination,
+  Race, Rally, Grifball, SWAT, Snipers, Rockets, Shotguns and more), PRACTICE with OCTAGON warm-up drills; Halo 1: NHE's
+  gametypes as an option.
 - **Rules you can set on any map,** each a row in GAME OPTIONS: fall damage, health styles, COMBAT FEEDBACK (shield pop, recharge, blood pop), no spread, a pre-game countdown, MELEE
   UNZOOMS, controller crouch, mouse aim assist, silent movement and weapons for split screen, destructible vehicles,
   friendly splatter, lethal oddball, practice mode, and SPAWNS CLASSIC or MODERN.
@@ -42,10 +45,12 @@ is attached to it.
 - **Controllers:** many button layouts including MCC's, DualSense adaptive triggers (a profile per weapon) and lightbar, back
   paddles, Nintendo and PlayStation prompts, gyro aiming, stick deadzones. Mouse and keyboard: KEY BINDINGS, wheel
   zoom, hold-to-zoom and MCC-style sensitivity.
-- **Menus of its own:** main menu, CREATE GAME and lobby, MY PARTY, CHANGE MAP and CHANGE GAMETYPE with folders
-  (STOCK, MCC, WORKSHOP, map packs), pictures, search, favourites and RECENT; its own pause menu, scoreboard and
-  post-game; every setting with a line of help.
-- **HUD and display:** a combat HUD of its own (or Halo CE's) with a score strip, a frame-rate limit you type (30 to
+- **Menus built from scratch for today's PCs:** fast and controller-first, just as good with a mouse and keyboard, and
+  sized for anything from a handheld to an ultrawide. A live CREATE GAME lobby with MY PARTY, where friends and bots
+  join as you set up. CHANGE MAP and CHANGE GAMETYPE browse folders (STOCK, MCC, WORKSHOP, map packs) with map pictures,
+  search, favourites and RECENT. Its own pause menu, scoreboard and post-game, and every setting explained in a line of
+  help.
+- **HUD and display:** a modern, competitive combat HUD of its own (or Halo CE's) with a score strip, a frame-rate limit you type (30 to
   1000), a performance line with ping, HUD area and compact HUD, backpack weapons on bodies, pistol colour.
 - **Capture:** screenshots (every split view) and video recording with sound (Windows includes FFmpeg).
 - **Map packs and layouts:** community, Custom Edition and modded-disc maps keep their own folders and pictures;
