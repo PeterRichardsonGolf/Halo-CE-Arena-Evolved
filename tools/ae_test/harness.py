@@ -1,0 +1,1853 @@
+"""Shared parts of the Arena Evolved test harness (tools/ae_test, docs/testing.md).
+
+Python 3 standard library only (Pillow is used when present, for labelled images).
+The tools (build.py, run.py, smoke.py, sheet.py, handshake.py, windows.py, record.py)
+import this module. Machine-specific paths come from a JSON config file
+(config.sample.json shows every key), never from the code:
+
+    $AE_TEST_CONFIG, or ~/.config/ae_test/config.json, or --config FILE
+
+A game runs headless in its own network namespace (unshare -rn: its own loopback,
+so several games and system-link bots never meet), with its own Xvfb when there is
+no display, from its own copy of the binary (config.toml is written beside it),
+with its own data root (links to the maps and mods) and save root. Its debug.txt,
+stdout and screenshots (converted to PNG, the BMPs deleted) land in the run's
+output folder with a result.json; the work folder (save root, map cache) is
+deleted afterwards unless --keep-work.
+"""
+
+import argparse
+import base64
+import datetime
+import json
+import os
+import re
+import shlex
+import shutil
+import struct
+import subprocess
+import sys
+import threading
+import time
+import zlib
+from pathlib import Path
+
+HERE = Path(__file__).resolve().parent
+TOOLS = HERE.parent
+REPO = TOOLS.parent
+
+CONFIG_ENV = "AE_TEST_CONFIG"
+CONFIG_DEFAULT = "~/.config/ae_test/config.json"
+
+DEFAULTS = {
+    # git checkout that builds commits (worktrees are added to it); default: the repository of this harness
+    "repo": None,
+    # one worktree and build per commit: <builds_dir>/<sha12>/build/<target>/
+    "builds_dir": "~/halo-test/ae_test/builds",
+    # per-game data root, binary copy and save root (map caches up to 290 MB each): never under /tmp
+    "work_dir": "~/halo-test/ae_test/work",
+    # results: <out_dir>/<tool>/<stamp>[-label]/
+    "out_dir": "~/halo-test/ae_test/out",
+    # maps/ (with ce/ for Custom Edition maps) and mods/<name>/maps; voices/ optional
+    "data_dir": None,
+    # builds by name: "stock": "<dir with halo>" or {"dir": ..., "env": {...}}
+    "named_builds": {},
+    "configure_args": ["--release", "--compiler-launcher", "ccache"],
+    "pkg_config_path_32": "/usr/lib32/pkgconfig",
+    "jobs": 16,
+    "jobs_slow": 8,
+    # nice level of the tools and the games (19 while the owner plays)
+    "nice": 10,
+    # games at once from one tool ("auto": 3, or 1 when other games already run here)
+    "parallel": "auto",
+    # headless games on this machine, all helpers together (a tool waits for a free slot)
+    "max_games_total": 4,
+    # no game starts while the work folder's disk has less free than this
+    "min_free_gb": 3,
+    # look for the owner's own game here (a halo process outside work_dir, or port 5150 listening)
+    "owner_check": True,
+    # "auto": an Xvfb per game when DISPLAY is unset
+    "xvfb": "auto",
+    "box": {
+        "ssh": None,             # ssh alias of the build box
+        "git_url": None,         # where commits are pushed (git push <git_url> <sha>:refs/ae-test/<sha12>)
+        "harness_dir": "~/halo-test/ae_test/harness",  # the harness's copy on the box
+    },
+    "windows": {
+        "ssh": None,             # ssh alias of the Windows test box
+        "root": "C:\\halo-test",
+        "artifact": "arena-evolved-windows64-release",
+        "window_size": "1280x720",
+    },
+}
+
+ADDRESS = "127.0.0.200"
+GAME_PORT = 5150
+
+# ---------------------------------------------------------------------------------------------- config
+
+
+def deep_merge(base, extra):
+    out = dict(base)
+    for k, v in (extra or {}).items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
+def expand(p):
+    return None if p is None else Path(os.path.expandvars(os.path.expanduser(str(p))))
+
+
+def load_config(path=None):
+    """the config: defaults, then the file (--config, $AE_TEST_CONFIG or ~/.config/ae_test/config.json)"""
+    path = path or os.environ.get(CONFIG_ENV) or CONFIG_DEFAULT
+    p = expand(path)
+    data = {}
+    if p and p.exists():
+        data = json.loads(p.read_text())
+    cfg = deep_merge(DEFAULTS, data)
+    cfg["_path"] = str(p) if p and p.exists() else None
+    if not cfg.get("repo") and (REPO / "configure.py").exists():
+        cfg["repo"] = str(REPO)
+    return cfg
+
+
+def check_not_tmp(path, what):
+    """save roots and work folders never in /tmp (a RAM disk on the local machine)"""
+    r = str(Path(path).resolve())
+    if r == "/tmp" or r.startswith("/tmp/"):
+        raise SystemExit(f"ae_test: {what} {r} is under /tmp (RAM); set it elsewhere in the config")
+
+
+# ---------------------------------------------------------------------------------------------- output
+
+
+def stamp():
+    return datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+
+
+def new_out_dir(cfg, tool, label=None, name=None):
+    base = expand(cfg["out_dir"]).resolve() / tool  # (absolute: the game writes into it from its own cwd)
+    check_not_tmp(base, "out_dir")  # (and each game's own /tmp hides the machine's /tmp)
+    d = base / (name or (stamp() + (f"-{safe_name(label)}" if label else "")))
+    d.mkdir(parents=True, exist_ok=True)
+    return d
+
+
+def safe_name(s):
+    return re.sub(r"[^A-Za-z0-9_.+-]+", "_", str(s)).strip("_") or "x"
+
+
+def write_json(path, data):
+    Path(path).write_text(json.dumps(data, indent=2, sort_keys=False) + "\n")
+
+
+def log(msg):
+    print(msg, flush=True)
+
+
+# ---------------------------------------------------------------------------------------------- machine load
+
+
+def list_halo_processes():
+    """[(pid, exe, cwd)] of the game's processes on this machine (exe named halo, also when replaced)"""
+    out = []
+    for p in Path("/proc").iterdir():
+        if not p.name.isdigit():
+            continue
+        try:
+            exe = os.readlink(p / "exe")
+        except OSError:
+            try:
+                comm = (p / "comm").read_text().strip()
+            except OSError:
+                continue
+            if comm != "halo":
+                continue
+            exe = comm
+        base = exe.replace(" (deleted)", "").rsplit("/", 1)[-1]
+        if base not in ("halo", "halo.exe") and "Quiver Launcher/Apps/" not in exe:
+            continue
+        try:
+            cwd = os.readlink(p / "cwd")
+        except OSError:
+            cwd = ""
+        out.append((int(p.name), exe, cwd))
+    return out
+
+
+def port_listening(port=GAME_PORT, tables=("/proc/net/tcp", "/proc/net/tcp6")):
+    """a TCP listener on this port in this network namespace"""
+    hexport = f":{port:04X}"
+    for t in tables:
+        try:
+            lines = Path(t).read_text().splitlines()[1:]
+        except OSError:
+            continue
+        for line in lines:
+            f = line.split()
+            if len(f) > 3 and f[1].endswith(hexport) and f[3] == "0A":
+                return True
+    return False
+
+
+def under(path, folder):
+    """path is folder or inside it (both resolved: no prefix tricks such as work-other or ..)"""
+    if not path or not folder:
+        return False
+    try:
+        return Path(path).resolve().is_relative_to(Path(folder).resolve())
+    except (OSError, ValueError):
+        return False
+
+
+def owner_playing(cfg, procs=None, listening=None):
+    """the owner's own game runs here: a halo process whose cwd is outside the harness's work folder,
+    or a listener on 5150 (a lobby) in the machine's own namespace. Never touch it."""
+    if not cfg.get("owner_check", True):
+        return False
+    work = expand(cfg["work_dir"])
+    procs = list_halo_processes() if procs is None else procs
+    for _pid, _exe, cwd in procs:
+        if not under(cwd, work):
+            return True
+    return port_listening() if listening is None else listening
+
+
+OWN_WORK = set()  # this tool's work folders: games there are ours, all others count against the machine's limit
+
+
+def other_games(cfg, procs=None, own=None):
+    """halo processes on this machine that are not this tool's (other helpers' or tools' games, the owner's)"""
+    own = OWN_WORK if own is None else own
+    procs = list_halo_processes() if procs is None else procs
+    return [p for p in procs if not any(under(p[2], o) for o in own)]
+
+
+LIVE_INNERS = set()   # inner runners of this tool now running (any thread)
+STOPPING = threading.Event()  # set by TERM/INT: no new game starts
+
+
+def term_as_exit():
+    """TERM (and SIGINT, even where a shell started us with it ignored) stop this tool: no new game starts, every
+    running inner runner gets one TERM (it stops its games and X servers), and the main thread exits"""
+    import signal
+
+    def on_signal(signum, frame):
+        STOPPING.set()
+        for p in list(LIVE_INNERS):
+            try:
+                os.killpg(p.pid, signal.SIGTERM)
+            except ProcessLookupError:
+                pass
+        raise SystemExit(128 + signum)
+    signal.signal(signal.SIGTERM, on_signal)
+    signal.signal(signal.SIGINT, on_signal)
+
+
+def apply_load_policy(cfg, args=None):
+    """nice, and slow mode while the owner plays: one game at a time, fewer build jobs; TERM/INT cleanup"""
+    term_as_exit()
+    slow = owner_playing(cfg)
+    level = 19 if slow else int(cfg.get("nice", 10))
+    try:
+        cur = os.getpriority(os.PRIO_PROCESS, 0)
+        if level > cur:
+            os.setpriority(os.PRIO_PROCESS, 0, level)
+    except (OSError, AttributeError):
+        pass
+    if slow:
+        log("ae_test: another game runs here: slow mode (nice 19, one game at a time, "
+            f"{cfg['jobs_slow']} build jobs). It is never touched.")
+    cfg["_slow"] = slow
+    return slow
+
+
+def resolve_parallel(cfg, requested):
+    """games at once: an explicit number, else 3, or 1 when other games already run here (or in slow mode)"""
+    if cfg.get("_slow") or not netns_ok():
+        return 1
+    if not private_tmp_ok():
+        log("ae_test: no private /tmp for the games' X servers here: one game at a time")
+        return 1
+    req = requested if requested not in (None, "auto") else cfg.get("parallel", "auto")
+    if req in (None, "auto"):
+        return 1 if other_games(cfg) else 3
+    return max(1, int(req))
+
+
+def pid_alive(pid):
+    try:
+        os.kill(pid, 0)
+        return True
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+
+
+def parent_pid(pid):
+    """the parent of a process (0 when gone): /proc/<pid>/stat's 4th field, after the command's ')'"""
+    try:
+        stat = Path(f"/proc/{pid}/stat").read_text()
+        return int(stat.rsplit(")", 1)[1].split()[1])
+    except (OSError, ValueError, IndexError):
+        return 0
+
+
+def ancestors(pid, parent_of=None, limit=64):
+    """the process and all its ancestors' pids"""
+    parent_of = parent_of or parent_pid
+    out = set()
+    while pid and pid > 0 and pid not in out and len(out) < limit:
+        out.add(pid)
+        pid = parent_of(pid) or 0
+    return out
+
+
+LOCK_DIR_ENV = "AE_TEST_LOCK_DIR"
+
+
+def slots_dir():
+    """the host-wide slot registry and lock, the same for every harness and config of this user
+    (~/.cache/ae_test; $AE_TEST_LOCK_DIR only for tests)"""
+    return Path(os.environ.get(LOCK_DIR_ENV) or "~/.cache/ae_test").expanduser()
+
+
+class GameSlots:
+    """at most max_games_total games on this machine (all helpers), and at most `parallel` from this tool.
+
+    Every harness process on the machine registers its games as files in slots_dir()/slots
+    (<owner pid>-<n>), checked and written under one host-wide lock file (fcntl.flock), so two tools
+    cannot both take the last slot, whatever their configs. A halo process descending from a registered
+    owner is that owner's slot (counted once); any other halo process (another script's game, or one left
+    running by a harness that died) counts by itself.
+    Without network namespaces all games share the machine's network: then there is one slot for
+    the whole machine, taken only while no halo process at all runs (a handshake pair takes it as one)."""
+
+    def __init__(self, cfg, parallel, shared_network=None):
+        self.cfg = cfg
+        self.shared_network = (not netns_ok()) if shared_network is None else shared_network
+        self.parallel = parallel
+        if self.shared_network:
+            self.parallel = 1
+        elif parallel > 1 and not private_tmp_ok():
+            log("ae_test: no private /tmp for the games' X servers here: one game at a time")
+            self.parallel = 1
+        self.lock = threading.Lock()
+        self.mine = 0
+        self.dir = slots_dir() / "slots"
+        self.files = []
+
+    def _registered(self):
+        """(slot count, owner pids) of the live slot files of other harness processes (stale ones removed).
+        A slot file is <owner pid>-<n> and holds the owner's pid: the harness process that starts the game,
+        which every process of that game descends from (unshare, the inner runner, Xvfb, halo)."""
+        n, owners = 0, set()
+        for f in self.dir.glob("*-*"):
+            try:
+                pid = int(f.name.split("-", 1)[0])
+            except ValueError:
+                continue
+            if pid == os.getpid():
+                continue
+            if pid_alive(pid):
+                n += 1
+                owners.add(pid)
+            else:
+                f.unlink(missing_ok=True)
+        return n, owners
+
+    def _others(self, procs, parent_of=None):
+        """games that are not this tool's: the registered slots of other harnesses, plus every halo process
+        that descends neither from this process nor from a registered owner (other scripts' games, and games
+        left running by a harness that died). A registered game is counted once, by its slot, wherever its
+        work folder is."""
+        n, owners = self._registered()
+        mine = os.getpid()
+        unattributed = [p for p in procs if not (ancestors(p[0], parent_of) & (owners | {mine}))]
+        return n + len(unattributed)
+
+    def try_acquire(self, games=1):
+        """take the slots now if they are free: (True, None) or (False, why)"""
+        import fcntl
+        self.dir.mkdir(parents=True, exist_ok=True)
+        with self.lock, open(self.dir.parent / "slots.lock", "w") as lk:
+            fcntl.flock(lk, fcntl.LOCK_EX)
+            procs = list_halo_processes()
+            others = self._others(procs)
+            limit = 1 if self.shared_network else int(self.cfg.get("max_games_total", 4))
+            if self.shared_network:  # (any halo process at all, ours or not, orphaned or not: wait)
+                ok = not procs and others == 0 and self.mine == 0
+            else:
+                ok = self.mine + games <= max(self.parallel, games) and \
+                    others + self.mine + games <= max(limit, games)
+            if not ok:
+                return False, f"{others} other games run here, limit {limit}"
+            for _ in range(games):
+                f = self.dir / f"{os.getpid()}-{time.monotonic_ns()}"
+                f.write_text(str(os.getpid()))
+                self.files.append(f)
+            self.mine += games
+            return True, None
+
+    def acquire(self, games=1, poll=5, quiet=False):
+        waited = False
+        while True:
+            if STOPPING.is_set():
+                raise RuntimeError("ae_test: stopping (TERM/INT): no new game")
+            ok, why = self.try_acquire(games)
+            if ok:
+                return
+            if not waited and not quiet:
+                log(f"ae_test: waiting for a game slot ({why})")
+                waited = True
+            time.sleep(poll)
+
+    def release(self, games=1):
+        with self.lock:
+            self.mine -= games
+            for _ in range(games):
+                if self.files:
+                    self.files.pop(0).unlink(missing_ok=True)
+
+
+# ---------------------------------------------------------------------------------------------- builds
+
+TARGETS = {
+    "linux64": "build/linux64/halo",
+    "linux": "build/linux/halo",
+    "server": "build/server-x86/chupathingyce-server",
+    "server-x64": "build/server-x64/chupathingyce-server",
+}
+ALL_TARGETS = ["linux64", "linux", "server", "server-x64"]
+
+
+def git(repo, *args, check=True, capture=True):
+    r = subprocess.run(["git", "-C", str(repo), *args], text=True,
+                       stdout=subprocess.PIPE if capture else None, stderr=subprocess.PIPE if capture else None)
+    if check and r.returncode:
+        raise SystemExit(f"git {' '.join(args)}: {r.stderr.strip()}")
+    return (r.stdout or "").strip()
+
+
+def resolve_commit(repo, rev):
+    r = subprocess.run(["git", "-C", str(repo), "rev-parse", "--verify", "--quiet", f"{rev}^{{commit}}"],
+                       text=True, capture_output=True)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+def build_commit(cfg, rev, targets=("linux64",), rebuild=False, jobs=None, log_dir=None):
+    """worktree <builds_dir>/<sha12> at the commit, configure, ninja the targets; {target: path}"""
+    repo = expand(cfg["repo"])
+    if not repo or not (repo / ".git").exists():
+        raise SystemExit("ae_test build: no git repo to build from (config 'repo')")
+    sha = resolve_commit(repo, rev)
+    if not sha:
+        raise SystemExit(f"ae_test build: {rev} is not a commit in {repo} (push it to the box first: --box)")
+    tree = expand(cfg["builds_dir"]) / sha[:12]
+    check_not_tmp(tree.parent, "builds_dir")
+    tree.parent.mkdir(parents=True, exist_ok=True)
+    targets = expand_targets(targets)
+    lock = open(str(tree) + ".lock", "w")
+    import fcntl
+    fcntl.flock(lock, fcntl.LOCK_EX)
+    try:
+        if not (tree / "configure.py").exists():
+            if tree.exists():
+                shutil.rmtree(tree)
+            git(repo, "worktree", "prune")
+            git(repo, "worktree", "add", "--detach", str(tree), sha)
+        log_dir = Path(log_dir) if log_dir else tree
+        log_dir.mkdir(parents=True, exist_ok=True)
+        configure_args = list(cfg["configure_args"])
+        stamp_file = tree / ".ae_test_configure"
+        if rebuild or not (tree / "build.ninja").exists() or not stamp_file.exists() or \
+                stamp_file.read_text() != json.dumps(configure_args):
+            with open(log_dir / f"configure-{sha[:12]}.log", "w") as f:
+                r = subprocess.run([sys.executable, "configure.py", *configure_args], cwd=tree, stdout=f,
+                                   stderr=subprocess.STDOUT)
+            if r.returncode:
+                raise SystemExit(f"ae_test build: configure failed (log {log_dir}/configure-{sha[:12]}.log)")
+            stamp_file.write_text(json.dumps(configure_args))
+        jobs = jobs or (cfg["jobs_slow"] if cfg.get("_slow") else cfg["jobs"])
+        out = {}
+        for t in targets:
+            env = dict(os.environ)
+            if t == "linux" and cfg.get("pkg_config_path_32"):
+                env["PKG_CONFIG_PATH"] = cfg["pkg_config_path_32"]
+            start = time.time()
+            logf = log_dir / f"build-{sha[:12]}-{t}.log"
+            with open(logf, "w") as f:
+                r = subprocess.run(["ninja", f"-j{jobs}", t], cwd=tree, env=env, stdout=f, stderr=subprocess.STDOUT)
+            if r.returncode:
+                tail = logf.read_text(errors="replace").splitlines()[-15:]
+                raise SystemExit(f"ae_test build: ninja {t} failed (log {logf}):\n" + "\n".join(tail))
+            out[t] = {"path": str(tree / TARGETS[t]), "seconds": round(time.time() - start, 1), "log": str(logf)}
+        return {"commit": sha, "tree": str(tree), "targets": out}
+    finally:
+        fcntl.flock(lock, fcntl.LOCK_UN)
+        lock.close()
+
+
+def removable_build(cfg, sha):
+    """the folder of a built commit to delete: sha must be 12-40 hex digits and the folder directly in
+    builds_dir (resolved), else SystemExit"""
+    if not re.fullmatch(r"[0-9a-f]{12,40}", sha or ""):
+        raise SystemExit(f"ae_test build: --remove takes a commit's 12-40 hex digit sha, not {sha!r}")
+    builds = expand(cfg["builds_dir"]).resolve()
+    candidate = builds / sha[:12]
+    if candidate.is_symlink():  # (never follow a link: it could name another build or anything else)
+        raise SystemExit(f"ae_test build: {candidate} is a symbolic link; not removed")
+    target = candidate.resolve()
+    if target.parent != builds:
+        raise SystemExit(f"ae_test build: {target} is not in {builds}")
+    return target
+
+
+def expand_targets(targets):
+    out = []
+    for t in targets:
+        for x in (ALL_TARGETS if t == "all" else ["server", "server-x64"] if t == "servers" else [t]):
+            if x not in TARGETS:
+                raise SystemExit(f"ae_test build: unknown target {x} (known: {', '.join(TARGETS)}, all, servers)")
+            if x not in out:
+                out.append(x)
+    return out
+
+
+def resolve_build(cfg, name, target="linux64", auto_build=True):
+    """a build to play: {label, dir, binary, env}. name: a named build of the config, a path (a folder with
+    the binary, or the binary), or a commit of the repo (built under builds_dir on first use)"""
+    nb = cfg.get("named_builds", {}).get(name)
+    if nb is not None:
+        if isinstance(nb, str):
+            nb = {"dir": nb}
+        d = expand(nb["dir"])
+        binary = d / nb.get("binary", "halo") if d.is_dir() else d
+        return {"label": name, "dir": str(binary.parent), "binary": str(binary), "env": nb.get("env", {})}
+    p = expand(name)
+    if p.exists():
+        binary = p / "halo" if p.is_dir() else p
+        return {"label": str(name), "dir": str(binary.parent), "binary": str(binary), "env": {}}
+    repo = expand(cfg.get("repo"))
+    sha = resolve_commit(repo, name) if repo and (repo / ".git").exists() else None
+    if not sha:
+        raise SystemExit(f"ae_test: build '{name}' is not a named build, a path or a commit")
+    binary = expand(cfg["builds_dir"]) / sha[:12] / TARGETS[target]
+    if not binary.exists():
+        if not auto_build:
+            raise SystemExit(f"ae_test: {sha[:12]} is not built ({binary}); run build.py first")
+        log(f"ae_test: building {sha[:12]} {target}")
+        build_commit(cfg, sha, [target])
+    return {"label": sha[:12], "dir": str(binary.parent), "binary": str(binary), "env": {}, "commit": sha}
+
+
+# ---------------------------------------------------------------------------------------------- game spec
+
+SPEC_KEYS = {
+    "name": "case name (folder name)",
+    "build": "named build, path or commit",
+    "target": "linux64 (default) or linux (32-bit)",
+    "map": "multiplayer map (host:<map>; '<name>@ce' for Custom Edition) or a campaign scenario "
+           "path with backslashes (levels\\a10\\a10, through init.txt)",
+    "gametype": "variant for the hosted game (host:<map>:<gametype>)",
+    "saved_gametype": "a custom gametype of the save root, by its stored name, for the hosted game "
+                      "(HALO_NETWORK_TEST_GAMETYPE; not found: the built-in one, as without it)",
+    "network_test": "raw HALO_NETWORK_TEST (overrides map: 'join' for a client)",
+    "flags": "HALO_NETWORK_TEST_FLAGS (gametype option bits)",
+    "pack_loadout": "primary | secondary | both: the hosted game's custom loadout takes the weapon pack's weapon "
+                    "in that slot (HALO_NETWORK_TEST_PACK_LOADOUT)",
+    "pack_map_spawns": "true: the hosted game's BATTLE RIFLE ON MAP (HALO_NETWORK_TEST_PACK_MAP_SPAWNS=1)",
+    "pack_file": "a weapon pack file read in place of packs/ae_battle_rifle.aepack (linked as the data root's "
+                 "pack_file/<name>; HALO_WEAPON_PACK_FILE=d:\\pack_file\\<name>)",
+    "packs_from": "a folder linked as the data root's packs/ (default: data_dir/packs when it exists), or "
+                  "\"none\" for no packs/ at all; never under /tmp",
+    "start": "HALO_NETWORK_TEST_START seconds",
+    "local_players": "split-screen players 1-4 (HALO_NETWORK_TEST_LOCAL_PLAYERS)",
+    "bots": "system-link bots joining once the lobby listens (tools/system_link_bots.py)",
+    "bot_args": "more arguments for the bots, e.g. ['--move']",
+    "mod": "HALO_MOD ('' stock, 'NHE', 'CE+ X')",
+    "menus": "HALO_MENUS (pc / xbox)",
+    "window": "WxH: windowed at this size (HALO_DISPLAY_MODE=windowed, HALO_WINDOW_SIZE)",
+    "exit_after": "HALO_EXIT_AFTER seconds",
+    "screenshots": "every N frames (BMP, converted to PNG)",
+    "init": "init.txt lines",
+    "test_input": "HALO_TEST_INPUT",
+    "config_toml": "a config.toml to put beside the binary",
+    "env": "more environment variables",
+    "record": "seconds of MP4 to record from the first frame of play (HALO_RECORD_SECONDS; skipped with "
+              "older builds or without ffmpeg)",
+    "address": "this game's loopback address (default 127.0.0.200)",
+    "broadcast": "HALO_NET_BROADCAST",
+    "delay": "seconds after the first game of a group before this one starts",
+    "timeout_extra": "seconds past exit_after before the game is killed (default 150)",
+    "expect": "pass rules: {'ticks': min tick, 'scripts': true, 'clean_exit': true, 'lines': [regex, ...] each "
+              "must match a line of debug.txt, 'no_lines': [regex, ...] none may} (and the allowances "
+              "'refusals_ok', 'lost_ok', 'cache_overflow_ok': a texture / sound cache overflow fails a game otherwise)",
+    "test_runs": "TEST RUN list files (on the machine that plays) copied into the case's data root test-runs/",
+    "test_run_results": "TEST RUN results files (<list id>.results.jsonl, on the machine that plays) copied into the "
+                        "config folder's test-runs/ (the binary's folder)",
+    "save": "a named save root shared by the cases of one run (default: the case's own)",
+    "save_from": "a folder (on the machine that plays) copied as the case's save root before the game (a "
+                 "shared one: once, when it is made; links copied as files); never under /tmp. A real save "
+                 "root may be the source: only the copy is played",
+}
+
+
+PACK_LOADOUTS = ("primary", "secondary", "both")
+
+
+def pack_map_spawns_on(value):
+    """pack_map_spawns is on for exactly 1, true or "on" / "1" / "true" (a string "false" is not on)"""
+    return value is True or value == 1 or (isinstance(value, str) and value.lower() in ("1", "true", "on"))
+
+
+def parse_spec(data):
+    """a game spec (dict) checked against SPEC_KEYS, with defaults"""
+    if isinstance(data, str):
+        data = json.loads(data)
+    unknown = sorted(set(data) - set(SPEC_KEYS))
+    if unknown:
+        raise ValueError(f"unknown spec keys: {', '.join(unknown)} (known: {', '.join(SPEC_KEYS)})")
+    spec = {"name": "game", "target": "linux64", "local_players": 1, "bots": 0, "bot_args": [], "exit_after": 35,
+            "screenshots": 0, "init": [], "env": {}, "record": 0, "address": ADDRESS, "delay": 0,
+            "timeout_extra": 150, "expect": {}}
+    spec.update(data)
+    if isinstance(spec["init"], str):
+        spec["init"] = [spec["init"]]
+    if "pack_map_spawns" in spec and not (isinstance(spec["pack_map_spawns"], (bool, int)) or
+                                         spec["pack_map_spawns"] in ("1", "true", "on", "0", "false", "off")):
+        raise ValueError("pack_map_spawns is true / false (or 1 / 0, on / off)")
+    if "pack_loadout" in spec and spec["pack_loadout"] not in PACK_LOADOUTS:
+        raise ValueError(f"pack_loadout is one of {', '.join(PACK_LOADOUTS)}")
+    for key in ("lines", "no_lines"):
+        patterns = spec["expect"].get(key, [])
+        if not isinstance(patterns, list) or not all(isinstance(p, str) for p in patterns):
+            raise ValueError(f"expect.{key} is a list of regex strings")
+        for pattern in patterns:
+            re.compile(pattern)  # (a bad regex stops the run here, not after the game)
+    lp = int(spec["local_players"])
+    if not 1 <= lp <= 4:
+        raise ValueError("local_players is 1-4")
+    if spec.get("window") and not re.fullmatch(r"\d+x\d+", spec["window"]):
+        raise ValueError("window is WxH, e.g. 1920x1080")
+    return spec
+
+
+def spec_kind(spec):
+    """mp (a hosted network test game), campaign (init.txt map_name), join, or menu"""
+    nt = spec.get("network_test")
+    if nt:
+        return "join" if nt == "join" else "mp"
+    m = spec.get("map")
+    if not m:
+        return "menu"
+    return "campaign" if "\\" in m else "mp"
+
+
+def spec_env(spec, data_root, save_root, shots_dir=None):
+    """the environment of one game (without the inherited one)"""
+    env = {
+        "SDL_AUDIO_DRIVER": "dummy", "HALO_ARENA_MENUS": "0",
+        "SDL_GAMECONTROLLER_IGNORE_DEVICES": "all",
+        "HALO_HIDDEN_WINDOW": "1",
+        "HALO_NET_ONLINE": "false",
+        "HALO_NET_ADDRESS": spec.get("address", ADDRESS),
+        "HALO_UPDATE_AUTO": "false",
+        "HALO_UPDATE_ANSWER": "no",
+        "HALO_DATA_ROOT": str(data_root),
+        "HALO_SAVE_ROOT": str(save_root),
+        "HALO_EXIT_AFTER": str(spec["exit_after"]),
+    }
+    kind = spec_kind(spec)
+    if spec.get("network_test"):
+        env["HALO_NETWORK_TEST"] = spec["network_test"]
+    elif kind == "mp":
+        env["HALO_NETWORK_TEST"] = f"host:{spec['map']}" + (f":{spec['gametype']}" if spec.get("gametype") else "")
+    if kind in ("mp",) and int(spec.get("local_players", 1)) > 1:
+        env["HALO_NETWORK_TEST_LOCAL_PLAYERS"] = str(spec["local_players"])
+    if spec.get("flags") is not None:
+        env["HALO_NETWORK_TEST_FLAGS"] = str(spec["flags"])
+    if spec.get("saved_gametype"):
+        env["HALO_NETWORK_TEST_GAMETYPE"] = spec["saved_gametype"]
+    if spec.get("pack_loadout"):
+        env["HALO_NETWORK_TEST_PACK_LOADOUT"] = spec["pack_loadout"]
+    if pack_map_spawns_on(spec.get("pack_map_spawns")):
+        env["HALO_NETWORK_TEST_PACK_MAP_SPAWNS"] = "1"
+    if spec.get("pack_file"):
+        env["HALO_WEAPON_PACK_FILE"] = pack_file_xbox_path(spec)
+    if spec.get("start") is not None:
+        env["HALO_NETWORK_TEST_START"] = str(spec["start"])
+    if spec.get("mod") is not None:
+        env["HALO_MOD"] = spec["mod"]
+    if spec.get("menus"):
+        env["HALO_MENUS"] = spec["menus"]
+    if spec.get("window"):
+        env["HALO_DISPLAY_MODE"] = "windowed"
+        env["HALO_WINDOW_SIZE"] = spec["window"]
+    if spec.get("broadcast"):
+        env["HALO_NET_BROADCAST"] = spec["broadcast"]
+    if spec.get("test_input"):
+        env["HALO_TEST_INPUT"] = spec["test_input"]
+    if spec.get("screenshots") and shots_dir:
+        env["HALO_SCREENSHOT_DIR"] = str(shots_dir)
+        env["HALO_SCREENSHOT_EVERY"] = str(spec["screenshots"])
+    env.update({k: str(v) for k, v in spec.get("env", {}).items()})
+    return env
+
+
+def spec_init(spec):
+    lines = list(spec.get("init", []))
+    if spec_kind(spec) == "campaign" and not any(l.startswith("map_name") for l in lines):
+        lines.append(f"map_name {spec['map']}")
+    return lines
+
+
+def map_available(cfg, spec):
+    """the data a spec needs is there: (True, '') or (False, why)"""
+    data = expand(cfg.get("data_dir"))
+    if not data:
+        return False, "no data_dir in the config"
+    mod = spec.get("mod") or ""
+    # (a modded disc: discs/<disc>, or mods/<disc> where earlier releases kept them: the game's ae_discs.c)
+    disc_maps = next((data / top / mod / "maps" for top in ("discs", "mods") if mod and (data / top / mod).exists()),
+                     data / "discs" / mod / "maps")
+    if mod and not disc_maps.parent.exists():
+        return False, f"disc '{mod}' missing ({data}/discs or {data}/mods)"
+    m = spec.get("map")
+    if not m or spec.get("network_test"):
+        return True, ""
+    if "\\" in m:
+        name = m.rsplit("\\", 1)[-1]
+        dirs = [data / "maps"] + ([disc_maps] if mod else [])
+        ok = any((d / f"{name}.map").exists() for d in dirs)
+        return (ok, "" if ok else f"campaign map {name}.map missing")
+    if m.endswith("@ce"):
+        name = m[:-3]
+        ok = (data / "maps" / "ce" / f"{name}.map").exists()
+        return (ok, "" if ok else f"Custom Edition map {name}.map missing ({data}/maps/ce)")
+    dirs = [data / "maps"] + ([disc_maps] if mod else [])
+    ok = any((d / f"{m}.map").exists() for d in dirs)
+    return (ok, "" if ok else f"map {m}.map missing")
+
+
+# ---------------------------------------------------------------------------------------------- debug.txt
+
+RE_TICK = re.compile(r"network test: tick (\d+) (.*)")
+# the texture and sound caches overflowing (xbox_texture_cache.c "YOU GOT STABBED", xbox_sound_cache.c "SOUND CACHE
+# BLOWN"): a map too big for the caches, pictures in the wrong format and sounds that never play; a test fails on one
+RE_CACHE_OVERFLOW = re.compile(r"YOU GOT STABBED|SOUND CACHE BLOWN")
+RE_PLAYER = re.compile(r"player (\d+): \(([-\d.]+) ([-\d.]+) ([-\d.]+)\)[^|]*? k(-?\d+) d(-?\d+)")
+
+
+def parse_debug(text):
+    """the counts a test looks at in a debug.txt"""
+    lines = text.splitlines()
+    r = {"version": "", "network_version": None, "joined": None, "delta": [], "tick": None, "players": 0,
+         "items": None, "asserts": 0, "exceptions": 0, "refusals": 0, "lost_scripts": 0, "lost_lines": [],
+         "scenario_scripts": None, "corrected": 0, "clean_exit": False, "problems": [], "final": {},
+         "shots_skipped": 0, "record_dropped": None, "cache_overflows": 0}
+    for line in lines:
+        s = line.strip()
+        if not r["version"] and re.match(r"^[\w-]+: (Halo CE|ChupathingyCE|OpenCE|halo)", s, re.I) and \
+                "network version" not in s:
+            r["version"] = s[:200]
+        m = re.search(r"OpenCE network version (\d+)", s)
+        if m and r["network_version"] is None:
+            r["network_version"] = int(m[1])
+        # (a legacy host's version check, or a Delta host's wire check; never the "not joining" lines)
+        if re.search(r"(?<!not )joining a (Delta )?host of", s):
+            r["joined"] = s.split("  ", 1)[-1][:200]
+        if "Delta Peer:" in s and ("speaks Delta" in s or "agreed" in s or "legacy" in s):
+            r["delta"].append(s.split(": ", 1)[-1][:200])
+        m = RE_TICK.search(s)
+        if m:
+            r["tick"] = int(m[1])
+            players = RE_PLAYER.findall(m[2])
+            # (players seen alive in any one status line: a player dead at the last line was seen)
+            r["players"] = max(r["players"] or 0, len(players))
+            r["final"] = {int(p[0]): {"k": int(p[4]), "d": int(p[5])} for p in players}
+            im = re.search(r"\| items (\d+)", m[2])
+            if im:
+                r["items"] = int(im[1])
+            continue
+        if RE_CACHE_OVERFLOW.search(s):
+            r["cache_overflows"] += 1
+            if len(r["problems"]) < 20:
+                r["problems"].append(s[:220])
+        low = s.lower()
+        if re.search(r"\bassert", low):
+            r["asserts"] += 1
+            if len(r["problems"]) < 20:
+                r["problems"].append(s[:220])
+        elif re.search(r"exception|fault at|segmentation fault|unhandled signal", low):
+            r["exceptions"] += 1
+            if len(r["problems"]) < 20:
+                r["problems"].append(s[:220])
+        if "cannot be played" in low or re.search(r"\brefus", low):
+            r["refusals"] += 1
+            if len(r["problems"]) < 20:
+                r["problems"].append(s[:220])
+        m = re.search(r"(\d+) scripts won't run", s)
+        if m:
+            r["lost_scripts"] += int(m[1])
+            r["lost_lines"].append(s[:220])
+        elif "scripts won't run" in s:
+            r["lost_scripts"] += 1
+            r["lost_lines"].append(s[:220])
+        m = re.search(r"scenario scripts: (\d+) scripts", s)
+        if m:
+            r["scenario_scripts"] = int(m[1])
+        if "is corrected" in s:
+            r["corrected"] += 1
+        if "exiting after debug.exit_after" in s:
+            r["clean_exit"] = True
+        m = re.search(r"capture: screenshot .* skipped \((\d+) so far\)", s)
+        if m:
+            r["shots_skipped"] = max(r["shots_skipped"], int(m[1]))
+        elif re.search(r"capture: screenshot .* skipped", s):
+            r["shots_skipped"] += 1
+        m = re.search(r"capture: stopped after .*?(\d+) dropped", s)
+        if m:
+            r["record_dropped"] = (r["record_dropped"] or 0) + int(m[1])
+    return r
+
+
+def player_tracks(text):
+    """{player: {tick: (x, y, z, kills, deaths)}} from the network test's per-second lines"""
+    d = {}
+    for line in text.splitlines():
+        m = RE_TICK.search(line)
+        if not m:
+            continue
+        t = int(m[1])
+        for p in RE_PLAYER.finditer(m[2]):
+            d.setdefault(int(p[1]), {})[t] = (float(p[2]), float(p[3]), float(p[4]), int(p[5]), int(p[6]))
+    return d
+
+
+def compare_tracks(host_text, client_text, window=2, kd_window=45):
+    """per player: samples, median and 90th percentile of the host-client distance at the same tick
+    (within `window` ticks), and both machines' kills/deaths at a common last tick: each one's latest sample at
+    or before the lower of the two machines' last ticks ("kd_tick"), so a kill in the last second before one
+    machine stops logging is not a difference. The machines log a second apart at their own ticks, and a kill
+    reaches a client a few ticks late, so "kd_match" holds when some host sample within `kd_window` ticks of the
+    client's has the client's kills/deaths"""
+    import math
+    h, c = player_tracks(host_text), player_tracks(client_text)
+    out = {}
+    for p in sorted(set(h) & set(c)):
+        diffs = []
+        for t, v in h[p].items():
+            near = [u for u in c[p] if abs(u - t) <= window]
+            if near:
+                u = min(near, key=lambda u: abs(u - t))
+                diffs.append(math.dist(v[:3], c[p][u][:3]))
+        diffs.sort()
+        common = min(max(h[p]), max(c[p]))
+        ht = max(t for t in h[p] if t <= common)
+        ct = max((t for t in c[p] if t <= common), default=min(c[p]))
+        kd_match = any(abs(t - ct) <= kd_window and [v[3], v[4]] == [c[p][ct][3], c[p][ct][4]]
+                       for t, v in h[p].items())
+        out[p] = {"samples": len(diffs), "kd_tick": common, "kd_match": kd_match,
+                  "median_m": round(diffs[len(diffs) // 2], 3) if diffs else None,
+                  "p90_m": round(diffs[int(len(diffs) * 0.9)], 3) if diffs else None,
+                  "host_kd": [h[p][ht][3], h[p][ht][4]], "client_kd": [c[p][ct][3], c[p][ct][4]]}
+    return out
+
+
+def evaluate(spec, result, text=None):
+    """PASS / FAIL with reasons, from the run and its debug.txt (text: its contents, for expect.lines and
+    expect.no_lines: regexes that must / must not match a line)"""
+    why = []
+    d = result.get("debug") or {}
+    exp = spec.get("expect", {})
+    if result.get("skipped"):
+        return "SKIP", [result["skipped"]]
+    if result.get("error"):
+        why.append(result["error"])
+    if result.get("timed_out"):
+        why.append("timed out (killed)")
+    elif result.get("exit_code") not in (0,):
+        why.append(f"exit {result.get('exit_code')}")
+    if not result.get("debug_found"):
+        why.append("no debug.txt")
+    else:
+        if exp.get("clean_exit", True) and not d.get("clean_exit"):
+            why.append("no clean exit line")
+        if d.get("asserts"):
+            why.append(f"{d['asserts']} asserts")
+        if d.get("exceptions"):
+            why.append(f"{d['exceptions']} exceptions")
+        if d.get("refusals") and not exp.get("refusals_ok"):
+            why.append(f"{d['refusals']} refusals")
+        if d.get("lost_scripts") and not exp.get("lost_ok"):
+            why.append(f"{d['lost_scripts']} lost scripts")
+        if d.get("cache_overflows") and not exp.get("cache_overflow_ok"):
+            why.append(f"{d['cache_overflows']} cache overflows (YOU GOT STABBED / SOUND CACHE BLOWN)")
+        kind = spec_kind(spec)
+        min_tick = exp.get("ticks", 150 if kind in ("mp", "join") else None)
+        if min_tick and (d.get("tick") or 0) < min_tick:
+            why.append(f"tick {d.get('tick')} < {min_tick}")
+        if exp.get("scripts", kind == "campaign") and not d.get("scenario_scripts"):
+            why.append("no scenario scripts line")
+        wanted, unwanted = exp.get("lines", []), exp.get("no_lines", [])
+        if (wanted or unwanted) and text is None:
+            why.append("expect.lines asked for, no debug.txt text to look in")
+        else:
+            for pattern in wanted:
+                if not re.search(pattern, text, re.M):
+                    why.append(f"expected line not in debug.txt: {pattern}")
+            for pattern in unwanted:
+                m = re.search(pattern, text, re.M)
+                if m:
+                    why.append(f"unexpected line in debug.txt: {m.group(0)[:160]}")
+    if str(result.get("record") or "").startswith("recording") and not result.get("recordings"):
+        why.append("recording asked, no mp4")
+    return ("FAIL" if why else "PASS"), why
+
+
+def find_recordings(folder):
+    """the finished clips the game wrote into HALO_RECORD_DIR: <dir>/<name>.mp4 (its intermediates,
+    <name>.video.mp4.part and <name>.audio.f32.part, are not clips)"""
+    folder = Path(folder)
+    if not folder.exists():
+        return []
+    return sorted(p for p in folder.glob("*.mp4") if p.is_file())
+
+
+def one_line(name, result):
+    d = result.get("debug") or {}
+    if result.get("skipped"):
+        return f"{name}: SKIP ({result['skipped']})"
+    bits = [f"{result.get('status', '?')}", f"exit {result.get('exit_code')}", f"{result.get('seconds', 0):.0f} s"]
+    if d.get("tick") is not None:
+        bits.append(f"tick {d['tick']}")
+    if d.get("items") is not None:
+        bits.append(f"items {d['items']}")
+    if d.get("scenario_scripts") is not None:
+        bits.append(f"scripts {d['scenario_scripts']}")
+    bits.append(f"asserts {d.get('asserts', '-')} exc {d.get('exceptions', '-')} "
+                f"refused {d.get('refusals', '-')} lost {d.get('lost_scripts', '-')}")
+    if d.get("cache_overflows"):
+        bits.append(f"cache overflows {d['cache_overflows']}")
+    if result.get("shots"):
+        bits.append(f"{len(result['shots'])} png")
+    if d.get("shots_skipped"):
+        bits.append(f"{d['shots_skipped']} screenshots skipped")
+    if result.get("recordings"):
+        bits.append(f"{len(result['recordings'])} mp4 ({', '.join(result['recordings'])})")
+        if d.get("record_dropped"):
+            bits.append(f"{d['record_dropped']} frames dropped")
+    elif result.get("record") and result["record"] != "off":
+        bits.append(f"record: {result['record']}")
+    if result.get("why"):
+        bits.append("(" + "; ".join(result["why"]) + ")")
+    return f"{name}: " + ", ".join(bits)
+
+
+# ---------------------------------------------------------------------------------------------- images
+
+
+def png_bytes(width, height, rgb):
+    """a PNG (8-bit RGB, filter 0) from packed RGB rows"""
+    stride = width * 3
+    raw = bytearray()
+    for y in range(height):
+        raw += b"\0"
+        raw += rgb[y * stride:(y + 1) * stride]
+
+    def chunk(t, b):
+        return struct.pack(">I", len(b)) + t + b + struct.pack(">I", zlib.crc32(t + b) & 0xffffffff)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)) +
+            chunk(b"IDAT", zlib.compress(bytes(raw), 6)) + chunk(b"IEND", b""))
+
+
+def read_bmp(data):
+    """(width, height, rgb) of an uncompressed 24- or 32-bit BMP, either row order"""
+    if data[:2] != b"BM":
+        raise ValueError("not a BMP")
+    off = struct.unpack_from("<I", data, 10)[0]
+    w, h = struct.unpack_from("<ii", data, 18)
+    bpp = struct.unpack_from("<H", data, 28)[0]
+    comp = struct.unpack_from("<I", data, 30)[0]
+    if bpp not in (24, 32) or comp not in (0, 3):
+        raise ValueError(f"BMP {bpp} bit, compression {comp}: not supported")
+    n = bpp // 8
+    stride = (w * n + 3) & ~3
+    top_down = h < 0
+    h = abs(h)
+    rgb = bytearray(w * h * 3)
+    for y in range(h):
+        sy = y if top_down else h - 1 - y
+        row = data[off + sy * stride: off + sy * stride + w * n]
+        o = y * w * 3
+        out = bytearray(w * 3)
+        out[0::3] = row[2::n]
+        out[1::3] = row[1::n]
+        out[2::3] = row[0::n]
+        rgb[o:o + w * 3] = out
+    return w, h, rgb
+
+
+def read_png(path):
+    """(width, height, rgb) of a PNG: Pillow when present, else 8-bit RGB/RGBA with any filter"""
+    try:
+        from PIL import Image
+        im = Image.open(path).convert("RGB")
+        return im.width, im.height, bytearray(im.tobytes())
+    except ImportError:
+        pass
+    data = Path(path).read_bytes()
+    pos, idat, w = 8, b"", 0
+    while pos < len(data):
+        n, t = struct.unpack_from(">I4s", data, pos)
+        body = data[pos + 8:pos + 8 + n]
+        if t == b"IHDR":
+            w, h, depth, ctype = struct.unpack_from(">IIBB", body)
+            if depth != 8 or ctype not in (2, 6):
+                raise ValueError("only 8-bit RGB/RGBA PNGs without Pillow")
+            ch = 3 if ctype == 2 else 4
+        elif t == b"IDAT":
+            idat += body
+        pos += 12 + n
+    raw = zlib.decompress(idat)
+    stride = w * ch
+    prev = bytearray(stride)
+    rgb = bytearray(w * h * 3)
+    i = 0
+    for y in range(h):
+        f = raw[i]
+        line = bytearray(raw[i + 1:i + 1 + stride])
+        i += 1 + stride
+        for x in (range(stride) if f else ()):
+            a = line[x - ch] if x >= ch else 0
+            b = prev[x]
+            c = prev[x - ch] if x >= ch else 0
+            if f == 1:
+                line[x] = (line[x] + a) & 255
+            elif f == 2:
+                line[x] = (line[x] + b) & 255
+            elif f == 3:
+                line[x] = (line[x] + ((a + b) >> 1)) & 255
+            elif f == 4:
+                p = a + b - c
+                pa, pb, pc = abs(p - a), abs(p - b), abs(p - c)
+                line[x] = (line[x] + (a if pa <= pb and pa <= pc else b if pb <= pc else c)) & 255
+        prev = line
+        o = y * w * 3
+        if ch == 3:
+            rgb[o:o + w * 3] = line
+        else:
+            seg = bytearray(w * 3)
+            seg[0::3], seg[1::3], seg[2::3] = line[0::4], line[1::4], line[2::4]
+            rgb[o:o + w * 3] = seg
+    return w, h, rgb
+
+
+def bmp_to_png(path, delete=True):
+    """convert one BMP to a PNG beside it (Pillow when present), delete the BMP; the PNG's path"""
+    path = Path(path)
+    png = path.with_suffix(".png")
+    try:
+        from PIL import Image
+        with Image.open(path) as im:
+            im.convert("RGB").save(png, optimize=False)
+    except ImportError:
+        w, h, rgb = read_bmp(path.read_bytes())
+        png.write_bytes(png_bytes(w, h, rgb))
+    if delete:
+        path.unlink()
+    return png
+
+
+def convert_shots(folder, delete=True):
+    """every BMP in a folder to PNG; the sorted PNG paths"""
+    folder = Path(folder)
+    if not folder.exists():
+        return []
+    for part in folder.glob("*.part"):  # (a PNG the game was still writing when it was stopped)
+        part.unlink(missing_ok=True)
+    for b in sorted(folder.glob("*.bmp")):
+        try:
+            bmp_to_png(b, delete)
+        except Exception as e:  # a frame cut short when the game was killed
+            log(f"ae_test: {b.name}: {e}")
+    return sorted(folder.glob("*.png"))
+
+
+def mean_brightness(w, h, rgb, step=97):
+    """the mean of a sample of the image's channels, 0..1"""
+    sample = rgb[::step]
+    return (sum(sample) / len(sample) / 255.0) if sample else 0.0
+
+
+def pick_frame(pngs, dark=0.06):
+    """the last frame that is not (nearly) black: the game's last picture before it quit"""
+    for p in reversed(list(pngs)):
+        try:
+            w, h, rgb = read_png(p)
+        except Exception:
+            continue
+        if mean_brightness(w, h, rgb) > dark:
+            return Path(p)
+    return Path(pngs[-1]) if pngs else None
+
+
+def split_views(w, h, players):
+    """the split-screen views (x, y, w, h): 2p top/bottom, 3p one top and two below, 4p quarters"""
+    if players == 1:
+        return [(0, 0, w, h)]
+    if players == 2:
+        return [(0, 0, w, h // 2), (0, h // 2, w, h - h // 2)]
+    if players == 3:
+        return [(0, 0, w, h // 2), (0, h // 2, w // 2, h - h // 2), (w // 2, h // 2, w - w // 2, h - h // 2)]
+    return [(0, 0, w // 2, h // 2), (w // 2, 0, w - w // 2, h // 2), (0, h // 2, w // 2, h - h // 2),
+            (w // 2, h // 2, w - w // 2, h - h // 2)]
+
+
+def reticle_pixel(r, g, b):
+    """a pixel the HUD's reticle is drawn in: white, the HUD's cyan (~170,255,255) or its blue (~90,187,255)"""
+    return (r > 230 and g > 230 and b > 230) or (g > 240 and b > 240 and r > 120) or \
+        (b > 235 and g > 160 and b - r > 40)
+
+
+def reticle_offsets(w, h, rgb, players, is_reticle=reticle_pixel, radius=0.25, join=12):
+    """per view: the reticle's centre and its offset from the view's centre in px. The reticle is the blob
+    of reticle-coloured pixels (reticle_pixel) nearest the view's
+    middle, grown by the blobs within `join` px of it (a ring of ticks is several blobs). Most reliable on a
+    flat render (HALO_GPU_DEBUG_FLAT=1); on a normal one a bright light near the middle can be taken."""
+    out = []
+    for i, (x, y, vw, vh) in enumerate(split_views(w, h, players)):
+        cx, cy = x + vw / 2.0, y + vh / 2.0
+        r = int(min(vw, vh) * radius)
+        x0, y0 = max(0, int(cx - r)), max(0, int(cy - r))
+        x1, y1 = min(w, int(cx + r)), min(h, int(cy + r))
+        cw = x1 - x0
+        mask = bytearray((x1 - x0) * (y1 - y0))
+        for yy in range(y0, y1):
+            row = rgb[(yy * w + x0) * 3:(yy * w + x1) * 3]
+            base = (yy - y0) * cw
+            for xx in range(cw):
+                if is_reticle(row[xx * 3], row[xx * 3 + 1], row[xx * 3 + 2]):
+                    mask[base + xx] = 1
+        blobs = []
+        seen = bytearray(len(mask))
+        ch = y1 - y0
+        for start in range(len(mask)):
+            if not mask[start] or seen[start]:
+                continue
+            stack = [start]
+            seen[start] = 1
+            n, bx0, by0, bx1, by1 = 0, cw, ch, -1, -1
+            while stack:
+                k = stack.pop()
+                n += 1
+                kx, ky = k % cw, k // cw
+                bx0, bx1, by0, by1 = min(bx0, kx), max(bx1, kx), min(by0, ky), max(by1, ky)
+                for dy in (-1, 0, 1):
+                    for dx in (-1, 0, 1):
+                        nx, ny = kx + dx, ky + dy
+                        if 0 <= nx < cw and 0 <= ny < ch:
+                            j = ny * cw + nx
+                            if mask[j] and not seen[j]:
+                                seen[j] = 1
+                                stack.append(j)
+            blobs.append([n, bx0, by0, bx1, by1])
+        if not blobs:
+            out.append({"view": i + 1, "found": False})
+            continue
+        mx, my = cw / 2.0, ch / 2.0
+        cands = [k for k in range(len(blobs)) if blobs[k][0] >= 3] or list(range(len(blobs)))
+        big = min(cands, key=lambda k: ((blobs[k][1] + blobs[k][3]) / 2.0 - mx) ** 2 +
+                  ((blobs[k][2] + blobs[k][4]) / 2.0 - my) ** 2)
+        _, bx0, by0, bx1, by1 = blobs[big]
+        used, grown = {big}, True
+        while grown:
+            grown = False
+            for k, (n, a0, b0, a1, b1) in enumerate(blobs):
+                if k in used or n < 2:
+                    continue
+                if a0 <= bx1 + join and a1 >= bx0 - join and b0 <= by1 + join and b1 >= by0 - join:
+                    bx0, by0, bx1, by1 = min(bx0, a0), min(by0, b0), max(bx1, a1), max(by1, b1)
+                    used.add(k)
+                    grown = True
+        rx, ry = x0 + (bx0 + bx1) / 2.0, y0 + (by0 + by1) / 2.0
+        vx, vy = cx - 0.5, cy - 0.5
+        out.append({"view": i + 1, "found": True, "reticle": [round(rx, 1), round(ry, 1)],
+                    "size": [bx1 - bx0 + 1, by1 - by0 + 1], "centre": [vx, vy],
+                    "offset": [round(rx - vx, 1), round(ry - vy, 1)]})
+    return out
+
+
+# ---------------------------------------------------------------------------------------------- running games
+
+
+_NETNS = {}
+UNSHARE = ["unshare", "-rnm", "--pid", "--fork", "--mount-proc"]  # (own user, network, mount and pid namespaces)
+
+
+def netns_ok():
+    """the games can run in their own namespaces here (unshare without root); asked once"""
+    if "ok" not in _NETNS:
+        _NETNS["ok"] = _netns_probe()
+    return _NETNS["ok"]
+
+
+def private_tmp_ok():
+    """inside those namespaces a private /tmp can be mounted (each game's X server then has its own); asked once"""
+    if "tmp" not in _NETNS:
+        _NETNS["tmp"] = netns_ok() and subprocess.run(
+            [*UNSHARE, "mount", "-t", "tmpfs", "-o", "mode=1777", "tmpfs", "/tmp"], capture_output=True).returncode == 0
+    return _NETNS["tmp"]
+
+
+def _netns_probe():
+    if not shutil.which("unshare") or not shutil.which("ip"):
+        return False
+    r = subprocess.run([*UNSHARE, "true"], capture_output=True)
+    return r.returncode == 0
+
+
+def use_xvfb(cfg):
+    x = cfg.get("xvfb", "auto")
+    if x == "auto":
+        return not os.environ.get("DISPLAY") and not os.environ.get("WAYLAND_DISPLAY")
+    return bool(x)
+
+
+# the folder of the data root a spec's pack_file is linked into: the game opens debug.weapon_pack_file by Xbox path
+# (d:\ is the data root), as it opens its own files, so a file elsewhere on the machine is linked there
+PACK_FILE_FOLDER = "pack_file"
+# a spec's packs_from for a game with no packs/ folder (run.py --no-packs)
+NO_PACKS = "none"
+
+
+def pack_file_xbox_path(spec):
+    """the Xbox path the game is given for the spec's pack_file (linked by prepare_game)"""
+    return f"d:\\{PACK_FILE_FOLDER}\\{expand(spec['pack_file']).name}"
+
+
+def packs_folder(spec, data):
+    """the folder linked as the data root's packs/: the spec's packs_from ("none": no folder, whatever the machine
+    has), else data_dir/packs when there is one"""
+    if spec.get("packs_from") == NO_PACKS:
+        return None
+    if spec.get("packs_from"):
+        packs = expand(spec["packs_from"])
+        check_not_tmp(packs, "packs_from")
+        if not packs.is_dir():
+            raise SystemExit(f"ae_test: packs_from {packs} is not a folder")
+        return packs
+    if data and (data / "packs").is_dir():
+        return data / "packs"
+    return None
+
+
+def prepare_game(cfg, spec, build, work, out, save_roots=None):
+    """the folders and launch description of one game: work/{root,bin,save}, out/shots"""
+    check_not_tmp(work, "work folder")
+    data = expand(cfg.get("data_dir"))
+    if work.exists():
+        shutil.rmtree(work)
+    root, binf = work / "root", work / "bin"
+    root.mkdir(parents=True)
+    binf.mkdir(parents=True)
+    if spec.get("save"):
+        save = (save_roots or {}).setdefault(spec["save"], work.parent / f"save-{safe_name(spec['save'])}")
+    else:
+        save = work / "save"
+    if spec.get("save_from"):
+        # (a save root to start from, e.g. one with saved gametypes: copied when the save root is made)
+        save_from = expand(spec["save_from"])
+        check_not_tmp(save_from, "save_from")
+        if not save_from.is_dir():
+            raise SystemExit(f"ae_test: save_from {save_from} is not a folder")
+        if not Path(save).exists():
+            shutil.copytree(save_from, save, symlinks=False)  # (links copied as files: none points out of the copy)
+    Path(save).mkdir(parents=True, exist_ok=True)
+    shots = out / "shots"
+    if spec.get("screenshots"):
+        shots.mkdir(parents=True, exist_ok=True)
+    src = Path(build["dir"])
+    for d in ("maps", "mods", "discs"):
+        if data and (data / d).exists():
+            (root / d).symlink_to(data / d)
+    packs = packs_folder(spec, data)
+    if packs:
+        (root / "packs").symlink_to(packs)
+    for name in spec.get("test_runs", []):
+        # (TEST RUN's lists: <data root>/test-runs/<id>.txt, read by the game by the Xbox path d:\test-runs\)
+        (root / "test-runs").mkdir(exist_ok=True)
+        shutil.copy2(expand(name), root / "test-runs" / Path(expand(name)).name)
+    if spec.get("pack_file"):
+        pack_file = expand(spec["pack_file"])
+        check_not_tmp(pack_file, "pack_file")
+        if not pack_file.exists():
+            raise SystemExit(f"ae_test: pack_file {pack_file} does not exist")
+        (root / PACK_FILE_FOLDER).mkdir()
+        (root / PACK_FILE_FOLDER / pack_file.name).symlink_to(pack_file.resolve())
+    voices = src / "voices" if (src / "voices").exists() else (data / "voices" if data and (data / "voices").exists() else None)
+    if voices:
+        (root / "voices").symlink_to(voices)
+        (binf / "voices").symlink_to(voices)
+    for f in ("brokers.txt",):
+        if (src / f).exists():
+            shutil.copy2(src / f, root / f)
+            shutil.copy2(src / f, binf / f)
+    shutil.copy2(build["binary"], binf / "halo")
+    for name in spec.get("test_run_results", []):
+        (binf / "test-runs").mkdir(exist_ok=True)
+        shutil.copy2(expand(name), binf / "test-runs" / Path(expand(name)).name)
+    init = spec_init(spec)
+    if init:
+        (root / "init.txt").write_text("\n".join(init) + "\n")
+    if spec.get("config_toml"):
+        shutil.copy2(expand(spec["config_toml"]), binf / "config.toml")
+    env = spec_env(spec, root, save, shots)
+    if spec.get("screenshots") and "HALO_SCREENSHOT_FORMAT" not in env:
+        import record as record_mod
+        if record_mod.binary_names(build["binary"], b"HALO_SCREENSHOT_FORMAT"):
+            env["HALO_SCREENSHOT_FORMAT"] = "png"  # (the game writes PNGs; older builds write BMPs, converted)
+    env.update({k: str(v) for k, v in build.get("env", {}).items()})
+    rec = None
+    if spec.get("record"):
+        import record as record_mod
+        rec = record_mod.record_env(build["binary"], spec["record"], out / "video")
+        env.update(rec.get("env", {}))
+    w, h = (spec.get("window") or "1920x1080").split("x")
+    return {"name": spec["name"], "cwd": str(binf), "env": env, "root": str(root), "save": str(save),
+            "shots": str(shots), "delay": spec.get("delay", 0), "address": spec.get("address", ADDRESS),
+            "timeout": float(spec["exit_after"]) + float(spec.get("timeout_extra", 150)),
+            "screen": f"{max(int(w), 640)}x{max(int(h), 480)}", "record": rec}
+
+
+def run_group(cfg, games, bots=None, inner_out=None):
+    """run prepared games together (one set of namespaces) and wait; [{exit_code, timed_out, seconds, display,
+    error, notes}]. If this tool is interrupted, the inner runner's group gets one TERM and stops its games and
+    X servers (within 10 s, so the 40 s here are enough), then KILL."""
+    import signal
+    plan = {"games": games, "bots": bots, "xvfb": use_xvfb(cfg), "nice": 19 if cfg.get("_slow") else cfg.get("nice", 10),
+            "addresses": sorted({g["address"] for g in games}), "in_namespace": False,
+            "host_mnt_ns": _ns("mnt")}
+    inner_out = Path(inner_out)
+    plan_path = inner_out / "plan.json"
+    res_path = inner_out / "inner_result.json"
+    cmd = [sys.executable, str(HERE / "harness.py"), "--inner", str(plan_path), str(res_path)]
+    if netns_ok():
+        plan["in_namespace"] = True  # (only here: _inner never guesses it from its euid)
+        cmd = [*UNSHARE, *cmd]  # (the inner runner is pid 1 there: anything left is killed when it exits)
+    else:
+        log("ae_test: no namespaces here: the game shares this machine's network and /tmp (one game at a time)")
+    write_json(plan_path, plan)
+    if STOPPING.is_set():
+        raise RuntimeError("ae_test: stopping (TERM/INT): no new game")
+    p = subprocess.Popen(cmd, start_new_session=True)  # (its own group: Ctrl-C reaches it once, through us)
+    LIVE_INNERS.add(p)
+    try:
+        p.wait()
+    except BaseException:
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        try:
+            p.wait(timeout=40)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+            p.wait()
+        raise
+    finally:
+        LIVE_INNERS.discard(p)
+    try:
+        got = json.loads(res_path.read_text())
+    except (OSError, ValueError):  # (no result: e.g. the disk filled up)
+        got = []
+    return got + [{"exit_code": None, "timed_out": False, "seconds": 0, "error": "inner runner wrote no result"}
+                  for _ in games[len(got):]]
+
+
+def _ns(kind):
+    try:
+        return os.readlink(f"/proc/self/ns/{kind}")
+    except OSError:
+        return None
+
+
+def start_xvfb(screen, log_file, xvfb="Xvfb", wait=30):
+    """our own X server for one game: Xvfb picks a free display itself (-displayfd) and says which.
+    (Not xvfb-run: its cleanup `kill`s an Xvfb that may already be gone and then returns 1 for a game
+    that exited cleanly.) Returns (process, ":N"); raises RuntimeError (or OSError) with no X server left."""
+    import select
+    r, w = os.pipe()
+    p = None
+    ok = False
+    try:
+        try:
+            p = subprocess.Popen([xvfb, "-displayfd", str(w), "-screen", "0", f"{screen}x24", "-nolisten", "tcp",
+                                  "-noreset"], pass_fds=(w,), stdin=subprocess.DEVNULL, stdout=log_file,
+                                 stderr=log_file, start_new_session=True)
+        finally:
+            os.close(w)
+        data = b""
+        deadline = time.time() + wait
+        while b"\n" not in data and time.time() < deadline:
+            ready, _, _ = select.select([r], [], [], 0.5)
+            if ready:
+                chunk = os.read(r, 64)
+                if not chunk:
+                    break
+                data += chunk
+        num = data.strip().decode(errors="replace")
+        if not num.isdigit():
+            raise RuntimeError(f"{xvfb} gave no display number within {wait} s ({num!r})")
+        ok = True
+        return p, f":{num}"
+    finally:
+        os.close(r)
+        if not ok and p is not None:
+            stop_process_group(p)
+
+
+def stop_process_group(p, grace=10):
+    """TERM, then KILL, a process group we started; already gone is fine. Its exit code (or None)."""
+    import signal
+    if p.poll() is not None:
+        return p.returncode
+    for sig in (signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(p.pid, sig)
+        except ProcessLookupError:
+            break
+        try:
+            return p.wait(timeout=grace)
+        except subprocess.TimeoutExpired:
+            continue
+    return p.wait()
+
+
+def stop_all(procs, grace=10):
+    """TERM every process group first, then wait for them all within one shared grace, then KILL the rest:
+    the whole cleanup takes about `grace` seconds however many there are"""
+    import signal
+    live = [p for p in procs if p is not None and p.poll() is None]
+    for p in live:
+        try:
+            os.killpg(p.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    deadline = time.time() + grace
+    for p in live:
+        try:
+            p.wait(timeout=max(0.01, deadline - time.time()))
+        except subprocess.TimeoutExpired:
+            pass
+    for p in live:
+        if p.poll() is None:
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+    for p in live:
+        p.wait()
+
+
+def private_x_tmp(plan, notes):
+    """(only inside our own namespaces) a private /tmp (tmpfs, with its .X11-unix): the X server's lock file and
+    socket live there, so parallel games' X servers never meet, even when (as Xvfb does) each takes :0. Never on
+    the machine's own /tmp: only when run_group said we are in the namespaces and the mount namespace is not the
+    machine's, and never when a path of this run is under /tmp (it would be hidden). True when mounted; any
+    reason it is not goes to `notes`."""
+    if not plan.get("in_namespace"):
+        return False
+    if _ns("mnt") is None or _ns("mnt") == plan.get("host_mnt_ns"):
+        notes.append("private /tmp: not in our own mount namespace; not mounted")
+        return False
+    paths = [g["cwd"] for g in plan["games"]] + [g.get("shots", "") for g in plan["games"]]
+    if any(p and under(p, "/tmp") for p in paths):
+        notes.append("private /tmp: a path of this run is under /tmp; not mounted (X servers may share :0)")
+        return False
+    try:
+        r = subprocess.run(["mount", "-t", "tmpfs", "-o", "mode=1777", "tmpfs", "/tmp"], capture_output=True, text=True)
+        if r.returncode:
+            notes.append(f"private /tmp: mount failed ({r.stderr.strip()[:120]}); X servers may share :0")
+            return False
+        x11 = Path("/tmp/.X11-unix")
+        x11.mkdir(exist_ok=True)
+        x11.chmod(0o1777)
+        return True
+    except OSError as e:
+        notes.append(f"private /tmp: {e}; X servers may share :0")
+        return False
+
+
+def _inner(plan_path, res_path, geteuid=os.geteuid, grace=10):
+    """(inside the namespace) loopback addresses, each game with its own Xvfb (when headless) and a timeout,
+    the bots. A game's exit code is its own (halo is our direct child), never an X wrapper's. A game whose X
+    server failed is never started (and never sees the caller's DISPLAY). Whatever happens (an error, TERM
+    from the tool, Ctrl-C), every game, X server and bot started here is stopped before this returns."""
+    import signal
+    import socket
+
+    def on_term(signum, frame):
+        raise SystemExit(128 + signum)
+    saved_signals = {sig: signal.getsignal(sig) for sig in (signal.SIGTERM, signal.SIGINT)}
+    signal.signal(signal.SIGTERM, on_term)
+    plan = json.loads(Path(plan_path).read_text())
+    notes = []
+    if plan.get("in_namespace") and geteuid() == 0:  # (root of our own user namespace, said run_group)
+        subprocess.run(["ip", "link", "set", "lo", "up"], capture_output=True)
+        for a in plan["addresses"]:
+            subprocess.run(["ip", "addr", "add", f"{a}/8", "dev", "lo"], capture_output=True)
+        if plan["xvfb"]:
+            private_x_tmp(plan, notes)
+    for n in notes:
+        print(f"ae_test: {n}", file=sys.stderr, flush=True)
+    started = []   # [game result dict, game process or None, start time, [files], X server or None]
+    bot_proc = None
+    results = []
+    try:
+        t0 = time.time()
+        for g in plan["games"]:
+            while time.time() - t0 < g.get("delay", 0):
+                time.sleep(0.5)
+            entry = [{"exit_code": None, "timed_out": False, "seconds": 0, "display": None}, None, time.time(), [], None]
+            started.append(entry)
+            env = dict(os.environ)
+            env.update(g["env"])
+            out = open(Path(g["cwd"]).parent / "stdout.log", "w")
+            entry[3].append(out)
+            if plan["xvfb"]:
+                for k in ("DISPLAY", "WAYLAND_DISPLAY", "XAUTHORITY"):  # (never the caller's desktop)
+                    env.pop(k, None)
+                xlog = open(Path(g["cwd"]).parent / "xvfb.log", "w")
+                entry[3].append(xlog)
+                try:
+                    entry[4], env["DISPLAY"] = start_xvfb(g["screen"], xlog, plan.get("xvfb_bin", "Xvfb"))
+                except (OSError, RuntimeError) as e:
+                    entry[0]["error"] = f"no X server: {e}"
+                    out.write(f"ae_test: {entry[0]['error']}: the game was not started\n")
+                    out.flush()
+                    continue
+                entry[0]["display"] = env["DISPLAY"]
+            entry[2] = time.time()
+            entry[1] = subprocess.Popen([g.get("command", "./halo")], cwd=g["cwd"], env=env, stdout=out,
+                                        stderr=subprocess.STDOUT, start_new_session=True)
+        b = plan.get("bots")
+        if b and b.get("machines") and any(e[1] for e in started):
+            host = b.get("host", ADDRESS)
+            deadline = time.time() + 120
+            while time.time() < deadline:
+                try:
+                    with socket.create_connection((host, GAME_PORT), timeout=1):
+                        break
+                except OSError:
+                    time.sleep(1)
+            bf = open(b["log"], "w")
+            started[0][3].append(bf)
+            bot_proc = subprocess.Popen([sys.executable, str(TOOLS / "system_link_bots.py"), "--host", host,
+                                         "--machines", str(b["machines"]), "--seed", str(b.get("seed", 7)),
+                                         "--seconds", str(b.get("seconds", 80)), *b.get("args", [])],
+                                        stdout=bf, stderr=subprocess.STDOUT, start_new_session=True)
+        for g, entry in zip(plan["games"], started):
+            res, p, start = entry[0], entry[1], entry[2]
+            if p is not None:
+                try:
+                    res["exit_code"] = p.wait(timeout=max(1, g["timeout"] - (time.time() - start)))
+                except subprocess.TimeoutExpired:
+                    res["timed_out"] = True
+                    res["exit_code"] = stop_process_group(p)
+                res["seconds"] = round(time.time() - start, 1)
+            if entry[4] is not None:
+                stop_process_group(entry[4])  # (after the game; one that already quit is fine)
+        results = [e[0] for e in started]
+    finally:
+        # (an error, TERM or Ctrl-C above: nothing we started outlives us, and a second signal can't stop that)
+        signal.signal(signal.SIGTERM, signal.SIG_IGN)
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        stop_all([e[1] for e in started] + [bot_proc], grace)
+        stop_all([e[4] for e in started], grace)
+        for entry in started:
+            for f in entry[3]:
+                f.close()
+        if not results:
+            results = [dict(e[0], error=e[0].get("error") or "interrupted") for e in started]
+        for r in results:
+            if notes:
+                r["notes"] = list(notes)
+        write_json(res_path, results)
+        for sig, handler in saved_signals.items():  # (as they were: for a caller that goes on, e.g. the tests)
+            signal.signal(sig, handler)
+
+
+def collect_game(spec, prepared, inner, out, keep_work=False):
+    """debug.txt, stdout and screenshots into out/, result.json with the counts and the verdict"""
+    out.mkdir(parents=True, exist_ok=True)
+    root = Path(prepared["root"])
+    work = root.parent
+    found = None
+    # (and logs/ in the data root: ChupathingyCE 0.8's logs folder, a stock build's)
+    for cand in (root / "debug.txt", root / "logs" / "debug.txt", Path(prepared["save"]) / "debug.txt",
+                 Path(prepared["cwd"]) / "debug.txt"):
+        if cand.exists():
+            found = cand
+            break
+    text = ""
+    if found:
+        shutil.copy2(found, out / "debug.txt")
+        text = found.read_text(errors="replace")
+    if (work / "stdout.log").exists():
+        shutil.copy2(work / "stdout.log", out / "stdout.log")
+    for extra in ("gamestate.txt", "crash.txt"):
+        if (root / extra).exists():
+            shutil.copy2(root / extra, out / extra)
+    pngs = convert_shots(prepared["shots"]) if spec.get("screenshots") else []
+    # (the game's own screenshots, debug.capture_on_event's: kept in out/captures, their names sorting by time)
+    if (work / "bin" / "screenshots").is_dir():
+        for p in sorted((work / "bin" / "screenshots").glob("*.png")):
+            (out / "captures").mkdir(exist_ok=True)
+            shutil.copy2(p, out / "captures" / p.name)
+    recordings = find_recordings(out / "video")
+    result = {"name": spec["name"], "build": spec.get("build"), "kind": spec_kind(spec),
+              "exit_code": inner.get("exit_code"), "timed_out": inner.get("timed_out"),
+              "seconds": inner.get("seconds"), "debug_found": bool(found), "debug": parse_debug(text),
+              "shots": [str(Path(p).relative_to(out)) for p in pngs], "env": prepared["env"],
+              "record": (prepared.get("record") or {}).get("status"),
+              "display": inner.get("display"), "error": inner.get("error"), "notes": inner.get("notes", []),
+              "recordings": [str(p.relative_to(out)) for p in recordings]}
+    status, why = evaluate(spec, result, text if found else None)
+    result["status"], result["why"] = status, why
+    write_json(out / "result.json", result)
+    if not keep_work:
+        shutil.rmtree(work, ignore_errors=True)
+        try:
+            work.parent.rmdir()  # (the run's folder, once its last game is gone)
+        except OSError:
+            pass
+    return result
+
+
+def low_disk(cfg):
+    """a reason not to start a game when the work folder's disk has less than min_free_gb free (a save root
+    with its map cache takes up to 290 MB; other helpers share the disk), else None"""
+    need = float(cfg.get("min_free_gb", 3))
+    p = expand(cfg["work_dir"])
+    p.mkdir(parents=True, exist_ok=True)
+    free = shutil.disk_usage(p).free / 1e9
+    return f"only {free:.1f} GB free on the work disk (min_free_gb {need:g})" if free < need else None
+
+
+def play(cfg, spec, out, slots=None, keep_work=False, run_id=None):
+    """one game, start to finish: the result dict (also out/result.json)"""
+    if "timeout_extra" not in spec:  # (not parsed yet)
+        spec = parse_spec(spec)
+    out = Path(out)
+    out.mkdir(parents=True, exist_ok=True)
+    ok, why = map_available(cfg, spec)
+    if not ok:
+        result = {"name": spec["name"], "build": spec.get("build"), "skipped": why, "status": "SKIP", "why": [why]}
+        write_json(out / "result.json", result)
+        return result
+    build = resolve_build(cfg, spec["build"], spec.get("target", "linux64"))
+    low = low_disk(cfg)
+    if low:
+        result = {"name": spec["name"], "build": spec.get("build"), "status": "FAIL", "why": [low]}
+        write_json(out / "result.json", result)
+        return result
+    work = expand(cfg["work_dir"]) / (run_id or stamp()) / safe_name(spec["name"])
+    OWN_WORK.add(work.parent)
+    prepared = prepare_game(cfg, spec, build, work, out)
+    bots = None
+    if spec.get("bots"):
+        bots = {"machines": spec["bots"], "args": spec.get("bot_args", []), "host": spec.get("address", ADDRESS),
+                "seconds": spec["exit_after"], "log": str(out / "bots.log")}
+    slots = slots or GameSlots(cfg, 1)
+    try:
+        slots.acquire()
+        try:
+            inner = run_group(cfg, [prepared], bots, work)[0]
+        finally:
+            slots.release()
+    except BaseException:  # (interrupted: no result, but no save root or map cache left behind either)
+        if not keep_work:
+            shutil.rmtree(work, ignore_errors=True)
+            try:
+                work.parent.rmdir()
+            except OSError:
+                pass
+        raise
+    result = collect_game(spec, prepared, inner, out, keep_work)
+    result["build_label"] = build["label"]
+    write_json(out / "result.json", result)
+    return result
+
+
+# ---------------------------------------------------------------------------------------------- the box (remote)
+
+BUILD_ARGS = ("--build", "--baseline", "--before", "--after", "--host-build", "--client-build", "--ae", "--other",
+              "--commit")
+
+
+def add_common_args(p):
+    p.add_argument("--config", help="config file (default $AE_TEST_CONFIG or ~/.config/ae_test/config.json)")
+    p.add_argument("--box", action="store_true",
+                   help="run on the build box: push the commits, copy the harness, run there, fetch the results")
+    p.add_argument("--out-name", help="name of the output folder (default: a time stamp)")
+    p.add_argument("--keep-work", action="store_true", help="keep the work folders (save roots, binary copies)")
+
+
+TOOL_NAMES = ("build", "run", "smoke", "sheet", "handshake", "windows", "record")
+
+
+def remote_shell_path(p):
+    """a remote path for a POSIX shell command: quoted, only a leading ~ expanded (as "$HOME")"""
+    p = str(p)
+    if p == "~":
+        return '"$HOME"'
+    if p.startswith("~/"):
+        return '"$HOME"/' + shlex.quote(p[2:])
+    if p.startswith("~"):
+        raise SystemExit(f"ae_test: remote path {p!r}: only ~/ is expanded")
+    return shlex.quote(p)
+
+
+def remote_rsync_path(p):
+    """a remote path for rsync with --protect-args (no remote shell parsing): ~/x as x (relative paths
+    are from the remote home)"""
+    p = str(p)
+    if p == "~":
+        return "."
+    if p.startswith("~/"):
+        return p[2:] or "."
+    if p.startswith("~"):
+        raise SystemExit(f"ae_test: remote path {p!r}: only ~/ is expanded")
+    return p
+
+
+def remote(cfg, tool, argv, fetch=True):
+    """run `tool` on the box with these arguments: the box's own config applies there. Commits named in
+    the build arguments are resolved here and pushed to the box first. Returns (exit code, local out dir)."""
+    box = cfg["box"]
+    if not box.get("ssh"):
+        raise SystemExit("ae_test: no box.ssh in the config")
+    hdir = box["harness_dir"]
+    if tool not in TOOL_NAMES:
+        raise SystemExit(f"ae_test: unknown tool {tool!r}")
+    argv = list(argv)
+    out_args = []
+    i = 0
+    pushed = {}
+    while i < len(argv):
+        a = argv[i]
+        if a == "--box":
+            i += 1
+            continue
+        if a == "--config":
+            i += 2
+            continue
+        key, val, step = a, None, 1
+        if "=" in a and a.split("=", 1)[0] in BUILD_ARGS:
+            key, val = a.split("=", 1)
+        elif a in BUILD_ARGS and i + 1 < len(argv):
+            val, step = argv[i + 1], 2
+        if val is not None and key in BUILD_ARGS:
+            vals = []
+            for v in val.split(","):
+                sha = push_commit(cfg, v, pushed)
+                vals.append(sha or v)
+            out_args += [key, ",".join(vals)]
+        else:
+            out_args.append(a)
+        i += step
+    name = None
+    if "--out-name" in out_args:
+        name = out_args[out_args.index("--out-name") + 1]
+        if safe_name(name) != name:
+            raise SystemExit(f"ae_test: --out-name {name!r}: letters, digits and _.+- only")
+    else:
+        name = stamp()
+        out_args += ["--out-name", name]
+    sync_harness(cfg)
+    cmd = f"cd {remote_shell_path(hdir)} && python3 {shlex.quote(f'tools/ae_test/{tool}.py')} " + \
+        " ".join(shlex.quote(a) for a in out_args)
+    log(f"ae_test: on {box['ssh']}: {tool}.py {' '.join(out_args)}")
+    r = subprocess.run(["ssh", box["ssh"], cmd])
+    local = None
+    if fetch:
+        local = expand(cfg["out_dir"]) / tool / name
+        local.mkdir(parents=True, exist_ok=True)
+        rr = subprocess.run(["ssh", box["ssh"], f"cd {remote_shell_path(hdir)} && python3 tools/ae_test/harness.py "
+                             f"--out-dir {shlex.quote(tool)} {shlex.quote(name)}"], capture_output=True, text=True)
+        rdir = rr.stdout.strip().splitlines()[-1] if rr.stdout.strip() else None
+        if rdir:
+            subprocess.run(["rsync", "-a", "--protect-args", f"{box['ssh']}:{remote_rsync_path(rdir)}/", f"{local}/"])
+            log(f"ae_test: results fetched to {local}")
+    return r.returncode, local
+
+
+def push_commit(cfg, rev, pushed):
+    """a commit of this repo pushed to the box (refs/ae-test/<sha12>): its full sha, or None (not a commit)"""
+    if rev in pushed:
+        return pushed[rev]
+    if expand(rev).exists() and "/" in rev:
+        pushed[rev] = None
+        return None
+    sha = resolve_commit(REPO, rev)
+    if sha:
+        url = cfg["box"].get("git_url")
+        if not url:
+            raise SystemExit("ae_test: no box.git_url in the config")
+        r = subprocess.run(["git", "-C", str(REPO), "push", "-q", url, f"{sha}:refs/ae-test/{sha[:12]}"],
+                           capture_output=True, text=True)
+        if r.returncode and "up to date" not in r.stderr:
+            raise SystemExit(f"ae_test: push {sha[:12]} to the box failed: {r.stderr.strip()}")
+    pushed[rev] = sha
+    return sha
+
+
+def sync_harness(cfg):
+    box = cfg["box"]
+    hdir = box["harness_dir"]
+    subprocess.run(["ssh", box["ssh"], f"mkdir -p {remote_shell_path(hdir)}/tools/ae_test"], check=True)
+    dest = remote_rsync_path(hdir)
+    subprocess.run(["rsync", "-a", "--protect-args", "--delete", "--exclude", "__pycache__", f"{HERE}/",
+                    f"{box['ssh']}:{dest}/tools/ae_test/"], check=True)
+    subprocess.run(["rsync", "-a", "--protect-args", f"{TOOLS}/system_link_bots.py", f"{box['ssh']}:{dest}/tools/"],
+                   check=True)
+
+
+# ---------------------------------------------------------------------------------------------- entry
+
+
+def main(argv):
+    if len(argv) >= 3 and argv[0] == "--inner":
+        _inner(argv[1], argv[2])
+        return 0
+    if len(argv) >= 3 and argv[0] == "--out-dir":  # (for remote(): where a tool's named run is)
+        cfg = load_config()
+        print(expand(cfg["out_dir"]) / argv[1] / argv[2])
+        return 0
+    p = argparse.ArgumentParser(description="ae_test harness: show the config, or the machine's load")
+    p.add_argument("--config")
+    p.add_argument("--show-config", action="store_true")
+    p.add_argument("--status", action="store_true", help="the games running here and whether the owner plays")
+    a = p.parse_args(argv)
+    cfg = load_config(a.config)
+    if a.status:
+        procs = list_halo_processes()
+        print(json.dumps({"games": procs, "other_games": len(other_games(cfg, procs)),
+                          "owner_playing": owner_playing(cfg, procs)}, indent=2))
+        return 0
+    print(json.dumps(cfg, indent=2, default=str))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))

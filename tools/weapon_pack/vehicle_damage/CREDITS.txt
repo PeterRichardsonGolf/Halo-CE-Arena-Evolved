@@ -1,0 +1,20 @@
+AE VEHICLE DAMAGE (pack ae_vehicle_damage) - credits
+
+The vehicles' damage and death effects (sparks, smoke, fire, the glass breaking, the hood and the wings coming off,
+the explosions), the burning wrecks of the warthog and the banshee, and their particles, textures and sounds are
+the work of CMT (the Custom Mapping Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the
+Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their credits.txt names). Sound design:
+Beaucephal and Xalener. They are used under the release's own terms ("Just don't take credit for things you
+didn't make") and are unchanged but for what an Xbox map and a network game need: Open Sauce's extension blocks
+removed, the multipurpose maps' channels reordered, the Ogg Vorbis sounds encoded again as Xbox ADPCM, the models
+converted; the parts that name campaign tags no multiplayer map has (underwater bubbles, panel debris, the
+damaged-engine loop sound) and the warthog's thrown wheel (a vehicle) left out.
+
+Made for Arena Evolved: when the effects play and the wrecks stand in (port/linux/game/ae_vehicle_pack.c), under
+the gametype rule VEHICLES DESTRUCTIBLE.
+
+The pack holds no pixel, sound or model of the game's own: what the effects need of the game (stock particles,
+bitmaps and sounds every multiplayer map has) it names, and the map the player owns provides. The map's own
+vehicles keep their own models.
+
+Thank you, CMT.

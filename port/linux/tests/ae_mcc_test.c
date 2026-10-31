@@ -1,0 +1,817 @@
+/* AE's MCC detection (port/linux/src/ae_mcc.c) over fake Steam trees made in $AE_TEST_SCRATCH: the research note's
+cases (a) to (i) (notes/mcc-install-check-research-2026-10-10.md; (j), the player's own files winning, is the game's:
+tools/test_ae_mcc.py), the VDF reader's escapes, and hostile files (strings and blocks left open, deep nesting, a huge
+file, long tokens). Linux only: the trees are made with mkdir. */
+/* (realpath and symlink under -std=c99) */
+#define _XOPEN_SOURCE 700
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+
+#include "ae_mcc.h"
+
+/* (the trees' paths are short: GCC's guesses at their lengths are not) */
+#if defined(__GNUC__) && !defined(__clang__)
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+#endif
+
+static int failures;
+#define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+static char scratch[512];
+
+/* mkdir -p */
+static void make_folders(const char *path)
+{
+	char partial[AE_MCC_PATH_SIZE];
+	size_t index;
+
+	snprintf(partial, sizeof(partial), "%s", path);
+	for (index = 1; partial[index]; index++)
+	{
+		if (partial[index] == '/')
+		{
+			partial[index] = 0;
+			mkdir(partial, 0755);
+			partial[index] = '/';
+		}
+	}
+	mkdir(partial, 0755);
+}
+
+static void write_file(const char *path, const void *data, size_t size)
+{
+	char folder[AE_MCC_PATH_SIZE];
+	char *slash;
+	FILE *file;
+
+	snprintf(folder, sizeof(folder), "%s", path);
+	slash = strrchr(folder, '/');
+	if (slash)
+	{
+		*slash = 0;
+		make_folders(folder);
+	}
+	file = fopen(path, "wb");
+	CHECK(file != NULL);
+	if (!file)
+		return;
+	if (size)
+		fwrite(data, 1, size, file);
+	fclose(file);
+}
+
+static void write_text(const char *path, const char *text)
+{
+	write_file(path, text, strlen(text));
+}
+
+static void put_word(unsigned char *at, unsigned long value)
+{
+	at[0] = (unsigned char)value;
+	at[1] = (unsigned char)(value >> 8);
+	at[2] = (unsigned char)(value >> 16);
+	at[3] = (unsigned char)(value >> 24);
+}
+
+/* a small resource map of a type: header, one path, a table of one resource */
+static void write_resource(const char *path, int type, int truncated)
+{
+	unsigned char data[64];
+
+	memset(data, 0, sizeof(data));
+	put_word(data, (unsigned long)(type + 1));
+	put_word(data + 4, 16);
+	put_word(data + 8, 32);
+	put_word(data + 12, 1);
+	memcpy(data + 16, "a\\b", 3);
+	/* (cut short: the table past the file's end) */
+	write_file(path, data, truncated ? 40 : 44);
+}
+
+/* an MCC folder with its three files (bitmaps.map cut short if asked) */
+static void make_install(const char *root, int truncated_bitmaps)
+{
+	int type;
+
+	for (type = 0; ae_mcc_resource_name(type); type++)
+	{
+		char path[AE_MCC_PATH_SIZE];
+
+		ae_mcc_resource_path(root, ae_mcc_resource_name(type), path, sizeof(path));
+		write_resource(path, type, truncated_bitmaps && type == 0);
+	}
+}
+
+static void manifest(const char *library, long state_flags, const char *install_dir)
+{
+	char path[AE_MCC_PATH_SIZE], text[2048];
+
+	snprintf(path, sizeof(path), "%s/steamapps/appmanifest_976730.acf", library);
+	snprintf(text, sizeof(text),
+		"\"AppState\"\n{\n\t\"appid\"\t\t\"976730\"\n\t\"universe\"\t\t\"1\"\n\t\"name\"\t\t\"Halo: The Master Chief "
+		"Collection\"\n\t\"StateFlags\"\t\t\"%ld\"\n\t\"installdir\"\t\t\"%s\"\n\t\"buildid\"\t\t\"123\"\n}\n",
+		state_flags, install_dir);
+	write_text(path, text);
+}
+
+/* a VDF string's escapes: \ and " */
+static void escaped(const char *from, char *to, size_t size)
+{
+	size_t length = 0;
+
+	for (; *from && length + 2 < size; from++)
+	{
+		if (*from == '\\' || *from == '"')
+			to[length++] = '\\';
+		to[length++] = *from;
+	}
+	to[length] = 0;
+}
+
+/* libraryfolders.vdf: each library's path, and whether it lists MCC */
+static void library_folders(const char *steam_root, const char *const *paths, const int *lists, int count)
+{
+	char path[AE_MCC_PATH_SIZE], text[8192], quoted[2048];
+	int index;
+
+	snprintf(text, sizeof(text), "\"libraryfolders\"\n{\n");
+	for (index = 0; index < count; index++)
+	{
+		escaped(paths[index], quoted, sizeof(quoted));
+		snprintf(text + strlen(text), sizeof(text) - strlen(text),
+			"\t\"%d\"\n\t{\n\t\t\"path\"\t\t\"%s\"\n\t\t\"label\"\t\t\"\"\n\t\t\"contentid\"\t\t\"123\"\n"
+			"\t\t\"totalsize\"\t\t\"0\"\n\t\t\"apps\"\n\t\t{\n\t\t\t\"228980\"\t\t\"1000\"\n%s\t\t}\n\t}\n",
+			index, quoted, lists[index] ? "\t\t\t\"976730\"\t\t\"27372615038\"\n" : "");
+	}
+	strcat(text, "}\n");
+	snprintf(path, sizeof(path), "%s/steamapps/libraryfolders.vdf", steam_root);
+	write_text(path, text);
+}
+
+static int folder_exists(const char *path)
+{
+	struct stat information;
+
+	return stat(path, &information) == 0 && S_ISDIR(information.st_mode);
+}
+
+static int detect_roots(const char *config_path, const char *environment_path, const char *const *roots, int count,
+	struct ae_mcc_result *result)
+{
+	struct ae_mcc_inputs inputs;
+
+	memset(&inputs, 0, sizeof(inputs));
+	inputs.config_path = config_path;
+	inputs.environment_path = environment_path;
+	inputs.steam_roots = roots;
+	inputs.steam_root_count = count;
+	inputs.directory_exists = folder_exists;
+	return ae_mcc_detect(&inputs, result);
+}
+
+static int detect_one(const char *steam_root, struct ae_mcc_result *result)
+{
+	const char *roots[1];
+
+	roots[0] = steam_root;
+	return detect_roots(NULL, NULL, roots, 1, result);
+}
+
+static void at(char *path, size_t size, const char *name)
+{
+	snprintf(path, size, "%s/%s", scratch, name);
+}
+
+/* ---- the VDF reader alone */
+
+struct collected
+{
+	int pairs, blocks, deepest;
+	char last_key[256], last_value[1024];
+};
+
+static int collect(void *opaque, const char *const *keys, int depth, const char *key, const char *value)
+{
+	struct collected *c = opaque;
+
+	(void)keys;
+	if (value)
+	{
+		c->pairs++;
+		snprintf(c->last_key, sizeof(c->last_key), "%s", key);
+		snprintf(c->last_value, sizeof(c->last_value), "%s", value);
+	}
+	else
+	{
+		c->blocks++;
+	}
+	if (depth > c->deepest)
+		c->deepest = depth;
+	return 1;
+}
+
+static int parse(const char *text, struct collected *c)
+{
+	memset(c, 0, sizeof(*c));
+	return ae_vdf_parse(text, strlen(text), collect, c);
+}
+
+static void vdf_tests(void)
+{
+	struct collected c;
+	char *big;
+	size_t index;
+
+	CHECK(parse("\"a\" { \"b\" \"c\" // comment \"x\" \"y\"\n \"d\" { \"e\" \"f\\\\g\\\"h\" } }", &c));
+	CHECK(c.pairs == 2 && c.blocks == 2 && c.deepest == 2);
+	CHECK(!strcmp(c.last_key, "e") && !strcmp(c.last_value, "f\\g\"h"));
+	/* (bare tokens, as some Steam files have) */
+	CHECK(parse("AppState { appid 976730 }", &c) && c.pairs == 1 && !strcmp(c.last_value, "976730"));
+	/* (an empty text reads as nothing) */
+	CHECK(parse("", &c) && c.pairs == 0);
+	/* hostile: a string left open, a block left open, a stray brace, a key with no value */
+	CHECK(!parse("\"a\" { \"b\" \"c", &c));
+	CHECK(!parse("\"a\" { \"b\" \"c\"", &c));
+	CHECK(!parse("}", &c));
+	CHECK(!parse("\"a\" }", &c));
+	CHECK(!parse("{", &c));
+	/* (a control character in a bare token) */
+	CHECK(!parse("a\001 b", &c));
+	/* hostile: deep nesting (stops at AE_MCC_MAXIMUM_VDF_DEPTH, no stack used per level) */
+	big = malloc(200000);
+	CHECK(big != NULL);
+	if (big)
+	{
+		for (index = 0; index < 10000; index++)
+			memcpy(big + index * 6, "\"k\" { ", 6);
+		big[10000 * 6] = 0;
+		CHECK(!parse(big, &c));
+		CHECK(c.deepest < AE_MCC_MAXIMUM_VDF_DEPTH);
+		/* a token longer than a path */
+		memset(big, 'x', 5000);
+		big[0] = '"';
+		big[4999] = '"';
+		big[5000] = 0;
+		strcat(big, " \"v\"");
+		CHECK(!parse(big, &c));
+		memset(big, 'x', 5000);
+		big[5000] = 0;
+		strcat(big, " v");
+		CHECK(!parse(big, &c));
+		free(big);
+	}
+	/* (an escaped NUL in a string: broken, not a shorter string) */
+	{
+		static const char text[] = "\"a\" \"b\\\0c\"";
+
+		memset(&c, 0, sizeof(c));
+		CHECK(!ae_vdf_parse(text, sizeof(text) - 1, collect, &c) && c.pairs == 0);
+	}
+	/* (a NUL inside: the text ends there, the open block is broken) */
+	{
+		static const char text[] = "\"a\" { \"b\" \"c\" \0 }";
+
+		memset(&c, 0, sizeof(c));
+		CHECK(!ae_vdf_parse(text, sizeof(text) - 1, collect, &c));
+	}
+}
+
+static void library_tests(void)
+{
+	struct ae_mcc_library libraries[4];
+	long flags;
+	char dir[256];
+	int count;
+
+	count = ae_mcc_parse_library_folders(
+		"\"libraryfolders\" { \"0\" { \"path\" \"/a\" \"apps\" { \"2280\" \"1\" } } "
+		"\"1\" { \"path\" \"D:\\\\Steam Library\" \"apps\" { \"976730\" \"5\" } } }", 1000, libraries, 4);
+	CHECK(count == 2);
+	CHECK(!strcmp(libraries[0].path, "/a") && !libraries[0].lists_mcc);
+	CHECK(!strcmp(libraries[1].path, "D:\\Steam Library") && libraries[1].lists_mcc);
+	/* the older format */
+	count = ae_mcc_parse_library_folders(
+		"\"LibraryFolders\" { \"TimeNextStatsReport\" \"1\" \"ContentStatsID\" \"2\" \"1\" \"E:\\\\Games\" }",
+		1000, libraries, 4);
+	CHECK(count == 1 && !strcmp(libraries[0].path, "E:\\Games") && !libraries[0].lists_mcc);
+	/* at most the maximum */
+	count = ae_mcc_parse_library_folders(
+		"\"libraryfolders\" { \"0\" { \"path\" \"/a\" } \"1\" { \"path\" \"/b\" } \"2\" { \"path\" \"/c\" } }", 1000,
+		libraries, 2);
+	CHECK(count == 2);
+	/* a broken file keeps what it read before the break */
+	count = ae_mcc_parse_library_folders("\"libraryfolders\" { \"0\" { \"path\" \"/a\" } \"1\" { \"path\" \"/b",
+		1000, libraries, 4);
+	CHECK(count == 1 && !strcmp(libraries[0].path, "/a"));
+	/* the manifest */
+	CHECK(ae_mcc_parse_manifest("\"AppState\" { \"StateFlags\" \"4\" \"installdir\" \"Halo MCC\" }", 1000, &flags, dir,
+		sizeof(dir)));
+	CHECK(flags == 4 && !strcmp(dir, "Halo MCC"));
+	/* (an installdir naming a path is not used) */
+	CHECK(ae_mcc_parse_manifest("\"AppState\" { \"StateFlags\" \"1026\" \"installdir\" \"../../etc\" }", 1000, &flags,
+		dir, sizeof(dir)));
+	CHECK(flags == 1026 && !dir[0]);
+	CHECK(!ae_mcc_parse_manifest("\"Other\" { }", 1000, &flags, dir, sizeof(dir)) && flags == -1);
+	CHECK(!ae_mcc_parse_manifest("\"AppState\" { \"StateFlags\" \"4\"", 1000, &flags, dir, sizeof(dir)));
+}
+
+/* a resource map's header and size, written to a file */
+static void write_header(const char *path, unsigned long type, unsigned long paths, unsigned long table,
+	unsigned long count, size_t size)
+{
+	unsigned char *data = calloc(1, size ? size : 1);
+
+	CHECK(data != NULL);
+	if (!data)
+		return;
+	if (size >= 16)
+	{
+		put_word(data, type);
+		put_word(data + 4, paths);
+		put_word(data + 8, table);
+		put_word(data + 12, count);
+	}
+	write_file(path, data, size);
+	free(data);
+}
+
+/* the verdicts of ce_resources.c's ce_resource_map_open's check (header[0] != type + 1, header[3] >
+CE_MAXIMUM_ELEMENTS (0x10000), header[1] > header[2], the table of header[3] * 12 bytes at header[2] not within the
+file: refused), which ae_mcc_resource_file_valid mirrors: the same headers, the same answers. If that check
+changes, these lines change with it */
+static void header_tests(void)
+{
+	char path[AE_MCC_PATH_SIZE], reason[512];
+
+	at(path, sizeof(path), "headers/file.map");
+	/* good: type 1 (bitmaps), paths at 16, table at 32, 2 resources, 56 bytes */
+	write_header(path, 1, 16, 32, 2, 56);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* (no resources at all is still a resource map) */
+	write_header(path, 1, 16, 16, 0, 16);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* wrong type for the slot */
+	write_header(path, 2, 16, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	CHECK(ae_mcc_resource_file_valid(path, 1, reason, sizeof(reason)));
+	write_header(path, 0, 16, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* cut short: the table one byte past the end */
+	write_header(path, 1, 16, 32, 2, 55);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* the table's offset past the end */
+	write_header(path, 1, 16, 57, 0, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	write_header(path, 1, 16, 56, 0, 56);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* too many resources: 0x10001 (0x10000 is the most, when the file holds their table) */
+	write_header(path, 1, 16, 16, 0x10001, 16 + 0x10001 * 12);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	write_header(path, 1, 16, 16, 0x10000, 16 + 0x10000 * 12);
+	CHECK(ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* the paths after the table */
+	write_header(path, 1, 40, 32, 2, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* huge offsets and counts (no wrap) */
+	write_header(path, 1, 16, 0xfffffff0UL, 0xffffffffUL, 56);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	/* under a header's size, and no file */
+	write_header(path, 1, 16, 16, 0, 15);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+	at(path, sizeof(path), "headers/none.map");
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+}
+
+static void small_tests(void)
+{
+	char roots[8][AE_MCC_PATH_SIZE];
+	char shown[64];
+	int count;
+
+	/* (the status line's path: whole when it fits, else cut at a separator after "...", never mid-word) */
+	ae_mcc_short_path("/games/MCC", shown, sizeof(shown), 48);
+	CHECK(!strcmp(shown, "/games/MCC"));
+	ae_mcc_short_path("/games/player/.local/share/Steam/steamapps/common/Halo The Master Chief Collection", shown,
+		sizeof(shown), 48);
+	CHECK(!strcmp(shown, ".../common/Halo The Master Chief Collection"));
+	ae_mcc_short_path("C:\\Program Files (x86)\\Steam\\steamapps\\common\\Halo The Master Chief Collection", shown,
+		sizeof(shown), 48);
+	CHECK(!strcmp(shown, "...\\common\\Halo The Master Chief Collection"));
+	/* (48 characters exactly fits; one more is cut) */
+	ae_mcc_short_path("/aaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbb", shown, sizeof(shown), 48);
+	CHECK(strlen(shown) == 48 && shown[0] == '/');
+	ae_mcc_short_path("/aaaaaaaaaaaaaaaaaaaaaaa/bbbbbbbbbbbbbbbbbbbbbbbb", shown, sizeof(shown), 48);
+	CHECK(!strcmp(shown, ".../bbbbbbbbbbbbbbbbbbbbbbbb"));
+	/* (a last folder longer than the line, or a trailing separator alone: its end, as much as fits) */
+	ae_mcc_short_path("/x/abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghij", shown, sizeof(shown), 20);
+	CHECK(!strcmp(shown, "...tuvwxyzabcdefghij"));
+	ae_mcc_short_path("/x/abcdefghijklmnopqrstuvwxyz/", shown, sizeof(shown), 20);
+	CHECK(strlen(shown) == 20 && !strncmp(shown, "...", 3));
+	/* (a non-ASCII last folder longer than the line: never cut inside a character; "\xc3\xa9" is one) */
+	ae_mcc_short_path("/x/\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9\xc3\xa9", shown, sizeof(shown), 8);
+	CHECK(!strncmp(shown, "...", 3) && ((unsigned char)shown[3] & 0xC0) != 0x80);
+	ae_mcc_short_path("/a/long/path/that/does/not/fit", shown, 8, 20);
+	CHECK(strlen(shown) == 7);
+
+	CHECK(ae_mcc_use_from_text("yes") == AE_MCC_USE_YES && ae_mcc_use_from_text("NO") == AE_MCC_USE_NO);
+	CHECK(ae_mcc_use_from_text("ask") == AE_MCC_USE_ASK && ae_mcc_use_from_text("maybe") == AE_MCC_USE_ASK &&
+		ae_mcc_use_from_text(NULL) == AE_MCC_USE_ASK);
+	CHECK(ae_mcc_path_storable("/a b/c") && !ae_mcc_path_storable("") && !ae_mcc_path_storable("a\nb"));
+	CHECK(ae_mcc_resource_type("bitmaps") == 0 && ae_mcc_resource_type("SOUNDS") == 1 &&
+		ae_mcc_resource_type("loc") == 2 && ae_mcc_resource_type("ui") == -1 && ae_mcc_resource_type(NULL) == -1);
+	count = ae_mcc_linux_steam_roots("/x/data", "/users/p", roots, 8);
+	CHECK(count == 6);
+	CHECK(!strcmp(roots[0], "/x/data/Steam") && !strcmp(roots[1], "/users/p/.local/share/Steam"));
+	CHECK(!strcmp(roots[2], "/users/p/.steam/steam") && !strcmp(roots[3], "/users/p/.steam/root"));
+	CHECK(!strcmp(roots[4], "/users/p/.var/app/com.valvesoftware.Steam/.local/share/Steam"));
+	CHECK(!strcmp(roots[5], "/users/p/snap/steam/common/.local/share/Steam"));
+	/* (XDG_DATA_HOME at its default is looked in once; relative values are not used) */
+	CHECK(ae_mcc_linux_steam_roots("/users/p/.local/share", "/users/p", roots, 8) == 5);
+	CHECK(ae_mcc_linux_steam_roots("relative", NULL, roots, 8) == 0);
+	/* Steam's StateFlags: fully installed, and nothing changing (6: an update queued) */
+	CHECK(ae_mcc_state_flags_installed(4) && ae_mcc_state_flags_installed(6) && ae_mcc_state_flags_installed(68));
+	CHECK(!ae_mcc_state_flags_installed(1030) && !ae_mcc_state_flags_installed(1026) &&
+		!ae_mcc_state_flags_installed(2) && !ae_mcc_state_flags_installed(0) && !ae_mcc_state_flags_installed(-1));
+	CHECK(!ae_mcc_state_flags_installed(4 | 32) && !ae_mcc_state_flags_installed(4 | 128) &&
+		!ae_mcc_state_flags_installed(4 | 256) && !ae_mcc_state_flags_installed(4 | 512) &&
+		!ae_mcc_state_flags_installed(4 | 2048) && !ae_mcc_state_flags_installed(4 | 131072) &&
+		!ae_mcc_state_flags_installed(4 | 1048576) && !ae_mcc_state_flags_installed(4 | 2097152) &&
+		!ae_mcc_state_flags_installed(4 | 4194304));
+	/* one folder, as Windows spells it (the registry's SteamPath and libraryfolders.vdf's path) */
+	CHECK(ae_mcc_same_folder("c:/program files (x86)/steam", "C:\\Program Files (x86)\\Steam", 1));
+	CHECK(ae_mcc_same_folder("C:\\Steam\\", "c:/steam", 1) && ae_mcc_same_folder("c:/steam", "C:\\Steam\\", 1));
+	CHECK(!ae_mcc_same_folder("c:/steam", "c:/steam2", 1) && !ae_mcc_same_folder("c:/steam/x", "c:/steam", 1));
+	CHECK(!ae_mcc_same_folder("/a/Steam", "/a/steam", 0) && ae_mcc_same_folder("/a/Steam", "/a/Steam", 0));
+	/* the engine's names of MCC's files: only the three, nothing else of the folder */
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps.map") == 0 && ae_mcc_virtual_path_type("mcc:\\sounds.map") == 1 &&
+		ae_mcc_virtual_path_type("mcc:\\loc.map") == 2 && ae_mcc_virtual_path_type("MCC:/BITMAPS.MAP") == 0);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\ui.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\..\\x.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\maps\\bitmaps.map") == AE_MCC_VIRTUAL_INVALID);
+	/* (MCC's own maps read in place, ae_mcc_boot.c: its main menu, booting with no Xbox data, and its stock
+	multiplayer maps, <name>@mcc) */
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\ui.map") == AE_MCC_VIRTUAL_HALO1 &&
+		ae_mcc_virtual_path_type("MCC:/HALO1/UI.MAP") == AE_MCC_VIRTUAL_HALO1);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\bloodgulch.map") == AE_MCC_VIRTUAL_HALO1 &&
+		ae_mcc_virtual_path_type("mcc:/halo1/DeathIsland.map") == AE_MCC_VIRTUAL_HALO1);
+	/* (and its shared resource files, stamped as a lobby polls the map: mcc_precache.c) */
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\bitmaps.map") == AE_MCC_VIRTUAL_HALO1 &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\sounds.map") == AE_MCC_VIRTUAL_HALO1 &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\loc.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\halo1\\a10.map") == AE_MCC_VIRTUAL_INVALID &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\..\\ui.map") == AE_MCC_VIRTUAL_INVALID &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\custom_edition\\bitmaps.map") == AE_MCC_VIRTUAL_INVALID &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\bloodgulch") == AE_MCC_VIRTUAL_INVALID &&
+		ae_mcc_virtual_path_type("mcc:\\halo1\\.map") == AE_MCC_VIRTUAL_INVALID);
+	/* an MCC Workshop item's map, read in place: mcc:\ws\<item id>\<name>.map (the catalog finds its file) */
+	{
+		char id[24], name[64];
+
+		CHECK(ae_mcc_virtual_path_type("mcc:\\ws\\2899342285\\pat_beavercreek.map") == AE_MCC_VIRTUAL_WORKSHOP);
+		CHECK(ae_mcc_workshop_virtual_parts("mcc:\\ws\\2899342285\\pat_beavercreek.map", id, sizeof(id), name,
+			sizeof(name)) && !strcmp(id, "2899342285") && !strcmp(name, "pat_beavercreek"));
+		CHECK(ae_mcc_workshop_virtual_parts("MCC:/WS/12/Some Map.MAP", id, sizeof(id), name, sizeof(name)) &&
+			!strcmp(id, "12") && !strcmp(name, "Some Map"));
+		CHECK(ae_mcc_virtual_path_type("mcc:\\ws\\12a\\x.map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\\\x.map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\12\\..\\x.map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\12\\.map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\12\\..map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\123456789012345678901\\x.map") == AE_MCC_VIRTUAL_INVALID &&
+			ae_mcc_virtual_path_type("mcc:\\ws\\12\\x") == AE_MCC_VIRTUAL_INVALID);
+		CHECK(!ae_mcc_workshop_virtual_parts("mcc:\\ws\\12\\x.map", id, 2, name, sizeof(name)) &&
+			!ae_mcc_workshop_virtual_parts("mcc:\\bitmaps.map", id, sizeof(id), name, sizeof(name)));
+	}
+	/* the stock multiplayer maps of MCC's halo1/maps (19: the Xbox's 13 and Halo PC's 6), listed in order */
+	{
+		int index, all = 1;
+
+		CHECK(ae_mcc_stock_map_count() == 19 && !strcmp(ae_mcc_stock_map(0), "beavercreek") &&
+			!strcmp(ae_mcc_stock_map(18), "timberland") && !ae_mcc_stock_map(19) && !ae_mcc_stock_map(-1));
+		for (index = 0; index < ae_mcc_stock_map_count(); index++)
+			all &= ae_mcc_stock_map_name(ae_mcc_stock_map(index));
+		CHECK(all);
+	}
+	CHECK(ae_mcc_stock_map_name("bloodgulch") && ae_mcc_stock_map_name("Wizard") &&
+		ae_mcc_stock_map_name("gephyrophobia") && ae_mcc_stock_map_name("putput"));
+	CHECK(!ae_mcc_stock_map_name("a10") && !ae_mcc_stock_map_name("ui") && !ae_mcc_stock_map_name("") &&
+		!ae_mcc_stock_map_name(NULL) && !ae_mcc_stock_map_name("bloodgulch2") && !ae_mcc_stock_map_name("blood"));
+	/* where the main menu's ui.map comes from: the Xbox data's first, MCC's only without it */
+	CHECK(ae_mcc_boot_source(1, 1, AE_MCC_USE_YES) == AE_MCC_BOOT_XBOX);
+	CHECK(ae_mcc_boot_source(1, 0, AE_MCC_USE_ASK) == AE_MCC_BOOT_XBOX);
+	CHECK(ae_mcc_boot_source(0, 1, AE_MCC_USE_YES) == AE_MCC_BOOT_MCC);
+	CHECK(ae_mcc_boot_source(0, 1, AE_MCC_USE_ASK) == AE_MCC_BOOT_MCC);
+	CHECK(ae_mcc_boot_source(0, 1, AE_MCC_USE_NO) == AE_MCC_BOOT_NONE);
+	CHECK(ae_mcc_boot_source(0, 0, AE_MCC_USE_YES) == AE_MCC_BOOT_NONE);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps.map\\") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\bitmaps") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("mcc:\\aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.map") == AE_MCC_VIRTUAL_INVALID);
+	CHECK(ae_mcc_virtual_path_type("d:\\maps_ce\\bitmaps.map") == AE_MCC_VIRTUAL_NOT);
+	CHECK(ae_mcc_virtual_path_type("mcc:bitmaps.map") == AE_MCC_VIRTUAL_NOT);
+	CHECK(ae_mcc_virtual_path_type("mcc") == AE_MCC_VIRTUAL_NOT && ae_mcc_virtual_path_type("") == AE_MCC_VIRTUAL_NOT &&
+		ae_mcc_virtual_path_type(NULL) == AE_MCC_VIRTUAL_NOT);
+}
+
+/* ---- every library the roots list, and the one holding a named MCC folder */
+
+static void libraries_tests(void)
+{
+	char steam[AE_MCC_PATH_SIZE], other[AE_MCC_PATH_SIZE], third[AE_MCC_PATH_SIZE], root[AE_MCC_PATH_SIZE];
+	char paths[8][AE_MCC_PATH_SIZE];
+	const char *roots[1];
+	int count;
+
+	at(steam, sizeof(steam), "lib/Steam (x86)");
+	at(other, sizeof(other), "lib/Other Library");
+	at(third, sizeof(third), "lib/Named Elsewhere");
+	{
+		const char *listed[] = { steam, other, other };
+		const int lists[] = { 0, 1, 0 };
+
+		library_folders(steam, listed, lists, 3);
+	}
+	roots[0] = steam;
+	/* the root (once, though listed), the other (once, though listed twice) */
+	count = ae_mcc_libraries(roots, 1, NULL, paths, 8);
+	CHECK(count == 2 && !strcmp(paths[0], steam) && !strcmp(paths[1], other));
+	/* a named MCC folder in a library of its own adds that library; in a listed one adds nothing */
+	snprintf(root, sizeof(root), "%s/steamapps/common/Halo The Master Chief Collection", third);
+	count = ae_mcc_libraries(roots, 1, root, paths, 8);
+	CHECK(count == 3 && !strcmp(paths[2], third));
+	/* (an older Windows library spells it SteamApps) */
+	snprintf(root, sizeof(root), "%s/SteamApps/common/Halo The Master Chief Collection", third);
+	count = ae_mcc_libraries(roots, 1, root, paths, 8);
+	CHECK(count == 3 && !strcmp(paths[2], third));
+	snprintf(root, sizeof(root), "%s/steamapps/common/Halo The Master Chief Collection/", other);
+	CHECK(ae_mcc_libraries(roots, 1, root, paths, 8) == 2);
+	/* a folder not in a steamapps/common layout adds nothing; no roots, just the named one; the bound holds */
+	CHECK(ae_mcc_libraries(roots, 1, "/somewhere/MCC", paths, 8) == 2);
+	snprintf(root, sizeof(root), "%s/steamapps/common/MCC", third);
+	CHECK(ae_mcc_libraries(NULL, 0, root, paths, 8) == 1 && !strcmp(paths[0], third));
+	CHECK(ae_mcc_libraries(roots, 1, NULL, paths, 1) == 1);
+	CHECK(ae_mcc_libraries(roots, 1, NULL, paths, 0) == 0);
+	/* a root given twice through links (Linux: ~/.steam/steam and ~/.steam/root link to one Steam folder) is one
+	library, named as it resolves */
+	{
+		char link_a[AE_MCC_PATH_SIZE], link_b[AE_MCC_PATH_SIZE], real[AE_MCC_PATH_SIZE];
+		const char *linked[3];
+		char *resolved = realpath(steam, NULL);
+
+		at(link_a, sizeof(link_a), "lib/steam-link-a");
+		at(link_b, sizeof(link_b), "lib/steam-link-b");
+		unlink(link_a);
+		unlink(link_b);
+		CHECK(resolved && symlink(steam, link_a) == 0 && symlink(steam, link_b) == 0);
+		snprintf(real, sizeof(real), "%s", resolved ? resolved : "");
+		free(resolved);
+		linked[0] = link_a;
+		linked[1] = steam;
+		linked[2] = link_b;
+		count = ae_mcc_libraries(linked, 3, NULL, paths, 8);
+		CHECK(count == 2 && !strcmp(paths[0], real));
+	}
+}
+
+int main(void)
+{
+	struct ae_mcc_result result;
+	char steam[AE_MCC_PATH_SIZE], install[AE_MCC_PATH_SIZE], library[AE_MCC_PATH_SIZE], path[AE_MCC_PATH_SIZE];
+	const char *scratch_env = getenv("AE_TEST_SCRATCH");
+	char reason[512];
+
+	/* (the trees go where the test is told: never a guess at a temporary folder) */
+	if (!scratch_env || !*scratch_env)
+	{
+		printf("AE_TEST_SCRATCH names no folder for the fake Steam trees\n");
+		return 77;
+	}
+	snprintf(scratch, sizeof(scratch), "%s/ae_mcc", scratch_env);
+	make_folders(scratch);
+	vdf_tests();
+	library_tests();
+	libraries_tests();
+	small_tests();
+	header_tests();
+
+	/* (a) a normal install: the Steam root's own library */
+	at(steam, sizeof(steam), "a/Steam");
+	{
+		const char *paths[] = { steam };
+		const int lists[] = { 1 };
+
+		library_folders(steam, paths, lists, 1);
+	}
+	manifest(steam, 4, AE_MCC_DEFAULT_INSTALL_DIR);
+	snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+	make_install(install, 0);
+	CHECK(detect_one(steam, &result) == AE_MCC_FOUND);
+	CHECK(!strcmp(result.root, install) && result.source == AE_MCC_SOURCE_STEAM);
+	CHECK(ae_mcc_root_valid(install, reason, sizeof(reason)));
+
+	/* (b) a second library holds it (the root's lists other games) */
+	at(steam, sizeof(steam), "b/Steam");
+	at(library, sizeof(library), "b/SteamLibrary");
+	{
+		const char *paths[] = { steam, library };
+		const int lists[] = { 0, 1 };
+
+		library_folders(steam, paths, lists, 2);
+	}
+	manifest(library, 4, "Halo MCC Elsewhere");
+	snprintf(install, sizeof(install), "%s/steamapps/common/Halo MCC Elsewhere", library);
+	make_install(install, 0);
+	CHECK(detect_one(steam, &result) == AE_MCC_FOUND && !strcmp(result.root, install));
+
+	/* (c) listed in libraryfolders.vdf, but no manifest and no files */
+	at(steam, sizeof(steam), "c/Steam");
+	{
+		const char *paths[] = { steam };
+		const int lists[] = { 1 };
+
+		library_folders(steam, paths, lists, 1);
+	}
+	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE);
+	CHECK(strstr(result.reason, "lists MCC") != NULL);
+
+	/* (d) a manifest of an update under way (StateFlags 1030: installed, update required, update started), the
+	files there: not read while they change. An update only queued (6) leaves them whole: found */
+	at(steam, sizeof(steam), "d/Steam");
+	{
+		const char *paths[] = { steam };
+		const int lists[] = { 1 };
+
+		library_folders(steam, paths, lists, 1);
+	}
+	manifest(steam, 1030, AE_MCC_DEFAULT_INSTALL_DIR);
+	snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+	make_install(install, 0);
+	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE && strstr(result.reason, "StateFlags 1030"));
+	manifest(steam, 6, AE_MCC_DEFAULT_INSTALL_DIR);
+	CHECK(detect_one(steam, &result) == AE_MCC_FOUND && !strcmp(result.root, install));
+
+	/* (e) an empty shell: Engine/ and MCC/Binaries/Win64 only (listed: incomplete; unlisted, its folder seen:
+	incomplete; with nothing to tell folders: not found) */
+	at(steam, sizeof(steam), "e/Steam");
+	snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+	snprintf(path, sizeof(path), "%s/Engine/Binaries/Win64", install);
+	make_folders(path);
+	snprintf(path, sizeof(path), "%s/MCC/Binaries/Win64", install);
+	make_folders(path);
+	{
+		const char *paths[] = { steam };
+		const int lists[] = { 0 };
+
+		library_folders(steam, paths, lists, 1);
+	}
+	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE && strstr(result.reason, "has a folder of"));
+	{
+		struct ae_mcc_inputs inputs;
+		const char *roots[] = { steam };
+
+		memset(&inputs, 0, sizeof(inputs));
+		inputs.steam_roots = roots;
+		inputs.steam_root_count = 1;
+		CHECK(ae_mcc_detect(&inputs, &result) == AE_MCC_NOT_FOUND);
+	}
+
+	/* (f) Flatpak's Steam, found through the Linux roots */
+	{
+		char home[AE_MCC_PATH_SIZE], roots[8][AE_MCC_PATH_SIZE];
+		const char *root_pointers[8];
+		int count, index;
+
+		at(home, sizeof(home), "f/home");
+		snprintf(steam, sizeof(steam), "%s/.var/app/com.valvesoftware.Steam/.local/share/Steam", home);
+		{
+			const char *paths[] = { steam };
+			const int lists[] = { 1 };
+
+			library_folders(steam, paths, lists, 1);
+		}
+		manifest(steam, 4, AE_MCC_DEFAULT_INSTALL_DIR);
+		snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+		make_install(install, 0);
+		count = ae_mcc_linux_steam_roots(NULL, home, roots, 8);
+		for (index = 0; index < count; index++)
+			root_pointers[index] = roots[index];
+		CHECK(detect_roots(NULL, NULL, root_pointers, count, &result) == AE_MCC_FOUND && !strcmp(result.root, install));
+	}
+
+	/* (g) a library path with spaces, quotes and a backslash (escaped in the file) */
+	at(steam, sizeof(steam), "g/Steam");
+	at(library, sizeof(library), "g/Games \"Lib\" back\\slash");
+	{
+		const char *paths[] = { steam, library };
+		const int lists[] = { 0, 1 };
+
+		library_folders(steam, paths, lists, 2);
+	}
+	manifest(library, 4, AE_MCC_DEFAULT_INSTALL_DIR);
+	snprintf(install, sizeof(install), "%s/steamapps/common/%s", library, AE_MCC_DEFAULT_INSTALL_DIR);
+	make_install(install, 0);
+	CHECK(detect_one(steam, &result) == AE_MCC_FOUND && !strcmp(result.root, install));
+
+	/* (h) a bitmaps.map cut short (its table past its end), and an empty one */
+	at(steam, sizeof(steam), "h/Steam");
+	{
+		const char *paths[] = { steam };
+		const int lists[] = { 1 };
+
+		library_folders(steam, paths, lists, 1);
+	}
+	manifest(steam, 4, AE_MCC_DEFAULT_INSTALL_DIR);
+	snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+	make_install(install, 1);
+	CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE && strstr(result.reason, "bitmaps"));
+	ae_mcc_resource_path(install, "bitmaps", path, sizeof(path));
+	write_file(path, "", 0);
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)) && strstr(reason, "empty"));
+	/* (a sounds.map where bitmaps.map goes: not of its type) */
+	ae_mcc_resource_path(install, "sounds", path, sizeof(path));
+	CHECK(ae_mcc_resource_file_valid(path, 1, reason, sizeof(reason)));
+	CHECK(!ae_mcc_resource_file_valid(path, 0, reason, sizeof(reason)));
+
+	/* (i) a moved library: game.mcc_path's folder gone, Steam's libraries have it now */
+	at(steam, sizeof(steam), "a/Steam");
+	{
+		const char *roots[] = { steam };
+		char gone[AE_MCC_PATH_SIZE];
+
+		at(gone, sizeof(gone), "i/old/Halo The Master Chief Collection");
+		snprintf(install, sizeof(install), "%s/steamapps/common/%s", steam, AE_MCC_DEFAULT_INSTALL_DIR);
+		CHECK(detect_roots(gone, NULL, roots, 1, &result) == AE_MCC_FOUND && !strcmp(result.root, install) &&
+			result.source == AE_MCC_SOURCE_STEAM);
+		/* (and game.mcc_path first, the environment's next, when they hold the files) */
+		at(path, sizeof(path), "b/SteamLibrary/steamapps/common/Halo MCC Elsewhere");
+		CHECK(detect_roots(path, NULL, roots, 1, &result) == AE_MCC_FOUND && result.source == AE_MCC_SOURCE_CONFIG &&
+			!strcmp(result.root, path));
+		CHECK(detect_roots(gone, path, roots, 1, &result) == AE_MCC_FOUND &&
+			result.source == AE_MCC_SOURCE_ENVIRONMENT);
+		CHECK(detect_roots(gone, NULL, NULL, 0, &result) == AE_MCC_NOT_FOUND && strstr(result.reason, "no longer"));
+	}
+
+	/* hostile files: a huge libraryfolders.vdf (over the limit: not read, the root still looked at), a deeply
+	nested one, one with a string left open */
+	at(steam, sizeof(steam), "hostile/Steam");
+	{
+		size_t size = AE_MCC_MAXIMUM_VDF_SIZE + 10, index;
+		char *text = malloc(size);
+
+		CHECK(text != NULL);
+		if (text)
+		{
+			memset(text, ' ', size);
+			snprintf(path, sizeof(path), "%s/steamapps/libraryfolders.vdf", steam);
+			write_file(path, text, size);
+			CHECK(detect_one(steam, &result) == AE_MCC_NOT_FOUND);
+			for (index = 0; index < 5000; index++)
+				memcpy(text + index * 6, "\"0\" { ", 6);
+			text[5000 * 6] = 0;
+			write_text(path, text);
+			CHECK(detect_one(steam, &result) == AE_MCC_NOT_FOUND);
+			write_text(path, "\"libraryfolders\" { \"0\" { \"path\" \"/nowhere\" \"apps\" { \"976730");
+			CHECK(detect_one(steam, &result) == AE_MCC_NOT_FOUND);
+			free(text);
+		}
+		/* (a manifest that is garbage: the default folder, no files: incomplete, never a crash) */
+		snprintf(path, sizeof(path), "%s/steamapps/appmanifest_976730.acf", steam);
+		write_text(path, "\"AppState\" { \"StateFlags\" \"4\" \"installdir\" \"");
+		CHECK(detect_one(steam, &result) == AE_MCC_INCOMPLETE);
+	}
+	/* a Steam root that is not there */
+	at(steam, sizeof(steam), "nothing/Steam");
+	CHECK(detect_one(steam, &result) == AE_MCC_NOT_FOUND && !result.root[0]);
+
+	/* an MCC map's shared resources (mcc_resources.c): MCC's halo1/maps first, then its custom_edition */
+	{
+		char paths[4][AE_MCC_PATH_SIZE];
+
+		CHECK(ae_mcc_resource_candidate_paths("/s/Halo The Master Chief Collection", 0, paths, 4) == 2);
+		CHECK(!strcmp(paths[0], "/s/Halo The Master Chief Collection/halo1/maps/bitmaps.map"));
+		CHECK(!strcmp(paths[1], "/s/Halo The Master Chief Collection/halo1/maps/custom_edition/bitmaps.map"));
+		CHECK(ae_mcc_resource_candidate_paths("C:\\Program Files (x86)\\Steam\\MCC\\", 1, paths, 4) == 2);
+		CHECK(!strcmp(paths[0], "C:\\Program Files (x86)\\Steam\\MCC\\halo1/maps/sounds.map"));
+		CHECK(!strcmp(paths[1], "C:\\Program Files (x86)\\Steam\\MCC\\halo1/maps/custom_edition/sounds.map"));
+		/* (room for one: the first) */
+		CHECK(ae_mcc_resource_candidate_paths("/m", 0, paths, 1) == 1 && !strcmp(paths[0], "/m/halo1/maps/bitmaps.map"));
+		/* (no install, an unknown type, no room) */
+		CHECK(ae_mcc_resource_candidate_paths(NULL, 0, paths, 4) == 0);
+		CHECK(ae_mcc_resource_candidate_paths("", 0, paths, 4) == 0);
+		CHECK(ae_mcc_resource_candidate_paths("/m", 5, paths, 4) == 0);
+		CHECK(ae_mcc_resource_candidate_paths("/m", 0, paths, 0) == 0);
+	}
+
+	if (failures)
+	{
+		printf("%d failures\n", failures);
+		return 1;
+	}
+	printf("ae_mcc: all passed\n");
+	return 0;
+}
