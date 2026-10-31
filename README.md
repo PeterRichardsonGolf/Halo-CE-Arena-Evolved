@@ -90,7 +90,7 @@ Take the zip for your system from the [Releases](../../releases) page:
 
 Only the latest release is kept here.
 
-Or get it with [Quiver](https://quiverlauncher.com/): Arena Evolved is listed in the Quiver launcher.
+Or get it with Quiver: [Arena Evolved on Quiver](https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved).
 
 ## You need your own copy of the game
 
