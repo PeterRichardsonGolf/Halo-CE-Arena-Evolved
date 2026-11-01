@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Halo CE: Arena Evolved — Halo CE online from your Steam copy</title>
+<meta name="description" content="Halo CE: Arena Evolved is a fan project that plays Halo: Combat Evolved from your Steam MCC install, Workshop maps included, online and on LAN, with bots, split screen and modern menus. Windows and Linux.">
+<link rel="canonical" href="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Halo CE: Arena Evolved">
+<meta property="og:title" content="Halo CE: Arena Evolved">
+<meta property="og:description" content="Play Halo CE from your Steam copy and Workshop maps, online and on LAN, with bots. For Windows and Linux PCs.">
+<meta property="og:url" content="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/">
+<meta property="og:image" content="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/img/social-preview-1280x640.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="Halo CE: Arena Evolved">
+<meta name="twitter:image" content="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/img/social-preview-1280x640.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#050b18">
+<meta name="color-scheme" content="dark">
+<link rel="icon" type="image/png" sizes="256x256" href="img/ae-icon-256.png">
+<link rel="apple-touch-icon" href="img/ae-icon-256.png">
+<link rel="preload" href="fonts/overpass.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="img/hero-dangercanyon.webp" as="image">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Halo CE: Arena Evolved","alternateName":"Arena Evolved","applicationCategory":"GameApplication","operatingSystem":"Windows 10, Windows 11, Linux, macOS","url":"https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/","downloadUrl":"https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest","license":"https://www.gnu.org/licenses/agpl-3.0.html"}
+</script>
+<style>
+@font-face{font-family:"Overpass";src:url(fonts/overpass.woff) format("woff");font-weight:100 900;font-display:swap}
+:root{
+  --space:#040914;--navy:#071228;--navy-2:#0b1a36;--panel:rgba(9,22,46,.88);--panel-solid:#0a1832;
+  --blue:rgb(40,148,254);--blue-deep:#1565c8;--ice:rgb(184,214,255);--white:#fff;
+  --text:#e6efff;--dim:#a7bddf;--rule:rgba(184,214,255,.16);--rule-strong:rgba(40,148,254,.7);
+  --glow:0 0 0 1px rgba(184,214,255,.9),0 0 18px rgba(184,214,255,.35);
+  --ease:cubic-bezier(.16,1,.3,1);
+  --gutter:clamp(16px,4vw,56px);--max:1240px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:72px}
+body{margin:0;background:var(--space);color:var(--text);font:400 17px/1.6 "Overpass",system-ui,sans-serif;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+::selection{background:var(--blue);color:var(--white)}
+:focus-visible{outline:2px solid var(--ice);outline-offset:3px;border-radius:4px}
+a{color:var(--ice);text-underline-offset:.2em;text-decoration-thickness:1px}
+a:hover{color:var(--white)}
+img{display:block;max-width:100%;height:auto}
+html{scrollbar-color:var(--blue-deep) var(--space)}
+h1,h2,h3{font-weight:900;text-transform:uppercase;letter-spacing:.02em;line-height:1.02;margin:0;text-wrap:balance;color:var(--white)}
+p{margin:0}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gutter)}
+.skip{position:absolute;left:-9999px}.skip:focus{left:16px;top:12px;z-index:50;background:var(--blue);color:var(--white);padding:8px 14px;border-radius:999px}
+
+/* top bar */
+.bar{position:fixed;inset:0 0 auto;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:14px max(var(--gutter),calc((100% - var(--max))/2 + var(--gutter)));transition:background .4s var(--ease),box-shadow .4s var(--ease)}
+.bar.solid{background:rgba(4,9,20,.92);box-shadow:0 1px 0 var(--rule),0 12px 30px rgba(0,0,0,.35)}
+.brand{flex:none;display:flex;align-items:center}
+.brand img{height:22px;width:auto}
+.nav{display:flex;align-items:center;gap:clamp(6px,1.6vw,20px);font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase}
+.nav a{color:var(--text);text-decoration:none;display:inline-flex;align-items:center;min-height:44px;padding:0 6px}
+.nav a:hover{color:var(--white)}
+.nav .gh{display:inline-flex;align-items:center;gap:8px}
+.nav .hide-s{display:inline}
+@media (max-width:960px){.nav .hide-s{display:none}}
+@media (max-width:720px){.brand img{height:16px}}
+
+/* chips: the game's round button glyphs */
+.chip{flex:none;display:inline-grid;place-items:center;width:1.55em;height:1.55em;border-radius:50%;background:var(--blue);color:var(--navy);font-weight:900;font-size:.9em;line-height:1;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}
+.chip.y{background:var(--ice)}
+.btn{display:inline-flex;align-items:center;gap:12px;padding:12px 22px 12px 12px;border-radius:999px;font-weight:800;font-size:15px;letter-spacing:.1em;text-transform:uppercase;text-decoration:none;color:var(--white);background:rgba(7,18,40,.72);box-shadow:0 0 0 1px var(--rule-strong),0 10px 28px rgba(0,0,0,.35);transition:box-shadow .25s var(--ease),background .25s var(--ease),transform .25s var(--ease)}
+.btn:hover,.btn:focus-visible{color:var(--white);background:rgba(16,40,82,.9);box-shadow:var(--glow),0 12px 30px rgba(0,0,0,.4);outline:2px solid transparent;outline-offset:3px}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--blue-deep);color:var(--white);box-shadow:0 0 0 1px rgba(184,214,255,.35),0 12px 30px rgba(0,0,0,.4)}
+.btn.primary .chip{background:var(--white);color:var(--blue-deep)}
+.btn.primary:hover,.btn.primary:focus-visible{background:#1259b0;box-shadow:var(--glow),0 14px 34px rgba(0,0,0,.45)}
+.btn small{font-weight:600;letter-spacing:.04em;text-transform:none;font-size:13px;opacity:.85}
+
+/* hero: the map loading screen */
+.load{position:relative;min-height:min(100svh,1000px);display:flex;align-items:flex-end;overflow:hidden;background:var(--space)}
+.slides{position:absolute;inset:0}
+.slide{position:absolute;inset:0;opacity:0;transition:opacity 1.2s var(--ease)}
+.slide.on{opacity:1}
+.slide img{width:100%;height:100%;object-fit:cover;transform:scale(1.04);transition:transform 7s linear}
+.slide.on img{transform:scale(1)}
+.slide:first-child img{object-position:0 50%}
+.load::after{content:"";position:absolute;inset:0;pointer-events:none;background:
+  linear-gradient(180deg,rgba(4,9,20,.75) 0%,rgba(4,9,20,0) 18%),
+  linear-gradient(0deg,rgba(4,9,20,.97) 0%,rgba(4,9,20,.86) 30%,rgba(4,9,20,.2) 62%,rgba(4,9,20,0) 80%),
+  linear-gradient(90deg,rgba(4,9,20,.75) 0%,rgba(4,9,20,0) 60%)}
+.load .wrap{position:relative;z-index:2;width:100%;padding-top:96px;padding-bottom:clamp(28px,5vh,56px)}
+.load h1{font-size:clamp(2.6rem,6.4vw,5.6rem);max-width:12ch;letter-spacing:-.005em}
+.load h1 em{font-style:normal;color:var(--ice)}
+.tag{margin-top:18px;font-weight:800;font-size:clamp(18px,1.7vw,22px);color:var(--ice);max-width:40ch;text-wrap:balance}
+.lede{margin-top:12px;max-width:58ch;font-size:clamp(17px,1.5vw,20px);color:var(--text)}
+.acts{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.loadbar{margin-top:clamp(28px,5vh,52px);display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:16px;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+.loadbar .map{color:var(--white)}
+.loadbar .src{color:var(--ice)}
+.loadbar .map,.loadbar .src{white-space:nowrap}
+.track{height:4px;border-radius:2px;background:rgba(184,214,255,.14);overflow:hidden}
+.fill{height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--ice))}
+.pause{background:none;border:0;color:var(--ice);font:inherit;letter-spacing:inherit;text-transform:inherit;cursor:pointer;padding:12px 0;min-height:44px}
+.pause:hover{color:var(--white)}
+@media (max-width:640px){.loadbar{grid-template-columns:1fr auto}.loadbar .track{grid-column:1/-1;grid-row:2}.loadbar .src,.loadbar .sep{display:none}}
+
+.needs{margin-top:18px;max-width:62ch;font-size:15px;color:var(--ice)}
+.lead3{margin-top:40px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(16px,2.5vw,28px)}
+.row.big{align-content:start;gap:8px;border:0;border-top:2px solid var(--rule-strong);border-radius:0;padding:18px 0 0}
+.row.big h3{font-size:16px}
+.row.big .opt{font-size:14px;color:var(--ice)}
+.more{margin-top:28px}
+.more summary{cursor:pointer;list-style:none;display:inline-flex;align-items:center;gap:10px;padding:12px 20px;border-radius:999px;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--white);box-shadow:0 0 0 1px var(--rule-strong)}
+.more summary::-webkit-details-marker{display:none}
+.more summary span{color:var(--dim);font-weight:600;letter-spacing:.04em;text-transform:none}
+.more summary:hover,.more summary:focus-visible{box-shadow:var(--glow);outline:2px solid transparent}
+.more[open] summary{margin-bottom:8px}
+.more summary::after{content:"+";font-size:16px;line-height:1;color:var(--ice)}
+.more[open] summary::after{content:"\2212"}
+.help h2,.upstream h2{font-size:clamp(2rem,3.8vw,3.25rem)}
+.upstream .lead{margin-top:16px;color:var(--dim);max-width:60ch}
+.upstream .rows{max-width:860px}
+.upstream .rows b{width:11em}
+.help .lead{margin-top:16px;color:var(--dim);max-width:60ch}
+.help .rows{max-width:760px}
+.upstream{background:var(--navy)}
+@media (max-width:1060px){.lead3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:700px){.lead3{grid-template-columns:1fr}}
+.gallery h2{font-size:clamp(2rem,3.8vw,3.25rem)}
+.gallery .intro{margin-top:16px;color:var(--dim);max-width:60ch}
+.shots{margin-top:36px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(16px,2.5vw,28px)}
+.shots .screen{margin:0}
+@media (max-width:760px){.shots{grid-template-columns:1fr}}
+/* sections */
+section{padding:clamp(56px,7vw,96px) 0}
+#mcc{padding-top:clamp(36px,4vw,56px)}
+#everything,#stock{padding-top:0}
+.feature{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,5vw,72px);align-items:center}
+.feature.flip{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.feature.flip .copy{order:2}
+.feature h2{font-size:clamp(2rem,3.2vw,2.75rem)}
+.feature .copy p{margin-top:18px;color:var(--dim);max-width:46ch}
+.feature .copy p strong{color:var(--text);font-weight:700}
+.rows{list-style:none;margin:26px 0 0;padding:0;border-top:1px solid var(--rule)}
+.rows li{display:flex;gap:14px;align-items:baseline;padding:11px 0;border-bottom:1px solid var(--rule);font-size:15px}
+.rows b{flex:none;width:9.5em;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--white)}
+.rows span{color:var(--dim)}
+.screen{position:relative;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--rule-strong),0 30px 70px rgba(0,0,0,.55)}
+.screen figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 12px;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ice);background:linear-gradient(0deg,rgba(4,9,20,.9),rgba(4,9,20,0))}
+@media (max-width:860px){.feature,.feature.flip{grid-template-columns:1fr}.feature.flip .copy{order:0}}
+
+/* the settings list: every feature a row with its help line, as AE's menus show them */
+.everything{background:linear-gradient(180deg,var(--space),var(--navy) 18%,var(--navy) 82%,var(--space))}
+.everything h2{font-size:clamp(2rem,3.8vw,3.25rem)}
+.everything .intro{margin-top:16px;color:var(--dim);max-width:60ch}
+.menu{margin-top:44px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 clamp(24px,4vw,56px)}
+.row{display:grid;grid-template-columns:1fr;gap:4px;padding:16px 18px;border-radius:4px;border-bottom:1px solid var(--rule)}
+.row h3{font-size:14px;font-weight:800;letter-spacing:.12em}
+.row p{color:var(--dim);font-size:15px;line-height:1.55}
+@media (max-width:760px){.menu{grid-template-columns:1fr}}
+
+/* stock */
+.stock{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:clamp(28px,5vw,72px)}
+.stock h2{font-size:clamp(2rem,3.8vw,3.25rem)}
+.stock ul{margin:0;padding:0;list-style:none}
+.stock li{padding:14px 0;border-bottom:1px solid var(--rule);color:var(--dim)}
+.stock li strong{color:var(--white);font-weight:700}
+@media (max-width:860px){.stock{grid-template-columns:1fr}}
+
+/* get it */
+.get{background:radial-gradient(120% 90% at 85% 0%,rgba(40,148,254,.18),rgba(40,148,254,0) 60%),var(--navy)}
+.get h2{font-size:clamp(2.2rem,4.6vw,4rem)}
+.get .lead{margin-top:16px;color:var(--dim);max-width:60ch}
+.cols{margin-top:48px;display:grid;align-items:start;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,56px)}
+.panel{background:var(--panel);border-radius:6px;padding:clamp(22px,3vw,34px);box-shadow:0 0 0 1px var(--rule-strong),0 24px 60px rgba(0,0,0,.4)}
+.panel h3{font-size:16px;letter-spacing:.1em}
+.panel p{margin-top:12px;color:var(--dim)}
+.panel ol{margin:16px 0 0;padding-left:1.2em;color:var(--dim)}
+.panel ol li{margin:8px 0}
+.panel ol strong{color:var(--white);font-weight:700}
+.panel ol .adds{margin:6px 0 0;padding-left:1.1em;list-style:disc}
+.panel ol .adds li{margin:2px 0}
+.dl{margin-top:20px;display:grid;gap:10px}
+.dl a{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 16px;border-radius:4px;text-decoration:none;color:var(--white);font-weight:700;background:rgba(40,148,254,.08);box-shadow:inset 0 0 0 1px var(--rule);transition:box-shadow .2s var(--ease),background .2s var(--ease)}
+.dl a:hover,.dl a:focus-visible{background:rgba(40,148,254,.16);box-shadow:var(--glow);outline:2px solid transparent;outline-offset:3px}
+.dl a span{font-weight:400;font-size:14px;color:var(--dim);text-align:right}
+.note{margin-top:22px;font-size:14px;color:var(--dim)}
+@media (max-width:860px){.cols{grid-template-columns:1fr}}
+
+.links{margin-top:28px;display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px}
+.links h3{flex-basis:100%;font-size:16px;letter-spacing:.1em;margin-bottom:4px}
+.links a{display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;color:var(--white);box-shadow:inset 0 0 0 1px var(--rule-strong);transition:box-shadow .2s var(--ease),background .2s var(--ease)}
+.links a:hover,.links a:focus-visible{background:rgba(40,148,254,.12);box-shadow:var(--glow);outline:2px solid transparent}
+/* footer */
+footer{padding:64px 0 48px;border-top:1px solid var(--rule);font-size:14px;color:var(--dim)}
+footer .credits{max-width:80ch}
+footer .credits p+p{margin-top:12px}
+footer .legal{margin-top:28px;font-size:13px;opacity:.85}
+
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.slide img{transform:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#mcc">Skip to the page</a>
+
+<header class="bar" id="bar">
+  <a class="brand" href="./" aria-label="Halo CE: Arena Evolved, home"><img src="img/lockup-one-line-dark.svg" alt="Arena Evolved" width="364" height="22"></a>
+  <nav class="nav" aria-label="Main">
+    <a class="hide-s" href="#mcc">MCC</a>
+    <a class="hide-s" href="#everything">Features</a>
+    <a class="hide-s" href="#screens">Screens</a>
+    <a class="hide-s" href="#docs">Help</a>
+    <a href="#get">Download</a>
+    <a class="gh" aria-label="GitHub" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.65.5.5 5.65.5 12a11.5 11.5 0 0 0 7.86 10.92c.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.53-1.33-1.28-1.69-1.28-1.69-1.05-.71.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.19-3.1-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.17 1.18a11 11 0 0 1 5.77 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.84 1.19 3.1 0 4.42-2.7 5.4-5.26 5.68.41.36.78 1.06.78 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5Z"/></svg><span class="hide-s">GitHub</span></a>
+  </nav>
+</header>
+
+<main>
+<section class="load" aria-label="Arena Evolved" style="padding:0">
+  <div class="slides" id="slides">
+    <figure class="slide on" data-map="Danger Canyon" data-src="from your MCC files" style="margin:0"><img fetchpriority="high" src="img/hero-dangercanyon.webp" alt="Arena Evolved on Danger Canyon, played from MCC's own files: the EVO RIFLE with its holo sight, a Warthog ahead, AE's HUD" width="1920" height="1080"></figure>
+    <figure class="slide" aria-hidden="true" data-map="Timberland" data-src="from your MCC files" style="margin:0"><img src="img/hero-timberland.webp" alt="Arena Evolved on Timberland from MCC's files: the battle rifle under the ring" width="1920" height="1080" loading="lazy"></figure>
+    <figure class="slide" aria-hidden="true" data-map="Ice Fields" data-src="from your MCC files" style="margin:0"><img src="img/hero-icefields.webp" alt="Arena Evolved on Ice Fields from MCC's files" width="1920" height="1080" loading="lazy"></figure>
+  </div>
+  <div class="wrap">
+    <h1>Play Halo CE online with your <em>Steam</em> maps.</h1>
+    <p class="tag">Halo CE as you remember it, with everything today's games made standard.</p>
+    <p class="lede">Arena Evolved plays Halo: Combat Evolved straight from your Steam copy, Workshop maps included. Server browser, LAN, bots in every mode, split screen and menus made for today's PCs. For Windows and Linux PCs.</p>
+    <div class="acts">
+      <a class="btn primary" id="dl" href="#get"><span class="chip">A</span><span id="dl-label">Download</span> <small id="ver"></small></a>
+      <a class="btn" href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><span class="chip y">Y</span>Get it with Quiver</a>
+    </div>
+    <p class="needs">Needs Halo: Combat Evolved Anniversary on Steam, alone or in The Master Chief Collection, with its campaign and multiplayer installed. A fan project, in beta.</p>
+    <div class="loadbar">
+      <span><span class="map" id="map">Danger Canyon</span><span class="sep"> · </span><span class="src" id="src">from your MCC files</span></span>
+      <span class="track"><span class="fill" id="fill"></span></span>
+      <button class="pause" id="pause" type="button">Pause slides</button>
+    </div>
+  </div>
+</section>
+
+<section id="mcc">
+  <div class="wrap feature">
+    <div class="copy">
+      <h2>Your Workshop maps, playable online</h2>
+      <p><strong>MCC's custom game browser doesn't list modded games. Arena Evolved's does.</strong> Host from your own install, find games in the server browser or on your LAN, or join by address. A player missing a Workshop map is told which item to subscribe to.</p>
+      <p>Arena Evolved finds your Steam install by itself and plays Halo CE's multiplayer maps and <strong>every Workshop map you subscribe to</strong> from the game's own files. No disc image, nothing converted.</p>
+      <ul class="rows">
+        <li><b>Stock MCC</b><span>The Halo CE multiplayer maps as MCC ships them.</span></li>
+        <li><b>Workshop</b><span>Your subscribed maps, sorted into their collections, with pictures.</span></li>
+        <li><b>Needs</b><span>Halo: Combat Evolved Anniversary on Steam, campaign and multiplayer both installed: some Workshop maps use both.</span></li>
+        <li><b>Hosting</b><span>Workshop maps are hosted from a player's own game; dedicated servers serve the stock and Custom Edition maps.</span></li>
+        <li><b>Coming soon</b><span>Custom campaign mods from the Workshop.</span></li>
+      </ul>
+    </div>
+    <figure class="screen" style="margin:0"><img src="img/change-map.webp" alt="CHANGE MAP in Arena Evolved: folders for STOCK OG, STOCK MCC, Workshop, community maps and more" width="1600" height="900" loading="lazy"><figcaption>Change map · stock, MCC, Workshop</figcaption></figure>
+  </div>
+</section>
+
+<section id="online" style="padding-top:0">
+  <div class="wrap feature flip">
+    <div class="copy">
+      <h2>Online, LAN, and bots to fill it</h2>
+      <p>Server browser, LAN search that works with a VPN on, invite links, join by address, dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come from the host as you join.</p>
+      <p><strong>Bots in every mode</strong>, six levels from RECRUIT to DEMON: a wingman for each player, squads that flank, flag crews that escort, bombers that plant and defend. They drive, ride, know the item timers, and step aside when a player joins.</p>
+      <ul class="rows">
+        <li><b>Party</b><span>A live CREATE GAME lobby: friends and bots join while you set up.</span></li>
+        <li><b>Split screen</b><span>Up to four players on one PC, each with their own profile and settings.</span></li>
+        <li><b>Crossplay</b><span>Plays with OpenCE builds that share its network version.</span></li>
+      </ul>
+    </div>
+    <figure class="screen" style="margin:0"><img src="img/create-game.webp" alt="CREATE GAME lobby on Battle Creek from MCC, with MY PARTY and the quick options" width="1600" height="900" loading="lazy"><figcaption>Create game · my party</figcaption></figure>
+  </div>
+</section>
+
+<section class="everything" id="everything">
+  <div class="wrap">
+    <h2>Everything it adds, and every bit optional</h2>
+    <p class="intro">Each of these is a setting or a gametype rule you can switch off. Halo CE's own gametypes keep Halo CE's rules.</p>
+    <div class="lead3">
+      <article class="row big"><h3>Weapons for CE's sandbox</h3><p>Battle rifle, EVO RIFLE, DMR, SMG, carbine and suppressed weapons as packs that work on stock, Custom Edition and MCC maps. Each turns on or off per gametype.</p></article>
+      <article class="row big"><h3>Modern spawns</h3><p>Better spawns for every game bigger than 2v2, on small maps and in big team battles. You come back away from the fight and out of enemy sight, not in front of someone's gun.</p><p class="opt">Optional: the SPAWNS row in GAME OPTIONS switches back to CLASSIC. The CLASSIC COMP set and Halo CE's own gametypes keep classic spawns.</p></article>
+      <article class="row big"><h3>Bots in every mode</h3><p>Six levels from RECRUIT to DEMON. They flank in squads, escort the flag, plant and defend the bomb, drive and ride vehicles, and step aside when a player joins. PLAYFIGHT bots aim but never shoot, for practice.</p></article>
+      <article class="row big"><h3>Classic competitive</h3><p>Competitive rules and gametypes inspired by Halo 1: NHE and modern competitive arena shooters: the CLASSIC COMP set, AE COMP 2v2 and 4v4, NO SPREAD: FIRST SHOT, item timers with spoken callouts, a match clock, and the community's competitive maps from the Workshop.</p></article>
+      <article class="row big"><h3>Round modes</h3><p>Search and Destroy and Bomb: one life a round, a real bomb carried on the back, a fuse timer on its face. Built on the ChupathingyCE team's Bomb engine.</p></article>
+      <article class="row big"><h3>Training aids</h3><p>Item timers and waypoints with pictures, spoken callouts in seven voices, a match clock, spawn heat markers, dead ally markers, a green ally reticle, an enemies-only motion sensor.</p></article>
+    </div>
+    <details class="more"><summary>Everything else it adds <span>(12 more)</span></summary>
+    <div class="menu">
+      <article class="row"><h3>Ready-made gametypes</h3><p>FFA, 2v2, 4v4 casual and COMP, big team with heavy vehicles, objective modes, party modes such as Juggernaut, Grifball, SWAT, Crazy King and Race, and warm-up drills.</p></article>
+      <article class="row"><h3>Rules on any map</h3><p>Fall damage, health styles, combat feedback, no spread, a pre-game countdown, destructible vehicles, friendly splatter, classic or modern spawns.</p></article>
+      
+      <article class="row"><h3>Host tools</h3><p>OFFLINE games that really pause. RESTART GAME and RESTART ROUND, bots changed mid-game, CHANGE MAP and GAME OPTIONS from the pause menu, SHUFFLE TEAMS.</p></article>
+      <article class="row"><h3>Controllers</h3><p>Many layouts including MCC's and a CUSTOM one, DualSense adaptive triggers and lightbar, PlayStation and Nintendo prompts, gyro aiming, stick dead zones.</p></article>
+      <article class="row"><h3>Mouse and keyboard</h3><p>KEY BINDINGS, wheel zoom, hold-to-zoom, MCC-style sensitivity, and key prompts that show your own keys.</p></article>
+      <article class="row"><h3>Menus for today's PCs</h3><p>Controller-first, just as good with a mouse, sized for anything from a handheld to an ultrawide. Search, favourites and RECENT in the map and gametype pickers.</p></article>
+      <article class="row"><h3>HUD and display</h3><p>A modern competitive HUD of its own or Halo CE's, a typed frame-rate limit from 30 to 1000, a performance line with ping.</p></article>
+      <article class="row"><h3>Graphics</h3><p>Field of view and viewmodel settings, FXAA, SMAA and MSAA, HDR, resolution scaling and anisotropic filtering.</p></article>
+      <article class="row"><h3>Accessibility</h3><p>REDUCE MOTION, a menu size setting, values you can type, and help lines that name your own buttons.</p></article>
+      <article class="row"><h3>Updates and privacy</h3><p>Signed updates that ask before they install. Stats from the games you host stay off until you turn them on, and crash reports are never sent.</p></article>
+      <article class="row"><h3>Capture</h3><p>Screenshots of every split view and video recording with sound.</p></article>
+      <article class="row"><h3>Map packs and layouts</h3><p>Community and Custom Edition maps keep their folders and pictures; layout files move items, vehicles, spawns and flags.</p></article>
+    </div>
+    </details>
+  </div>
+</section>
+
+<section class="gallery" id="screens" style="padding-top:0">
+  <div class="wrap">
+    <h2>Modern menus, UI and HUD</h2>
+    <p class="intro">Every screen is new, works with a controller or a mouse, and explains each setting in a line of help. In the game, a competitive HUD of its own: a score strip, power item timers, your shields and ammo at a glance. Prefer Halo CE's HUD? It is one setting away.</p>
+    <div class="shots">
+      <figure class="screen"><img src="img/ae-hud.webp" alt="AE's competitive HUD on Timberland: score strip, item timers, shields and ammo" width="1600" height="900" loading="lazy"><figcaption>AE's competitive HUD</figcaption></figure>
+      <figure class="screen"><img src="img/game-options.webp" alt="GAME OPTIONS: every rule of a gametype in topics, with filter chips" width="1600" height="900" loading="lazy"><figcaption>Game options</figcaption></figure>
+      <figure class="screen"><img src="img/weapon-packs.webp" alt="MORE OPTIONS: start weapons and the weapon packs, each on or off" width="1600" height="900" loading="lazy"><figcaption>Start weapons and weapon packs</figcaption></figure>
+      <figure class="screen"><img src="img/settings.webp" alt="SETTINGS: each player's own controls, video, HUD and more" width="1600" height="900" loading="lazy"><figcaption>Settings, per player</figcaption></figure>
+      <figure class="screen"><img src="img/hud.webp" alt="HUD settings: HUD style, timers, latency meter and more" width="1600" height="900" loading="lazy"><figcaption>HUD settings</figcaption></figure>
+      <figure class="screen"><img src="img/pause-bots.webp" alt="Pause menu: bots and their skill changed mid-game" width="1600" height="900" loading="lazy"><figcaption>Bots changed mid-game</figcaption></figure>
+      <figure class="screen"><img src="img/evo-scope.webp" alt="The EVO RIFLE's scope with its zoom and the rounds loaded" width="1600" height="900" loading="lazy"><figcaption>EVO RIFLE scope</figcaption></figure>
+      <figure class="screen"><img src="img/carbine.webp" alt="The carbine on Carousel, a Workshop map" width="1600" height="900" loading="lazy"><figcaption>The carbine</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="stock">
+  <div class="wrap stock">
+    <h2>Play it stock if you want</h2>
+    <ul>
+      <li><strong>Halo CE's gametypes play by Halo CE's rules.</strong> AE's rules are on only in the AE gametypes, each a row you can switch off.</li>
+      <li><strong>Halo CE's look:</strong> HUD STYLE CE draws the game's own HUD, and the PC version's menus are one setting away.</li>
+      <li><strong>Stock maps stay stock:</strong> the STOCK folders hold the maps as they shipped, from MCC or your disc image.</li>
+      <li><strong>Classic players welcome:</strong> online, it plays with OpenCE builds that share its network version.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="get" id="get">
+  <div class="wrap">
+    <h2>Get Arena Evolved</h2>
+    <p class="lead">Open source (AGPL-3.0). Beta, in active development: Windows and Linux are tested with every release.</p>
+    <div class="cols">
+      <div class="panel">
+        <h3>Download</h3>
+        <div class="dl">
+          <a data-asset="windows64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Windows <span>10 or 11, 64-bit · nothing to install</span></a>
+          <a data-asset="linux64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Linux <span>x86-64 · most distributions, Arch build too</span></a>
+          <a data-asset="macos.tar" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">macOS <span>13 or later, Apple silicon · built, untested</span></a>
+          <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved">Quiver <span>install and update it from the launcher</span></a>
+        </div>
+        <p class="note">Each release also has the dedicated server, an untested Android build and its complete source.</p>
+      </div>
+      <div class="panel">
+        <h3>You need your own copy of the game</h3>
+        <p>Arena Evolved includes none of the game's maps, sounds or art. It plays from either, or both:</p>
+        <ol>
+          <li><strong>Halo: Combat Evolved Anniversary on Steam</strong>, bought alone or as part of Halo: The Master Chief Collection (recommended). Install both its campaign and its multiplayer (MCC - H1: Multiplayer): some Workshop content needs both. Arena Evolved finds it automatically.</li>
+          <li><strong>A disc image you made from your own Xbox disc</strong> of Halo: Combat Evolved (.iso or .xiso). Not needed for MCC's maps. It adds:<ul class="adds"><li>crossplay with players who do not have MCC, such as OpenCE players;</li><li>the original Xbox maps;</li><li>the community's maps and mods made for the original Xbox version.</li></ul></li>
+        </ol>
+        <p class="note">Use only a copy of the game you own. Arena Evolved never provides, links to or helps find game files, and requests for them are closed.</p>
+        <p class="note">Questions and ideas: <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions">Discussions</a>. Bugs: <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/issues">Issues</a>, with your debug.txt.</p>
+      </div>
+    </div>
+    <nav class="links" id="docs" aria-label="Help and guides">
+      <h3>Help and guides</h3>
+      <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved#readme">Read me</a>
+      <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions">Questions and ideas</a>
+      <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/issues">Report a bug</a>
+      <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases">Release notes</a>
+    </nav>
+  </div>
+</section>
+<section class="upstream" id="upstream">
+  <div class="wrap">
+    <h2>Built on the community's work</h2>
+    <p class="lead">Halo CE is still played because its community kept it going. Arena Evolved stands on the open projects that came first, follows their releases, and sends its own fixes back to them.</p>
+    <ul class="rows">
+      <li><b>Bungie</b><span>Who made Halo: Combat Evolved in 2001, the game all of this exists to keep playing. Thank you.</span></li>
+      <li><b>OpenCE</b><span>The port of the Halo: Combat Evolved decompilation that runs the game natively. Arena Evolved is a fork of it and merges its new releases.</span></li>
+      <li><b>ChupathingyCE</b><span>Where Arena Evolved grew from: the Bomb engine behind the round modes, Grifball, and many fixes.</span></li>
+      <li><b>GulchCE</b><span>The first work on loading MCC's maps, which Arena Evolved's MCC support builds on.</span></li>
+      <li><b>CMT</b><span>The source release of The Silent Cartographer: Evolved, where the rifles' and vehicle damage art come from.</span></li>
+      <li><b>Halo 1: NHE</b><span>The competitive rules and gametypes that inspired Arena Evolved's.</span></li>
+      <li><b>Map makers and modders</b><span>Twenty-plus years of community maps, mods and Workshop items. Arena Evolved shows them with their own names, pictures and credits.</span></li>
+    </ul>
+    <p class="note">Each project is credited in the <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved#credits">README</a> and in every download. Arena Evolved is its own project: these teams do not run or endorse it.</p>
+  </div>
+</section>
+
+<section class="help" id="help">
+  <div class="wrap">
+    <h2>Help build it</h2>
+    <p class="lead">Arena Evolved is run by one person in spare time, and it has grown past that. If you want Halo CE to keep going, there is room for you:</p>
+    <ul class="rows">
+      <li><b>Community</b><span>Moderators and admins for the community chat and the issue tracker.</span></li>
+      <li><b>Maintainers</b><span>People who can own a part: networking, bots, menus, Linux or Windows releases.</span></li>
+      <li><b>Contributors</b><span>Code, play-testing on your PC, maps and layouts, art and sounds, docs and translations.</span></li>
+    </ul>
+    <p class="note">Say hello in <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions">Discussions</a> and tell us what you would like to do.</p>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p class="credits">Built on <a href="https://github.com/OpenCommunityEdition/OpenCE">OpenCE</a>, <a href="https://github.com/ChupathingyCE/chupathingyce">ChupathingyCE</a>, <a href="https://github.com/chestahh/GulchCE">GulchCE</a>, CMT's source release and the ideas of <a href="https://halo1nhe.com/">Halo 1: NHE</a>. Full credits in the <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved#credits">README</a>.</p>
+    <p class="legal">Halo is a trademark of its owner. Halo CE: Arena Evolved is a non-commercial fan project, not made or endorsed by the game's owners or developers, and includes none of the game's content. The ORBIT logo and the ARENA EVOLVED wordmark: all rights reserved by the project.</p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  var bar=document.getElementById('bar');
+  function onScroll(){bar.classList.toggle('solid',window.scrollY>40)}
+  onScroll();window.addEventListener('scroll',onScroll,{passive:true});
+
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var fill=document.getElementById('fill'),map=document.getElementById('map'),src=document.getElementById('src'),btn=document.getElementById('pause');
+  var still=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var i=0,start=performance.now(),held=still,heldAt=0,SPAN=7000;
+  function show(n){slides[i].classList.remove('on');slides[i].setAttribute('aria-hidden','true');i=n;slides[i].classList.add('on');slides[i].removeAttribute('aria-hidden');map.textContent=slides[i].dataset.map;src.textContent=slides[i].dataset.src}
+  function tick(t){
+    if(!held){var p=(t-start)/SPAN;if(p>=1){show((i+1)%slides.length);start=t;p=0}fill.style.width=(p*100).toFixed(2)+'%'}
+    requestAnimationFrame(tick)}
+  if(still){fill.style.width='100%';btn.textContent='Next slide'}
+  btn.addEventListener('click',function(){
+    if(still){show((i+1)%slides.length);return}
+    held=!held;btn.textContent=held?'Play slides':'Pause slides';
+    if(held)heldAt=performance.now();else start+=performance.now()-heldAt});
+  requestAnimationFrame(tick);
+
+  var ua=navigator.userAgent,os=/Windows/.test(ua)?'windows64.zip':(/Linux/.test(ua)&&!/Android/.test(ua))?'linux64.zip':/Mac OS X/.test(ua)?'macos.tar':null;
+  var names={'windows64.zip':'Windows','linux64.zip':'Linux','macos.tar':'macOS'};
+  if(os)document.getElementById('dl-label').textContent='Download for '+names[os];
+  fetch('https://api.github.com/repos/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest').then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j)return;
+    if(j.tag_name)document.getElementById('ver').textContent=j.tag_name.replace(/^v/,'');
+    function asset(end){var a=(j.assets||[]).filter(function(x){return x.name.slice(-end.length-1)==='-'+end})[0];return a&&a.browser_download_url}
+    [].forEach.call(document.querySelectorAll('[data-asset]'),function(a){var u=asset(a.dataset.asset);if(u)a.href=u});
+    if(os&&asset(os))document.getElementById('dl').href=asset(os);
+  }).catch(function(){});
+})();
+</script>
+</body>
+</html>
