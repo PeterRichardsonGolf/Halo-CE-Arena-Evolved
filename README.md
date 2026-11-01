@@ -10,7 +10,9 @@
 <p align="center">
   <a href="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/"><b>Website</b></a> ·
   <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest"><b>Download</b></a> ·
-  <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><b>Get it with Quiver</b></a>
+  <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><b>Get it with Quiver</b></a> ·
+  <a href="docs/how-to-play.md"><b>How to play</b></a> ·
+  <a href="docs/host-a-server.md"><b>Host a game or server</b></a>
 </p>
 
 Arena Evolved (AE) is a non-commercial fan project that runs Halo: Combat Evolved's Xbox engine natively on
