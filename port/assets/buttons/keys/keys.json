@@ -1,0 +1,24 @@
+{
+ "assets": [
+  {
+   "name": "ae_keys_ae",
+   "tag": "ae\\key_prompts\\ae",
+   "bitmap": 0,
+   "width": 2048,
+   "height": 936,
+   "scale": 1,
+   "crc": 0,
+   "own": true
+  },
+  {
+   "name": "ae_keys_ce",
+   "tag": "ae\\key_prompts\\ce",
+   "bitmap": 0,
+   "width": 2048,
+   "height": 1256,
+   "scale": 1,
+   "crc": 0,
+   "own": true
+  }
+ ]
+}

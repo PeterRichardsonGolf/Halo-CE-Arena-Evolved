@@ -1,0 +1,21 @@
+/*
+AE_JOINER_NOTICE.H
+
+(0.7.1, owner 2026-10-31) A host's word on a machine that joins without
+Arena Evolved: one chat line to the whole game naming the build the machine
+plays on (OpenCE's, or the build a Delta machine names in its HELLO), that
+some of the game's rules and extras may not show for it, and where AE is.
+Once a machine, when its first player is in the game and its build is known
+(or 10 s after it joined).
+*/
+
+#ifndef AE_JOINER_NOTICE_H
+#define AE_JOINER_NOTICE_H
+
+#include "cseries.h"
+
+/* (ae_silent_host_machine, each frame for each client machine of the host's server) remote_joined: the machine
+is joined to the game and not the host's own */
+void ae_joiner_notice_host_machine(long machine_index, boolean remote_joined);
+
+#endif

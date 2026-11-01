@@ -1,0 +1,1577 @@
+/*
+HUD_UNIT.C
+
+symbols in this file:
+000C6590 0010:
+	_unit_hud_outline_mapper_tick (0000)
+000C65A0 0010:
+	_unit_hud_shield_meter_mapper_tick (0000)
+000C65B0 0010:
+	_unit_hud_shield_meter_mapper_init (0000)
+000C65C0 0040:
+	_initialize_hud_state (0000)
+000C6600 0070:
+	_get_hud_state (0000)
+000C6670 0040:
+	_hud_initialize_unit_interface (0000)
+000C66B0 00f0:
+	_hud_initialize_unit_interface_for_new_map (0000)
+000C67A0 0010:
+	_hud_dispose_unit_interface_from_old_map (0000)
+000C67B0 0010:
+	_hud_dispose_unit_interface (0000)
+000C67C0 0030:
+	_scripted_hud_show_health (0000)
+000C67F0 0030:
+	_scripted_hud_blink_health (0000)
+000C6820 0030:
+	_scripted_hud_show_shield (0000)
+000C6850 0030:
+	_scripted_hud_blink_shield (0000)
+000C6880 0030:
+	_scripted_hud_show_motion_sensor (0000)
+000C68B0 0030:
+	_scripted_hud_blink_motion_sensor (0000)
+000C68E0 0220:
+	_hud_play_unit_sounds (0000)
+000C6B00 0080:
+	_hud_fix_unit_data (0000)
+000C6B80 0220:
+	_hud_update_unit_local_player (0000)
+000C6DA0 02b0:
+	_hud_render_damage_indicators (0000)
+000C7050 0040:
+	_hud_tick_shield (0000)
+000C7090 0030:
+	_hud_update_unit (0000)
+000C70C0 0db0:
+	_hud_render_unit_interface (0000)
+00270268 0011:
+	??_C@_0BB@MIFNILGL@unit_hud_globals?$AA@ (0000)
+0027027C 0024:
+	??_C@_0CE@ICNCJJA@c?3?2halo?2SOURCE?2interface?2hud_uni@ (0000)
+002702A0 0013:
+	??_C@_0BD@OOGPMJCA@hud?5unit?5interface?$AA@ (0000)
+002702B4 0004:
+	__real@3e400000 (0000)
+002702B8 001d:
+	??_C@_0BN@FNBCLDEB@new_local_player_index?$CB?$DNNONE?$AA@ (0000)
+002702D8 001d:
+	??_C@_0BN@NPOPPJAG@old_local_player_index?$CB?$DNNONE?$AA@ (0000)
+002E4C68 0004:
+	?overcharge_count@?1??hud_render_unit_interface@@9@9 (0000)
+00453AC0 0004:
+	_unit_hud_globals (0000)
+*/
+
+/* ---------- headers */
+
+#include "mcc_hud_draw.h"
+#include "cseries/cseries.h"
+#include "cseries/errors.h"
+#include "cutscene/cinematics.h"
+#include "effects/player_effects.h"
+#include "game/game.h"
+#include "game/game_engine.h"
+#include "game/players.h"
+#include "cache/texture_cache.h"
+#include "interface/hud_definitions.h"
+#include "bitmaps/bitmap_color_conversion.h"
+#include "interface/hud_draw.h"
+#include "interface/hud.h"
+#include "interface/hud_item_timers.h"
+#include "interface/motion_sensor.h"
+#include "interface/hud_unit.h"
+#include "interface/unit_hud_interface_definition.h"
+#include "render/render.h"
+#include "saved games/game_state.h"
+#include "tag_files/tag_groups.h"
+#include "units/unit_definitions.h"
+#include "units/units.h"
+#include "ae_hud_style.h" /* AE hook */
+#include "ae_bomb_hud.h" /* AE hook */
+#include "ae_panels.h" /* AE hook */
+#include "ae_sensor.h" /* AE hook */
+#include "network_chat.h" /* port: port/linux/game/network_chat.c */
+#include "bitmaps/bitmap_group.h"
+
+/* ---------- constants */
+
+enum
+{
+	_hud_panel_health_dont_show_bit = 0,
+	_hud_panel_health_blink_bit,
+	_hud_panel_shield_dont_show_bit,
+	_hud_panel_shield_blink_bit,
+	_hud_panel_motion_sensor_dont_show_bit,
+	_hud_panel_motion_sensor_blink_bit
+};
+
+enum hud_damage_indicator_direction
+{
+	_hud_damage_indicator_top = 0,
+	_hud_damage_indicator_left,
+	_hud_damage_indicator_bottom,
+	_hud_damage_indicator_right,
+
+	NUMBER_OF_HUD_DAMAGE_INDICATOR_DIRECTIONS
+};
+
+/* ---------- macros */
+
+/* ---------- structures */
+
+struct unit_hud_state
+{
+	real last_shield_vitality;
+	real last_body_vitality;
+	real fade_time;
+	long last_shield_hit_time;
+	long last_shield_flash_time;
+	long last_health_flash_time;
+	long last_motion_sensor_flash_time;
+	long last_unit_index;
+	word auxilary_active_type_flags;
+	short auxilary_flash_time[1];
+	word sound_flags;
+	byte pad26[2];
+	long last_sound_handles[12];
+};
+
+struct unit_hud_globals
+{
+	struct unit_hud_state hud_states[MAXIMUM_NUMBER_OF_LOCAL_PLAYERS];
+	long script_flags;
+};
+
+typedef char unit_hud_state_auxilary_flash_time_offset_assert[
+	offsetof(struct unit_hud_state, auxilary_flash_time) == 0x22 ? 1 : -1];
+typedef char unit_hud_state_sound_flags_offset_assert[
+	offsetof(struct unit_hud_state, sound_flags) == 0x24 ? 1 : -1];
+typedef char unit_hud_state_last_sound_handles_offset_assert[
+	offsetof(struct unit_hud_state, last_sound_handles) == 0x28 ? 1 : -1];
+typedef char unit_hud_state_size_assert[
+	sizeof(struct unit_hud_state) == 0x58 ? 1 : -1];
+typedef char unit_hud_globals_script_flags_offset_assert[
+	offsetof(struct unit_hud_globals, script_flags) == 0x160 ? 1 : -1];
+typedef char unit_hud_globals_size_assert[
+	sizeof(struct unit_hud_globals) == 0x164 ? 1 : -1];
+typedef char hud_scripted_globals_size_assert[
+	sizeof(struct hud_scripted_globals_definition) == 0x4 ? 1 : -1];
+typedef char hud_messaging_parameters_definition_size_assert[
+	sizeof(struct hud_messaging_parameters_definition) == 0x120 ? 1 : -1];
+typedef char hud_waypoint_definition_size_assert[
+	sizeof(struct hud_waypoint_definition) == 0x9C ? 1 : -1];
+typedef char hud_multiplayer_parameters_definition_size_assert[
+	sizeof(struct hud_multiplayer_parameters_definition) == 0x104 ? 1 : -1];
+typedef char hud_defaults_definition_size_assert[
+	sizeof(struct hud_defaults_definition) == 0x50 ? 1 : -1];
+typedef char hud_damage_indicators_definition_indicator_bitmap_offset_assert[
+	offsetof(struct hud_damage_indicators_definition, indicator_bitmap) == 0x28 ? 1 : -1];
+typedef char hud_damage_indicators_definition_size_assert[
+	sizeof(struct hud_damage_indicators_definition) == 0x50 ? 1 : -1];
+typedef char hud_globals_definition_damage_indicators_offset_assert[
+	offsetof(struct hud_globals_definition, damage_indicators) == 0x310 ? 1 : -1];
+
+/* ---------- prototypes */
+
+static struct unit_hud_state *get_hud_state(
+	short local_player_index);
+static void hud_update_unit_local_player(
+	short local_player_index);
+
+/* ---------- globals */
+
+static struct unit_hud_globals *unit_hud_globals = NULL;
+
+/* ---------- private code */
+
+static void unit_hud_outline_mapper_tick(
+	void)
+{
+	return;
+}
+
+static void unit_hud_shield_meter_mapper_tick(
+	void)
+{
+	return;
+}
+
+/* ---------- public code */
+
+void unit_hud_shield_meter_mapper_init(
+	void)
+{
+	return;
+}
+
+/* ---------- private code */
+
+static void initialize_hud_state(
+	struct unit_hud_state *hud_state)
+{
+	csmemset(
+		hud_state->auxilary_flash_time,
+		NONE,
+		sizeof(hud_state->auxilary_flash_time));
+	hud_state->last_body_vitality = -1.0f;
+	hud_state->last_shield_vitality = -1.0f;
+	hud_state->last_health_flash_time = NONE;
+	hud_state->last_motion_sensor_flash_time = NONE;
+	hud_state->fade_time = -1.0f;
+	hud_state->last_unit_index = NONE;
+
+	return;
+}
+
+static struct unit_hud_state *get_hud_state(
+	short local_player_index)
+{
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x106,
+		local_player_index>=0 &&
+			local_player_index<MAXIMUM_NUMBER_OF_LOCAL_PLAYERS);
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x107,
+		unit_hud_globals);
+
+	return &unit_hud_globals->hud_states[local_player_index];
+}
+
+/* ---------- public code */
+
+void hud_initialize_unit_interface(
+	void)
+{
+	unit_hud_globals = game_state_malloc(
+		"hud unit interface",
+		NULL,
+		sizeof(*unit_hud_globals));
+
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x110,
+		unit_hud_globals);
+
+	return;
+}
+
+void hud_initialize_unit_interface_for_new_map(
+	void)
+{
+	short local_player_index;
+	struct unit_hud_state *hud_state;
+
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x11B,
+		unit_hud_globals);
+	csmemset(
+		unit_hud_globals,
+		0,
+		sizeof(*unit_hud_globals));
+
+	for (local_player_index = 0;
+		local_player_index < MAXIMUM_NUMBER_OF_LOCAL_PLAYERS;
+		local_player_index++)
+	{
+		hud_state = get_hud_state(local_player_index);
+		initialize_hud_state(hud_state);
+		hud_state->sound_flags = 0;
+		csmemset(
+			hud_state->last_sound_handles,
+			NONE,
+			sizeof(hud_state->last_sound_handles));
+	}
+
+	return;
+}
+
+void hud_dispose_unit_interface_from_old_map(
+	void)
+{
+	return;
+}
+
+void hud_dispose_unit_interface(
+	void)
+{
+	return;
+}
+
+void hud_fix_unit_data(
+	short old_local_player_index,
+	short new_local_player_index)
+{
+	struct unit_hud_state *old_hud_state;
+	struct unit_hud_state *new_hud_state;
+
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x1AB,
+		old_local_player_index!=NONE);
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x1AC,
+		new_local_player_index!=NONE);
+	old_hud_state = get_hud_state(old_local_player_index);
+	new_hud_state = get_hud_state(new_local_player_index);
+	*new_hud_state = *old_hud_state;
+
+	return;
+}
+
+void scripted_hud_show_health(
+	boolean show)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_health_dont_show_bit,
+		!show);
+
+	return;
+}
+
+void scripted_hud_blink_health(
+	boolean blink)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_health_blink_bit,
+		blink);
+
+	return;
+}
+
+void scripted_hud_show_shield(
+	boolean show)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_shield_dont_show_bit,
+		!show);
+
+	return;
+}
+
+void scripted_hud_blink_shield(
+	boolean blink)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_shield_blink_bit,
+		blink);
+
+	return;
+}
+
+void scripted_hud_show_motion_sensor(
+	boolean show)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_motion_sensor_dont_show_bit,
+		!show);
+
+	return;
+}
+
+void scripted_hud_blink_motion_sensor(
+	boolean blink)
+{
+	SET_FLAG(
+		unit_hud_globals->script_flags,
+		_hud_panel_motion_sensor_blink_bit,
+		blink);
+
+	return;
+}
+
+/* port: the scripts' show and blink flags, for network co-op
+(port/linux/game/network_coop.c) */
+long hud_unit_port_script_flags(
+	void)
+{
+	return unit_hud_globals->script_flags;
+}
+
+void hud_unit_port_set_script_flags(
+	long flags)
+{
+	unit_hud_globals->script_flags = flags;
+}
+
+/* port: whether the shield's fall from the last value the HUD saw is a hit.
+The host drains an overshield by about 0.00074 a tick and moves the HUD's
+last value with it (hud_tick_shield), so on the host the two stay equal. A
+network client's shield falls with the host's updates instead, after the
+HUD has taken its last value for the tick, so each frame it was a tick
+behind: the meter flashed and the shield damage sound played for the whole
+overshield, where the Xbox plays nothing. A small step from past full (0.02
+or less, about 25 ticks of drain) is that drain; a larger one is a hit,
+which still flashes the meter and plays the sound. */
+static boolean hud_shield_drop_is_hit(
+	real last_shield_vitality,
+	real shield_vitality)
+{
+	if (!(last_shield_vitality > shield_vitality))
+		return FALSE;
+	return !(last_shield_vitality > 1.0f && last_shield_vitality - shield_vitality <= 0.02f);
+}
+
+void hud_play_unit_sounds(
+	struct player_datum const *player,
+	boolean show_hud)
+{
+	struct unit_hud_state *hud_state = get_hud_state(player->local_player_index);
+	long unit_index = player->unit_index;
+
+	if (unit_index == NONE)
+		unit_index = hud_state->last_unit_index;
+
+	{
+		struct unit_datum *unit = unit_try_and_get(unit_index);
+
+		if (unit == NULL)
+			return;
+
+		{
+			struct unit_definition const *unit_definition =
+				unit_definition_get(unit->definition_index);
+			long active_hud_index = unit_definition_get_active_hud_index(
+				unit_definition,
+				hud_split_screen_layout());
+
+			if (active_hud_index == NONE)
+				return;
+
+			{
+				struct unit_hud_interface_definition const *hud_definition =
+					unit_hud_interface_definition_get(active_hud_index);
+				unsigned long sound_flags = 0;
+
+				if (TEST_FLAG(unit->object.flags, _object_on_media_bit) ||
+					!(unit->object.body_vitality > 0.0f))
+				{
+					hud_state->last_unit_index = NONE;
+				}
+				else if (show_hud && !cinematic_in_progress())
+				{
+					if (hud_state->last_shield_vitality != -1.0f &&
+						game_engine_has_shield(local_player_get_player_index(
+							player->local_player_index)))
+					{
+						if (!TEST_FLAG(
+							unit_hud_globals->script_flags,
+							_hud_panel_shield_dont_show_bit))
+						{
+							sound_flags = TEST_FLAG(
+								unit->object.damage_flags,
+								_object_shield_charging_bit);
+							/* port: not an overshield's drain (hud_shield_drop_is_hit) */
+							SET_FLAG(
+								sound_flags,
+								_unit_hud_shield_damage,
+								hud_shield_drop_is_hit(
+									hud_state->last_shield_vitality,
+									unit->object.shield_vitality));
+							SET_FLAG(
+								sound_flags,
+								_unit_hud_shield_low,
+								unit->object.shield_vitality < 0.25f &&
+									unit->object.shield_vitality > 0.0f);
+							SET_FLAG(
+								sound_flags,
+								_unit_hud_shield_empty,
+								unit->object.shield_vitality == 0.0f);
+						}
+					}
+
+					if (!TEST_FLAG(
+						unit_hud_globals->script_flags,
+						_hud_panel_health_dont_show_bit))
+					{
+						SET_FLAG(
+							sound_flags,
+							_unit_hud_health_low,
+							unit->object.body_vitality < 0.25f);
+						SET_FLAG(
+							sound_flags,
+							_unit_hud_health_empty,
+							TEST_FLAG(unit->object.damage_flags, _object_dead_bit));
+						SET_FLAG(
+							sound_flags,
+							_unit_hud_minor_damage,
+							hud_state->last_body_vitality >
+								unit->object.body_vitality &&
+								hud_state->last_body_vitality -
+									unit->object.body_vitality < 0.1875f);
+						SET_FLAG(
+							sound_flags,
+							_unit_hud_major_damage,
+							hud_state->last_body_vitality -
+								unit->object.body_vitality >= 0.1875f);
+					}
+				}
+
+				hud_play_sound(
+					player->local_player_index,
+					sound_flags,
+					&hud_definition->warning_sounds,
+					hud_state->last_sound_handles,
+					&hud_state->sound_flags,
+					(short)NUMBEROF(hud_state->last_sound_handles));
+			}
+		}
+	}
+
+	return;
+}
+
+/* ---------- private code */
+
+static void hud_update_unit_local_player(
+	short local_player_index)
+{
+	long return_eip = get_return_eip();
+	long stack_buffer[STACK_BUFFER_LENGTH];
+
+	csmemset(stack_buffer, 0x62, sizeof(stack_buffer));
+
+	if (local_player_get_player_index(local_player_index) != NONE)
+	{
+		long unit_index = player_get(
+			local_player_get_player_index(local_player_index))->unit_index;
+
+		if (unit_index != NONE)
+		{
+			struct unit_datum *unit = unit_get(unit_index);
+			struct unit_hud_state *hud_state = get_hud_state(local_player_index);
+
+			if (hud_state->last_body_vitality == -1.0f)
+				hud_state->last_body_vitality = unit->object.body_vitality;
+			if (hud_state->last_shield_vitality == -1.0f)
+				hud_state->last_shield_vitality = unit->object.shield_vitality;
+
+			if (hud_state->last_shield_vitality > unit->object.shield_vitality)
+			{
+				/* port: an overshield's drain is not a hit
+				(hud_shield_drop_is_hit). The step is closed here, so one late
+				packet cannot leave the meter a little behind and keep the
+				flash going, and a hit's flash already fading goes on fading,
+				as when the shield holds still. */
+				if (!hud_shield_drop_is_hit(hud_state->last_shield_vitality, unit->object.shield_vitality))
+				{
+					hud_state->last_shield_vitality = unit->object.shield_vitality;
+					hud_state->fade_time = -1.0f;
+					hud_state->last_shield_hit_time = game_time_get();
+				}
+				else
+				{
+					if (hud_state->fade_time < 0.0f || hud_state->fade_time > 1.0f)
+						hud_state->last_shield_hit_time = game_time_get();
+
+					if (game_time_get() - hud_state->last_shield_hit_time < 15)
+					{
+						hud_state->fade_time = 0.0f;
+					}
+					else
+					{
+						hud_state->last_shield_vitality = unit->object.shield_vitality;
+						hud_state->fade_time +=
+							(real)(game_time_get() - hud_state->last_shield_hit_time) *
+							(1.0f / TICKS_PER_SECOND);
+						hud_state->last_shield_hit_time = game_time_get();
+					}
+				}
+			}
+			else if (hud_state->last_shield_vitality < unit->object.shield_vitality)
+			{
+				hud_state->last_shield_vitality = unit->object.shield_vitality;
+				hud_state->fade_time = -1.0f;
+				hud_state->last_shield_hit_time = game_time_get();
+			}
+			else
+			{
+				hud_state->last_shield_vitality = unit->object.shield_vitality;
+				if (hud_state->fade_time > 0.0f)
+				{
+					hud_state->fade_time +=
+						(real)(game_time_get() - hud_state->last_shield_hit_time) *
+						(1.0f / TICKS_PER_SECOND);
+				}
+				hud_state->last_shield_hit_time = game_time_get();
+			}
+		}
+	}
+
+	if (cinematic_in_progress())
+	{
+		long player_index = local_player_get_player_index(local_player_index);
+
+		if (player_index != NONE)
+		{
+			hud_play_unit_sounds(
+				player_get(player_index),
+				hud_scripted_globals->show_hud);
+		}
+	}
+
+	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_unit.c", 0x201);
+
+	return;
+}
+
+/* ---------- public code */
+
+void hud_render_damage_indicators(
+	short local_player_index)
+{
+	long unit_index;
+
+	if (local_player_index == NONE)
+		return;
+
+	if (local_player_get_player_index(local_player_index) == NONE)
+	{
+		unit_index = NONE;
+	}
+	else
+	{
+		unit_index = player_get(
+			local_player_get_player_index(local_player_index))->unit_index;
+	}
+
+	if (unit_try_and_get(unit_index))
+	{
+		struct hud_damage_indicators_definition *definition =
+			&hud_globals->damage_indicators;
+		real theta = 0.0f;
+		real_point2d screen_position = { 0 };
+		real scale = hud_globals_get_scale(hud_split_screen_layout());
+		byte damage_indicators[NUMBER_OF_HUD_DAMAGE_INDICATOR_DIRECTIONS];
+		short direction;
+
+		scale *= mcc_hud_bitmap_scale(definition->indicator_bitmap.index);
+
+		player_effect_get_damage_indicators(
+			local_player_index,
+			damage_indicators);
+
+		for (direction = 0;
+			direction < NUMBER_OF_HUD_DAMAGE_INDICATOR_DIRECTIONS;
+			direction++)
+		{
+			if (damage_indicators[direction] > 0 &&
+				damage_indicators[direction] < TICKS_PER_SECOND)
+			{
+				long bitmap_group_index;
+				short sequence_index;
+				struct bitmap_data const *bitmap;
+				real_rectangle2d const *clip;
+
+				switch (direction)
+				{
+				case _hud_damage_indicator_top:
+					theta = _pi;
+					screen_position.y = (real)(
+						render.camera.window_bounds.y0 +
+						definition->top_offset);
+					screen_position.x = (real)(
+						(render.camera.viewport_bounds.x0 +
+							render.camera.viewport_bounds.x1) / 2);
+					break;
+
+				case _hud_damage_indicator_left:
+					theta = _pi / 2.0f;
+					screen_position.x = (real)(
+						render.camera.window_bounds.x0 +
+						definition->left_offset);
+					screen_position.y = (real)(
+						(render.camera.viewport_bounds.y0 +
+							render.camera.viewport_bounds.y1) / 2);
+					break;
+
+				case _hud_damage_indicator_bottom:
+					theta = 0.0f;
+					screen_position.y = (real)(
+						render.camera.window_bounds.y1 -
+						definition->bottom_offset);
+					screen_position.x = (real)(
+						(render.camera.viewport_bounds.x0 +
+							render.camera.viewport_bounds.x1) / 2);
+					break;
+
+				case _hud_damage_indicator_right:
+					theta = 3.0f * _pi / 2.0f;
+					screen_position.x = (real)(
+						render.camera.window_bounds.x1 -
+						definition->right_offset);
+					screen_position.y = (real)(
+						(render.camera.viewport_bounds.y0 +
+							render.camera.viewport_bounds.y1) / 2);
+					break;
+
+				default:
+					match_assert(
+						"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+						0x400,
+						!"unreachable");
+					break;
+				}
+
+				screen_position.x -= (real)render.camera.viewport_bounds.x0;
+				screen_position.y -= (real)render.camera.viewport_bounds.y0;
+				bitmap_group_index = definition->indicator_bitmap.index;
+				if (hud_split_screen_layout())
+					sequence_index = definition->multiplayer_sequence_index;
+				else
+					sequence_index = definition->sequence_index;
+				bitmap = NULL;
+				clip = NULL;
+				hud_retrieve_bitmap_and_bounding_rect(
+					bitmap_group_index,
+					sequence_index,
+					0,
+					&bitmap,
+					&clip);
+
+				if (bitmap &&
+					_texture_cache_bitmap_get_hardware_format(
+						(struct bitmap_data *)bitmap,
+						FALSE,
+						TRUE))
+				{
+					point2d corner;
+
+					corner.x = (short)(long)screen_position.x;
+					corner.y = (short)(long)screen_position.y;
+					hud_draw_bitmap_direct(
+						bitmap,
+						_hud_anchor_center,
+						&corner,
+						clip,
+#ifdef HALO_CUSTOM_EDITION
+						/* port: at its group's high resolution scale */
+						scale * hud_bitmap_group_scale(bitmap_group_index),
+#else
+						scale,
+#endif
+						theta,
+						definition->color,
+						FALSE);
+				}
+			}
+		}
+	}
+	else
+	{
+		player_effect_clear_damage_indicators(local_player_index);
+	}
+
+	return;
+}
+
+/* ---------- public code */
+
+void hud_tick_shield(
+	long player_index,
+	real amount)
+{
+	short local_player_index = player_get(player_index)->local_player_index;
+
+	if (local_player_index != NONE)
+		get_hud_state(local_player_index)->last_shield_vitality -= amount;
+
+	return;
+}
+
+void hud_update_unit(
+	void)
+{
+	short local_player_index = local_player_get_next(NONE);
+
+	while (local_player_index != NONE)
+	{
+		hud_update_unit_local_player(local_player_index);
+		local_player_index = local_player_get_next(local_player_index);
+	}
+
+	return;
+}
+
+/* ---------- public code */
+
+/* port: a meter's rectangle added to bounds (found: whether bounds has one
+yet): the part of its bitmap that shows, which is the bar as drawn (the
+stock backgrounds' and the split-screen meters' cells have a clear margin
+beyond it), or its background's for a meter with no bitmap */
+static void hud_unit_meter_bounds(
+	struct hud_absolute_placement_definition const *absolute_placement,
+	struct meter_hud_element_definition const *meter,
+	struct static_hud_element_definition const *background,
+	short draw_flags,
+	rectangle2d *bounds,
+	boolean *found)
+{
+	rectangle2d part;
+
+	if (meter->meter_bitmap.index != NONE ?
+		!hud_meter_element_bounds(absolute_placement, meter, draw_flags, &part) :
+		!hud_static_element_bounds(absolute_placement, background, draw_flags, &part))
+	{
+		return;
+	}
+	if (!*found)
+		*bounds = part;
+	else
+	{
+		bounds->x0 = MIN(bounds->x0, part.x0);
+		bounds->y0 = MIN(bounds->y0, part.y0);
+		bounds->x1 = MAX(bounds->x1, part.x1);
+		bounds->y1 = MAX(bounds->y1, part.y1);
+	}
+	*found = TRUE;
+}
+
+void hud_render_unit_interface(
+	struct player_datum *player)
+{
+	static long overcharge_count = 4;
+	long return_eip = get_return_eip();
+	long stack_buffer[STACK_BUFFER_LENGTH];
+
+	csmemset(stack_buffer, 0x62, sizeof(stack_buffer));
+	match_assert(
+		"c:\\halo\\SOURCE\\interface\\hud_unit.c",
+		0x209,
+		player->local_player_index==render.local_player_index);
+
+	unit_hud_shield_meter_mapper_tick();
+	unit_hud_outline_mapper_tick();
+
+	if (player->local_player_index == render.local_player_index &&
+		player->unit_index != NONE)
+	{
+		struct unit_datum *unit = unit_get(player->unit_index);
+		struct unit_definition const *unit_definition =
+			unit_definition_get(unit->definition_index);
+		short local_player_index = player->local_player_index;
+		long player_index = local_player_get_player_index(local_player_index);
+		struct unit_hud_state *hud_state = get_hud_state(local_player_index);
+		long unit_indices[18] = { player->unit_index };
+		long unit_hud_indices[18] =
+		{
+			unit_definition_get_active_hud_index(
+				unit_definition,
+				hud_split_screen_layout())
+		};
+		long unit_count = 1;
+		unsigned long auxilary_flags;
+		unsigned long aux_activated_when_disabled_flags;
+		real auxilary_values[1];
+
+		if (hud_state->last_unit_index == NONE)
+			initialize_hud_state(get_hud_state(player->local_player_index));
+		hud_state->last_unit_index = player->unit_index;
+
+		if (unit->object.parent_object_index != NONE &&
+			unit->unit.parent_seat_index != NONE)
+		{
+			long parent_unit_index = unit->object.parent_object_index;
+			struct unit_datum *parent_unit = unit_get(parent_unit_index);
+			struct unit_definition const *parent_unit_definition =
+				unit_definition_get(parent_unit->definition_index);
+			struct unit_seat const *seat = TAG_BLOCK_GET_ELEMENT(
+				&parent_unit_definition->unit.seats,
+				unit->unit.parent_seat_index,
+				struct unit_seat);
+			long parent_hud_index;
+
+			get_hud_state(local_player_index);
+			parent_hud_index = unit_definition_get_active_hud_index(
+				parent_unit_definition,
+				hud_split_screen_layout());
+
+			if (TEST_FLAG(seat->flags, _unit_seat_driver_bit))
+			{
+				long child_unit_index;
+
+				if (parent_hud_index != NONE)
+				{
+					unit_indices[1] = parent_unit_index;
+					unit_hud_indices[1] = parent_hud_index;
+					unit_count = 2;
+				}
+
+				child_unit_index = parent_unit->object.first_child_object_index;
+				while (child_unit_index != NONE && unit_count < NUMBEROF(unit_indices))
+				{
+					struct object_datum *child_object = object_get(child_unit_index);
+					struct unit_datum *child_unit = unit_try_and_get(child_unit_index);
+
+					if (child_unit &&
+						child_unit->object.parent_object_index == parent_unit_index &&
+						child_unit->unit.parent_seat_index != NONE)
+					{
+						unit_indices[unit_count] = child_unit_index;
+						unit_hud_indices[unit_count] =
+							unit_definition_get_seat_active_hud_index(
+								parent_unit_definition,
+								child_unit->unit.parent_seat_index,
+								hud_split_screen_layout());
+						unit_count++;
+					}
+
+					child_unit_index = child_object->object.next_object_index;
+				}
+			}
+		}
+
+		auxilary_flags = unit->unit.integrated_light_power == 1.0f;
+		aux_activated_when_disabled_flags =
+			!TEST_FLAG(unit->unit.flags, _unit_integrated_light_on_bit) &&
+			unit->unit.integrated_light_battery < 0.2f &&
+			TEST_FLAG(unit->unit.control_flags, _unit_control_integrated_light_bit);
+		auxilary_values[0] = unit->unit.integrated_light_battery;
+
+		while (unit_count)
+		{
+			struct unit_datum *hud_unit;
+
+			unit_count--;
+			hud_unit = unit_try_and_get(unit_indices[unit_count]);
+			ae_panels_hide_ce(unit_count == 0 && hud_unit != NULL && unit_hud_indices[unit_count] != NONE); /* AE hook */
+
+			if (hud_unit && unit_hud_indices[unit_count] != NONE)
+			{
+				struct unit_hud_interface_definition *hud_definition =
+					unit_hud_interface_definition_get(unit_hud_indices[unit_count]);
+				/* port: where the player's own shield and health meters
+				are, for MATCH CLOCK's corner (hud_item_timers.c) */
+				rectangle2d meters_bounds;
+				boolean meters_found = FALSE;
+				boolean clock_shown = unit_count == 0 && hud_item_timers_clock_shown();
+
+				if (hud_definition->background.interface_bitmap.index != NONE)
+				{
+					short draw_flags = 0;
+
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_disabled_bit,
+						TEST_FLAG(hud_unit->object.damage_flags, _object_dead_bit));
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_in_multiplayer_bit,
+						hud_split_screen_layout());
+					hud_draw_static_element(
+						local_player_index,
+						&hud_definition->absolute_placement,
+						&hud_definition->background,
+						draw_flags,
+						NONE);
+				}
+
+				if (game_engine_has_shield(player_index) &&
+					!TEST_FLAG(
+						unit_hud_globals->script_flags,
+						_hud_panel_shield_dont_show_bit))
+				{
+					short draw_flags =
+						hud_unit->object.shield_vitality < 0.25f ||
+						TEST_FLAG(
+							unit_hud_globals->script_flags,
+							_hud_panel_shield_blink_bit);
+
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_disabled_bit,
+						TEST_FLAG(hud_unit->object.damage_flags, _object_dead_bit));
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_in_multiplayer_bit,
+						hud_split_screen_layout());
+
+					if (unit_count == 0)
+					{
+						if (TEST_FLAG(draw_flags, _hud_draw_flashing_bit))
+						{
+							if (hud_state->last_shield_flash_time == NONE)
+								hud_state->last_shield_flash_time = game_time_get();
+						}
+						else
+						{
+							hud_state->last_shield_flash_time = NONE;
+						}
+					}
+
+					if (hud_definition->shield_meter.meter.meter_bitmap.index != NONE)
+					{
+						real reference_shield_vitality;
+						short value_scale;
+						struct meter_hud_element_definition overcharge_meter;
+
+						game_engine_running();
+						if (unit_count == 0)
+							reference_shield_vitality = hud_state->last_shield_vitality;
+						else
+							reference_shield_vitality = hud_unit->object.shield_vitality;
+						value_scale = hud_definition->shield_meter.meter.value_scale ?
+							hud_definition->shield_meter.meter.value_scale :
+							UNSIGNED_CHAR_MAX;
+						overcharge_meter = hud_definition->shield_meter.meter;
+						{
+							pixel32 color[5] =
+							{
+								0,
+								0x00FF0000,
+								0x0000FF00,
+								0x00FFFF00,
+								0x007F00FF,
+							};
+							pixel32 *overcharge_color = color;
+							long overcharge_index;
+
+							for (overcharge_index = 0;
+								overcharge_index <= overcharge_count;
+								overcharge_color++, overcharge_index++)
+							{
+								boolean first_meter = overcharge_index == 0;
+								real shield_vitality = PIN(
+									hud_unit->object.shield_vitality - (real)overcharge_index,
+									0.0f,
+									1.0f);
+								real last_shield_vitality = PIN(
+									reference_shield_vitality - (real)overcharge_index,
+									0.0f,
+									1.0f);
+								boolean shield_fading = last_shield_vitality > shield_vitality;
+								real maximum_shield_vitality = shield_fading ?
+									last_shield_vitality :
+									shield_vitality;
+								real reference_time;
+
+								if (shield_vitality <= 0.0f &&
+									maximum_shield_vitality <= 0.0f)
+								{
+									break;
+								}
+
+								overcharge_meter.min_color = *overcharge_color;
+								overcharge_meter.max_color = *overcharge_color;
+								reference_time = shield_fading ? hud_state->fade_time : -1.0f;
+								hud_draw_meter(
+									local_player_index,
+									&hud_definition->absolute_placement,
+									first_meter ?
+										&hud_definition->shield_meter.meter :
+										&overcharge_meter,
+									(byte)PIN(
+										fast_ftol((real)value_scale * shield_vitality),
+										0,
+										UNSIGNED_CHAR_MAX),
+									(byte)PIN(
+										fast_ftol((real)value_scale * maximum_shield_vitality),
+										0,
+										UNSIGNED_CHAR_MAX),
+									draw_flags,
+									reference_time,
+									shield_vitality);
+							}
+						}
+					}
+
+					if (hud_definition->shield_meter.background.interface_bitmap.index != NONE)
+					{
+						hud_draw_static_element(
+							local_player_index,
+							&hud_definition->absolute_placement,
+							&hud_definition->shield_meter.background,
+							draw_flags,
+							hud_state->last_shield_flash_time);
+					}
+					if (unit_count == 0 && clock_shown)
+					{
+						hud_unit_meter_bounds(&hud_definition->absolute_placement,
+							&hud_definition->shield_meter.meter, &hud_definition->shield_meter.background,
+							draw_flags, &meters_bounds, &meters_found);
+					}
+					if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->shield_meter.meter, &hud_definition->shield_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+				}
+
+				if (!TEST_FLAG(
+					unit_hud_globals->script_flags,
+					_hud_panel_health_dont_show_bit))
+				{
+					short draw_flags =
+						TEST_FLAG(
+							hud_unit->object.damage_flags,
+							_object_shield_depleted_bit) ||
+						TEST_FLAG(
+							unit_hud_globals->script_flags,
+							_hud_panel_health_blink_bit);
+
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_disabled_bit,
+						TEST_FLAG(hud_unit->object.damage_flags, _object_dead_bit));
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_in_multiplayer_bit,
+						hud_split_screen_layout());
+
+					if (unit_count == 0)
+					{
+						if (TEST_FLAG(draw_flags, _hud_draw_flashing_bit))
+						{
+							if (hud_state->last_health_flash_time == NONE)
+								hud_state->last_health_flash_time = game_time_get();
+						}
+						else
+						{
+							hud_state->last_health_flash_time = NONE;
+						}
+					}
+
+					if (hud_definition->health_meter.meter.meter_bitmap.index != NONE)
+					{
+						short value_scale = hud_definition->health_meter.meter.value_scale ?
+							hud_definition->health_meter.meter.value_scale :
+							8;
+						struct meter_hud_element_definition health_meter =
+							hud_definition->health_meter.meter;
+
+						if (hud_unit->object.body_vitality >=
+							hud_definition->health_meter.health_extras.max_cutoff)
+						{
+							health_meter.min_color = health_meter.max_color;
+						}
+						else if (hud_unit->object.body_vitality <=
+							hud_definition->health_meter.health_extras.min_cutoff)
+						{
+							health_meter.max_color = health_meter.min_color;
+						}
+						else
+						{
+							health_meter.max_color =
+								hud_definition->health_meter.health_extras.mid_color;
+							health_meter.min_color = health_meter.max_color;
+						}
+
+						hud_draw_meter(
+							local_player_index,
+							&hud_definition->absolute_placement,
+							&health_meter,
+							(byte)PIN(
+								fast_ftol_C(
+									(real)value_scale * hud_unit->object.body_vitality),
+								0,
+								UNSIGNED_CHAR_MAX),
+							(byte)PIN(
+								fast_ftol_C(
+									(real)value_scale * hud_unit->object.body_vitality),
+								0,
+								UNSIGNED_CHAR_MAX),
+							draw_flags,
+							-1.0f,
+							hud_unit->object.body_vitality);
+					}
+
+					if (hud_definition->health_meter.background.interface_bitmap.index != NONE)
+					{
+						hud_draw_static_element(
+							local_player_index,
+							&hud_definition->absolute_placement,
+							&hud_definition->health_meter.background,
+							draw_flags,
+							hud_state->last_health_flash_time);
+					}
+					if (unit_count == 0 && clock_shown)
+					{
+						hud_unit_meter_bounds(&hud_definition->absolute_placement,
+							&hud_definition->health_meter.meter, &hud_definition->health_meter.background,
+							draw_flags, &meters_bounds, &meters_found);
+					}
+					if (unit_count == 0 && !clock_shown && ae_hud_style_is_ae()) hud_unit_meter_bounds(&hud_definition->absolute_placement, &hud_definition->health_meter.meter, &hud_definition->health_meter.background, draw_flags, &meters_bounds, &meters_found); /* AE hook */
+
+					hud_state->last_body_vitality = hud_unit->object.body_vitality;
+				}
+
+				if (meters_found)
+					hud_item_timers_set_meters(local_player_index, &meters_bounds);
+
+				ae_panels_hide_ce(FALSE); /* AE hook */
+				if (unit_count == 0 &&
+					!TEST_FLAG(
+						unit_hud_globals->script_flags,
+						_hud_panel_motion_sensor_dont_show_bit) &&
+					game_engine_hud_draw_motion_sensor(player_index))
+				{
+					struct hud_absolute_placement_definition absolute_placement;
+					short draw_flags = 0;
+					point2d corner;
+					/* port: its picture's left (NONE: none drawn) */
+					short motion_sensor_left = NONE;
+
+					ae_panels_hide_ce(ae_sensor_active()); /* AE hook */
+					absolute_placement.corner = _hud_anchor_bottom_left;
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_in_multiplayer_bit,
+						hud_split_screen_layout());
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_flashing_bit,
+						TEST_FLAG(
+							unit_hud_globals->script_flags,
+							_hud_panel_motion_sensor_blink_bit));
+
+					if (TEST_FLAG(draw_flags, _hud_draw_flashing_bit))
+					{
+						if (hud_state->last_motion_sensor_flash_time == NONE)
+							hud_state->last_motion_sensor_flash_time = game_time_get();
+					}
+					else
+					{
+						hud_state->last_motion_sensor_flash_time = NONE;
+					}
+
+					if (hud_definition->motion_sensor.background.interface_bitmap.index != NONE)
+					{
+						rectangle2d sensor_bounds;
+
+						/* port: none, unless it is drawn (its bitmap can be missing) */
+						hud_draw_last_left = NONE;
+						hud_draw_static_element(
+							local_player_index,
+							&absolute_placement,
+							&hud_definition->motion_sensor.background,
+							draw_flags,
+							NONE);
+						/* port: where it is, for MATCH CLOCK's corner
+						(hud_item_timers.c) */
+						if (hud_static_element_bounds(&absolute_placement,
+							&hud_definition->motion_sensor.background, draw_flags, &sensor_bounds))
+						{
+							hud_item_timers_set_motion_sensor(local_player_index, &sensor_bounds);
+						}
+						/* port: where it is (the text chat goes above it) */
+						motion_sensor_left = hud_draw_last_left;
+					}
+					if (hud_definition->motion_sensor.foreground.interface_bitmap.index != NONE)
+					{
+						hud_draw_static_element(
+							local_player_index,
+							&absolute_placement,
+							&hud_definition->motion_sensor.foreground,
+							draw_flags,
+							NONE);
+					}
+
+					hud_calculate_point(
+						local_player_index,
+						&absolute_placement,
+						&hud_definition->blip_placement,
+						NULL,
+						hud_split_screen_layout(),
+						0.0f,
+						&corner);
+					ae_sensor_draw(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
+					ae_bomb_hud_tile(local_player_index, &corner, hud_split_screen_layout()); /* AE hook */
+					motion_sensor_draw_screen(
+						local_player_index,
+						hud_split_screen_layout(),
+						&corner);
+					ae_panels_hide_ce(FALSE); /* AE hook */
+					/* port: the text chat goes above it: the top of its circle, as
+					far above the blips' centre as the picture's left edge is left
+					of it (the picture is taller than the circle) */
+					if (motion_sensor_left != NONE)
+					{
+						network_chat_note_motion_sensor(local_player_index, motion_sensor_left,
+							(short)(corner.y - (corner.x - motion_sensor_left)));
+					}
+				}
+				else if (unit_count == 0) ae_bomb_hud_tile_no_sensor(local_player_index, &hud_definition->blip_placement); /* AE hook */
+
+				{
+					struct auxilary_panel_definition *auxilary_panel = &hud_definition->auxilary_panel;
+					word overlay_type_flags = game_engine_has_teams() != FALSE;
+					short draw_flags = 0;
+					short overlay_index;
+
+					SET_FLAG(
+						draw_flags,
+						_hud_draw_in_multiplayer_bit,
+						hud_split_screen_layout());
+					for (overlay_index = 0;
+						overlay_index < auxilary_panel->auxilary_overlays.count;
+						overlay_index++)
+					{
+						struct auxilary_overlay_definition *overlay = TAG_BLOCK_GET_ELEMENT(
+							&auxilary_panel->auxilary_overlays,
+							overlay_index,
+							struct auxilary_overlay_definition);
+
+						if (TEST_FLAG(overlay_type_flags, overlay->type))
+						{
+							if (TEST_FLAG(
+								overlay->flags,
+								_auxilary_overlay_use_team_color_bit))
+							{
+								overlay->static_element.colors.color =
+									real_rgb_color_to_pixel32(
+										&hud_unit->object.base_change_colors[0]) |
+									0xFF000000;
+							}
+
+							hud_draw_static_element(
+								local_player_index,
+								&auxilary_panel->absolute_placement,
+								&overlay->static_element,
+								draw_flags,
+								NONE);
+						}
+					}
+				}
+
+				{
+					short meter_index;
+
+					for (meter_index = 0;
+						meter_index < hud_definition->auxilary_meters.count;
+						meter_index++)
+					{
+						struct auxilary_meter_definition *meter = TAG_BLOCK_GET_ELEMENT(
+							&hud_definition->auxilary_meters,
+							meter_index,
+							struct auxilary_meter_definition);
+
+						/* port: the type is the map's and indexes the flash times
+						and values (one type, the integrated light, which every
+						retail meter is): a meter of any other is not drawn, and
+						that is said once */
+						if (!VALID_INDEX(meter->type, (short)NUMBEROF(hud_state->auxilary_flash_time)))
+						{
+							static boolean bad_meter_type_reported = FALSE;
+
+							if (!bad_meter_type_reported)
+							{
+								bad_meter_type_reported = TRUE;
+								error(
+									_error_silent,
+									"unit hud auxilary meter of type %d (of %d) not drawn",
+									meter->type,
+									(short)NUMBEROF(hud_state->auxilary_flash_time));
+							}
+							continue;
+						}
+
+						if (TEST_FLAG(
+								hud_state->auxilary_active_type_flags,
+								meter->type) &&
+							!TEST_FLAG(auxilary_flags, meter->type))
+						{
+							hud_state->auxilary_flash_time[meter->type] = NONE;
+						}
+
+						if (TEST_FLAG(auxilary_flags, meter->type))
+						{
+							long background_bitmap_index = verify_tag_reference(
+								&meter->panel.background.interface_bitmap);
+							long meter_bitmap_index = verify_tag_reference(
+								&meter->panel.meter.meter_bitmap);
+							short draw_flags = 0;
+
+							SET_FLAG(
+								draw_flags,
+								_hud_draw_in_multiplayer_bit,
+								hud_split_screen_layout());
+							SET_FLAG(
+								draw_flags,
+								_hud_draw_flashing_bit,
+								auxilary_values[meter->type] <=
+									meter->panel.aux_extras.min_cutoff);
+							hud_state->auxilary_flash_time[meter->type] += game_time_get_elapsed();
+							hud_state->auxilary_flash_time[meter->type] %= 2 * get_flash_duration(
+								&meter->panel.background.colors);
+
+							if (background_bitmap_index != NONE)
+							{
+								hud_draw_static_element(
+									local_player_index,
+									&hud_definition->absolute_placement,
+									&meter->panel.background,
+									draw_flags,
+									game_time_get() - hud_state->auxilary_flash_time[meter->type]);
+							}
+
+							if (meter_bitmap_index != NONE)
+							{
+								real value_scale = (real)meter->panel.meter.value_scale;
+
+								hud_draw_meter(
+									local_player_index,
+									&hud_definition->absolute_placement,
+									&meter->panel.meter,
+									(byte)PIN(
+										fast_ftol(value_scale * auxilary_values[meter->type]),
+										0,
+										UNSIGNED_CHAR_MAX),
+									(byte)PIN(
+										fast_ftol(value_scale * auxilary_values[meter->type]),
+										0,
+										UNSIGNED_CHAR_MAX),
+									draw_flags,
+									-1.0f,
+									auxilary_values[meter->type]);
+							}
+						}
+						else if (TEST_FLAG(
+							aux_activated_when_disabled_flags,
+							meter->type) ||
+							(hud_state->auxilary_flash_time[meter->type] != NONE &&
+								hud_state->auxilary_flash_time[meter->type] <
+									get_flash_duration(&meter->panel.background.colors)))
+						{
+							long background_bitmap_index = verify_tag_reference(
+								&meter->panel.background.interface_bitmap);
+							short draw_flags = 0;
+
+							SET_FLAG(
+								draw_flags,
+								_hud_draw_in_multiplayer_bit,
+								hud_split_screen_layout());
+							SET_FLAG(
+								draw_flags,
+								_hud_draw_flashing_bit,
+								TRUE);
+							hud_state->auxilary_flash_time[meter->type] += game_time_get_elapsed();
+
+							if (background_bitmap_index != NONE)
+							{
+								hud_draw_static_element(
+									local_player_index,
+									&hud_definition->absolute_placement,
+									&meter->panel.background,
+									draw_flags,
+									game_time_get() - hud_state->auxilary_flash_time[meter->type]);
+							}
+						}
+						else
+						{
+							hud_state->auxilary_flash_time[meter->type] = NONE;
+						}
+					}
+				}
+
+				hud_state->auxilary_active_type_flags = (word)auxilary_flags;
+			}
+		}
+	}
+
+	match_assert_stack_frame("c:\\halo\\SOURCE\\interface\\hud_unit.c", 0x3C9);
+
+	return;
+}
+
+#ifdef HALO_GAME_BROWSER
+/* port: an element's drawn size (its sprite's, hud_calculate_bitmap_bounds') */
+static void hud_unit_port_element_size(
+	long bitmap_group_index,
+	short sequence_index,
+	real *width,
+	real *height)
+{
+	struct bitmap_data const *bitmap = NULL;
+	real_rectangle2d const *clip = NULL;
+
+	*width = 0.0f;
+	*height = 0.0f;
+	if (bitmap_group_index == NONE)
+		return;
+	hud_retrieve_bitmap_and_bounding_rect(bitmap_group_index, sequence_index, 0, &bitmap, &clip);
+	if (!bitmap)
+		return;
+	if (!clip)
+	{
+		*width = (real)bitmap->width;
+		*height = (real)bitmap->height;
+		return;
+	}
+	/* (an interface bitmap's sprite is in pixels, another's a fraction) */
+	*width = clip->x1 - clip->x0;
+	*height = clip->y1 - clip->y0;
+	if (*width <= 1.0f && *height <= 1.0f)
+	{
+		*width *= (real)bitmap->width;
+		*height *= (real)bitmap->height;
+	}
+}
+
+/* port: a game type's progress (Bomb's arming, game_engine_bomb.c) on the
+likeness of the player's own unit's shield meter, its frame, bitmap and
+colors, drawn again in the middle of the view above the crosshair: a
+fraction from 0 to 1 */
+void hud_render_progress_meter(
+	short local_player_index,
+	real fraction)
+{
+	long player_index = local_player_get_player_index(local_player_index);
+	struct player_datum *player = player_index != NONE ? player_get(player_index) : NULL;
+	struct unit_hud_interface_definition *hud_definition;
+	struct meter_hud_element_definition meter;
+	struct static_hud_element_definition background;
+	struct hud_absolute_placement_definition placement;
+	long hud_index;
+	short value_scale;
+	short draw_flags = 0;
+	short y = (short)(-(render.camera.window_bounds.y1 - render.camera.window_bounds.y0) / 6);
+	real meter_width, meter_height, background_width, background_height;
+	byte value;
+
+	if (!player || player->unit_index == NONE)
+		return;
+	hud_index = unit_definition_get_active_hud_index(
+		unit_definition_get(unit_get(player->unit_index)->definition_index), local_player_count() > 1);
+	if (hud_index == NONE)
+		return;
+	hud_definition = unit_hud_interface_definition_get(hud_index);
+	if (hud_definition->shield_meter.meter.meter_bitmap.index == NONE)
+		return;
+	meter = hud_definition->shield_meter.meter;
+	background = hud_definition->shield_meter.background;
+	hud_unit_port_element_size(meter.meter_bitmap.index, meter.sequence_index, &meter_width, &meter_height);
+	hud_unit_port_element_size(background.interface_bitmap.index, background.sequence_index, &background_width,
+		&background_height);
+	/* (anchored in the middle, each is drawn centered on its point: the
+	frame there, the meter where it sits in the frame at its corner, the
+	top right) */
+	csmemset(&placement, 0, sizeof(placement));
+	placement.corner = _hud_anchor_center;
+	if (background.interface_bitmap.index != NONE)
+	{
+		meter.placement.offset.x = (short)(long)(background_width * 0.5f - meter_width * 0.5f -
+			(hud_definition->shield_meter.meter.placement.offset.x - background.placement.offset.x));
+		meter.placement.offset.y = (short)(long)(y - background_height * 0.5f + meter_height * 0.5f +
+			(hud_definition->shield_meter.meter.placement.offset.y - background.placement.offset.y));
+		background.placement.offset.x = 0;
+		background.placement.offset.y = y;
+	}
+	else
+	{
+		meter.placement.offset.x = 0;
+		meter.placement.offset.y = y;
+	}
+	value_scale = meter.value_scale ? meter.value_scale : 8;
+	value = (byte)PIN(fast_ftol_C((real)value_scale * PIN(fraction, 0.0f, 1.0f)), 0, UNSIGNED_CHAR_MAX);
+	SET_FLAG(draw_flags, _hud_draw_in_multiplayer_bit, local_player_count() > 1);
+	hud_draw_meter(local_player_index, &placement, &meter, value, value, draw_flags, -1.0f, fraction);
+	if (background.interface_bitmap.index != NONE)
+		hud_draw_static_element(local_player_index, &placement, &background, draw_flags, NONE);
+}
+#endif
