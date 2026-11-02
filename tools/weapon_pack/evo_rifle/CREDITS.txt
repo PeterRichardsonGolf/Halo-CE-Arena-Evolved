@@ -1,0 +1,28 @@
+AE EVO RIFLE (weapon pack ae_evo_rifle) - credits
+
+The rifle is CMT's DMR: its model, textures, shaders, effects and sounds are the work of CMT (the Custom Mapping
+Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the Evolved team: Teh Lag, Ifafudafi,
+Siliconmaster and the contributors their credits.txt names). The first-person animations and reload and ready
+sounds are CMT's battle rifle's, which CMT's DMR weapon uses. They are used under the release's own terms ("Just
+don't take credit for things you didn't make"); the model is changed as the list below says, the rest is unchanged but for what an Xbox map needs:
+Open Sauce's extension blocks removed, the multipurpose maps' channels reordered, the Ogg Vorbis sounds encoded
+again as Xbox ADPCM, the models converted.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the model's changes to CMT's DMR: the scope taken off, the barrel and the tube under it 0.030 wu shorter, and the
+  holo sight below put on the top rail, made smaller and drawn with the rifle's own texture, with a glass for its
+  window;
+- the aiming reticle (a ring and a split dot) and the same reticle in the sight's window, drawn by scripts;
+- the lighting values and the brightened base map;
+- the zoom overlay (evo_scope.py): a soft dark surround round a wide window, black glass marks and the readouts'
+  frames, drawn from geometry; the zoom and the rounds in them are drawn by the game;
+- the holo sight: the H02 Holo of the Accessory Kit by CuiGames (@GodTrigger0, https://cuigames.itch.io), used
+  under the kit's licence (in games; its files are not handed out, raw or changed: the pack holds only the sight as
+  the game draws it).
+- the weapon's behaviour, which is code in the game and no part of this pack.
+
+The pack holds no pixel, sound or model of the game's own: what the rifle needs of the game (the stock HUD's
+numbers and frames, reflection maps, impact materials, the held weapon's collision) it names, and the map the
+player owns provides.
+
+Thank you, CMT.

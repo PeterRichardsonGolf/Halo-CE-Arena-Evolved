@@ -1,0 +1,17 @@
+AE SILENCED AR (weapon pack ae_ar_silenced) - credits
+
+The silenced assault rifle (the "ma5s": its silencer's model and textures, its firing sound and firing effect) is
+the work of the makers of the Halo 2 Mappack Collection v2, from its Gemini (h2d_gemini; boardingaction.map in the
+collection): Dominater01, S3anyboy and GoodFellaPro, with help from Team NHE (the collection's readme: "This Was A
+Collaberted Effort By Dominater01, S3anyboy and GoodFellaPro With Help Of Team NHE"). Its body is the stock
+assault rifle's: its models hold the stock assault rifle's model with the silencer added, as the collection made
+them.
+
+Made for Arena Evolved: the casing now leaves the ejection port on the side (the firing effect's casing made at
+the 'primary ejection' marker, as the stock assault rifle's, not at the silencer's tip). Nothing else is changed:
+the weapon's numbers are the collection's (the stock assault rifle's, silent to the AI's hearing, one 2x zoom).
+
+What the weapon needs of the game (the stock assault rifle's HUD, animations, textures, bullet, casing, impacts,
+melee and collision) it names, and the map the player owns provides.
+
+Thank you, Dominater01, S3anyboy, GoodFellaPro and Team NHE.
