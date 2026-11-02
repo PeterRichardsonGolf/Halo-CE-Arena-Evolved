@@ -113,8 +113,6 @@ Turning the firewall off also works. Opening the ports keeps it on for everythin
 - **Hosting online with a VPN on does not work.** The VPN answers for your PC, so players on the internet cannot reach
   you. The CREATE GAME screen says "A VPN is on (name): players can't reach your game through it. Turn the VPN off to
   host online." Turn the VPN off while you host.
-- **LAN games** are found with a VPN on: the game searches each of your local networks, and joins a hosted game at
-  your local network address when the default route is a VPN's.
 - **Private networks (such as Tailscale).** Friends can use **JOIN BY ADDRESS** with your private-network name or
   address. Without a port, the game joins at UDP port 5150, so 5150 and 5160 must be reachable on the host's private
   address, as for a LAN game.

@@ -62,7 +62,7 @@ is attached to it.
   own install, find games in the server browser or on your LAN, or join by address. Players joining a Workshop map
   need the same Workshop item, and the game tells them which one. Workshop maps are hosted from a player's own game;
   dedicated servers serve the stock and Custom Edition maps.
-- **Online and LAN:** server browser, LAN search (found even with a VPN on), invite links, JOIN BY ADDRESS (an IP or a
+- **Online and LAN:** server browser, LAN search, invite links, JOIN BY ADDRESS (an IP or a
   computer's name, with a recent list), dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come
   from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds that share its network version.
 - **Bots** in six levels from RECRUIT to DEMON, up to 31 on one PC and 127 in a game you host, in every mode: a wingman
