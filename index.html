@@ -144,6 +144,7 @@ section{padding:clamp(56px,7vw,96px) 0}
 .rows b{flex:none;width:9.5em;font-weight:800;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--white)}
 .rows span{color:var(--dim)}
 .screen{position:relative;border-radius:6px;overflow:hidden;box-shadow:0 0 0 1px var(--rule-strong),0 30px 70px rgba(0,0,0,.55)}
+.screen .full{display:block}
 .screen figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 12px;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ice);background:linear-gradient(0deg,rgba(4,9,20,.9),rgba(4,9,20,0))}
 @media (max-width:860px){.feature,.feature.flip{grid-template-columns:1fr}.feature.flip .copy{order:0}}
 
@@ -196,6 +197,29 @@ footer .credits p+p{margin-top:12px}
 footer .legal{margin-top:28px;font-size:13px;opacity:.85}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.slide img{transform:none!important}}
+
+/* phones: the hero shot is a whole 16:9 frame on top and the words sit below it on the page's own ground (a portrait
+   crop put the HUD behind the headline); captions under the shots; label rows and download rows stacked; 44 px taps */
+@media (max-width:640px){
+  .load{display:block;min-height:0}
+  .load::after{display:none}
+  .slides{position:relative;inset:auto;width:100%;aspect-ratio:16/9}
+  .slides::before,.slides::after{content:"";position:absolute;left:0;right:0;z-index:1;pointer-events:none}
+  .slides::before{top:0;height:38%;background:linear-gradient(180deg,rgba(4,9,20,.8),rgba(4,9,20,0))}
+  .slides::after{bottom:0;height:34%;background:linear-gradient(0deg,var(--space),rgba(4,9,20,0))}
+  .slide img,.slide:first-child img{object-position:50% 50%}
+  .load .wrap{padding-top:18px}
+  .loadbar{position:absolute;left:var(--gutter);right:var(--gutter);top:-56px;margin:0;z-index:3;row-gap:0}
+  .load h1{font-size:clamp(2.3rem,11vw,3rem)}
+  .acts{flex-direction:column;align-items:stretch;gap:12px}
+  .acts .btn{min-height:52px}
+  .screen figcaption{position:static;padding:10px 14px 11px;font-size:11px;line-height:1.45;background:var(--panel-solid);box-shadow:0 -1px 0 var(--rule)}
+  .rows li{flex-direction:column;gap:3px;padding:12px 0}
+  .rows b,.upstream .rows b{width:auto}
+  .dl a{flex-direction:column;align-items:flex-start;gap:3px;min-height:52px}
+  .dl a span{text-align:left}
+  .links a,.more summary{min-height:44px}
+}
 </style>
 </head>
 <body>
@@ -251,7 +275,7 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
         <li><b>Coming soon</b><span>Custom campaign mods from the Workshop.</span></li>
       </ul>
     </div>
-    <figure class="screen" style="margin:0"><img src="img/change-map.webp" alt="CHANGE MAP in Arena Evolved: folders for STOCK OG, STOCK MCC, Workshop, community maps and more" width="1600" height="900" loading="lazy"><figcaption>Change map · stock, MCC, Workshop</figcaption></figure>
+    <figure class="screen" style="margin:0"><a class="full" href="img/change-map.webp" aria-label="Open the full screenshot"><img src="img/change-map.webp" alt="CHANGE MAP in Arena Evolved: folders for STOCK OG, STOCK MCC, Workshop, community maps and more" width="1600" height="900" loading="lazy"></a><figcaption>Change map · stock, MCC, Workshop</figcaption></figure>
   </div>
 </section>
 
@@ -267,7 +291,7 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
         <li><b>Crossplay</b><span>Plays with OpenCE builds that share its network version.</span></li>
       </ul>
     </div>
-    <figure class="screen" style="margin:0"><img src="img/create-game.webp" alt="CREATE GAME lobby on Battle Creek from MCC, with MY PARTY and the quick options" width="1600" height="900" loading="lazy"><figcaption>Create game · my party</figcaption></figure>
+    <figure class="screen" style="margin:0"><a class="full" href="img/create-game.webp" aria-label="Open the full screenshot"><img src="img/create-game.webp" alt="CREATE GAME lobby on Battle Creek from MCC, with MY PARTY and the quick options" width="1600" height="900" loading="lazy"></a><figcaption>Create game · my party</figcaption></figure>
   </div>
 </section>
 
@@ -311,18 +335,18 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
     <h2>Modern menus, UI and HUD</h2>
     <p class="intro">Every screen is new, works with a controller or a mouse, and explains each setting in a line of help. In the game, a competitive HUD of its own: a score strip, power item timers, your shields and ammo at a glance. Prefer Halo CE's HUD? It is one setting away.</p>
     <div class="shots">
-      <figure class="screen"><img src="img/calls-wheel.webp" alt="The call wheel open on Blood Gulch: SMART, ATTACK, ENEMY, WEAPON, DEFEND, RIDE, GOING and WATCH around the reticle" width="1600" height="900" loading="lazy"><figcaption>Team communication system · call wheel</figcaption></figure>
-      <figure class="screen"><img src="img/marks.webp" alt="A pistol marked for the team on Blood Gulch, 10.6 m away, and a bot teammate answering in the chat that it will get it" width="1600" height="900" loading="lazy"><figcaption>AI teammates react to AE's communication system</figcaption></figure>
-      <figure class="screen"><img src="img/dmr-octagon.webp" alt="The DMR on Octagon, its on-gun counter showing ten rounds, aimed at a bot" width="1600" height="900" loading="lazy"><figcaption>The DMR on Octagon</figcaption></figure>
-      <figure class="screen"><img src="img/gulch-bots.webp" alt="Bot teammates marked in green, with power item timers for the rockets, the sniper rifle and the overshield in the corner" width="1600" height="900" loading="lazy"><figcaption>Bots and power timers</figcaption></figure>
-      <figure class="screen"><img src="img/ae-hud.webp" alt="AE's competitive HUD on Timberland: score strip, item timers, shields and ammo" width="1600" height="900" loading="lazy"><figcaption>AE's competitive HUD</figcaption></figure>
-      <figure class="screen"><img src="img/game-options.webp" alt="GAME OPTIONS: every rule of a gametype in topics, with filter chips" width="1600" height="900" loading="lazy"><figcaption>Game options</figcaption></figure>
-      <figure class="screen"><img src="img/weapon-packs.webp" alt="MORE OPTIONS: start weapons and the weapon packs, each on or off" width="1600" height="900" loading="lazy"><figcaption>Start weapons and weapon packs</figcaption></figure>
-      <figure class="screen"><img src="img/settings.webp" alt="SETTINGS: each player's own controls, video, HUD and more" width="1600" height="900" loading="lazy"><figcaption>Settings, per player</figcaption></figure>
-      <figure class="screen"><img src="img/hud.webp" alt="HUD settings: HUD style, timers, latency meter and more" width="1600" height="900" loading="lazy"><figcaption>HUD settings</figcaption></figure>
-      <figure class="screen"><img src="img/pause-bots.webp" alt="Pause menu: bots and their skill changed mid-game" width="1600" height="900" loading="lazy"><figcaption>Bots changed mid-game</figcaption></figure>
-      <figure class="screen"><img src="img/evo-scope.webp" alt="The EVO RIFLE's scope with its zoom and the rounds loaded" width="1600" height="900" loading="lazy"><figcaption>EVO RIFLE scope</figcaption></figure>
-      <figure class="screen"><img src="img/carbine.webp" alt="The carbine on Carousel, a Workshop map" width="1600" height="900" loading="lazy"><figcaption>The carbine</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/calls-wheel.webp" aria-label="Open the full screenshot"><img src="img/calls-wheel.webp" alt="The call wheel open on Blood Gulch: SMART, ATTACK, ENEMY, WEAPON, DEFEND, RIDE, GOING and WATCH around the reticle" width="1600" height="900" loading="lazy"></a><figcaption>Team communication system · call wheel</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/marks.webp" aria-label="Open the full screenshot"><img src="img/marks.webp" alt="A pistol marked for the team on Blood Gulch, 10.6 m away, and a bot teammate answering in the chat that it will get it" width="1600" height="900" loading="lazy"></a><figcaption>AI teammates react to AE's communication system</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/dmr-octagon.webp" aria-label="Open the full screenshot"><img src="img/dmr-octagon.webp" alt="The DMR on Octagon, its on-gun counter showing ten rounds, aimed at a bot" width="1600" height="900" loading="lazy"></a><figcaption>The DMR on Octagon</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/gulch-bots.webp" aria-label="Open the full screenshot"><img src="img/gulch-bots.webp" alt="Bot teammates marked in green, with power item timers for the rockets, the sniper rifle and the overshield in the corner" width="1600" height="900" loading="lazy"></a><figcaption>Bots and power timers</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/ae-hud.webp" aria-label="Open the full screenshot"><img src="img/ae-hud.webp" alt="AE's competitive HUD on Timberland: score strip, item timers, shields and ammo" width="1600" height="900" loading="lazy"></a><figcaption>AE's competitive HUD</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/game-options.webp" aria-label="Open the full screenshot"><img src="img/game-options.webp" alt="GAME OPTIONS: every rule of a gametype in topics, with filter chips" width="1600" height="900" loading="lazy"></a><figcaption>Game options</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/weapon-packs.webp" aria-label="Open the full screenshot"><img src="img/weapon-packs.webp" alt="MORE OPTIONS: start weapons and the weapon packs, each on or off" width="1600" height="900" loading="lazy"></a><figcaption>Start weapons and weapon packs</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/settings.webp" aria-label="Open the full screenshot"><img src="img/settings.webp" alt="SETTINGS: each player's own controls, video, HUD and more" width="1600" height="900" loading="lazy"></a><figcaption>Settings, per player</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/hud.webp" aria-label="Open the full screenshot"><img src="img/hud.webp" alt="HUD settings: HUD style, timers, latency meter and more" width="1600" height="900" loading="lazy"></a><figcaption>HUD settings</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/pause-bots.webp" aria-label="Open the full screenshot"><img src="img/pause-bots.webp" alt="Pause menu: bots and their skill changed mid-game" width="1600" height="900" loading="lazy"></a><figcaption>Bots changed mid-game</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/evo-scope.webp" aria-label="Open the full screenshot"><img src="img/evo-scope.webp" alt="The EVO RIFLE's scope with its zoom and the rounds loaded" width="1600" height="900" loading="lazy"></a><figcaption>EVO RIFLE scope</figcaption></figure>
+      <figure class="screen"><a class="full" href="img/carbine.webp" aria-label="Open the full screenshot"><img src="img/carbine.webp" alt="The carbine on Carousel, a Workshop map" width="1600" height="900" loading="lazy"></a><figcaption>The carbine</figcaption></figure>
     </div>
   </div>
 </section>
@@ -347,9 +371,9 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
       <div class="panel">
         <h3>Download</h3>
         <div class="dl">
-          <a data-asset="windows64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Windows <span>10 or 11, 64-bit · nothing to install</span></a>
-          <a data-asset="linux64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Linux <span>x86-64 · most distributions, Arch build too</span></a>
-          <a data-asset="macos.tar" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">macOS <span>13 or later, Apple silicon · built, untested</span></a>
+          <a data-asset="windows64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Windows <span>10 or 11, 64-bit&ensp;·&ensp;nothing to install</span></a>
+          <a data-asset="linux64.zip" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">Linux <span>x86-64&ensp;·&ensp;most distributions, Arch build too</span></a>
+          <a data-asset="macos.tar" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">macOS <span>13 or later, Apple silicon&ensp;·&ensp;built, untested</span></a>
           <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved">Quiver <span>install and update it from the launcher</span></a>
         </div>
         <p class="note">Each release also has the dedicated server, an untested Android build and its complete source.</p>
