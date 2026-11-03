@@ -1,0 +1,25 @@
+AE SILENCED SMG (weapon pack ae_smg_silenced) - credits
+
+The silenced SMG's model, textures, shaders, first-person animations, effects and sounds are the work of CMT (the Custom
+Mapping Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the Evolved team: Teh Lag,
+Ifafudafi, Siliconmaster and the contributors their credits.txt names). Sound design: Beaucephal and Xalener.
+They are used under the release's own terms ("Just don't take credit for things you didn't make") and are
+unchanged but for what an Xbox map needs: Open Sauce's extension blocks removed, the multipurpose maps' channels
+reordered, the Ogg Vorbis sounds encoded again as Xbox ADPCM, the models converted.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the lighting values and the brightened base map;
+- the aiming reticle, drawn from geometry in the form of a plain SMG reticle;
+- the ammunition counter (3 rows of 20 rounds in groups of 5) and its low-ammo flash;
+- the swap and pickup prompts' picture of the silenced SMG, drawn from its model;
+- the ammunition panel's layout: its positions, sizes and references are numbers set by AE, in the structure of
+  the stock assault rifle's HUD (no art of the game's);
+- the weapon's numbers (rate of fire, magazine, error, aim assist, bullet speed and range), set to tuned values;
+- the silenced SMG's quiet: its shots silent to the AI's hearing and no tracer (its bullet's contrail taken off);
+- the damage of a round, set by AE.
+
+The pack holds no pixel, sound or model of the game's own: what the silenced SMG needs of the game (the stock HUD's
+numbers and frames, reflection maps, impact materials, the held weapon's collision) it names, and the map the
+player owns provides.
+
+Thank you, CMT.

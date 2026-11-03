@@ -1,0 +1,364 @@
+"""AE's menus in a real game, headless: the test screen (debug.ae_test_screen) through the ae_test harness
+(tools/ae_test, docs/testing.md), each game with its own data root, save root and debug.txt.
+
+- the screen opens at the main menu, draws, and takes input (12 downs move the focus to item 12);
+- its translucent swatch is one blend over the game's picture, not built up over frames in the back buffer;
+- buttons pressed on it, and the B that closes it, never reach the game's menus behind it (the main menu keeps its
+  first item focused);
+- a contact sheet of the screen at 16:9, 4:3, in 2 and 4 synthetic split-screen views, with supersampling and at
+  the original 480 lines (also: python3 tools/test_ae_menus.py sheet).
+
+Runs only when asked, as its games take minutes: $AE_MENUS_BUILD names the game to play (a folder with halo, a
+commit or a named build of the harness's config), and the harness's config must have a data_dir with the maps.
+$AE_TEST_HARNESS points at another checkout's tools/ae_test to run with (a newer harness). Skips otherwise, as on
+CI and in a plain pytest run of tools/. Each game is 30 s or more; the three tests play ten.
+
+    AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_menus.py
+"""
+import importlib.util
+import json
+import os
+import sys
+from pathlib import Path
+
+import pytest
+
+ROOT = Path(__file__).resolve().parent.parent
+HARNESS = Path(os.environ.get("AE_TEST_HARNESS") or ROOT / "tools" / "ae_test").expanduser()
+# tools/ae_test/harness.py (or $AE_TEST_HARNESS's), loaded by path when a test needs it (load_harness). The harness
+# imports its sibling modules (record.py, ...) when it runs, so its folder goes on sys.path then, but last: it can't
+# shadow another test's imports of the same names
+harness = None
+
+
+def load_harness():
+    global harness
+    if harness is None:
+        if str(HARNESS) not in sys.path:
+            sys.path.append(str(HARNESS))
+        spec = importlib.util.spec_from_file_location("ae_menus_test_harness", HARNESS / "harness.py")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        harness = module
+    return harness
+
+LEAD_IN = 12  # seconds of waits before the first press: the game starts and the main menu (and the screen) opens
+EXIT_AFTER = 34
+SWATCH = (1860, 20, 1900, 60)  # the screen's swatch at 1920x1080 (layout units = pixels): x0, y0, x1, y1
+SHEET_CASES = (
+    # name, window, views, more environment
+    ("16x9", "1920x1080", 1, {}),
+    ("4x3", "1280x960", 1, {}),
+    ("2p", "1920x1080", 2, {}),
+    ("4p", "1920x1080", 4, {}),
+    ("ssaa2x-720", "1280x720", 1, {"HALO_ANTI_ALIASING": "ssaa2x"}),
+    ("original-480", "1920x1080", 1, {"HALO_RESOLUTION_SCALING": "original"}),
+)
+
+
+def build():
+    return os.environ.get("AE_MENUS_BUILD") or None
+
+
+def config():
+    if not build() or not (HARNESS / "harness.py").exists():
+        return None
+    cfg = load_harness().load_config()
+    data = cfg.get("data_dir")
+    if not data or not (harness.expand(data) / "maps").exists():
+        return None
+    return cfg
+
+
+def out_dir(cfg, name):
+    folder = harness.expand(cfg["out_dir"]) / "ae_menus" / f"{harness.stamp()}-{name}"
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def menu_input(*buttons):
+    """HALO_TEST_INPUT: the lead-in's waits, then one button a second"""
+    return "menu:" + " ".join(["wait"] * LEAD_IN + list(buttons))
+
+
+def play(cfg, out, name, views=1, test_input=None, window="1920x1080", env=None, shots=60, exit_after=EXIT_AFTER,
+         test_runs=None, test_run_results=None, address=None, save_from=None):
+    """one game through the harness: (result, its debug.txt, its PNGs by frame); save_from: a save root to start from
+    (copied)"""
+    spec = {"name": name, "build": build(), "window": window, "exit_after": exit_after, "screenshots": shots,
+            "env": dict({"HALO_ARENA_MENUS": "1", "HALO_AE_TEST_SCREEN": str(views)}, **(env or {}))}
+    if test_input:
+        spec["test_input"] = test_input
+    if save_from:
+        spec["save_from"] = str(save_from)
+    if address:
+        spec["address"] = address
+    if test_runs:
+        spec["test_runs"] = test_runs
+    if test_run_results:
+        spec["test_run_results"] = test_run_results
+    result = harness.play(cfg, spec, out / name)
+    debug = out / name / "debug.txt"
+    text = debug.read_text(errors="replace") if debug.exists() else ""
+    pngs = sorted((out / name).rglob("frame*.png"))
+    return result, text, pngs
+
+
+def focus_lines(text):
+    return [int(line.rsplit(" ", 1)[1]) for line in text.splitlines() if "ae menus: focus " in line]
+
+
+def brightness_median(image, inside, outside=None):
+    """the median brightness ((r + g + b) / 3) of the pixels in the box inside (x0, y0, x1, y1), or, given
+    outside, of those in outside but not in inside (a ring); medians, as the menu's stars move behind"""
+    w, h, rgb = image
+    box = outside or inside
+    values = []
+    for y in range(max(0, box[1]), min(h, box[3])):
+        for x in range(max(0, box[0]), min(w, box[2])):
+            if outside and inside[0] <= x < inside[2] and inside[1] <= y < inside[3]:
+                continue
+            o = (y * w + x) * 3
+            values.append((rgb[o] + rgb[o + 1] + rgb[o + 2]) / 3)
+    values.sort()
+    return values[len(values) // 2]
+
+
+def tile(pngs, out, width=960, columns=3, gap=8):
+    """a contact sheet: each picture scaled to width (nearest pixel), columns wide, on dark grey"""
+    tiles = []
+    for p in pngs:
+        w, h, rgb = harness.read_png(p)
+        th = max(1, round(h * width / w))
+        xs = [min(w - 1, int(x * w / width)) * 3 for x in range(width)]
+        idx = [o + c for o in xs for c in range(3)]
+        data = bytearray()
+        for y in range(th):
+            row = rgb[min(h - 1, int(y * h / th)) * w * 3:][:w * 3]
+            data += bytes(map(row.__getitem__, idx))
+        tiles.append((th, data))
+    rows = [tiles[i:i + columns] for i in range(0, len(tiles), columns)]
+    sheet_w = columns * width + (columns + 1) * gap
+    heights = [max(t[0] for t in r) for r in rows]
+    sheet_h = sum(heights) + (len(rows) + 1) * gap
+    sheet = bytearray(b"\x20" * (sheet_w * sheet_h * 3))
+    y0 = gap
+    for r, rh in zip(rows, heights):
+        for i, (th, data) in enumerate(r):
+            x0 = gap + i * (width + gap)
+            for y in range(th):
+                o = ((y0 + y) * sheet_w + x0) * 3
+                sheet[o:o + width * 3] = data[y * width * 3:(y + 1) * width * 3]
+        y0 += rh + gap
+    Path(out).write_bytes(harness.png_bytes(sheet_w, sheet_h, sheet))
+    return out
+
+
+@pytest.fixture(scope="module")
+def cfg():
+    c = config()
+    if not c:
+        pytest.skip("needs the ae_test harness config (data_dir with maps) and a built game ($AE_MENUS_BUILD)")
+    return c
+
+
+def test_test_screen_draws_and_takes_input(cfg):
+    out = out_dir(cfg, "input")
+    result, text, pngs = play(cfg, out, "input", test_input=menu_input(*["down"] * 12))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: test screen (views 1)" in text, "the test screen never opened"
+    focus = focus_lines(text)
+    assert focus and focus[-1] == 12, f"12 downs: focus {focus}"
+    assert focus == list(range(1, 13)), f"one step a press: {focus}"
+    # CE's menu sounds (ae_sound.h): a cursor for each focus step, at most one sound a frame
+    sounds = [line.rsplit(" ", 1)[1] for line in text.splitlines() if "ae sound: " in line]
+    assert sounds == ["cursor"] * 12, f"12 downs: sounds {sounds}"
+    assert len(pngs) >= 10, "too few screenshots"
+
+    # the swatch (white, alpha 0.25) is one blend over the picture, early and late: no build-up in the back
+    # buffer the game keeps from frame to frame (over a background b, one blend is 0.75 b + 64, two 0.56 b + 112)
+    late = harness.read_png(pngs[-1])
+    assert late[0] == 1920 and late[1] == 1080, "the picture is not 1920x1080"
+    inner = (SWATCH[0] + 4, SWATCH[1] + 4, SWATCH[2] - 4, SWATCH[3] - 4)
+    ring = (SWATCH[0] - 12, SWATCH[1] - 12, SWATCH[2] + 12, SWATCH[3] + 12)
+    # (early: about 10 shots before the last, but never one taken before the first frame was drawn: on a loaded box
+    # the run takes only ~10 shots and the 10th from the end is the black frame 0)
+    early = None
+    for path in pngs[max(0, len(pngs) - 10):-1]:
+        image = harness.read_png(path)
+        if brightness_median(image, SWATCH, ring) > 0:
+            early = image
+            break
+    assert early is not None, "no drawn picture before the last"
+    blends = []
+    for image in (early, late):
+        swatch = brightness_median(image, inner)
+        background = brightness_median(image, SWATCH, ring)
+        residual = swatch - (background * 0.75 + 64)
+        blends.append((swatch, background, residual))
+        assert abs(residual) <= 20, f"swatch {swatch} over {background}: not one blend"
+    # (the menu's picture moves behind it between the two screenshots, so early and late compare as blends; the
+    # residuals carry the moving texture's noise, hence 24: the per-image residual check above is the real guard
+    # against a double blend, which would read about +30 to +40 over these backgrounds)
+    assert abs(blends[0][2] - blends[1][2]) <= 24, f"the swatch's blend changed from {blends[0]} to {blends[1]}"
+
+
+def test_input_does_not_reach_the_menus_behind(cfg):
+    """buttons on the screen, then B to close it: the screen takes every one of them (its log). (The
+    harness presses one button at a time, so a button held over the close, which ae_hooks.c holds back until let
+    go of, isn't exercised here.)"""
+    out = out_dir(cfg, "leak")
+    presses = ["down", "down", "x", "y", "rb", "lb", "b"]
+    result, text, _ = play(cfg, out, "screen", test_input=menu_input(*presses), shots=120)
+    assert result.get("status") == "PASS", result.get("why")
+    assert focus_lines(text) == [1, 2]
+    assert "ae menus: button X" in text and "ae menus: button Y" in text
+    assert "ae menus: button TAB_NEXT" in text and "ae menus: button TAB_PREVIOUS" in text
+    assert "ae menus: test screen closed" in text
+    assert "ae sound: back" in text, "the B that closed the screen played no back sound"
+    # (0.7.0: the pixel half, the classic main menu's focused CAMPAIGN row behind the screen against a control
+    # game's, is retired: AE's menus are the default and the classic main menu is no longer drawn behind them)
+
+
+def test_menus_closed_keys_still_work(cfg):
+    """debug.ae_test_screen 9: the test screen with upstream's widgets closed (ui_widgets_close_all, as AE's own
+    screens that replace the menus do): the keyboard still drives AE (early check A: without the ui_widget.c pointer
+    hook the game takes the keys back for play once no widget is up); the menu settings at their defaults"""
+    out = out_dir(cfg, "closed")
+    result, text, pngs = play(cfg, out, "closed", views=9,
+                              test_input=menu_input("key:Down", "key:Down", "key:Return"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: replaced the game's menus" in text
+    assert focus_lines(text) == [1, 2]
+    assert "ae menus: accept 2" in text
+    assert "ae sound: forward" in text, "the accept played no forward sound"
+    assert "ae menus: settings: scale 1.00, reduce motion 0, volume 1.00" in text
+
+
+def test_pad_y_after_keyboard(cfg):
+    """a Y on the first controller after keyboard use, with no Tab pressed, is a Y, not Tab's focus step (M1 review
+    M2). The harness's injected pad leaves platform_input_scheme on the keyboard (a real SDL pad sets it to the pad
+    in the read that makes its Y), so this stands in for the scheme-less cases: a touch overlay's Y on Android
+    without a pad, and such injected pads. (A Tab tapped within one frame can't be injected: the harness's key:
+    tokens go into the controller's read only, never as SDL key events; ae_input_rules_test.c pins that rule.)"""
+    out = out_dir(cfg, "pad-y")
+    result, text, pngs = play(cfg, out, "pad-y", test_input=menu_input("key:Down", "y"))
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: button Y" in text
+    assert focus_lines(text) == [1]
+
+
+def test_settings_keys(cfg):
+    """display.arena_menus_scale (snapped to 90 / 100 / 115 / 130), display.arena_menus_reduce_motion and
+    audio.arena_menus_volume reach the menus' settings cache (ae_settings_*)"""
+    out = out_dir(cfg, "settings")
+    result, text, pngs = play(cfg, out, "settings", env={"HALO_ARENA_MENUS_SCALE": "120",
+                                                          "HALO_ARENA_MENUS_REDUCE_MOTION": "true",
+                                                          "HALO_ARENA_MENUS_VOLUME": "0.5"}, exit_after=24)
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae menus: settings: scale 1.15, reduce motion 1, volume 0.50" in text
+
+
+BROKEN_LIST = """list broken
+revision 1
+title BROKEN LIST
+bogus line here
+
+test a
+check Anything
+map bloodgulch
+"""
+
+
+DONE_LIST = """list done
+revision 1
+title DONE LIST
+
+test only
+check Anything
+screen 1
+"""
+
+
+def results_line(list_id, test, verdict, run, time):
+    keys = ("run", "list", "revision", "test", "verdict", "note", "shot", "video", "build", "time")
+    values = (run, list_id, 3 if list_id == "sample" else 1, test, verdict, "", "", "", "abc1234", time)
+    return json.dumps(dict(zip(keys, values)), separators=(",", ":")) + "\n"
+
+
+def test_test_run_screen(cfg):
+    """TEST RUN's list screen (ae_screen_test_run.h) over the main menu, with DEV MODE on and two lists in the data
+    root's test-runs/: tools/ae_test/test_runs/sample.txt (3 tests, none played) and a broken one. SETTINGS >
+    SYSTEM's DEV rows open it from the TEST RUN row (A); debug.ae_test_screen 36 opens it directly"""
+    out = out_dir(cfg, "test-run")
+    lists = out / "lists"
+    lists.mkdir(exist_ok=True)
+    (lists / "broken.txt").write_text(BROKEN_LIST)
+    (lists / "done.txt").write_text(DONE_LIST)
+    # results: DONE LIST all passed; SAMPLE LIST one PASS and one FAIL in its last run (the third never played: NEW,
+    # and the run did not finish: RESUME)
+    (lists / "done.results.jsonl").write_text(results_line("done", "only", "PASS", "2026-10-24T09:00:00",
+                                                           "2026-10-24T09:05:00"))
+    (lists / "sample.results.jsonl").write_text(
+        results_line("sample", "menu-screen", "PASS", "2026-10-25T09:00:00", "2026-10-25T09:05:00") +
+        results_line("sample", "plain-map", "FAIL", "2026-10-25T09:00:00", "2026-10-25T09:06:00"))
+    names = [str(ROOT / "tools" / "ae_test" / "test_runs" / "sample.txt"), str(lists / "broken.txt"),
+             str(lists / "done.txt")]
+    seeded = [str(lists / "done.results.jsonl"), str(lists / "sample.results.jsonl")]
+    env = {"HALO_DEV_MODE": "1"}
+    # the screen alone
+    spec = {"name": "screen", "build": build(), "window": "1920x1080", "exit_after": 24, "screenshots": 60,
+            "test_runs": names, "test_run_results": seeded, "env": dict(env, HALO_ARENA_MENUS="1", HALO_AE_TEST_SCREEN="36")}
+    result = harness.play(cfg, spec, out / "screen")
+    text = (out / "screen" / "debug.txt").read_text(errors="replace")
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae test run screen: open (3 lists)" in text, "the TEST RUN screen never opened"
+    for line in ("row sample: 1 FAIL \u00b7 1 NEW \u00b7 RESUME", "row done: ALL PASSED \u00b7 OCT 24",
+                 "row broken: LIST ERROR \u00b7 "):
+        assert line in text, line
+    pngs = sorted((out / "screen").rglob("frame*.png"))
+    assert pngs, "no screenshots"
+    (out / "test-run-screen.png").write_bytes(pngs[-1].read_bytes())
+    # SETTINGS > SYSTEM > DEV: 14 downs reach the TEST RUN row, the last one
+    dev = dict(env, HALO_AE_TEST_SETTINGS_GROUP="8")
+    result, text, pngs = play(cfg, out, "settings", views=35, test_input=menu_input(*["down"] * 14), env=dev,
+                              exit_after=32,
+                              test_runs=names, test_run_results=seeded)
+    assert result.get("status") == "PASS", result.get("why")
+    assert pngs, "no screenshots"
+    (out / "settings-dev.png").write_bytes(pngs[-1].read_bytes())
+    # A on that row opens the screen
+    result, text, pngs = play(cfg, out, "settings-open", views=35, test_input=menu_input(*["down"] * 14 + ["a"]),
+                              env=dev, exit_after=36, test_runs=names, test_run_results=seeded)
+    assert result.get("status") == "PASS", result.get("why")
+    assert "ae test run screen: open (3 lists)" in text, "A on the TEST RUN row did not open the screen"
+
+
+def contact_sheet(cfg, out):
+    """the test screen in each SHEET_CASES case; full-size frames and sheet.png in out"""
+    frames = []
+    for name, window, views, env in SHEET_CASES:
+        result, text, pngs = play(cfg, out, name, views=views, window=window, env=env, shots=120,
+                                  test_input=menu_input(*["down"] * 13), exit_after=30)
+        assert result.get("status") == "PASS", (name, result.get("why"))
+        assert f"ae menus: test screen (views {views})" in text, name
+        assert pngs, f"{name}: no screenshots"
+        frame = out / f"{name}.png"
+        frame.write_bytes(pngs[-1].read_bytes())
+        frames.append(frame)
+    return tile(frames, out / "sheet.png")
+
+
+def test_contact_sheet(cfg):
+    out = out_dir(cfg, "sheet")
+    sheet = contact_sheet(cfg, out)
+    assert sheet.exists()
+
+
+if __name__ == "__main__":
+    if sys.argv[1:2] != ["sheet"]:
+        sys.exit("usage: tools/test_ae_menus.py sheet  (the contact sheet; or run it with pytest)")
+    c = config()
+    if not c:
+        sys.exit("needs the ae_test harness config and a built game ($AE_MENUS_BUILD)")
+    print(contact_sheet(c, out_dir(c, "sheet")))

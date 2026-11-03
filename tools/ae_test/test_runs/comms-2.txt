@@ -1,0 +1,42 @@
+# TEAM CALLS, the fixes of round 1, played for the first time: the prompt by the reticle, the driver's crosshair, a marked
+# vehicle's driver, an enemy's vehicle. Host and client, and an older build, are by hand: TEST RUN cannot host or join.
+list comms-2
+revision 1
+title TEAM CALLS, ROUND 2
+
+test prompt-still
+title The prompt holds still by the reticle
+check Turn and walk aiming at ground: GO HERE does not jump
+check Its button reads L1 on your pad, B on the keyboard
+check Aim away at a far weapon: its word follows that weapon
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test driver-crosshair
+title The driver's crosshair
+check Drive a Warthog: the crosshair is there
+check Bots riding: seat panel shows, no other seat's meters
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test marked-vehicle
+title A marked vehicle gets a driver
+check Mark an empty Warthog: one bot drives, one guns
+check It drives off with them; note if it looks dumb
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test enemy-vehicle
+title An enemy's vehicle
+check Mark a vehicle an enemy rides: ENEMY, red, over its roof
+check Prompt reads ENEMY aiming at it, its name when empty
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy

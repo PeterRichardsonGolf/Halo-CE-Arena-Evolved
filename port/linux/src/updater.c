@@ -1,0 +1,1497 @@
+/*
+UPDATER.C
+
+The desktop ports' self-updater (Linux and Windows; the Android app updates
+itself in Java, port/android). On macOS a release's build looks for a new
+version the same way, and Yes opens the release's download page instead.
+
+In Arena Evolved from 0.4.3 (before it, forced off in every build): only a
+release's build looks for a new version (HALO_RELEASE_BUILD: built by
+GitHub Actions from the release's tag, v<version>; tools/version.py), and it
+knows its version (HALO_VERSION, 0.4.3-beta); a ci branch's build and
+every build made elsewhere (<version>-dev) never look for updates. When
+update.auto in config.toml is true (the default), the game asks GitHub for
+Arena Evolved's newest release when it starts (its last releases, the newest
+v* tag of them: AE's releases are all pre-releases, which GitHub's "latest"
+never is), on a thread of its own:
+the game starts meanwhile, and nothing happens if the release is not newer
+or cannot be reached. If it is newer, the game asks whether to update:
+
+- Yes: the release's list of its update files (updates.json,
+  update_manifest.h) is downloaded, with its signature (updates.json.sig)
+  checked against the release key the game is built with (update_signature.c,
+  update_key.h). The build the list names for this platform and configuration
+  is downloaded next to the executable (into update.partial/), its size and
+  SHA-256 checked against the list's, and unpacked, its files put in place
+  of the running game's (which become <name>.old, deleted at the next start),
+  and the new game started (the list's "main" for the file, the executable
+  by the name the release gives it, or else the file this one was started
+  from); this one quits. A release from before the list
+  has none: its arena-evolved-<platform>-<release|debug>.zip is downloaded,
+  with that zip's own signature (<zip>.sig) checked, as before. (An Arena
+  Evolved release always has the list: its zips are named by version,
+  arena-evolved-<version>-<platform>.zip, which only the list gives; its
+  folders packs/, voices/ and sounds/ are installed too: ae_update.h.)
+- No: nothing, until the next start.
+- Do not ask again: after the player confirms it, update.auto = false is
+  written to config.toml.
+
+The system side (the HTTPS download, the files, starting the new game) is
+update.h's: posix_update.c on Linux, win32_update.c on Windows.
+
+A build for the updater's own test (HALO_UPDATE_TEST, with a test key:
+tools/test_update_install.py) looks for updates though it is no release's,
+at the server HALO_UPDATE_TEST_SERVER names in place of GitHub. No release
+is built with it.
+*/
+
+#ifdef AE_UPDATER_PICK_TEST
+#include <stdlib.h>
+#include <string.h>
+#else
+#include "platform.h"
+#include "halo_product.h"
+#include "port_config.h"
+#include "update.h"
+#include "update_manifest.h"
+#include "update_signature.h"
+
+#include <stdlib.h>
+#include <string.h>
+
+/* (given for this file by the build: tools/linux_build.py, windows_build.py,
+macos_build.py; the Android app's version is its own, build.gradle) */
+#ifndef HALO_VERSION
+#define HALO_VERSION "dev"
+#endif
+
+#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
+
+#include "zlib_prefixed.h"
+
+#include <SDL3/SDL.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "ae_update.h" /* AE hook */
+
+#ifndef HALO_RELEASE_BUILD
+#define HALO_RELEASE_BUILD 0
+#endif
+#ifdef HALO_UPDATE_TEST
+#define UPDATER_TEST 1
+#else
+#define UPDATER_TEST 0
+#endif
+#ifdef __APPLE__
+/* (the macOS application does not replace itself yet: a release's build
+looks for a new version and offers its download page) */
+#define UPDATER_DOWNLOAD_PAGE_ONLY 1
+#else
+#define UPDATER_DOWNLOAD_PAGE_ONLY 0
+#endif
+/* the chosen release's page (followed by its version), where the macOS
+application is downloaded */
+#define UPDATE_RELEASE_PAGE "https://github.com/" UPDATE_REPOSITORY "/releases/tag/v"
+#ifndef HALO_BUILD_FLAVOR
+#define HALO_BUILD_FLAVOR "release"
+#endif
+
+/* Arena Evolved's releases; a download from here installs only with a
+signature by Arena Evolved's release key (update_key.h) */
+#define UPDATE_REPOSITORY "PeterRichardsonGolf/Halo-CE-Arena-Evolved"
+#define UPDATE_API "https://api.github.com/repos/" UPDATE_REPOSITORY
+#define UPDATE_DOWNLOADS "https://github.com/" UPDATE_REPOSITORY "/releases/download"
+#if defined(_WIN32) && defined(HALO_64BIT)
+/* (the 64-bit Windows build's own download, ninja windows64: tools/ci_build.py) */
+#define UPDATE_PLATFORM "windows64"
+#define PATH_SEPARATOR "\\"
+#elif defined(_WIN32)
+#define UPDATE_PLATFORM "windows"
+#define PATH_SEPARATOR "\\"
+#elif defined(__APPLE__)
+#define UPDATE_PLATFORM "macos"
+#define PATH_SEPARATOR "/"
+#elif defined(HALO_64BIT)
+/* (the 64-bit Linux build's own download, ninja linux64: tools/ci_build.py) */
+#define UPDATE_PLATFORM "linux64"
+#define PATH_SEPARATOR "/"
+#else
+#define UPDATE_PLATFORM "linux"
+#define PATH_SEPARATOR "/"
+#endif
+#define UPDATE_ASSET "arena-evolved-" UPDATE_PLATFORM "-" HALO_BUILD_FLAVOR ".zip"
+/* the release's list of its update files (update_manifest.h) */
+#define UPDATE_MANIFEST "updates.json"
+#define UPDATE_DIRECTORY "update.partial"
+/* (AE: the files of a release's zip, its folders' included, 648 in 0.4.2,
+most of them the voices'; ae_update.h) */
+#define MAXIMUM_UPDATE_FILES 2048 /* AE hook */
+/* the most a download may be: GitHub's answer about the last releases (AE's
+last 10, their notes and assets' lists, about 200 KB) or a release's list, a
+release's zip (about 75 MB), a signature */
+#define MAXIMUM_CHECK_SIZE (4ULL * 1024 * 1024) /* AE hook */
+#define MAXIMUM_UPDATE_SIZE (256ULL * 1024 * 1024)
+#define MAXIMUM_SIGNATURE_SIZE 4096ULL
+/* the game's executable by its names, before and after the rename: a file
+new to the folder by one of them is made executable, like one the zip marks
+so */
+static const char *const updater_executable_names[] = { "halo", "chupathingy" };
+
+enum
+{
+	_updater_idle,
+	_updater_checking,
+	_updater_available,
+	_updater_handled,
+};
+
+static SDL_AtomicInt updater_state;
+static char updater_latest_version[32];
+static char updater_directory[1024];
+static char updater_executable[1024];
+/* what is downloaded: from the release's list, or the zip's name as before
+(listed: 0, and its own signature is checked) */
+static struct
+{
+	int listed;
+	char tag[160];
+	char name[160];
+	unsigned long long size;
+	char sha256[UPDATE_SHA256_TEXT_SIZE];
+	/* (the list's "main", or empty) */
+	char main_name[160];
+} updater_file;
+
+/* where releases are looked for and downloaded from: GitHub, or a test's
+server (HALO_UPDATE_TEST) */
+static void updater_url(char *url, size_t size, int api, const char *path)
+{
+#ifdef HALO_UPDATE_TEST
+	const char *server = getenv("HALO_UPDATE_TEST_SERVER");
+
+	if (server && *server)
+	{
+		snprintf(url, size, "%s/%s/%s", server, api ? "repos/" UPDATE_REPOSITORY : UPDATE_REPOSITORY "/releases/download",
+			path);
+		return;
+	}
+#endif
+	snprintf(url, size, "%s/%s", api ? UPDATE_API : UPDATE_DOWNLOADS, path);
+}
+
+/* ---------- paths */
+
+static void updater_path(char *path, size_t size, const char *name)
+{
+	snprintf(path, size, "%s" PATH_SEPARATOR "%s", updater_directory, name);
+}
+
+static void updater_partial_path(char *path, size_t size, const char *name)
+{
+	snprintf(path, size, "%s" PATH_SEPARATOR UPDATE_DIRECTORY PATH_SEPARATOR "%s", updater_directory, name);
+}
+
+/* ---------- the zip file (the release's), stored or deflated entries */
+
+static unsigned long zip_word(const unsigned char *bytes)
+{
+	return (unsigned long)bytes[0] | (unsigned long)bytes[1] << 8;
+}
+
+static unsigned long zip_long(const unsigned char *bytes)
+{
+	return zip_word(bytes) | zip_word(bytes + 2) << 16;
+}
+
+/* an entry's data, unpacked, to the file at path; why it could not be is
+written to reason */
+static int zip_extract_entry(SDL_IOStream *zip, unsigned long local_offset, int method,
+	unsigned long packed_size, unsigned long size, unsigned long crc, const char *path,
+	char *reason, size_t reason_size)
+{
+	unsigned char header[30];
+	unsigned char input[16384], output[16384];
+	SDL_IOStream *file;
+	z_stream stream;
+	unsigned long remaining = packed_size, written = 0, checksum = crc32(0L, Z_NULL, 0);
+	int succeeded = 0, ended = 0;
+
+	if (SDL_SeekIO(zip, (Sint64)local_offset, SDL_IO_SEEK_SET) < 0 ||
+		SDL_ReadIO(zip, header, sizeof(header)) != sizeof(header) || zip_long(header) != 0x04034b50 ||
+		SDL_SeekIO(zip, (Sint64)(zip_word(header + 26) + zip_word(header + 28)), SDL_IO_SEEK_CUR) < 0)
+	{
+		snprintf(reason, reason_size, "its header at %lu could not be read (%s)", local_offset, SDL_GetError());
+		return 0;
+	}
+	file = SDL_IOFromFile(path, "wb");
+	if (!file)
+	{
+		snprintf(reason, reason_size, "could not create %s (%s)", path, SDL_GetError());
+		return 0;
+	}
+	memset(&stream, 0, sizeof(stream));
+	if (method == 8 && inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+	{
+		snprintf(reason, reason_size, "zlib would not start (%s)", stream.msg ? stream.msg : "no message");
+		SDL_CloseIO(file);
+		return 0;
+	}
+	for (;;)
+	{
+		size_t count = remaining < sizeof(input) ? remaining : sizeof(input);
+
+		if (count && SDL_ReadIO(zip, input, count) != count)
+		{
+			snprintf(reason, reason_size, "the download ended %lu bytes early (%s)", remaining, SDL_GetError());
+			break;
+		}
+		remaining -= (unsigned long)count;
+		if (method == 0)
+		{
+			/* (no more than the entry says it holds) */
+			if (count > size - written)
+			{
+				snprintf(reason, reason_size, "it unpacks to more than %lu bytes", size);
+				break;
+			}
+			if (SDL_WriteIO(file, input, count) != count)
+			{
+				snprintf(reason, reason_size, "could not write %s after %lu bytes (%s)", path, written, SDL_GetError());
+				break;
+			}
+			checksum = crc32(checksum, input, (uInt)count);
+			written += (unsigned long)count;
+		}
+		else
+		{
+			int result = Z_OK;
+
+			stream.next_in = input;
+			stream.avail_in = (uInt)count;
+			do
+			{
+				size_t produced;
+
+				stream.next_out = output;
+				stream.avail_out = sizeof(output);
+				result = inflate(&stream, Z_NO_FLUSH);
+				if (result != Z_OK && result != Z_STREAM_END)
+					break;
+				produced = sizeof(output) - stream.avail_out;
+				/* (no more than the entry says it holds) */
+				if (produced > size - written)
+				{
+					snprintf(reason, reason_size, "it unpacks to more than %lu bytes", size);
+					result = Z_ERRNO;
+					break;
+				}
+				if (SDL_WriteIO(file, output, produced) != produced)
+				{
+					snprintf(reason, reason_size, "could not write %s after %lu bytes (%s)", path, written, SDL_GetError());
+					result = Z_ERRNO;
+					break;
+				}
+				checksum = crc32(checksum, output, (uInt)produced);
+				written += (unsigned long)produced;
+			} while (stream.avail_out == 0 && result != Z_STREAM_END);
+			if (result == Z_STREAM_END)
+				ended = 1;
+			else if (result != Z_OK && result != Z_BUF_ERROR)
+			{
+				if (result != Z_ERRNO)
+				{
+					snprintf(reason, reason_size, "zlib stopped with %d after %lu of %lu bytes (%s)", result, written, size,
+						stream.msg ? stream.msg : "no message");
+				}
+				break;
+			}
+		}
+		/* (all of the input unpacked is enough, as the size and the CRC are
+		checked: the game's zlib 1.1, used here before, could want a byte past
+		the end of a raw stream before it said the stream had ended) */
+		if (ended || !remaining)
+		{
+			if (written != size)
+				snprintf(reason, reason_size, "it unpacked to %lu bytes, not %lu", written, size);
+			else if (checksum != crc)
+				snprintf(reason, reason_size, "its CRC is %08lx, not %08lx", checksum, crc);
+			else
+				succeeded = 1;
+			break;
+		}
+	}
+	if (method == 8)
+		inflateEnd(&stream);
+	if (!SDL_CloseIO(file) && succeeded)
+	{
+		snprintf(reason, reason_size, "could not finish writing %s (%s)", path, SDL_GetError());
+		succeeded = 0;
+	}
+	return succeeded;
+}
+
+/* whether an entry's name is one of a release's files, which are all at the
+zip's top, named with letters, digits and . _ + - (a folder, or a name that
+could leave update.partial/ or mean something else to the system, is not;
+nor are the game's own folders, data, logs, cache and private: an update
+never touches what is in them, port_folders.h) */
+static int zip_name_allowed(const char *name)
+{
+	static const char *const folders[] = { "data", "logs", "cache", "private" };
+	const char *c;
+	size_t index;
+
+	if (!*name || *name == '.')
+		return 0;
+	for (index = 0; index < sizeof(folders) / sizeof(*folders); index++)
+	{
+		if (!SDL_strcasecmp(name, folders[index]))
+			return 0;
+	}
+	for (c = name; *c; c++)
+	{
+		if (!((*c >= 'a' && *c <= 'z') || (*c >= 'A' && *c <= 'Z') || (*c >= '0' && *c <= '9') || *c == '.' ||
+			*c == '_' || *c == '+' || *c == '-'))
+		{
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* whether name is the game's executable by one of its names */
+static int updater_executable_name(const char *name)
+{
+	size_t index;
+
+	for (index = 0; index < sizeof(updater_executable_names) / sizeof(*updater_executable_names); index++)
+	{
+		if (!strcmp(name, updater_executable_names[index]))
+			return 1;
+	}
+	return !strcmp(name, updater_file.main_name);
+}
+
+/* the zip's files (a flat folder) into update.partial/, their names in names
+and whether each is executable (the zip's Unix mode says so, or it is the
+game's) in executable */
+static int zip_extract(SDL_IOStream *zip, char names[][256], int *executable, int *name_count, char *error,
+	size_t error_size)
+{
+	unsigned char tail[65536 + 22];
+	Sint64 size;
+	size_t tail_size, index;
+	unsigned long entries = 0, directory_offset = 0, entry;
+	int found = 0, succeeded = 0;
+
+	*name_count = 0;
+	/* the end of the central directory, in the last 64 KB */
+	size = SDL_GetIOSize(zip);
+	tail_size = size < (Sint64)sizeof(tail) ? (size_t)size : sizeof(tail);
+	if (size < 22 || SDL_SeekIO(zip, size - (Sint64)tail_size, SDL_IO_SEEK_SET) < 0 ||
+		SDL_ReadIO(zip, tail, tail_size) != tail_size)
+	{
+		goto done;
+	}
+	for (index = tail_size - 22 + 1; index-- > 0;)
+	{
+		if (zip_long(tail + index) == 0x06054b50)
+		{
+			entries = zip_word(tail + index + 10);
+			directory_offset = zip_long(tail + index + 16);
+			found = 1;
+			break;
+		}
+	}
+	if (!found || SDL_SeekIO(zip, (Sint64)directory_offset, SDL_IO_SEEK_SET) < 0)
+		goto done;
+	for (entry = 0; entry < entries; entry++)
+	{
+		unsigned char header[46];
+		char name[256];
+		unsigned long name_length, extra_length, comment_length;
+		Sint64 next;
+		char path[1200];
+		char reason[512] = "";
+
+		if (SDL_ReadIO(zip, header, sizeof(header)) != sizeof(header) || zip_long(header) != 0x02014b50)
+			goto done;
+		name_length = zip_word(header + 28);
+		extra_length = zip_word(header + 30);
+		comment_length = zip_word(header + 32);
+		if (name_length >= sizeof(name) || SDL_ReadIO(zip, name, name_length) != name_length)
+			goto done;
+		name[name_length] = 0;
+		next = SDL_TellIO(zip) + (Sint64)(extra_length + comment_length);
+		/* (a folder, or a name that would leave the game's folder, is left
+		out: the release's files are all at its top) */
+		if (memchr(name, 0, name_length))
+			goto done;
+		if (!ae_update_entry_allowed(name)) /* AE hook */
+		{
+			if (name_length && name[name_length - 1] != '/')
+				platform_log("update: left out %s (not one of a release's names)", name);
+		}
+		/* port: a release with more files than this build can install is refused, not installed in part (the
+		files past the limit were left out, and the update still counted as done) */
+		else if (*name_count >= MAXIMUM_UPDATE_FILES)
+		{
+			snprintf(error, error_size, "the download has more files than this build can install (%d)",
+				MAXIMUM_UPDATE_FILES);
+			goto done;
+		}
+		else
+		{
+			int method = (int)zip_word(header + 10);
+
+			if (method != 0 && method != 8)
+			{
+				snprintf(error, error_size, "the download packs %s in a way this build cannot read", name);
+				goto done;
+			}
+			updater_partial_path(path, sizeof(path), name);
+			ae_update_make_parents(path, strlen(updater_directory)); /* AE hook */
+			if (!zip_extract_entry(zip, zip_long(header + 42), method, zip_long(header + 20), zip_long(header + 24),
+				zip_long(header + 16), path, reason, sizeof(reason)))
+			{
+				snprintf(error, error_size, "could not unpack %s: %s", name, reason);
+				goto done;
+			}
+			snprintf(names[*name_count], 256, "%s", name);
+			/* (made on Unix, version made by's high byte 3: the mode in the
+			external attributes' high half) */
+			executable[*name_count] = updater_executable_name(name) ||
+				(header[5] == 3 && ((zip_long(header + 38) >> 16) & 0111));
+			(*name_count)++;
+		}
+		if (SDL_SeekIO(zip, next, SDL_IO_SEEK_SET) < 0)
+			goto done;
+	}
+	succeeded = *name_count > 0;
+
+done:
+	if (!succeeded && !error[0])
+		snprintf(error, error_size, "the download is not a zip file this build can read");
+	return succeeded;
+}
+
+/* ---------- checking */
+#endif
+#endif /* AE_UPDATER_PICK_TEST */
+
+#if defined(AE_UPDATER_PICK_TEST) || (!defined(HALO_ANDROID) && !defined(HALO_WEB))
+#include "ae_update_version.h" /* AE hook */
+/* a version's numbers and pre-release suffix: [v]<major>.<minor>.<patch>
+followed by a suffix (0.5.0b, 1.0.0rc1) or nothing; 0 if it is not one */
+static int updater_parse_version(const char *text, long numbers[3], const char **suffix)
+{
+	int part;
+
+	if (*text == 'v')
+		text++;
+	for (part = 0; part < 3; part++)
+	{
+		char *end;
+
+		if (*text < '0' || *text > '9')
+			return 0;
+		numbers[part] = strtol(text, &end, 10);
+		text = end;
+		if (part < 2 && *text++ != '.')
+			return 0;
+	}
+	*suffix = text;
+	return 1;
+}
+
+static int updater_version_compare(const char *left, const char *right)
+{
+	long left_numbers[3], right_numbers[3];
+	const char *left_suffix, *right_suffix;
+	int part;
+
+	if (!updater_parse_version(left, left_numbers, &left_suffix) ||
+		!updater_parse_version(right, right_numbers, &right_suffix))
+		return 0;
+	for (part = 0; part < 3; part++)
+		if (left_numbers[part] != right_numbers[part])
+			return left_numbers[part] > right_numbers[part] ? 1 : -1;
+	if (!*left_suffix || !*right_suffix)
+		return !*left_suffix ? (*right_suffix ? 1 : 0) : -1;
+	return ae_update_suffix_compare(left_suffix, right_suffix); /* AE hook */
+}
+
+/* the newest version among the v* tags of GitHub's releases list (drafts
+skipped, pre-releases counted: the map pack's own release is never picked),
+into version; 0 if there is none */
+static int updater_pick_release(const char *json, char *version, size_t size)
+{
+	const char *tag;
+	int found = 0;
+
+	if (!json || !version || !size)
+		return 0;
+	version[0] = 0;
+	tag = json;
+	while ((tag = strstr(tag, "\"tag_name\"")))
+	{
+		const char *next = strstr(tag + 10, "\"tag_name\"");
+		const char *draft = strstr(tag + 10, "\"draft\"");
+		const char *value = strchr(tag + 10, ':');
+		const char *end, *suffix;
+		char candidate[32];
+		long numbers[3];
+		size_t length;
+		int is_draft = 0;
+
+		if (!value || (next && value > next))
+			break;
+		while (*++value == ' ' || *value == '\t' || *value == '\r' || *value == '\n')
+			;
+		end = *value == '"' ? strchr(value + 1, '"') : NULL;
+		if (draft && (!next || draft < next))
+		{
+			draft = strchr(draft + 7, ':');
+			if (draft && (!next || draft < next))
+			{
+				while (*++draft == ' ' || *draft == '\t' || *draft == '\r' || *draft == '\n')
+					;
+				is_draft = !strncmp(draft, "true", 4);
+			}
+		}
+		if (end && value[1] == 'v' && !is_draft)
+		{
+			length = (size_t)(end - value - 2);
+			if (length && length < sizeof(candidate) && length < size)
+			{
+				memcpy(candidate, value + 2, length);
+				candidate[length] = 0;
+				if (updater_parse_version(candidate, numbers, &suffix) && (!found ||
+					updater_version_compare(candidate, version) > 0))
+				{
+					memcpy(version, candidate, length + 1);
+					found = 1;
+				}
+			}
+		}
+		tag = next ? next : tag + 10;
+	}
+	return found;
+}
+#endif
+
+#ifndef AE_UPDATER_PICK_TEST
+#if !defined(HALO_ANDROID) && !defined(HALO_WEB)
+
+/* whether version is newer than this build's: by its numbers, then a
+version without a suffix comes after the ones with (0.5.0b, then 0.5.0),
+and suffixes in order (a, b, rc1) */
+static int updater_newer(const char *version)
+{
+	return updater_version_compare(version, HALO_VERSION) > 0;
+}
+
+/* GitHub's latest release's version (its tag, without the v), into version;
+0 if there is none */
+static int updater_latest_release(char *version, size_t size)
+{
+	char path[1200];
+	char error[512] = "";
+	char url[512];
+	size_t length = 0;
+	char *text;
+	int found = 0;
+
+	updater_path(path, sizeof(path), "update-check.json");
+	updater_url(url, sizeof(url), 1, "releases?per_page=10"); /* AE hook */
+	if (!update_download(url, path, MAXIMUM_CHECK_SIZE, NULL, NULL, error, sizeof(error)))
+	{
+		platform_log("update: could not check for a new version: %s", error);
+		return 0;
+	}
+	text = SDL_LoadFile(path, &length);
+	update_delete_file(path);
+	if (!text)
+		return 0;
+	found = updater_pick_release(text, version, size);
+	/* (a version goes into the download's address: letters, digits and
+	. _ + - only) */
+	found = found && zip_name_allowed(version);
+	SDL_free(text);
+	return found;
+}
+
+static int SDLCALL updater_check_thread(void *context)
+{
+	char latest[sizeof(updater_latest_version)];
+
+	(void)context;
+	if (updater_latest_release(latest, sizeof(latest)) && updater_newer(latest))
+	{
+		platform_log("update: version %s is available (this is %s)", latest, HALO_VERSION);
+		snprintf(updater_latest_version, sizeof(updater_latest_version), "%s", latest);
+		SDL_SetAtomicInt(&updater_state, _updater_available);
+	}
+	else
+	{
+		platform_log("update: this is the latest version (%s)", HALO_VERSION);
+		SDL_SetAtomicInt(&updater_state, _updater_handled);
+	}
+	return 0;
+}
+
+/* ---------- updating */
+
+struct updater_download
+{
+	SDL_Mutex *lock;
+	char url[512];
+	char zip_path[1200];
+	unsigned long long received, total;
+	int finished, succeeded;
+	char error[512];
+};
+
+static void updater_download_progress(void *context, unsigned long long received, unsigned long long total)
+{
+	struct updater_download *download = context;
+
+	SDL_LockMutex(download->lock);
+	download->received = received;
+	download->total = total;
+	SDL_UnlockMutex(download->lock);
+}
+
+static int SDLCALL updater_download_thread(void *context)
+{
+	struct updater_download *download = context;
+	char error[512] = "";
+	int succeeded = update_download(download->url, download->zip_path,
+		updater_file.listed ? updater_file.size : MAXIMUM_UPDATE_SIZE, updater_download_progress, download, error,
+		sizeof(error));
+
+	SDL_LockMutex(download->lock);
+	download->succeeded = succeeded;
+	snprintf(download->error, sizeof(download->error), "%s", error);
+	download->finished = 1;
+	SDL_UnlockMutex(download->lock);
+	return 0;
+}
+
+/* the release's zip's address */
+static void updater_zip_url(char *url, size_t size)
+{
+	char path[400];
+
+	snprintf(path, sizeof(path), "%s/%s", updater_file.tag, updater_file.name);
+	updater_url(url, size, 0, path);
+}
+
+/* downloads the release's zip, showing how far it has got in a window of its
+own (drawn in software, clear of the game's OpenGL); 1 when it is there */
+static int updater_download_zip(const char *zip_path, char *error, size_t error_size)
+{
+	static struct updater_download download;
+	SDL_Window *window;
+	SDL_Renderer *renderer = NULL;
+	SDL_Thread *thread;
+	int finished = 0;
+
+	memset(&download, 0, sizeof(download));
+	download.lock = SDL_CreateMutex();
+	updater_zip_url(download.url, sizeof(download.url));
+	snprintf(download.zip_path, sizeof(download.zip_path), "%s", zip_path);
+	thread = SDL_CreateThread(updater_download_thread, "update download", &download);
+	if (!thread)
+	{
+		SDL_DestroyMutex(download.lock);
+		snprintf(error, error_size, "could not start the download");
+		return 0;
+	}
+	window = SDL_CreateWindow(HALO_PRODUCT_NAME, 640, 150, 0);
+	if (window)
+		renderer = SDL_CreateRenderer(window, SDL_SOFTWARE_RENDERER);
+	while (!finished)
+	{
+		SDL_Event event;
+		unsigned long long received, total;
+
+		/* (the game's own events wait: its window is not drawn meanwhile) */
+		while (SDL_PollEvent(&event))
+		{
+		}
+		SDL_LockMutex(download.lock);
+		finished = download.finished;
+		received = download.received;
+		total = download.total;
+		SDL_UnlockMutex(download.lock);
+		if (renderer)
+		{
+			char line[160];
+			SDL_FRect bar = { 20.0f, 100.0f, 600.0f, 24.0f };
+			float fraction = total ? (float)((double)received / (double)total) : 0.0f;
+
+			SDL_SetRenderDrawColor(renderer, 12, 16, 20, 255);
+			SDL_RenderClear(renderer);
+			SDL_SetRenderDrawColor(renderer, 230, 230, 230, 255);
+			SDL_SetRenderScale(renderer, 2.0f, 2.0f);
+			SDL_RenderDebugText(renderer, 10.0f, 10.0f, "Downloading the new version...");
+			SDL_SetRenderScale(renderer, 1.0f, 1.0f);
+			snprintf(line, sizeof(line), "version %s  (%llu of %llu MB)", updater_latest_version, received >> 20,
+				total >> 20);
+			SDL_RenderDebugText(renderer, 20.0f, 70.0f, line);
+			SDL_SetRenderDrawColor(renderer, 60, 66, 72, 255);
+			SDL_RenderFillRect(renderer, &bar);
+			bar.w *= fraction;
+			SDL_SetRenderDrawColor(renderer, 90, 160, 90, 255);
+			SDL_RenderFillRect(renderer, &bar);
+			SDL_RenderPresent(renderer);
+		}
+		SDL_Delay(16);
+	}
+	SDL_WaitThread(thread, NULL);
+	if (renderer)
+		SDL_DestroyRenderer(renderer);
+	if (window)
+		SDL_DestroyWindow(window);
+	SDL_DestroyMutex(download.lock);
+	if (!download.succeeded)
+		snprintf(error, error_size, "%s", download.error);
+	return download.succeeded;
+}
+
+/* the downloaded zip, checked against the release's list (its size and
+SHA-256) or, from a release without one, its own signature, and unpacked
+from the copy that was checked; the zip is deleted either way */
+static int updater_unpack(const char *zip_path, char names[][256], int *executable, int *name_count, char *error,
+	size_t error_size)
+{
+	char signature_path[1200];
+	size_t zip_size = 0, signature_size = 0;
+	unsigned char *zip = SDL_LoadFile(zip_path, &zip_size);
+	char *signature = NULL;
+	SDL_IOStream *stream;
+	int succeeded = 0;
+
+	update_delete_file(zip_path);
+	if (!zip || zip_size > MAXIMUM_UPDATE_SIZE)
+	{
+		snprintf(error, error_size, "could not read the download");
+		goto done;
+	}
+	if (updater_file.listed)
+	{
+		char digest[UPDATE_SHA256_TEXT_SIZE];
+
+		if (zip_size != updater_file.size)
+		{
+			snprintf(error, error_size, "the download was not installed: it is %llu bytes, not the list's %llu",
+				(unsigned long long)zip_size, updater_file.size);
+			goto done;
+		}
+		update_sha256(zip, zip_size, digest);
+		if (strcmp(digest, updater_file.sha256))
+		{
+			snprintf(error, error_size, "the download was not installed: its SHA-256 is not the list's");
+			goto done;
+		}
+		platform_log("update: the download's SHA-256 is the release list's");
+	}
+	else if (update_signature_required())
+	{
+		char url[512], reason[256] = "";
+
+		updater_partial_path(signature_path, sizeof(signature_path), UPDATE_ASSET ".sig");
+		char path[200];
+
+		snprintf(path, sizeof(path), "v%s/" UPDATE_ASSET ".sig", updater_latest_version);
+		updater_url(url, sizeof(url), 0, path);
+		if (!update_download(url, signature_path, MAXIMUM_SIGNATURE_SIZE, NULL, NULL, reason, sizeof(reason)))
+		{
+			snprintf(error, error_size, "the new version's signature could not be downloaded (%s)", reason);
+			goto done;
+		}
+		signature = SDL_LoadFile(signature_path, &signature_size);
+		update_delete_file(signature_path);
+		if (!update_signature_check(zip, zip_size, UPDATE_ASSET, updater_latest_version, signature,
+			signature ? signature_size : 0, reason, sizeof(reason)))
+		{
+			snprintf(error, error_size, "the download was not installed: %s", reason);
+			goto done;
+		}
+		platform_log("update: the download's signature checks");
+	}
+	else
+	{
+		platform_log("update: this build has no release key: the download's signature is not checked");
+	}
+	stream = SDL_IOFromConstMem(zip, zip_size);
+	if (!stream)
+	{
+		snprintf(error, error_size, "could not read the download");
+		goto done;
+	}
+	succeeded = zip_extract(stream, names, executable, name_count, error, error_size);
+	SDL_CloseIO(stream);
+
+done:
+	SDL_free(signature);
+	SDL_free(zip);
+	return succeeded;
+}
+
+/* which file to download (updater_file): the one the release's list names
+for this platform and configuration, once the list's signature checks; a
+release without a list (or whose list cannot be downloaded), or one whose
+list has no such file, its zip by the name it had before the list. 0, and
+why in error, when the list is there but is not to be trusted */
+static int updater_find_file(char *error, size_t error_size)
+{
+	char manifest_path[1200], signature_path[1200], url[512], path[200], reason[256] = "";
+	size_t manifest_size = 0, signature_size = 0;
+	char *manifest = NULL, *signature = NULL;
+	int result, succeeded = 0;
+
+	memset(&updater_file, 0, sizeof(updater_file));
+	snprintf(updater_file.tag, sizeof(updater_file.tag), "v%s", updater_latest_version);
+	snprintf(updater_file.name, sizeof(updater_file.name), "%s", UPDATE_ASSET);
+	updater_partial_path(manifest_path, sizeof(manifest_path), UPDATE_MANIFEST);
+	updater_partial_path(signature_path, sizeof(signature_path), UPDATE_MANIFEST ".sig");
+	snprintf(path, sizeof(path), "v%s/" UPDATE_MANIFEST, updater_latest_version);
+	updater_url(url, sizeof(url), 0, path);
+	if (!update_download(url, manifest_path, MAXIMUM_CHECK_SIZE, NULL, NULL, reason, sizeof(reason)))
+	{
+		/* (its zip's own signature is checked instead) */
+		platform_log("update: no list of update files (%s): downloading " UPDATE_ASSET, reason);
+		return 1;
+	}
+	manifest = SDL_LoadFile(manifest_path, &manifest_size);
+	update_delete_file(manifest_path);
+	if (!manifest)
+	{
+		snprintf(error, error_size, "could not read the release's list of update files");
+		goto done;
+	}
+	if (update_signature_required())
+	{
+		snprintf(path, sizeof(path), "v%s/" UPDATE_MANIFEST ".sig", updater_latest_version);
+		updater_url(url, sizeof(url), 0, path);
+		if (!update_download(url, signature_path, MAXIMUM_SIGNATURE_SIZE, NULL, NULL, reason, sizeof(reason)))
+		{
+			snprintf(error, error_size, "the release's list of update files has no signature (%s)", reason);
+			goto done;
+		}
+		signature = SDL_LoadFile(signature_path, &signature_size);
+		update_delete_file(signature_path);
+		if (!update_signature_check_document((const unsigned char *)manifest, manifest_size, signature,
+			signature ? signature_size : 0, reason, sizeof(reason)))
+		{
+			snprintf(error, error_size, "the release's list of update files was not used: %s", reason);
+			goto done;
+		}
+	}
+	else
+	{
+		platform_log("update: this build has no release key: the list's signature is not checked");
+	}
+	result = update_manifest_find(manifest, manifest_size, updater_latest_version, UPDATE_PLATFORM, HALO_BUILD_FLAVOR,
+		"zip", updater_file.tag, sizeof(updater_file.tag), updater_file.name, sizeof(updater_file.name),
+		&updater_file.size, updater_file.sha256, sizeof(updater_file.sha256), updater_file.main_name,
+		sizeof(updater_file.main_name), reason, sizeof(reason));
+	if (result == _update_manifest_found && (!updater_file.size || updater_file.size > MAXIMUM_UPDATE_SIZE))
+	{
+		snprintf(error, error_size, "the release's list gives %s a size this build does not install (%llu bytes)",
+			updater_file.name, updater_file.size);
+	}
+	else if (result == _update_manifest_found)
+	{
+		updater_file.listed = 1;
+		platform_log("update: the release's list names %s (%s, %llu bytes%s%s)", updater_file.name, updater_file.tag,
+			updater_file.size, updater_file.main_name[0] ? ", main " : "", updater_file.main_name);
+		succeeded = 1;
+	}
+	else if (result == _update_manifest_missing)
+	{
+		/* (updater_file as it was: the zip by its old name) */
+		platform_log("update: %s: downloading " UPDATE_ASSET, reason);
+		succeeded = 1;
+	}
+	else
+	{
+		snprintf(error, error_size, "the release's list of update files was not used: %s", reason);
+	}
+
+done:
+	SDL_free(signature);
+	SDL_free(manifest);
+	return succeeded;
+}
+
+/* the first count of the new files, already in place, taken back out (to
+the update folder) and the old ones (<name>.old) put back, the last first:
+the install as it was before the update. A new file that had no old one is
+deleted */
+static void updater_put_back(char names[][256], int count)
+{
+	int index, failures = 0;
+
+	for (index = count - 1; index >= 0; index--)
+	{
+		char path[1200], new_path[1200], old_path[1300];
+
+		updater_path(path, sizeof(path), names[index]);
+		updater_partial_path(new_path, sizeof(new_path), names[index]);
+		snprintf(old_path, sizeof(old_path), "%s.old", path);
+		if (SDL_GetPathInfo(old_path, NULL))
+		{
+			if (!update_replace_file(path, old_path, new_path))
+			{
+				platform_log("update: could not put back %s", names[index]);
+				failures++;
+			}
+		}
+		else
+		{
+			update_delete_file(path);
+		}
+	}
+	if (failures)
+		platform_log("update: %d of %d replaced files could not be put back", failures, count);
+	else
+		platform_log("update: the %d replaced files put back: the install is as it was", count);
+}
+
+/* the new files in place of the old ones, each old one kept as <name>.old
+(and as it was made: an executable stays one, update_replace_file), a new
+executable made one; if one cannot be, the ones before it put back as they
+were, and 0 */
+static int updater_replace_files(char names[][256], const int *executable, int name_count, char *error,
+	size_t error_size)
+{
+	int index;
+
+	{ char partial[1200]; updater_partial_path(partial, sizeof(partial), ""); if (!ae_update_no_links(updater_directory, partial, names, name_count, error, error_size)) return 0; } /* AE hook */
+	for (index = 0; index < name_count; index++)
+	{
+		char path[1200], new_path[1200], old_path[1300];
+		int existed;
+
+		updater_path(path, sizeof(path), names[index]);
+		updater_partial_path(new_path, sizeof(new_path), names[index]);
+		snprintf(old_path, sizeof(old_path), "%s.old", path);
+		ae_update_make_parents(path, strlen(updater_directory)); /* AE hook */
+		existed = SDL_GetPathInfo(path, NULL);
+		if (!update_replace_file(path, new_path, old_path))
+		{
+			/* (that one is as it was: update_replace_file) */
+			snprintf(error, error_size, "could not replace %s", path);
+			if (index > 0)
+				updater_put_back(names, index);
+			return 0;
+		}
+		if (!existed && executable[index] && !update_make_executable(path))
+		{
+			snprintf(error, error_size, "could not make %s executable", path);
+			updater_put_back(names, index + 1);
+			return 0;
+		}
+	}
+	return 1;
+}
+
+/* the executable to start once the new files are in place: the list's main,
+if the zip had it, else the one this is */
+static void updater_new_executable(char names[][256], int name_count, char *path, size_t size)
+{
+	int index;
+
+	snprintf(path, size, "%s", updater_executable);
+	if (!updater_file.main_name[0])
+		return;
+	for (index = 0; index < name_count; index++)
+	{
+		if (!strcmp(names[index], updater_file.main_name))
+		{
+			updater_path(path, size, names[index]);
+			return;
+		}
+	}
+	platform_log("update: the list's main, %s, is not in the download: starting %s", updater_file.main_name, path);
+}
+
+/* the release's zip downloaded on this thread, with no window (a dedicated
+server's); 1 when it is there */
+static int updater_download_zip_quietly(const char *zip_path, char *error, size_t error_size)
+{
+	char url[512];
+
+	updater_zip_url(url, sizeof(url));
+	return update_download(url, zip_path, updater_file.listed ? updater_file.size : MAXIMUM_UPDATE_SIZE, NULL, NULL,
+		error, (int)error_size);
+}
+
+/* downloads (showing how far it has got, if windowed), unpacks and puts in
+place the new build: 1 and the executable to start in start, else 0 and why */
+static int updater_install(int windowed, char *start, size_t start_size, char *error, size_t error_size)
+{
+	static char names[MAXIMUM_UPDATE_FILES][256]; /* AE hook */
+	static int executable[MAXIMUM_UPDATE_FILES]; /* AE hook */
+	char zip_path[1200], partial[1200];
+	int name_count = 0;
+
+	updater_path(partial, sizeof(partial), UPDATE_DIRECTORY);
+	updater_partial_path(zip_path, sizeof(zip_path), UPDATE_ASSET);
+	platform_log("update: downloading version %s", updater_latest_version);
+	if (!update_make_directory(partial))
+	{
+		snprintf(error, error_size, "could not make %s (is the game's folder read-only?)", partial);
+	}
+	else if (updater_find_file(error, error_size) &&
+		(windowed ? updater_download_zip(zip_path, error, error_size) :
+			updater_download_zip_quietly(zip_path, error, error_size)) &&
+		updater_unpack(zip_path, names, executable, &name_count, error, error_size) &&
+		updater_replace_files(names, executable, name_count, error, error_size))
+	{
+		update_delete_file(partial);
+		updater_new_executable(names, name_count, start, start_size);
+		return 1;
+	}
+	return 0;
+}
+
+/* downloads, unpacks and puts in place the new build, and starts it; returns
+only if something failed */
+static void updater_update(void)
+{
+	char start[1200], error[512] = "";
+
+	if (updater_install(1, start, sizeof(start), error, sizeof(error)))
+	{
+		platform_log("update: starting version %s (%s)", updater_latest_version,
+			strrchr(start, PATH_SEPARATOR[0]) ? strrchr(start, PATH_SEPARATOR[0]) + 1 : start);
+		if (update_launch(start))
+			exit(EXIT_SUCCESS);
+		snprintf(error, sizeof(error), "the new version is in place, but could not be started: start it again");
+	}
+	platform_log("update: failed: %s", error);
+	{
+		char message[800];
+
+		snprintf(message, sizeof(message), "The update failed:\n\n%s", error);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, HALO_PRODUCT_NAME, message, NULL);
+	}
+}
+
+/* the files a previous update left behind, and the notice of extract-xiso,
+which releases carried until the disc image readers were written again */
+static void updater_clean_up(void)
+{
+	static const char *const names[] =
+	{
+		"halo.old", "halo.exe.old", "chupathingy.old", "chupathingy.exe.old", "SDL3.dll.old", "libSDL3.so.0.old",
+		"SDL3-LICENSE.txt.old", "mbedtls-LICENSE.txt.old", "LICENSE.txt.old",
+		"extract-xiso-LICENSE.txt.old", "extract-xiso-LICENSE.txt",
+	};
+	char path[1200];
+	size_t index;
+
+	for (index = 0; index < sizeof(names) / sizeof(*names); index++)
+	{
+		updater_path(path, sizeof(path), names[index]);
+		update_delete_file(path);
+	}
+	updater_partial_path(path, sizeof(path), UPDATE_ASSET);
+	update_delete_file(path);
+	updater_partial_path(path, sizeof(path), UPDATE_ASSET ".sig");
+	update_delete_file(path);
+	updater_partial_path(path, sizeof(path), UPDATE_MANIFEST);
+	update_delete_file(path);
+	updater_partial_path(path, sizeof(path), UPDATE_MANIFEST ".sig");
+	update_delete_file(path);
+	updater_path(path, sizeof(path), UPDATE_DIRECTORY);
+	update_delete_file(path);
+	ae_update_clean_up(updater_directory); /* AE hook */
+}
+
+/* ---------- the game's */
+
+/* at start-up (sdl_platform.c): looks for a new version, in the background */
+void updater_start(void)
+{
+	char *slash;
+
+	/* (the macOS application only offers the download page: no files of its
+	own to find or clean up) */
+	if (UPDATER_DOWNLOAD_PAGE_ONLY)
+	{
+		/* (the check's answer is kept in the save root while it is read) */
+		snprintf(updater_directory, sizeof(updater_directory), "%s", platform_save_root());
+	}
+	else
+	{
+		if (!update_executable_path(updater_executable, sizeof(updater_executable)))
+			return;
+		snprintf(updater_directory, sizeof(updater_directory), "%s", updater_executable);
+		slash = strrchr(updater_directory, PATH_SEPARATOR[0]);
+		if (!slash)
+			return;
+		*slash = 0;
+		updater_clean_up();
+	}
+	/* (not for builds other than a release's, the player's no, or runs nobody
+	is watching, but for a test with its answer) */
+	if (!(HALO_RELEASE_BUILD || UPDATER_TEST) || !config_boolean("update.auto") ||
+		(!config_string("debug.update_answer")[0] && (config_boolean("debug.hidden_window") ||
+			config_real("debug.exit_after") > 0.0 || config_string("debug.network_test")[0])))
+	{
+		return;
+	}
+	SDL_SetAtomicInt(&updater_state, _updater_checking);
+	{
+		SDL_Thread *thread = SDL_CreateThread(updater_check_thread, "update check", NULL);
+
+		if (thread)
+			SDL_DetachThread(thread);
+		else
+			SDL_SetAtomicInt(&updater_state, _updater_handled);
+	}
+}
+
+int updater_gamescope(void);
+
+/* ---------- a dedicated server's (server.auto_update: server_director.c) */
+
+/* looks for a new version on a thread of its own, unless a look is under
+way (update.auto and the tests' rules are not asked: the setting is the
+operator's): 0 if it cannot be looked for (a build that is not a release's) */
+int updater_server_check(void)
+{
+	char *slash;
+
+	if (!(HALO_RELEASE_BUILD || UPDATER_TEST) || UPDATER_DOWNLOAD_PAGE_ONLY)
+		return 0;
+	if (!updater_directory[0])
+	{
+		if (!update_executable_path(updater_executable, sizeof(updater_executable)))
+			return 0;
+		snprintf(updater_directory, sizeof(updater_directory), "%s", updater_executable);
+		slash = strrchr(updater_directory, PATH_SEPARATOR[0]);
+		if (!slash)
+		{
+			updater_directory[0] = 0;
+			return 0;
+		}
+		*slash = 0;
+		updater_clean_up();
+	}
+	if (SDL_GetAtomicInt(&updater_state) == _updater_checking)
+		return 1;
+	SDL_SetAtomicInt(&updater_state, _updater_checking);
+	{
+		SDL_Thread *thread = SDL_CreateThread(updater_check_thread, "update check", NULL);
+
+		if (thread)
+			SDL_DetachThread(thread);
+		else
+			SDL_SetAtomicInt(&updater_state, _updater_handled);
+	}
+	return 1;
+}
+
+/* the newer version the last look found, as a number (major * 1000000 +
+minor * 1000 + patch + 1: it differs from one release to the next), 0 if
+none (or the look goes on); updater_server_available_version names it */
+long updater_server_available(void)
+{
+	long numbers[3];
+	const char *suffix;
+
+	if (SDL_GetAtomicInt(&updater_state) != _updater_available ||
+		!updater_parse_version(updater_latest_version, numbers, &suffix))
+		return 0;
+	return (numbers[0] * 1000 + numbers[1]) * 1000 + numbers[2] + 1;
+}
+
+/* the newer version's name (0.4.4-beta), "" if none */
+const char *updater_server_available_version(void)
+{
+	return SDL_GetAtomicInt(&updater_state) == _updater_available ? updater_latest_version : "";
+}
+
+/* the newer build put in place of this one's files, not started (the server
+stops, to be started again by what runs it): 1, else 0 and why. The game's
+thread waits for the whole download: updater_server_install_start does not */
+int updater_server_install(char *error, int error_size)
+{
+	char start[1200];
+
+	if (SDL_GetAtomicInt(&updater_state) != _updater_available)
+	{
+		snprintf(error, (size_t)error_size, "no newer build is known");
+		return 0;
+	}
+	SDL_SetAtomicInt(&updater_state, _updater_handled);
+	return updater_install(0, start, sizeof(start), error, (size_t)error_size);
+}
+
+enum
+{
+	_updater_install_none,
+	_updater_install_running,
+	_updater_install_installed,
+	_updater_install_failed,
+};
+
+/* the server's install on a thread of its own: its state, and why it
+failed (written before the state says so) */
+static SDL_AtomicInt updater_install_state;
+static char updater_install_error[512];
+
+static void updater_install_failed(const char *why)
+{
+	snprintf(updater_install_error, sizeof(updater_install_error), "%s", why);
+	SDL_SetAtomicInt(&updater_install_state, _updater_install_failed);
+}
+
+static int SDLCALL updater_install_thread(void *context)
+{
+	char start[1200], error[512] = "";
+
+	(void)context;
+	if (updater_install(0, start, sizeof(start), error, sizeof(error)))
+		SDL_SetAtomicInt(&updater_install_state, _updater_install_installed);
+	else
+		updater_install_failed(error[0] ? error : "the install failed");
+	return 0;
+}
+
+/* the newer build put in place of this one's files on a thread of its own
+(the game goes on meanwhile: updater_server_install_poll tells its end): 1
+if it began or goes on, else 0 (updater_server_install_poll says why) */
+int updater_server_install_start(void)
+{
+	SDL_Thread *thread;
+
+	if (SDL_GetAtomicInt(&updater_install_state) == _updater_install_running)
+		return 1;
+	if (SDL_GetAtomicInt(&updater_state) != _updater_available)
+	{
+		updater_install_failed("no newer build is known");
+		return 0;
+	}
+	SDL_SetAtomicInt(&updater_state, _updater_handled);
+	SDL_SetAtomicInt(&updater_install_state, _updater_install_running);
+	thread = SDL_CreateThread(updater_install_thread, "update install", NULL);
+	if (!thread)
+	{
+		updater_install_failed("could not start the install");
+		return 0;
+	}
+	SDL_DetachThread(thread);
+	return 1;
+}
+
+/* the install's state: 0 while it goes on, 1 when the new build is in
+place, -1 if it failed (or none was started), and why in error */
+int updater_server_install_poll(char *error, int size)
+{
+	int state = SDL_GetAtomicInt(&updater_install_state);
+
+	if (size > 0)
+		error[0] = 0;
+	switch (state)
+	{
+	case _updater_install_running:
+		return 0;
+	case _updater_install_installed:
+		return 1;
+	case _updater_install_failed:
+		snprintf(error, (size_t)size, "%s", updater_install_error);
+		return -1;
+	}
+	snprintf(error, (size_t)size, "no install was started");
+	return -1;
+}
+
+
+/* every frame, on the game's thread (sdl_platform.c): asks the player once a
+new version is found */
+void updater_poll(SDL_Window *window)
+{
+	static const SDL_MessageBoxButtonData question_buttons[] =
+	{
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
+		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" },
+		{ 0, 2, "Do not ask again" },
+	};
+	static const SDL_MessageBoxButtonData confirm_buttons[] =
+	{
+		{ SDL_MESSAGEBOX_BUTTON_RETURNKEY_DEFAULT, 1, "Yes" },
+		{ SDL_MESSAGEBOX_BUTTON_ESCAPEKEY_DEFAULT, 0, "No" },
+	};
+	char message[400];
+	char release_page[512];
+	int answer = 0;
+	int fullscreen;
+	const char *test_answer = config_string("debug.update_answer");
+
+	if (SDL_GetAtomicInt(&updater_state) != _updater_available)
+		return;
+	SDL_SetAtomicInt(&updater_state, _updater_handled);
+	/* (the chosen release's own page) */
+	snprintf(release_page, sizeof(release_page), UPDATE_RELEASE_PAGE "%s", updater_latest_version);
+	/* (an automated test's answer: debug.update_answer) */
+	if (test_answer[0])
+	{
+		platform_log("update: answering %s (debug.update_answer)", test_answer);
+		if (!strcmp(test_answer, "yes") && UPDATER_DOWNLOAD_PAGE_ONLY)
+			platform_log("update: would open %s", release_page);
+		else if (!strcmp(test_answer, "yes"))
+			updater_update();
+		else if (!strcmp(test_answer, "never"))
+			config_write_boolean("update.auto", 0);
+		return;
+	}
+	/* (no question under gamescope: the main menu's version line says the
+	new version is out, and the player updates from the desktop, or with
+	debug.update_answer) */
+	if (updater_gamescope())
+	{
+		platform_log("update: %s is out (this is %s); not asking under gamescope (Steam Deck Game Mode)",
+			updater_latest_version, HALO_VERSION);
+		build_identity_watermark_update(updater_latest_version, "from Desktop Mode");
+		return;
+	}
+	/* (a dialog cannot show above a fullscreen game) */
+	fullscreen = window && (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN);
+	if (fullscreen)
+		SDL_SetWindowFullscreen(window, false);
+	if (UPDATER_DOWNLOAD_PAGE_ONLY)
+	{
+		snprintf(message, sizeof(message),
+			"A new version of " HALO_PRODUCT_NAME " is out (%s; this is %s).\n\n"
+			"Do you want to open its download page? Your saves and settings stay as they are.",
+			updater_latest_version, HALO_VERSION);
+	}
+	else
+	{
+		snprintf(message, sizeof(message),
+			"A new version of " HALO_PRODUCT_NAME " is out (%s; this is %s).\n\n"
+			"Do you want to update? The game will close and start the new version.",
+			updater_latest_version, HALO_VERSION);
+	}
+	{
+		SDL_MessageBoxData question = { SDL_MESSAGEBOX_INFORMATION, window, HALO_PRODUCT_NAME ": new version", message,
+			3, question_buttons, NULL };
+
+		if (!SDL_ShowMessageBox(&question, &answer))
+			answer = 0;
+	}
+	if (answer == 2)
+	{
+		SDL_MessageBoxData confirm = { SDL_MESSAGEBOX_WARNING, window, HALO_PRODUCT_NAME ": new version",
+			"Stop asking about new versions?\n\n"
+			"To ask again, set auto = true in the [update] section of config.toml.",
+			2, confirm_buttons, NULL };
+		int confirmed = 0;
+
+		if (SDL_ShowMessageBox(&confirm, &confirmed) && confirmed == 1)
+		{
+			if (config_write_boolean("update.auto", 0))
+				platform_log("update: update.auto = false written to config.toml");
+			else
+				platform_log("update: could not write update.auto to config.toml");
+		}
+	}
+	else if (answer == 1 && UPDATER_DOWNLOAD_PAGE_ONLY)
+	{
+		platform_log("update: opening %s", release_page);
+		if (!SDL_OpenURL(release_page))
+			platform_log("update: could not open the download page: %s", SDL_GetError());
+	}
+	else if (answer == 1)
+	{
+		updater_update();
+	}
+	if (fullscreen)
+		SDL_SetWindowFullscreen(window, true);
+}
+
+#else
+
+void updater_start(void)
+{
+}
+
+int updater_server_check(void)
+{
+	return 0;
+}
+
+long updater_server_available(void)
+{
+	return 0;
+}
+
+const char *updater_server_available_version(void)
+{
+	return "";
+}
+
+int updater_server_install(char *error, int error_size)
+{
+	if (error_size > 0)
+		error[0] = 0;
+	return 0;
+}
+
+int updater_server_install_start(void)
+{
+	return 0;
+}
+
+int updater_server_install_poll(char *error, int size)
+{
+	if (size > 0)
+		error[0] = 0;
+	return -1;
+}
+
+#ifdef HALO_WEB
+#include <SDL3/SDL.h>
+
+/* (the site updates itself: port/web/site/sw.js) */
+void updater_poll(SDL_Window *window)
+{
+	(void)window;
+}
+#endif
+
+#endif
+
+/* whether the game runs under gamescope (the Steam Deck's Game Mode), where
+a system dialog such as SDL's message box crashes the game: every dialog
+(sdl_platform.c, updater_poll) is left out there, its question kept for a
+run on the desktop. gamescope sets GAMESCOPE_WAYLAND_DISPLAY for the programs
+it runs and Game Mode's session XDG_CURRENT_DESKTOP; Steam sets SteamDeck and
+SteamGamepadUI there. Wine passes them on to the Windows build under Proton */
+int updater_gamescope(void)
+{
+	const char *wayland_display = getenv("GAMESCOPE_WAYLAND_DISPLAY");
+	const char *desktop = getenv("XDG_CURRENT_DESKTOP");
+	const char *steam_deck = getenv("SteamDeck");
+	const char *gamepad_ui = getenv("SteamGamepadUI");
+
+	return (wayland_display && wayland_display[0]) || (desktop && strstr(desktop, "gamescope")) ||
+		(steam_deck && !strcmp(steam_deck, "1") && gamepad_ui && !strcmp(gamepad_ui, "1"));
+}
+
+/* this build's version (HALO_VERSION: 0.5.0b, 0.5.0b-nightly.42, 0.5.0b-dev),
+for the window's title (sdl_platform.c) */
+const char *updater_version(void)
+{
+	return HALO_VERSION;
+}
+
+#endif /* AE_UPDATER_PICK_TEST */

@@ -1,0 +1,214 @@
+# TEAM CALLS, the first round: the smart button, the wheel, prompts, markers, the feed and the seat panel. A controller on AE's
+# layout marks on LB (tap), calls ENEMY (double tap) and opens the wheel (hold); keyboard B does the same. Tests of one setup
+# follow each other. Host and client, and an older build, are by hand: TEST RUN cannot host or join.
+list comms-1
+revision 2
+title TEAM CALLS, ROUND 1
+
+test smart-foot
+title The smart button on foot
+check Aim prompt reads ENEMY, a weapon's name, or GO HERE
+check Tap on each: right mark, right sound, feed line says it
+check Tap your own mark: prompt read CANCEL, mark goes
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test double-tap
+title A double tap calls an enemy
+check Double tap at a bot: ENEMY on it, one sound, one line
+check Double tap at empty ground: enemy mark on that point
+check A quick single tap is not taken for a double
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test wheel-pad
+title The wheel on the controller
+check Hold LB: wheel opens, view stops, stick picks a sector
+check Release on a sector: that call goes out, once
+check Release at centre: it closes and nothing is sent
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test wheel-mouse
+title The wheel on keyboard and mouse
+check Hold B: wheel opens, view stops, mouse picks a sector
+check Release on a sector: that call goes out, once
+check Sector picks feel right in all directions? Say in a note
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test wheel-interrupted
+title Things that close an open wheel
+check Hold the wheel, die: it closes, nothing sent, no mark
+check Hold the wheel, open pause: it closes, no mark on release
+check Hold the wheel, open scoreboard: it closes, no mark
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test wheel-dead
+title The wheel when dead
+check Dead, hold: the wheel shows only the calls a dead player has
+check GO HERE, not GOING HERE. The mark lands where you died
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill hard
+
+test feed-kills
+title The feed shares the list with kills
+check Calls show as lines; a repeat merges, x2, x3
+check Kills push out old calls, never the other way round
+check Wheel open over text: those rows hide, none jump
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test bots-place
+title Bots go where you call
+check Mark ground: two bots head there, one says on my way
+check Wheel, call a place: bots go too
+check Mark while they fight: they finish the fight first
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+
+test bots-enemy
+title Bots check a marked enemy
+check Mark an enemy: up to three bots go to that spot
+check They do not gain aim or see through walls from it
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+
+test bots-fetch
+title Bots fetch and ride
+check Mark a weapon: one bot says it'll get it, and does
+check Mark an empty Warthog: one bot drives, one guns
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+
+test markers
+title Markers and their rows
+check Marker small near the reticle, grows toward the edge
+check Rows sit on a lead line, off the reticle, and read clearly
+check Turn away: marker holds the screen's edge, keeps distance
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test place-names
+title Marks name the place
+check Mark in or on a base: RED BASE or BLUE BASE and distance
+check Mark near rockets, camo or overshield: its name shows
+check Mark open ground far from those: HERE and distance
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test power-timer
+title A mark on an empty power spawn
+check Take rockets, aim near the spot: prompt reads ROCKETS
+check Tap: marker on the spawn with its time
+check The time counts down on the marker and feed line
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test seat-panel-driver
+title The seat panel while driving
+check Drive a Warthog with bots riding: seats, names, pips
+check An open seat shows dim, with no plus and no pips
+check Lines under the panel do not touch it. Wheel over: hides
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test vehicle-marks
+title Marks from and on a vehicle
+check Mark a Warthog, open seat: GUNNER OPEN shows
+check Driving: tap marks where you looked; prompt reads right
+check Call for a ride on the wheel: mark sits at your feet
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test vehicle-enemy
+title An enemy's vehicle
+check Mark a vehicle an enemy rides: ENEMY, red, over its roof
+check Prompt reads ENEMY aiming at it, its name when empty
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test flag-facts
+title Flag facts
+check Mark your flag: its state shows at the stand and dropped
+check Prompt reads FLAG. Enemy with your flag: mark still sits
+check Note any flag row that reads wrong
+map bloodgulch
+gametype AE CTF
+set bots.count 7
+set bots.skill easy
+
+test timers-off
+title With TIMERS off, no spawn time shows
+check Turn TIMERS off in GAME OPTIONS; start the game
+check Mark an empty power spawn: no time on the marker or feed
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test split-2
+title Two players on one PC, keyboard is player 2
+check B marks for player 2 only; its keycap shows B in prompts
+check Mouse picks the wheel for player 2; player 1's stick its own
+check Each view's wheel, rows and panel fit with no overlap
+map bloodgulch
+gametype AE TEAM SLY
+players 2
+set bots.count 0
+
+test walls-off
+title ENEMY MARKS THROUGH WALLS, off
+check Player 1 marks a bot; player 2 behind a wall: no marker
+check Player 2 steps out to see the spot: the marker shows
+check Player 2 hears the tone either way; player 1 always sees
+map bloodgulch
+gametype AE TEAM SLY
+players 2
+set bots.count 8
+set bots.skill easy
+
+test split-4
+title Four players on one PC
+check Each view's wheel, prompts and rows fit a quarter view
+check Warthog driver: long names clip, panel and lines keep clear
+map bloodgulch
+gametype AE BTB SLY
+players 4
+set bots.count 0
+
+test earlier-checks
+title Checks still open from the first marks
+check Mark something: your own name is on its owner row
+check A taken item's mark goes at once; RESTART GAME clears marks
+check Press fast and often: the guard warns, then blocks 30 s
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy

@@ -1,0 +1,106 @@
+# 0.7.4 BATCH, on testbox (its weapons and vehicles are on it): the item prompt under the reticle and in the split views, the pad buttons'
+# white glyphs in the HUD, MCC style's long captions. HUD STYLE, MEDAL STYLE and WAYPOINT SIZE are each player's own (Settings > HUD): TEST RUN cannot set them. Tests with the same
+# setup follow each other and share one map load. The captions need MCC's install.
+list 074-batch
+revision 1
+title 0.7.4 BATCH, ROUND 1
+
+test item-prompt-one
+title Item prompt, one view, HUD STYLE AE
+check Weapon on the ground: name over Hold [button] to swap
+check Block stays put on weapon switch and each shot
+check Vehicle: enter and flip show name and action here
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test item-prompt-size
+title WAYPOINT SIZE 50 and 100 %
+check 50 %: smaller, 16 px floor; 100 %: larger, grows down
+check Its top does not move between sizes
+check Pad: white glyph of your pad; keyboard: the bound key's cap
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test item-prompt-empty
+title Out of ammo: switch reminder
+check Empty the gun: NAME Press [button] to switch under reticle
+check Take a weapon in hand: prompt gone at once
+check Aim prompt stays 8 px clear of the block
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test item-prompt-split
+title Item prompt, 2 views
+players 2
+check One line, first of the list under the ammo counter
+check NAME Hold [button] to swap, no wrap; kill lines under it
+check The gap under it is 2 to 4 px, accepted
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 6
+set bots.skill easy
+
+test item-prompt-quarter
+title Item prompt, 4 views
+players 4
+check Same line at the smaller size; 3 rows with the prompt
+check Keyboard: SHIFT, ENTER, SPACE, CTRL show as words
+check Prompt gone the tick it is not true; rows close up
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 4
+set bots.skill easy
+
+test item-prompt-classic
+title HUD STYLE CLASSIC: today's line
+check Classic keeps the old prompt, in the old place
+check Debug: set debug.ae_message_test pickup shows its lines
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test mcc-captions-small
+title MCC captions in a 720 line view
+check Two-line captions: lines clear, not touching
+check SCATTERGUNNER and MANSLAUGHTER sit under their pictures
+check Neighbours' captions keep a gap of 8 px or more
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pad-glyphs-one
+title Pad buttons, one view, both HUD STYLES
+check AE: prompts, mark, wheel: white glyph, no square
+check Swap Xbox, PlayStation, Nintendo pads: glyphs follow
+check CLASSIC: buttons as before, BUTTON STYLE works
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pad-glyphs-dpad
+title Stick and d-pad hints
+check A d-pad or stick hint is a glyph, not "D-pad up"
+check Duke or Controller S black, white: word on a keycap
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pad-glyphs-split
+title Pad buttons, 2 views on two pads
+players 2
+check Each view shows the glyphs of its own pad
+check Glyph as tall as the line, fades with it
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 6
+set bots.skill easy

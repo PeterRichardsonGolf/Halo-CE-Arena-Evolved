@@ -1,0 +1,31 @@
+# MARKS, solo (gate 1): aim, reading and the shared button. Keyboard B marks; a controller taps the flashlight button.
+list mark-names
+revision 1
+title MARKS, SOLO
+
+test enemy-foot
+title Marking enemies on foot
+check Mark bots near and far: lands on the one you meant
+check Bot partly behind cover: the mark still takes it
+check Note any mark that grabbed the wrong bot
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+
+test item-names
+title What a mark says
+check Mark a weapon: its real name shows, not WEAPON
+check Mark a Warthog: its name and the distance show
+check Note any name that reads badly or overlaps
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+
+test enemy-driving
+title Marking from the driver's seat
+check Drive, mark a bot: lands on the one you meant
+check Drive, mark a weapon: box on it, name shows
+check Drive, mark open ground: pin where you looked
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8

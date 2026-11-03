@@ -1,0 +1,164 @@
+{
+ "format": 1,
+ "about": "The AE silenced assault rifle pack: the ma5s of the Halo 2 Mappack Collection v2's Gemini (h2d_gemini, its boardingaction.map: the stock assault rifle's body with a silencer, its own sound and firing effect) taken from the map's tags into the donor map and the pack, the brass ejected from the side. make_pack.py runs it; the locations of the source map, the stock map and the programs are given on its command line (--source-map).",
+ "pack": {
+  "id": "ae_ar_silenced",
+  "revision": 1,
+  "display": "SUPPRESSED AR",
+  "prefix": "ae\\packs\\ar_silenced\\",
+  "weapon": "weapons\\ma5s\\ma5s",
+  "weapon_key": "ar_silenced",
+  "labels": "ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {}
+ },
+ "source": {
+  "kind": "map",
+  "name": "Halo 2 Mappack Collection v2: Gemini (h2d_gemini, the collection's boardingaction.map)",
+  "file": "h2d_gemini.map",
+  "sha256": "821f25029a103406859056d443c2d7f7facb92e1061ef18e093107dad40af677",
+  "tags": 1840,
+  "verbatim": [
+   "weapons/assault rifle/shaders/bolt.shader_transparent_chicago",
+   "weapons/ma5s/bitmaps/silencer.bitmap",
+   "weapons/ma5s/bitmaps/silencer_multi.bitmap",
+   "weapons/ma5s/fp/fp.model",
+   "weapons/ma5s/ma5s.model",
+   "weapons/ma5s/ma5s.weapon",
+   "weapons/ma5s/shaders/silencer.shader_model",
+   "weapons/ma5s/sounds/fire.sound"
+  ],
+  "allowlist": [
+   "weapons/assault rifle/shaders/bolt.shader_transparent_chicago",
+   "weapons/ma5s/bitmaps/silencer.bitmap",
+   "weapons/ma5s/bitmaps/silencer_multi.bitmap",
+   "weapons/ma5s/effects/fire bullet.effect",
+   "weapons/ma5s/fp/fp.model",
+   "weapons/ma5s/ma5s.model",
+   "weapons/ma5s/ma5s.weapon",
+   "weapons/ma5s/shaders/silencer.shader_model",
+   "weapons/ma5s/sounds/fire.sound"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "weapons\\ma5s\\ma5s.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "weapons/ma5s/effects/fire bullet.effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "weapons/ma5s/effects/fire bullet.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].particles[2].location",
+     "1"
+    ]
+   ],
+   "why": "the brass came out of the barrel (owner 2026-10-22): the firing effect's casing (effects\\particles\\solid\\casing h ar bullet, the stock assault rifle's) was made at its location 0, the marker 'primary trigger', which on the ma5s's models is the silencer's tip (0.295 forward; the stock assault rifle's 0.22). The stock assault rifle's firing effect makes the same casing, with the same numbers, at 'primary ejection'; this effect's location 1 is that marker (its ejection sound is made there), on both models where the stock assault rifle has it: the casing now leaves the ejection port on the right side"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-10-22, revision 1); re-pinned when a step changes (2026-10-26: the SUPPRESSED AR texts)",
+  "donor_sha256": "6af39add7fc6387a3f6abace1091fdf0bdbe0b4a6795a47e0e3b1101de5879a3",
+  "donor_size": 20013056,
+  "pack_sha256": "4d8c51f70334df8e640e48ae8ed8adc5b69049936ae0864edb71a5fb17237df9",
+  "pack_own_sha256": "084de64e93f3a0ca7ca476b327a2fe344bd5b03c2608b548ffb2d4aa054e4f83",
+  "pack_size": 2959002,
+  "own_tags": 9,
+  "external_tags": 32
+ }
+}
