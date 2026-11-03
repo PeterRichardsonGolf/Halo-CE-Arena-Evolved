@@ -12,7 +12,8 @@
   <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest"><b>Download</b></a> ·
   <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><b>Get it with Quiver</b></a> ·
   <a href="docs/how-to-play.md"><b>How to play</b></a> ·
-  <a href="docs/host-a-server.md"><b>Host a game or server</b></a>
+  <a href="docs/host-a-server.md"><b>Host a game or server</b></a> ·
+  <a href="docs/faq.md"><b>FAQ</b></a>
 </p>
 
 Arena Evolved (AE) is a non-commercial fan project that runs Halo: Combat Evolved's Xbox engine natively on
@@ -64,7 +65,7 @@ is attached to it.
   dedicated servers serve the stock and Custom Edition maps.
 - **Online and LAN:** server browser, LAN search, invite links, JOIN BY ADDRESS (an IP or a
   computer's name, with a recent list), dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come
-  from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds that share its network version.
+  from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with ChupathingyCE and OpenCE builds 282 to 333 ([FAQ](docs/faq.md)).
 - **Bots** in six levels from RECRUIT to DEMON, up to 31 on one PC and 127 in a game you host, in every mode: a wingman
   per player, squads that flank, flag crews that escort, bombers that carry, plant and defend. They drive and ride
   vehicles, know the power items' timers, dodge rockets, take revenge, and stay out of your line of fire. A bot steps
@@ -120,8 +121,8 @@ Nothing Arena Evolved adds is forced on you:
   ADDRESS, KEY BINDINGS, RESTART GAME and RESTART ROUND, and the gametype editor's full GAME OPTIONS. With the classic
   menus on, those are gone (the gametypes' rules still play). Switch MENUS back to use them.
 - **Stock maps stay stock:** the STOCK folders hold the game's own maps as they shipped, from your disc image or MCC.
-- **Play with classic clients:** online, Arena Evolved plays with OpenCE builds that share its network version, so
-  classic and AE players can meet in one game.
+- **Play with classic clients:** online, Arena Evolved (network version 39) plays with ChupathingyCE and OpenCE builds
+  282 to 333 on Halo CE's own gametypes. Newer OpenCE builds (network version 40 and 41) cannot join yet.
 
 ## Download
 

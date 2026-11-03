@@ -17,14 +17,15 @@ body:
     id: version
     attributes:
       label: Version
-      description: The release you're on, as the window's title shows it (for example 0.7.1-beta).
+      description: The release you're on, as the window's title shows it (for example 0.7.3-beta).
     validations:
       required: true
   - type: dropdown
     id: source
     attributes:
       label: Where it gets the game's files
-      options: [MCC on Steam, An Xbox disc image, Both, Not sure]
+      description: Halo - The Master Chief Collection on Steam, an Xbox disc image you made from your own disc, or both. If the first-start window said a piece of MCC was missing, say which.
+      options: [MCC on Steam, An Xbox disc image, Both (MCC and a disc image), Not sure]
     validations:
       required: true
   - type: dropdown
@@ -43,11 +44,11 @@ body:
     id: what
     attributes:
       label: What happened
-      description: Steps to get there, what you saw, and what you expected instead. A screenshot helps.
+      description: "Steps to get there, what you saw, and what you expected instead. A screenshot helps. If it happens online: are you the host or a joiner, and which build does the other player use (Arena Evolved, OpenCE, ChupathingyCE)? The line \"OpenCE network version ...\" near the top of debug.txt names your network version."
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: debug.txt
-      description: Attach debug.txt from the game's folder (drag the file here). It says what the game did, without your files.
+      description: "Attach debug.txt (drag the file here). It is in the same folder as halo.exe (Windows) or halo (Linux), or in the game's folder inside Quiver's Apps folder. It holds your computer's graphics driver name and file paths, and on Windows your user name, so look through it first. Attach it right after the problem: it keeps earlier runs too."

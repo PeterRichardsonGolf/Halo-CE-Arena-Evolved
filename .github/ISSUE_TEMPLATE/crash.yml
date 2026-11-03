@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Sorry about that. debug.txt from the game's folder is the most useful thing you can attach: it shows the last thing the game did.
+        Sorry about that. debug.txt is the most useful thing you can attach: it shows the last thing the game did. A hang with no message: say how long you waited and whether the window answered.
   - type: dropdown
     id: platform
     attributes:
@@ -17,7 +17,7 @@ body:
     id: version
     attributes:
       label: Version
-      description: The release you're on (for example 0.7.1-beta). Window's title, or the zip's name.
+      description: The release you're on (for example 0.7.3-beta). Window's title, or the zip's name.
     validations:
       required: true
   - type: dropdown
@@ -31,20 +31,21 @@ body:
     id: source
     attributes:
       label: Where it gets the game's files
-      options: [MCC on Steam, An Xbox disc image, Both, Not sure]
+      description: Halo - The Master Chief Collection on Steam, an Xbox disc image you made from your own disc, or both. If the first-start window said a piece of MCC was missing, say which.
+      options: [MCC on Steam, An Xbox disc image, Both (MCC and a disc image), Not sure]
     validations:
       required: true
   - type: textarea
     id: what
     attributes:
       label: What you did just before
-      description: The map, gametype and what was happening. Does it happen every time?
+      description: "The map, gametype and what was happening. Does it happen every time? If it happens online: are you the host or a joiner, and which build does the other player use (Arena Evolved, OpenCE, ChupathingyCE)? The line \"OpenCE network version ...\" near the top of debug.txt names your network version."
     validations:
       required: true
   - type: textarea
     id: logs
     attributes:
       label: debug.txt
-      description: Attach debug.txt from the game's folder (drag the file here). On macOS, also the crash report from ~/Library/Logs/DiagnosticReports (halo-*.ips).
+      description: "Attach debug.txt (drag the file here). It is in the same folder as halo.exe (Windows) or halo (Linux), or in the game's folder inside Quiver's Apps folder. It holds your computer's graphics driver name and file paths, and on Windows your user name, so look through it first. Attach it right after the problem: it keeps earlier runs too. On macOS, also the crash report from ~/Library/Logs/DiagnosticReports (halo-*.ips)."
     validations:
       required: true
