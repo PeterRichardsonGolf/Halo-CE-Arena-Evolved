@@ -1,7 +1,7 @@
 # Halo CE: Arena Evolved: FAQ
 
 Short answers for people who have never heard of Arena Evolved. For the full steps, see [How to play](how-to-play.md) and
-[Host a server](host-a-server.md).
+[Host a server](host-a-server.md). What is not finished yet is in [Known issues](known-issues.md).
 
 ## 1. What do I need to play?
 
@@ -64,7 +64,7 @@ player to have MCC (and, for a Workshop map, the same Workshop item).
 
 ## 7. Can I play with OpenCE or ChupathingyCE players?
 
-Sometimes, depending on the build. Arena Evolved 0.7 uses **network version 39**.
+Sometimes, depending on the build. Arena Evolved 0.7.4 uses **network version 39**.
 
 - **ChupathingyCE:** yes, both ways.
 - **OpenCE builds 282 to 333:** yes. These use network version 39 too.
@@ -87,7 +87,7 @@ The game's lobby and server list tell you why a join fails ("Host is on version 
 2. Set **NETWORK**: **LAN** for players on your network, **HOST ONLINE** for the internet.
 3. Pick a map and a gametype, set **BOTS** if you want them, and choose **START GAME**.
 4. With HOST ONLINE, press **INVITE** to copy a link (`halo://join/...`) and send it to your friends. They choose
-   **JOIN WITH INVITE** and paste it. **PUBLIC** lists your game in the server browser (it also needs LIST HOSTED GAMES on, in SETTINGS > ONLINE).
+   **JOIN WITH INVITE** and paste it. **PUBLIC** lists your game in the server browser (it also needs LIST GAMES I HOST on).
 
 Players who lack a Custom Edition or community map you play get it from you as they join. Turn any VPN off while you host
 online. Friends who know your address can use **JOIN BY ADDRESS** (press Y on JOIN LAN GAMES or SERVER BROWSER).
@@ -106,15 +106,16 @@ Dedicated servers are for Linux; see the "Host a server" guide.
 
 Two things to check:
 
-1. It needs **SETTINGS > ONLINE > INTERNET PLAY** and **COMMUNITY SERVICES** on. The first start asks about community
-   services; if you said no, the browser lists nothing. Turn it on in SETTINGS > ONLINE if you want it.
-2. Only games whose hosts list them appear. Hosts opt in (CREATE GAME > PUBLIC, and LIST HOSTED GAMES in SETTINGS > ONLINE).
+1. It needs **SETTINGS > ONLINE > INTERNET PLAY** and **COMMUNITY SERVICES** on. At the first start a page called COMMUNITY
+   SERVICES asks; with **DECLINE** the browser lists nothing. Turn it on in SETTINGS > ONLINE if you want it.
+2. Only games whose hosts list them appear. Hosts opt in (CREATE GAME > PUBLIC, and LIST GAMES I HOST on the community page).
    A quiet hour can mean no listed games. You can always join a friend with an invite link or JOIN BY ADDRESS.
 
 ## 11. Does it work with a controller?
 
 Yes. The menus are controller-first and work with a mouse and keyboard too. Many button layouts (including MCC's and a CUSTOM
-layout per player), DualSense adaptive triggers, gyro aiming, stick dead zones and back paddles. Up to four players can play on one PC: each extra player presses **START** on their controller in
+layout per player), DualSense adaptive triggers and lightbar, Nintendo and PlayStation prompts, gyro aiming, stick dead
+zones, back paddles. Up to four players can play on one PC: each extra player presses **START** on their controller in
 MY PARTY (in the lobby). Keyboard and mouse have KEY BINDINGS under SETTINGS > CONTROLS.
 
 ## 12. The first-start window asks for a disc image, or says a piece of MCC is missing.
@@ -139,7 +140,7 @@ Your settings (`config.toml`) are next to the program. Saves and profiles are in
 
 Open an issue in this repository's **Issues** tab and choose **Bug report** (or **Crash or freeze**). Please give:
 
-- your system and the version (it is in the window's title, for example 0.7.3-beta);
+- your system and the version (it is in the window's title, for example 0.7.4-beta);
 - whether the game uses MCC, a disc image or both;
 - what you did, what you expected and what happened;
 - `debug.txt` (question 13).
@@ -149,7 +150,10 @@ One bug per issue. Do not attach maps or disc images. Questions and ideas go in 
 ## 15. Does it run on Mac, Steam Deck or Android?
 
 - **Mac (Apple silicon, macOS 13 or later):** built with every release but not tested by the Arena Evolved team. You need a
-  disc image, because MCC does not run on a Mac.
+  disc image, because MCC does not run on a Mac. The game keeps its maps, settings and `debug.txt` in
+  `~/Library/Application Support/ChupathingyCE` (Finder: Go > Go to Folder). In 0.7.4 the Mac download lacks the weapon
+  packs, voices and sounds: get `arena-evolved-0.7.4-beta-mac-extras.zip` from the release and put its folders there.
+  Macs only open the download page when there's a new version; download it and replace the app.
 - **Steam Deck / Linux handhelds:** the Linux download is the one to use. If the first-start window does not open in Game
   Mode, start it once from Desktop Mode.
 - **Android:** an untested build is attached to releases.

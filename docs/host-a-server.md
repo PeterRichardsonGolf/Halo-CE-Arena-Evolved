@@ -1,7 +1,7 @@
 # Host a server
 
 How to host a game from Halo CE: Arena Evolved for friends on your network or on the internet, how to play with
-OpenCE players, and how to run the dedicated server on Linux. If you only want to play, read
+OpenCE and ChupathingyCE players, and how to run the dedicated server on Linux. If you only want to play, read
 [How to play](how-to-play.md) first.
 
 ## On this page
@@ -10,7 +10,7 @@ OpenCE players, and how to run the dedicated server on Linux. If you only want t
 - [Host from the game](#host-from-the-game)
 - [Firewall and ports](#firewall-and-ports)
 - [VPNs](#vpns)
-- [Play with OpenCE players](#play-with-opence-players)
+- [Play with OpenCE and ChupathingyCE players](#play-with-opence-and-chupathingyce-players)
 - [The dedicated server on Linux](#the-dedicated-server-on-linux)
 - [Troubleshooting](#troubleshooting)
 
@@ -46,9 +46,9 @@ Settings that matter, in **SETTINGS > ONLINE**:
 | Setting | Default | What it does |
 | --- | --- | --- |
 | **INTERNET PLAY** | ON | Join and host games over the internet. OFF keeps you to LAN and this PC. |
-| **COMMUNITY SERVICES** | asked at the first start | The server browser and invites go through a community service. OFF: nothing goes there. |
+| **COMMUNITY SERVICES** | asked at the first start (DECLINE or ACCEPT) | The server browser and invites go through a community service. OFF: nothing goes there, and the server browser lists nothing. |
 | **UPNP PORT FORWARDING** | ON | Opens the game's port on your router so players can join you. |
-| **LIST HOSTED GAMES** | OFF | Games you host show in the server browser. A game is listed only with this ON and **PUBLIC** ON in CREATE GAME. Choosing USE COMMUNITY SERVICES at the first start can turn it on. <!-- OWNER: is PUBLIC alone enough to show a game in the OpenCE/master list (server_master.c), or is LIST HOSTED GAMES needed there too? The code gates only the community browser's listing (browser.c) on LIST HOSTED GAMES. --> |
+| **LIST HOSTED GAMES** | OFF | Games you host show in the server browser. A game is listed in it only with this ON and **PUBLIC** ON in CREATE GAME. Choosing ACCEPT on the first-start COMMUNITY SERVICES page, with its LIST GAMES I HOST switch ON, turns it on. |
 | **DOWNLOAD MAPS** | ON | Get a map you lack from the host. |
 | **INTERNET SHARING** | OFF | Hosting: also send your maps to players who are not on your local network. |
 | **INTERNET DOWNLOADS** | ON | Also get maps from hosts over the internet. |
@@ -74,9 +74,10 @@ never sent.
 through it (the game finds each side's public address and sends to it from both sides), and maps are sent through it
 too. By default the game picks the port. `network.tunnel_port` in `config.toml` sets a fixed one (0 picks one).
 **UPNP PORT FORWARDING** asks your router to open it. If your router does not support UPnP, or it is turned off, set a
-fixed `network.tunnel_port` and forward that UDP port to your PC by hand.
+fixed `network.tunnel_port` and forward that UDP port to your PC by hand. (A dedicated server uses 2302 unless you set
+another.)
 
-**Windows** asks the first time the game starts. Allow it on private networks at least, and on public ones too if
+**Windows** asks the first time the game opens the network (hosting a game or searching a LAN). Allow it on private networks at least, and on public ones too if
 Windows calls your network public. If you said no by mistake: Windows Security > Firewall & network protection >
 Allow an app through firewall, and allow the game.
 
@@ -110,31 +111,33 @@ Turning the firewall off also works. Opening the ports keeps it on for everythin
 
 ## VPNs
 
-- **Hosting online with a VPN on does not work.** The VPN answers for your PC, so players on the internet cannot reach
-  you. The CREATE GAME screen says "A VPN is on (name): players can't reach your game through it. Turn the VPN off to
-  host online." Turn the VPN off while you host.
-- **Private networks (such as Tailscale).** Friends can use **JOIN BY ADDRESS** with your private-network name or
-  address. Without a port, the game joins at UDP port 5150, so 5150 and 5160 must be reachable on the host's private
-  address, as for a LAN game.
+Hosting online with a VPN on does not work. The VPN answers for your PC, so players on the internet cannot reach you.
+The CREATE GAME screen says "A VPN is on (name): players can't reach your game through it. Turn the VPN off to host
+online." Turn the VPN off while you host.
 
-## Play with OpenCE players
+## Play with OpenCE and ChupathingyCE players
 
-Arena Evolved is made from OpenCE's code and plays online with OpenCE builds that use the **same network version**. A
-classic OpenCE player and an Arena Evolved player can be in one game.
+Arena Evolved is made from OpenCE's code and grew from ChupathingyCE. It plays online with builds that use the **same
+network version**. Arena Evolved 0.7.4 uses **network version 39**.
+
+| Other build | Can it join Arena Evolved 0.7.4, and can you join it? |
+| --- | --- |
+| OpenCE build-282 to build-333 | Yes, both ways (network version 39). |
+| OpenCE build-334 and newer | No, not yet. They use a newer network version (40 and higher). Merging them is next. |
+| OpenCE build-281 and older, Arena Evolved 0.4.3 and older | No (network version 38). |
+| ChupathingyCE | Yes, both ways (tested with ChupathingyCE 0.8.1). |
 
 - The game list and the lobby tell a player who cannot join and why: "Host is on version N and needs to update to M
-  or newer" or "Host is on version N, you're on M".
-- The host's gametype rules decide for everyone in the game. OpenCE players get the rules where the host decides them.
+  or newer" or "Host is on version N, you're on M". The top of `debug.txt` names your network version.
+- The host's gametype rules decide for everyone in the game. A player on another build gets the rules where the host decides
+  them, and plays the game as their own build has it; AE's extras show only on AE.
 - Rules that only Arena Evolved has (weapon packs, SILENT MOVEMENT, Bomb and so on) mean that only Arena Evolved
-  players with the same content can join. An OpenCE player who cannot play a rule is turned away with a message, or
+  players with the same content can join. A player on another build who cannot play a rule is turned away with a message, or
   dropped from the game.
-- Which OpenCE builds match: the network version of this release is **39**. It plays with OpenCE build-282 and later
-  up to build-333, and not with Arena Evolved 0.4.3 and older, OpenCE build-281 and older (network 38), or OpenCE
-  build-334 and newer (network 40 and higher).
-- ChupathingyCE players can join an Arena Evolved host, and Arena Evolved players can join a ChupathingyCE host
-  (tested with ChupathingyCE 0.8.1). They play the game as their own build has it; AE's extras show only on AE.
+- To join a game on an original Xbox map, you need the Xbox maps, so a disc image. A player with MCC alone has MCC's stock
+  maps, not the original Xbox ones.
 
-To meet a classic player in a game on Halo CE's own gametypes, host a stock gametype: the AE rules are on only in AE
+To meet a player on another build, host one of Halo CE's own gametypes (the STOCK folder): the AE rules are on only in AE
 gametypes.
 
 ## The dedicated server on Linux
@@ -212,7 +215,7 @@ A system link (LAN) server uses UDP 5150 and 5160 instead.
 | The invite row shows "BEING MADE..." and stays so | The game makes the invite itself, once it is hosting for the internet. If it stays, hosting online did not start: check **INTERNET PLAY** is ON (the row says "INTERNET PLAY IS OFF" when it is not) and look in `debug.txt` for the lines about Internet play. |
 | An invite link says "That is not an invite" | The link is cut off or damaged. Copy it again. |
 | Joiners see "Host is on version N and needs to update to M or newer" | Update your game, or ask them to. |
-| An OpenCE player cannot join | Their build must be on the same network version. See "Play with OpenCE players". |
+| An OpenCE player cannot join | Their build must be on the same network version (39): OpenCE build-282 to build-333. See "Play with OpenCE and ChupathingyCE players". |
 | A player without a map gets nothing | **DOWNLOAD MAPS** must be ON for them. Over the internet, your **INTERNET SHARING** and their **INTERNET DOWNLOADS** must be ON. Port 5153/tcp must be open on a LAN. |
 | "Needs ..." for a Workshop map | The map is from a Steam Workshop item. The host plays it on its own game. Players need the same Workshop item subscribed in Steam. |
 | Dedicated server stops at once with "no maps" | The data folder needs `maps/ui.map`. Start the server from the data folder, or set `HALO_DATA_ROOT`. |

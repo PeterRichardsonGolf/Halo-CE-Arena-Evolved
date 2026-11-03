@@ -16,12 +16,15 @@ people, read [Host a server](host-a-server.md) after this page.
 - [Split screen](#split-screen)
 - [Maps](#maps)
 - [Game types and GAME OPTIONS](#game-types-and-game-options)
+- [In a game](#in-a-game)
 - [Controls](#controls)
 - [Settings overview](#settings-overview)
 - [Recording and screenshots](#recording-and-screenshots)
 - [Where files are](#where-files-are)
 - [Troubleshooting](#troubleshooting)
 - [Reporting a problem](#reporting-a-problem)
+
+More answers: the [FAQ](faq.md) and the [known issues](known-issues.md).
 
 ## Before you start
 
@@ -46,9 +49,9 @@ AE finds the Steam install by itself and plays MCC's own Halo CE multiplayer map
 Halo CE maps of the Steam Workshop items you subscribe to. Nothing is copied or converted.
 
 **Option 2: a disc image of your own Xbox disc.** A `.iso` or `.xiso` file you made from your own original Xbox disc of
-Halo: Combat Evolved, from any region. Not needed for MCC's maps. It adds crossplay with players who don't have MCC
-(such as OpenCE players), the original Xbox maps, and the community's maps and mods made for the original Xbox version.
-The first start copies the `maps` folder out of it (about 2 GB).
+Halo: Combat Evolved. Not needed for MCC's maps. It lets you join games on the original Xbox maps, such as those hosted
+by OpenCE or ChupathingyCE players, and adds the community's maps and mods made for the original Xbox version. The first
+start copies the `maps` folder out of it (about 2 GB). On a Mac this is the way in, because MCC does not run on a Mac.
 
 Use only a copy of the game you own. Arena Evolved never provides, links to or helps find game files.
 
@@ -61,7 +64,7 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
 | --- | --- |
 | Windows | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing else to install. |
 | Linux | x86-64. The normal download needs glibc 2.35 or later (Ubuntu 22.04 and later, Mint, Zorin OS, Pop!_OS, Debian 12). Arch and other rolling distributions use their own download. |
-| macOS | macOS 13 or later, on Apple silicon. This build is upstream's port and is not tested by the AE team. |
+| macOS | macOS 13 or later, on Apple silicon. Needs a disc image of your own Xbox disc (MCC does not run on a Mac). Not tested by the AE team. |
 | Graphics | OpenGL 4.5 (macOS: OpenGL 4.1) |
 
 ## Install and update
@@ -81,6 +84,16 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
    folder on Linux. Do not unpack it into a folder Windows protects (such as Program Files): the game writes its settings,
    screenshots and log next to its program.
 2. Start `halo.exe` (Windows) or `halo` (Linux).
+
+**Windows warnings.** `halo.exe` and `ffmpeg.exe` (the recorder in the Windows zip) are not code-signed. Your browser or
+Windows may say the download is not commonly downloaded or that the publisher is unknown ("Windows protected your PC").
+
+1. Before you unpack the zip, right-click it, choose **Properties**, tick **Unblock** and press OK. Then unpack it.
+2. On the warning, choose **More info**, then **Run anyway**.
+3. An antivirus program may quarantine an unsigned program by mistake. If it takes `halo.exe` or `ffmpeg.exe`, restore
+   it and allow the folder, or do not run it if you are not comfortable.
+
+The complete source of every release is attached to it, so you can read it or build it yourself.
 
 **With Quiver.** You can also get AE with the Quiver launcher (see the link in the README). Quiver downloads and
 updates it for you.
@@ -103,15 +116,17 @@ installs it. Your saves and settings stay as they are. Updates are signed: the g
 
 What you see the first time depends on your copy of the game.
 
-<!-- SHOT: the first-start dialog (no MCC) with its five buttons -->
-
 ### MCC found
 
-With Halo: The Master Chief Collection installed on Steam, with both Halo CE pieces of content, the game asks
-nothing. The window opens, the menus appear, and MCC's maps are in the map lists. You can go to [Your
-profile](#your-profile).
+With Halo: The Master Chief Collection installed on Steam, with both Halo CE pieces of content, the game asks nothing
+about files. Before the main menu you see one page, **COMMUNITY SERVICES** (see [Join a game](#server-browser)):
+**DECLINE** keeps everything off, and the SERVER BROWSER then lists nothing; **ACCEPT** lets the game list and, if you
+switch on **LIST GAMES I HOST**, lists the games you host. Then the menus appear, and MCC's maps are in the map lists. You
+can go to [Your profile](#your-profile).
 
 Steam can be on any drive. AE reads Steam's library list to find it.
+
+**On a Steam Deck**, if the first-start window does not open in Game Mode, start Arena Evolved once from Desktop Mode.
 
 ### MCC found, but a piece is missing
 
@@ -172,8 +187,8 @@ they are, and their maps still play.
 
 ### Windows asks about the firewall
 
-The first time you start the game on Windows, Windows asks if the game may use the network. Allow it, on private
-networks at least. Without it, LAN and online games do not work.
+The first time the game opens the network (hosting a game or searching a LAN), Windows asks if the game may use the
+network. Allow it, on private networks at least. Without it, LAN and online games do not work.
 
 ## Your profile
 
@@ -221,12 +236,13 @@ You can join a game in four ways. All of them start from **MULTIPLAYER**.
 ### SERVER BROWSER
 
 1. Choose **SERVER BROWSER**.
-2. Pick a game from the list. Use the tabs to show **ALL GAMES** or only **DEDICATED** servers.
+2. Pick a game from the list. Use LT and RT to filter it: ALL, NOT FULL, HAS PLAYERS or NO PASSWORD.
 3. Press A. The lobby opens, read-only, until the host starts the game.
 
 The browser needs **SETTINGS > ONLINE > INTERNET PLAY** and **COMMUNITY SERVICES** on. A new copy asks about
-COMMUNITY SERVICES at the start, before AE's main menu: a screen titled COMMUNITY SERVICES with the buttons **USE
-COMMUNITY SERVICES** and **NOT NOW**, and a **LIST HOSTED GAMES** switch.
+COMMUNITY SERVICES at the start, before AE's main menu: a page titled COMMUNITY SERVICES with a **LIST GAMES I HOST**
+switch (off to start with) and the buttons **DECLINE** and **ACCEPT**. Without ACCEPT the SERVER BROWSER stays empty. You
+can change the answer later in **SETTINGS > ONLINE > COMMUNITY SERVICES**.
 **SERVER PINGS** (off by default) shows each game's delay, but every host then sees your address.
 
 ### JOIN LAN GAMES
@@ -256,10 +272,10 @@ host needs to update.
 
 ### JOIN BY ADDRESS
 
-Use this to join a friend directly by IP address or name, for example over a private network.
+Use this to join a friend directly by IP address or name.
 
 1. Press **Y** on **JOIN LAN GAMES** or on **SERVER BROWSER**. (On the server browser, JOIN WITH INVITE moves to LB.)
-2. Type the host's address: an IP address (`192.168.1.20`), a computer's name or a private network's name. Add
+2. Type the host's address: an IP address (`192.168.1.20`) or a computer's name. Add
    `:port` after it when the host uses another port. Without a port, the game uses port **5150**, the game's own port (the one LAN games use). The host's
    firewall must let UDP 5150 and 5160 in (see [Host a server](host-a-server.md#firewall-and-ports)).
 3. Press A. The game says "JOINING..." and waits up to 10 seconds.
@@ -273,6 +289,14 @@ If the host does not answer, the screen says:
 
 > Can't reach (address). Check the address, that the host's game is open, and that its firewall lets Arena Evolved
 > through.
+
+### Playing with other builds
+
+Arena Evolved 0.7.4 uses network version 39. It joins ChupathingyCE and OpenCE builds 282 to 333. OpenCE build 334 and later
+use a newer network version, so they cannot join Arena Evolved and Arena Evolved cannot join them; merging them is next.
+Arena Evolved 0.4.3 and older cannot join either. Weapon packs and the other AE rules are for AE players: to meet a player on
+another build, host one of Halo CE's own gametypes (the STOCK folder). To join a game on an original Xbox map you need a disc
+image. The game list and the lobby say why a join fails, and the top of `debug.txt` names your network version.
 
 ### Maps you lack
 
@@ -294,7 +318,8 @@ MAPS**). Over the internet it also needs the host's **INTERNET SHARING** and you
 | **HOST ONLINE** | Players on the internet, with your invite. |
 
 4. With HOST ONLINE, **PUBLIC** lists your game in everyone's server browser. Off means invite only. Listing also
-   needs **SETTINGS > ONLINE > LIST HOSTED GAMES** (off until you turn it on). **MAX PLAYERS**
+   needs **LIST GAMES I HOST** on (the COMMUNITY SERVICES page asks; later it is **SETTINGS > ONLINE > LIST HOSTED
+   GAMES**, off until you turn it on). **MAX PLAYERS**
    counts bots too.
 5. **INVITE** copies your game's invite link (`halo://join/...`) so you can paste it to friends. Anyone with it can
    join.
@@ -307,12 +332,12 @@ Players you invite appear in the lobby. Extra players on your own PC press START
 
 > A VPN is on (name): players can't reach your game through it. Turn the VPN off to host online.
 
-Turn the VPN off while you host online. For LAN games, AE finds games with a VPN on.
+Turn the VPN off while you host online.
 
 If you do not want to be seen, leave NETWORK on OFFLINE or LAN. Hosted games are not listed on any website, and stats
-and joined-game reports are off, unless you turn them on in **SETTINGS > ONLINE > PRIVACY**. Choosing **USE COMMUNITY
-SERVICES** at the first start turns on SHARE GAME STATS and SHARE HOSTED STATS as well, and LIST HOSTED GAMES if its
-switch on that screen is ON.
+and joined-game reports are off, unless you turn them on in **SETTINGS > ONLINE > PRIVACY**. Choosing **ACCEPT** on the
+COMMUNITY SERVICES page at the first start turns on SHARE GAME STATS and SHARE HOSTED STATS as well, and LIST HOSTED GAMES
+if its switch (LIST GAMES I HOST) on that page is ON.
 
 Ports, UPnP and the firewall are in [Host a server](host-a-server.md).
 
@@ -368,23 +393,24 @@ says "STEAM IS UPDATING IT". Search and filters are at the top of the screen.
 2. Let Steam finish downloading it.
 3. **Restart AE.** The game finds Workshop maps once, as it starts. A new subscription shows after a restart.
 
-On Windows, a Steam library in a folder with characters outside the system's code page may show no Workshop maps.
-Workshop maps are played on a host's own game: dedicated servers do not serve them yet. Every machine in a game on an MCC map
+On Windows 10 version 1903 or later, a Steam library in any language's folder name works. On older Windows, a folder with
+characters outside the system's code page may show no Workshop maps. Workshop maps are played on a host's own game: dedicated servers do not serve them yet. Every machine in a game on an MCC map
 needs MCC.
 
 **Joining a game on an MCC map.** If you lack it, the game tells you what is needed:
 
 - For a stock MCC map: "This game plays (map) from Halo: MCC's own files. Install Halo: The Master Chief Collection in
-  Steam, or choose its folder in Settings > MAP FILES, to join."
+  Steam to join."
 - For a Workshop map: "This game plays (map) from Halo: MCC Workshop item (number). Subscribe to it in Steam (with Halo:
   The Master Chief Collection installed) to join."
 
-Players without MCC cannot join a game on MCC's stock maps.
+Players without MCC cannot join a game on MCC's stock maps. The other way round, a player with MCC alone has MCC's stock
+maps, not the original Xbox ones, so cannot join a game on an original Xbox map (for example one hosted by an OpenCE
+player). Add a disc image to join those.
 
 **MCC's files can be turned off.** **SETTINGS > SYSTEM > FILES > MCC FILES** has ASK, ON (always) and OFF (never).
-The default is ON. Some messages call this "Settings > MAP FILES": that is the same setting on the profile menu of the
-older PC menus, which can also pick the MCC folder. In AE's menus, set the MCC folder in `config.toml`
-(`game.mcc_path`).
+The default is ON. AE's menus have no folder picker for MCC. To use another MCC folder, press **Choose MCC folder** in the
+first-start window, or set `game.mcc_path` in `config.toml`.
 
 **Community maps and packs.** Put Xbox-format community maps in the `maps` folder (restart after adding or removing
 maps). Halo PC and Custom Edition maps go in `maps_ce`, HaloMD maps in `maps_md` and your Halo PC disc's maps in
@@ -408,7 +434,7 @@ Open **CHANGE GAMETYPE** in the lobby. The folders are:
 | **AE FFA** | Free for all: slayer, king, oddball, COMP slayer, snipers, rockets. |
 | **AE 2V2** | Two against two, including the COMP 2V2 set. |
 | **AE 4V4** | Team slayer, CTF, king, oddball, and the team COMP set. |
-| **AE BTB** | Big team, 8 against 8, with heavy vehicles. |
+| **AE BTB** | Big team, 8 against 8, with heavy vehicles. The BTB+ versions add 2 banshees a team (a map places a banshee only where it has a place for one). |
 | **AE OBJECTIVE** | The round modes: Search and Destroy and Bomb. |
 | **AE ACTION SACK** | Fun modes: phantoms, juggernaut, race, SWAT, Frag Nation, One in the Chamber, Melee Only, Needles, Snowball Fight, Grifball. |
 | **AE PRACTICE** | Practice, training and the OCTAGON warm-up drills. |
@@ -430,8 +456,9 @@ Some rules, and their defaults on AE gametypes:
 
 | Rule | What it does |
 | --- | --- |
-| **FALL DAMAGE** | Off in AE gametypes: no damage from landing. |
-| **HEALTH** | Style names HALO CE, REACH, HALO 2 and HALO 3. Sets how shields and health recharge. |
+| **FALL DAMAGE** | OFF, CLASSIC (the map's own) or HALO 2 (a landing hurts from 6 world units, a fall past 14 kills). HALO 2 in most AE gametypes; OFF in the drills, training and practice modes. |
+| **JUMP** | 50% to 200% of Halo CE's jump. 120% in AE gametypes. A map's own layout can set it. |
+| **HEALTH** | Several shield and health styles, listed in the row. Sets how shields and health recharge. |
 | **NO SPREAD** | OFF, FIRST SHOT or FULL: whether shots go exactly where you aim. |
 | **PRE-GAME COUNTDOWN** | A 3-2-1 before the game starts. |
 | **COMBAT FEEDBACK** | HALO CE or ARENA EVOLVED: how a shield pop and a recharge look. |
@@ -444,6 +471,29 @@ The rules are the host's. A gametype that a map cannot play falls back to Slayer
 **Weapon packs.** The battle rifle, EVO RIFLE, DMR, SMG, carbine and suppressed weapons are weapon packs in the `packs`
 folder. **SETTINGS > SYSTEM > FILES > WEAPON PACKS** turns packs off on this PC. With packs off, you cannot join a
 game that uses them.
+
+## In a game
+
+- **Medals and the kill feed.** Medals show as you earn them (SETTINGS > HUD > MEDALS and MEDAL STYLE). With MCC
+  installed, the pictures come from it; without MCC a medal shows as its name. Everyone's kills are rows at the left of the
+  screen (SETTINGS > HUD > KILL FEED turns it off). Assists count.
+- **Team calls.** On a pad, tap **LB** to mark what you aim at, double tap to call an enemy, and hold it to open the
+  **COMMUNICATION WHEEL**: ATTACK, DEFEND, WATCH, ENEMY, GOING HERE, HELP, WEAPON and RIDE. On a keyboard use the mark key
+  (**B**), and the mouse picks on the wheel. A teammate can answer OK or call DIBS, and bots of your team answer. The host
+  can turn marks off (SETTINGS > ONLINE > HOSTING > MARKS). **MARK PROMPT** (SETTINGS > HUD > RETICLE) shows what a press
+  would do.
+- **Vehicles.** In a gametype with VEHICLES DESTRUCTIBLE on (every AE gametype with vehicles), hold the action button to get in,
+  take a seat, flip a vehicle or get out; a tap reloads. Small arms hurt vehicles. The RIDE call tells your team you want a
+  lift.
+- **Item prompt.** In HUD STYLE AE, the name of the item, vehicle or weapon you stand over and what the action button does
+  sit under the reticle.
+- **If your team empties.** In AE's team gametypes the game goes on for a minute when a team's players have all left, and
+  ends only if nobody joins it (a host with bots fills the team at once). Halo CE's own gametypes end at once.
+- **Host: move a player.** In the lobby, a joiner's row has the same < RED > arrows a bot's has. In a game, open the pause menu
+  and choose PLAYERS (under GAME (HOST)): pick a player to move to the other team. The game asks first; the player dies now (it is
+  not counted as a death) and respawns on the other team. The last player of a team cannot be moved.
+- **Host: name your game.** CREATE GAME > **GAME NAME** (after NETWORK, not shown OFFLINE) names your game in the SERVER
+  BROWSER and LAN list. Up to 15 characters; empty means your profile's name.
 
 ## Controls
 
@@ -562,7 +612,7 @@ Every setting is also in `config.toml` next to the game, written at the first st
 | Saves, profiles, cache | The save folder: on Linux `~/.local/share/halo-linux`; on Windows `%APPDATA%\halo`; on macOS a `saves` folder in the game's folder in Application Support. You can change it with `paths.saves` in `config.toml`. |
 | Cache | `cache` in the save folder. It is made again as needed, so it is safe to delete. |
 | Shader cache | `shader_cache` in the save folder. Safe to delete. |
-| Log | `debug.txt`, in the game's data folder (the folder with `maps`, next to the game unless `paths.data` says otherwise). `paths.logs` moves it. |
+| Log | `debug.txt`, in the game's data folder (the folder with `maps`, next to the game unless `paths.data` says otherwise). On Windows that is the folder that holds `halo.exe`; on Linux, the folder that holds `halo`; with Quiver, the game's folder inside Quiver's Apps folder. `paths.logs` moves it. |
 
 ## Troubleshooting
 
@@ -595,13 +645,15 @@ Find your message or what you see in the left column.
 | "Could not host the game" | The game could not start its network server. `debug.txt` has the lines from that moment. |
 | "Needs Steam Workshop item (number) (subscribe to it in Steam) to join" in a game list | The game plays a Workshop map you lack. Subscribe to that Workshop item in Steam, let it finish, then restart AE. |
 | "This game plays (map) from Halo: MCC Workshop item (number). Subscribe to it in Steam (with Halo: The Master Chief Collection installed) to join." | Subscribe to that item in Steam, wait for the download, restart AE. |
-| "This game plays (map) from Halo: MCC's own files. Install Halo: The Master Chief Collection in Steam, or choose its folder in Settings > MAP FILES, to join." | You need MCC installed (with both Halo CE pieces of content). |
-| "...has MCC's files turned off. Turn them on to join." | Turn on **SETTINGS > SYSTEM > FILES > MCC FILES**. |
+| "This game plays (map) from Halo: MCC's own files. Install Halo: The Master Chief Collection in Steam to join." | You need MCC installed (with both Halo CE pieces of content). To join a game on an original Xbox map you need a disc image instead. |
+| "...which SETTINGS > SYSTEM > FILES > MCC FILES has turned off. Turn it on to join." | Turn on **SETTINGS > SYSTEM > FILES > MCC FILES**. |
+| The SERVER BROWSER is empty | You chose DECLINE on the COMMUNITY SERVICES page, or **INTERNET PLAY** is off. Turn on **SETTINGS > ONLINE > COMMUNITY SERVICES** and **INTERNET PLAY**. It also lists only games whose hosts list them: you can always join a friend with an invite or JOIN BY ADDRESS. |
+| Windows says "Windows protected your PC", or your antivirus takes `halo.exe` | See [Install and update](#install-and-update): the download is not code-signed. **More info > Run anyway**. |
 | "(file).map of Workshop item N is missing. Check the item in Steam." | In Steam, unsubscribe and subscribe again, or verify the item. |
 | "(file).map of Workshop item N can't be read: Steam may be updating it." | Wait for Steam to finish updating it, then try again. |
 | "MCC's (file).map is missing. Verify MCC's files in Steam." | Steam > Library > **Halo: The Master Chief Collection** > **Properties** > **Installed Files** > **Verify integrity of game files**. |
 | A new Workshop subscription is not in CHANGE MAP | Restart AE. Workshop maps are found once at start. |
-| Workshop folder is empty on Windows | A Steam library folder with characters outside the system's code page may not be read. Move the library to a plain path. |
+| Workshop folder is empty on Windows | Only on Windows older than 10 version 1903: a Steam library folder with characters outside the system's code page may not be read. Move the library to a plain path. |
 | Others cannot join your online game | Turn any VPN off. Check **UPNP PORT FORWARDING** is on. See [Host a server](host-a-server.md). |
 | "A VPN is on (name): players can't reach your game through it. Turn the VPN off to host online." | Turn the VPN off while you host online. |
 | Windows asked about the firewall and you said no | Open Windows Security > Firewall > Allow an app, and allow the game on private networks (public too if Windows calls your network public). |
@@ -623,9 +675,14 @@ If you find a bug:
 
 1. Note the version of the game (shown at the top of the HUD, in the window title and at the start of `debug.txt`).
 2. Say what you did, what you expected and what happened.
-3. Add the log file `debug.txt` (see [Where files are](#where-files-are)). It is plain text. It holds your computer's graphics driver name and
+3. Add the log file `debug.txt` (see [Where files are](#where-files-are)): it is in the folder that holds `halo.exe`
+   (Windows) or `halo` (Linux), or in the game's folder inside Quiver's Apps folder. It keeps earlier runs, so attach
+   it right after the problem. Its top lines name the network version ("OpenCE network version 39"), which says who you can
+   join. It is plain text. It holds your computer's graphics driver name and
    file paths, and on Windows the paths include your Windows user name (the save folder is under
    `C:\Users\<name>\AppData\Roaming\halo`). Look through it before you share it.
-4. Open an issue in this repository's Issues tab.
+4. If it happens online, say whether you were the host or a joiner, and which build the other player uses (Arena
+   Evolved, OpenCE or ChupathingyCE).
+5. Open an issue in this repository's Issues tab.
 
 Crash reports are off in every AE build: nothing is written to send and nothing is asked.
