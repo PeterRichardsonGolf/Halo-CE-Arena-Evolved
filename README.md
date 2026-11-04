@@ -80,7 +80,12 @@ is attached to it.
 - **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the EVO RIFLE (single shot, tuned for competitive
   play, a 2x scope with its zoom and rounds live), the DMR (steady marksman rifle), SMG, carbine, and suppressed SMG and
   AR, as weapon packs that work on stock, Custom Edition and MCC maps. Each pack turns on or off in a gametype's GAME
-  OPTIONS, and a gametype picks what you start with.
+  OPTIONS, and a gametype picks what you start with. 0.7.5 is a testing build that adds the NEEDLER, BOLT SNIPER, COMBAT
+  RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope) and BRUTE SHOT as betas, and the ENERGY SWORD as an alpha.
+- **Second-generation game settings:** GAME OPTIONS gains rounds and round time, respawn time modifiers, damage resistance
+  and extra damage, weapon respawn, flag and bomb carrier rules and hill rules (Halo CE plays as before unless you set
+  them), the TERRITORIES mode (beta), 34 more built-in gametypes in a nested CHANGE GAMETYPE picker, a shield-break pop
+  with sound and flash, a round counter on the score strip, and RESTART ROUND in any rounds game.
 - **In the game:** medals as you play (MCC's pictures when MCC is installed), a kill feed with weapon pictures, and team
   calls: tap LB (the mark key on a keyboard) to mark what you aim at, double tap to call an enemy, hold for the
   COMMUNICATION WHEEL (ATTACK, DEFEND, WATCH, GOING HERE, HELP, RIDE and more); bots answer. Hold the action button to
@@ -131,9 +136,8 @@ Nothing Arena Evolved adds is forced on you:
   ADDRESS, KEY BINDINGS, RESTART GAME and RESTART ROUND, and the gametype editor's full GAME OPTIONS. With the classic
   menus on, those are gone (the gametypes' rules still play). Switch MENUS back to use them.
 - **Stock maps stay stock:** the STOCK folders hold the game's own maps as they shipped, from your disc image or MCC.
-- **Play with other builds:** Arena Evolved 0.7.4 plays online with OpenCE builds 282 to 333 and with ChupathingyCE
-  (network version 39). The newest OpenCE builds (334 and later) use a newer network version and cannot join yet;
-  merging them is next. To meet a player on another build, host one of Halo CE's own gametypes: AE's extras (weapon
+- **Play with other builds:** Arena Evolved 0.7.5 (network version 41) plays online with OpenCE build-334 and later and
+  with ChupathingyCE. Older Arena Evolved builds cannot join 0.7.5 games. To meet a player on another build, host one of Halo CE's own gametypes: AE's extras (weapon
   packs and the rest) are for AE players.
 
 ## Download

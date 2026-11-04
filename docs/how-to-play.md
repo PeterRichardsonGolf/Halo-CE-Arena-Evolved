@@ -85,6 +85,27 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
    screenshots and log next to its program.
 2. Start `halo.exe` (Windows) or `halo` (Linux).
 
+**On a Mac.** Unpack the `.tar` (double-click it) into a folder you own, for example a new folder in your home folder.
+The download holds `ArenaEvolved.app` and, from 0.7.5, the `packs`, `voices` and `sounds` folders beside it. The app is
+not notarized, so macOS blocks it the first time.
+
+1. Right-click (or Control-click) `ArenaEvolved.app`, choose **Open**, then **Open** again in the warning. If there is
+   no Open button, try to open it once, then go to **System Settings > Privacy & Security**, scroll down and press
+   **Open Anyway** next to the message about ArenaEvolved.
+2. Do the first start from the folder you unpacked into, with the `packs`, `voices` and `sounds` folders still beside the
+   app. On that start the game copies them into its data folder; after that you can move the app (to Applications, say).
+3. If macOS runs the app from a temporary read-only copy (App Translocation), the game cannot see the folders beside it
+   and `debug.txt` says so ("macOS opened the application from a temporary copy"). Fix it by dragging
+   `ArenaEvolved.app` to Applications (or to another folder) once and opening it from there with right-click > **Open**,
+   or by running `xattr -dr com.apple.quarantine <the unpacked folder>` in Terminal. The game also looks in your
+   `Downloads` folder for a folder named like `arena-evolved-...`. You can always copy the three folders into the data
+   folder by hand.
+4. The data folder is `~/Library/Application Support/ChupathingyCE` (Finder: **Go > Go to Folder**, paste the path).
+   Your maps (`maps`), settings (`config.toml`), saves and `debug.txt` are there, and the `packs`, `voices` and `sounds`
+   folders go there too.
+5. **0.7.4 only:** that download has no packs, voices or sounds. Get `arena-evolved-0.7.4-beta-mac-extras.zip` from the
+   release page and put its three folders into the data folder above. From 0.7.5 on, the main download has them.
+
 **Windows warnings.** `halo.exe` and `ffmpeg.exe` (the recorder in the Windows zip) are not code-signed. Your browser or
 Windows may say the download is not commonly downloaded or that the publisher is unknown ("Windows protected your PC").
 
@@ -109,7 +130,8 @@ installs it. Your saves and settings stay as they are. Updates are signed: the g
 - **Do not ask again** asks once more ("Stop asking about new versions?"). Yes turns the check off.
 - To turn it back on: **SETTINGS > SYSTEM > UPDATES > AUTO UPDATE**.
 - On macOS the game does not update itself. It asks "Do you want to open its download page?" and opens the release
-  page.
+  page in your browser. If no browser opens, `debug.txt` gives the address ("update: could not open a browser"). Download
+  the new `.tar` and replace the app; your data folder stays as it is.
 - The game only talks to GitHub for this, and never updates without asking.
 
 ## First start
@@ -292,9 +314,8 @@ If the host does not answer, the screen says:
 
 ### Playing with other builds
 
-Arena Evolved 0.7.4 uses network version 39. It joins ChupathingyCE and OpenCE builds 282 to 333. OpenCE build 334 and later
-use a newer network version, so they cannot join Arena Evolved and Arena Evolved cannot join them; merging them is next.
-Arena Evolved 0.4.3 and older cannot join either. Weapon packs and the other AE rules are for AE players: to meet a player on
+Arena Evolved 0.7.5 uses network version 41. It joins ChupathingyCE and OpenCE build-334 and later. OpenCE build-333 and
+older use an older network version and cannot join; Arena Evolved 0.7.4 and older cannot join 0.7.5 games either. Weapon packs and the other AE rules are for AE players: to meet a player on
 another build, host one of Halo CE's own gametypes (the STOCK folder). To join a game on an original Xbox map you need a disc
 image. The game list and the lobby say why a join fails, and the top of `debug.txt` names your network version.
 
@@ -332,7 +353,7 @@ Players you invite appear in the lobby. Extra players on your own PC press START
 
 > A VPN is on (name): players can't reach your game through it. Turn the VPN off to host online.
 
-Turn the VPN off while you host online.
+Turn the VPN off while you host online. A VPN on your **router** blocks hosting the same way, with no warning: turn it off there too, or exclude the hosting PC from it.
 
 If you do not want to be seen, leave NETWORK on OFFLINE or LAN. Hosted games are not listed on any website, and stats
 and joined-game reports are off, unless you turn them on in **SETTINGS > ONLINE > PRIVACY**. Choosing **ACCEPT** on the
@@ -676,7 +697,7 @@ If you find a bug:
 1. Note the version of the game (shown at the top of the HUD, in the window title and at the start of `debug.txt`).
 2. Say what you did, what you expected and what happened.
 3. Add the log file `debug.txt` (see [Where files are](#where-files-are)): it is in the folder that holds `halo.exe`
-   (Windows) or `halo` (Linux), or in the game's folder inside Quiver's Apps folder. It keeps earlier runs, so attach
+   (Windows) or `halo` (Linux), on a Mac in `~/Library/Application Support/ChupathingyCE`, or in the game's folder inside Quiver's Apps folder. It keeps earlier runs, so attach
    it right after the problem. Its top lines name the network version ("OpenCE network version 39"), which says who you can
    join. It is plain text. It holds your computer's graphics driver name and
    file paths, and on Windows the paths include your Windows user name (the save folder is under

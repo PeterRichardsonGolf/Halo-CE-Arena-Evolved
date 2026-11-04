@@ -115,16 +115,19 @@ Hosting online with a VPN on does not work. The VPN answers for your PC, so play
 The CREATE GAME screen says "A VPN is on (name): players can't reach your game through it. Turn the VPN off to host
 online." Turn the VPN off while you host.
 
+The same goes for a VPN running on your **router**: the game cannot see it, so no warning shows, but players still
+cannot reach you. Turn the router's VPN off while you host, or exclude the hosting PC from it in the router's settings.
+
 ## Play with OpenCE and ChupathingyCE players
 
 Arena Evolved is made from OpenCE's code and grew from ChupathingyCE. It plays online with builds that use the **same
-network version**. Arena Evolved 0.7.4 uses **network version 39**.
+network version**. Arena Evolved 0.7.5 uses **network version 41**.
 
-| Other build | Can it join Arena Evolved 0.7.4, and can you join it? |
+| Other build | Can it join Arena Evolved 0.7.5, and can you join it? |
 | --- | --- |
-| OpenCE build-282 to build-333 | Yes, both ways (network version 39). |
-| OpenCE build-334 and newer | No, not yet. They use a newer network version (40 and higher). Merging them is next. |
-| OpenCE build-281 and older, Arena Evolved 0.4.3 and older | No (network version 38). |
+| OpenCE build-334 and later | Yes, both ways (network version 41). |
+| OpenCE build-333 and older | No (network version 39 and lower). |
+| Arena Evolved 0.7.4 and older | No. |
 | ChupathingyCE | Yes, both ways (tested with ChupathingyCE 0.8.1). |
 
 - The game list and the lobby tell a player who cannot join and why: "Host is on version N and needs to update to M
@@ -209,13 +212,13 @@ A system link (LAN) server uses UDP 5150 and 5160 instead.
 | --- | --- |
 | Friends cannot find your LAN game | Same network, not a guest Wi-Fi. Open ports 5150-5151/udp, 5160/udp, 5153/tcp. On Linux see above. |
 | "No games found. On Linux a firewall can hide LAN games" | Open the ports above on the PC that does the searching, and on the host. |
-| Friends cannot join your online game | Turn any VPN off. Check **INTERNET PLAY** and **UPNP PORT FORWARDING** are ON. If your router has no UPnP, forward the UDP port by hand. |
+| Friends cannot join your online game | Turn any VPN off — on the PC **and on the router**. Check **INTERNET PLAY** and **UPNP PORT FORWARDING** are ON. If your router has no UPnP, forward the UDP port by hand. |
 | "A VPN is on (name): players can't reach your game through it." | Turn the VPN off to host online. |
 | "Internet play is off" | **SETTINGS > ONLINE > INTERNET PLAY** ON. |
 | The invite row shows "BEING MADE..." and stays so | The game makes the invite itself, once it is hosting for the internet. If it stays, hosting online did not start: check **INTERNET PLAY** is ON (the row says "INTERNET PLAY IS OFF" when it is not) and look in `debug.txt` for the lines about Internet play. |
 | An invite link says "That is not an invite" | The link is cut off or damaged. Copy it again. |
 | Joiners see "Host is on version N and needs to update to M or newer" | Update your game, or ask them to. |
-| An OpenCE player cannot join | Their build must be on the same network version (39): OpenCE build-282 to build-333. See "Play with OpenCE and ChupathingyCE players". |
+| An OpenCE player cannot join | Their build must be on the same network version (41): OpenCE build-334 and later. See "Play with OpenCE and ChupathingyCE players". |
 | A player without a map gets nothing | **DOWNLOAD MAPS** must be ON for them. Over the internet, your **INTERNET SHARING** and their **INTERNET DOWNLOADS** must be ON. Port 5153/tcp must be open on a LAN. |
 | "Needs ..." for a Workshop map | The map is from a Steam Workshop item. The host plays it on its own game. Players need the same Workshop item subscribed in Steam. |
 | Dedicated server stops at once with "no maps" | The data folder needs `maps/ui.map`. Start the server from the data folder, or set `HALO_DATA_ROOT`. |

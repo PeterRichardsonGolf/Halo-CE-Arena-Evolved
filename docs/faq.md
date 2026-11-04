@@ -64,13 +64,12 @@ player to have MCC (and, for a Workshop map, the same Workshop item).
 
 ## 7. Can I play with OpenCE or ChupathingyCE players?
 
-Sometimes, depending on the build. Arena Evolved 0.7.4 uses **network version 39**.
+Sometimes, depending on the build. Arena Evolved 0.7.5 uses **network version 41**.
 
 - **ChupathingyCE:** yes, both ways.
-- **OpenCE builds 282 to 333:** yes. These use network version 39 too.
-- **OpenCE build 334 and newer** (network version 40 and 41): not yet. They cannot join Arena Evolved and Arena Evolved cannot
-  join them. Merging the newest builds is planned.
-- **Arena Evolved 0.4.3 and older:** no.
+- **OpenCE build-334 and later:** yes. These use network version 41 too.
+- **OpenCE builds 333 and older** (network version 39 and lower): no.
+- **Arena Evolved 0.7.4 and older:** no. Only 0.7.5 joins 0.7.5 games; the host's chat says so.
 
 Two more limits:
 
@@ -129,8 +128,8 @@ MY PARTY (in the lobby). Keyboard and mouse have KEY BINDINGS under SETTINGS > C
 
 ## 13. Where is `debug.txt`?
 
-In the game's folder: next to `halo.exe` on Windows or `halo` on Linux (for Quiver, the game's folder inside Quiver's Apps
-folder). It is plain text. It holds your graphics driver name and file paths, and on Windows paths with your Windows user
+In the game's folder: next to `halo.exe` on Windows or `halo` on Linux, in `~/Library/Application Support/ChupathingyCE`
+on a Mac (Finder: Go > Go to Folder), or for Quiver in the game's folder inside Quiver's Apps folder. It is plain text. It holds your graphics driver name and file paths, and on Windows paths with your Windows user
 name, so look through it before you share it. The file keeps earlier runs, so attach it right after the problem.
 
 Your settings (`config.toml`) are next to the program. Saves and profiles are in `~/.local/share/halo-linux` on Linux and
@@ -140,7 +139,7 @@ Your settings (`config.toml`) are next to the program. Saves and profiles are in
 
 Open an issue in this repository's **Issues** tab and choose **Bug report** (or **Crash or freeze**). Please give:
 
-- your system and the version (it is in the window's title, for example 0.7.4-beta);
+- your system and the version (it is in the window's title, for example 0.7.5-beta);
 - whether the game uses MCC, a disc image or both;
 - what you did, what you expected and what happened;
 - `debug.txt` (question 13).
@@ -151,9 +150,15 @@ One bug per issue. Do not attach maps or disc images. Questions and ideas go in 
 
 - **Mac (Apple silicon, macOS 13 or later):** built with every release but not tested by the Arena Evolved team. You need a
   disc image, because MCC does not run on a Mac. The game keeps its maps, settings and `debug.txt` in
-  `~/Library/Application Support/ChupathingyCE` (Finder: Go > Go to Folder). In 0.7.4 the Mac download lacks the weapon
-  packs, voices and sounds: get `arena-evolved-0.7.4-beta-mac-extras.zip` from the release and put its folders there.
-  Macs only open the download page when there's a new version; download it and replace the app.
+  `~/Library/Application Support/ChupathingyCE` (Finder: Go > Go to Folder).
+  - *"Cannot be opened because the developer cannot be verified":* right-click `ArenaEvolved.app` > **Open** > **Open**,
+    or **System Settings > Privacy & Security > Open Anyway**. See [how-to-play.md](how-to-play.md) for the full steps.
+  - *Packs, voices and sounds:* from 0.7.5 they come in the download beside the app and the game copies them in on the
+    first start. If `debug.txt` says macOS opened the app "from a temporary copy" (App Translocation), drag the app to
+    Applications once and open it with right-click > Open, or copy the three folders into the data folder yourself. In
+    0.7.4 the download lacks them: get `arena-evolved-0.7.4-beta-mac-extras.zip` from the release and put its folders
+    in the data folder.
+  - *Updates:* Macs only open the download page when there is a new version; download it and replace the app.
 - **Steam Deck / Linux handhelds:** the Linux download is the one to use. If the first-start window does not open in Game
   Mode, start it once from Desktop Mode.
 - **Android:** an untested build is attached to releases.
