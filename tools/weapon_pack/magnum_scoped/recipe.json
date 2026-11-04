@@ -1,0 +1,657 @@
+{
+ "format": 1,
+ "about": "The AE HJ magnum pack (folder magnum_scoped): ZTeam's black slide magnum with its rail attachments (the ZTeam tag pack's magnum/h3o: its weapon, third-person and first-person models, shaders, bitmaps, animations, collision and sounds), as an Xbox weapon tuned as a scoped headshot sidearm; everything the stock pistol has is the map's. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_magnum_scoped",
+  "revision": 31,
+  "display": "HJ MAGNUM",
+  "prefix": "ae\\packs\\magnum_scoped\\",
+  "weapon": "zteam\\objects\\weapons\\single\\magnum\\h3o\\magnum",
+  "weapon_key": "magnum_scoped",
+  "labels": "hp,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\magnum_scoped\\zteam\\objects\\weapons\\single\\magnum\\h3o\\bullet": "the stock pistol round (projectile and damage effect: speed, impacts, contrail, headshot flags) with our own damage and range",
+   "ae\\packs\\magnum_scoped\\zteam\\objects\\weapons\\single\\magnum\\h3o\\effects\\fire_bullet": "the stock pistol's firing effect (flash, smoke, casing) with ZTeam's shot sound",
+   "ae\\packs\\magnum_scoped\\zteam\\objects\\weapons\\single\\magnum\\h3o\\effects\\trigger": "the stock pistol's firing kick (a damage effect) with a rumble on both motors"
+  },
+  "icon": "ae_pack\\hud\\magnum_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\magnum_icon"
+  ]
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/icons/weapons/magnum.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/h3/bitmaps/scopes/scope_circular_medium.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_odst_magnum.weapon_hud_interface",
+   "zteam/objects/weapons/single/magnum/h2/sounds/ready.sound",
+   "zteam/objects/weapons/single/magnum/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/magnum/h3/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/magnum/h3o/animations/magnum_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/magnum/h3o/animations/magnum_tp.model_animations",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_attachments.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_attachments_multipurpose.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_multipurpose.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/collisions/magnum_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/magnum/h3o/magnum.weapon",
+   "zteam/objects/weapons/single/magnum/h3o/models/magnum_fp.gbxmodel",
+   "zteam/objects/weapons/single/magnum/h3o/models/magnum_tp.gbxmodel",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_attachments.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_luminous.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_metal.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_rubber.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/sounds/fire.sound",
+   "zteam/shared/bitmaps/colors/green.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail_dark.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ],
+  "verbatim": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/h3/bitmaps/scopes/scope_circular_medium.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/objects/weapons/single/magnum/h2/sounds/ready.sound",
+   "zteam/objects/weapons/single/magnum/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/magnum/h3/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/magnum/h3o/animations/magnum_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/magnum/h3o/animations/magnum_tp.model_animations",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_attachments.bitmap",
+   "zteam/objects/weapons/single/magnum/h3o/collisions/magnum_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_attachments.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_luminous.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_metal.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/shaders/magnum_rubber.shader_model",
+   "zteam/objects/weapons/single/magnum/h3o/sounds/fire.sound",
+   "zteam/shared/bitmaps/colors/green.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail_dark.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {
+  "magnum_picture.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/hud/h3/bitmaps/icons/weapons/magnum.bitmap",
+   "sha256": "7f0c577dce9da2a94578f3048c0a40003d79a648eeb081a8d0cf9c88fb365795",
+   "scripts": [
+    "source_icon.py"
+   ]
+  },
+  "cmt_pistol_hud.weapon_hud_interface": {
+   "kind": "zip",
+   "zip": "tsce",
+   "member": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/weapons/evolved/human/pistol.weapon_hud_interface",
+   "root": "tsce",
+   "tag": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/weapons/evolved/human/pistol.weapon_hud_interface",
+   "sha256": "66237558b294ca137dcca201788fe1f46ca8323797bd7327335a238494645771",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "cmt_weapon_reticules.bitmap": {
+   "kind": "zip",
+   "zip": "tsce",
+   "member": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "root": "tsce",
+   "tag": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "sha256": "98472547b38d084502b30f01720fa89e5866525204f92949214c5860bc2818d3",
+   "scripts": [
+    "copy_input.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "magnum_icon.png": "source_icon.py"
+ },
+ "art_drawings": {
+  "magnum_icon.png": {
+   "draw": "source_icon",
+   "input": "magnum_picture.bitmap",
+   "width": 100
+  }
+ },
+ "art": {
+  "magnum_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    74
+   ],
+   "pixels_sha256": "7c055f21a0bc97f9a69d43bdcf64c0359c8be4c9bc761358d5deadfbd2d9b5a2"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\magnum\\h3o\\magnum.weapon"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/models/magnum_tp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/magnum/h3o/models/magnum_tp.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/models/magnum_fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/magnum/h3o/models/magnum_fp.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_multipurpose.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_attachments_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/magnum/h3o/bitmaps/magnum_attachments_multipurpose.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/bullet.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/bullet.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "24"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "24 24"
+    ],
+    [
+     "set",
+     "cyborg_armor",
+     "1.6"
+    ],
+    [
+     "set",
+     "cyborg_energy_shield",
+     "1.6"
+    ]
+   ],
+   "why": "the scoped magnum's round: the stock pistol round's damage effect (its impacts, materials and headshot flags) at our own numbers: 24 a round, x1.6 on a player's shields and body alike (38.4 a hit): two hits strip a full shield, the third to the head kills, four to the body"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/bullet.projectile",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/bullet.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "impact_damage",
+     "zteam\\objects\\weapons\\single\\magnum\\h3o\\bullet.damage_effect"
+    ],
+    [
+     "set",
+     "maximum_range",
+     "120"
+    ]
+   ],
+   "why": "the scoped magnum's round: the stock pistol round (its speed, impacts, contrail) carrying our damage effect, reaching 120 units (the stock pistol round's 40 is short for a scoped sidearm)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/effects/fire_bullet.effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/effects/fire bullet.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].parts[0].type",
+     "zteam/objects/weapons/single/magnum/h3o/sounds/fire.sound"
+    ]
+   ],
+   "why": "the firing effect: the stock pistol's (its flash, smoke and casing) with ZTeam's magnum shot in place of the stock pistol's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.5"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.09"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.09"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): the stock pistol's firing kick, made again under the pack's name with a single kick on both motors with each round (the carbine's pattern)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "op": "derived",
+   "derived": "cmt_weapon_reticules.bitmap",
+   "why": "CMT's own aiming reticle sheet, unchanged"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/cmt_pistol_src.weapon_hud_interface",
+   "op": "derived",
+   "derived": "cmt_pistol_hud.weapon_hud_interface",
+   "why": "CMT's pistol HUD, as released: the source of the sidearm's two aiming reticles (not in the pack)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/cmt_pistol.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "fix-ae",
+    "ae_pack/hud/cmt_pistol_src.weapon_hud_interface"
+   ],
+   "why": "that HUD made the Xbox's (the high-res scale flag cleared and the scale halved, as the engine does); not in the pack"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/hud/temp/weapon_interfaces/test/h3_odst_magnum.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_odst_magnum.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "graft",
+     "fix-ae",
+     "ae_pack/hud/cmt_pistol.weapon_hud_interface",
+     "crosshairs[2]",
+     "crosshairs[0]"
+    ],
+    [
+     "graft",
+     "fix-ae",
+     "ae_pack/hud/cmt_pistol.weapon_hud_interface",
+     "crosshairs[3]",
+     "crosshairs[2]"
+    ]
+   ],
+   "why": "the magnum's own HUD: ZTeam's (its ammunition meter, reticle, 2x scope and the magnum's picture), its rounds panel the map's stock one in place of ZTeam's chain of panels, whose last draws a full-screen visor frame over the game's own HUD; its two aiming reticles (crosshairs 0 and 2) are CMT's pistol ones, as the sidearm's, grafted from CMT's pistol HUD in place of ZTeam's oval test reticles; ZTeam's round 2x scope picture (crosshair 1) stays"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/magnum_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "magnum_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: ZTeam's own picture of the magnum (its HUD's weapon picture), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\magnum_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/magnum/h3o/magnum.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/magnum/h3o/magnum.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/magnum/h3o/models/magnum_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/magnum/h3o/models/magnum_fp.model"
+    ],
+    [
+     "erase",
+     "widgets[*]"
+    ],
+    [
+     "erase",
+     "attachments[1]"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "weapons\\assault rifle\\muzzle flash.light"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "sound\\sfx\\impulse\\weapon_drops\\pistol_impact.sound"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "weapons\\pistol\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\pistol\\melee_response.damage_effect"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam\\hud\\temp\\weapon_interfaces\\test\\h3_odst_magnum.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "pickup_sound",
+     "sound\\sfx\\weapons\\weapon_pickup_ammo\\pistol_ammo.sound"
+    ],
+    [
+     "set",
+     "zoom_in_sound",
+     "sound\\sfx\\weapons\\sniper rifle\\sniper_2x_zoom.sound"
+    ],
+    [
+     "set",
+     "zoom_out_sound",
+     "sound\\sfx\\weapons\\sniper rifle\\sniper_10x_zoom.sound"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "20"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "zoom_levels",
+     "1"
+    ],
+    [
+     "set",
+     "zoom_magnification_range",
+     "2 2"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "48"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "48"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "2.4 2.4"
+    ],
+    [
+     "set",
+     "triggers[0].error",
+     "0 1"
+    ],
+    [
+     "set",
+     "triggers[0].minimum_error",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].error_angle",
+     "0 1.25"
+    ],
+    [
+     "set",
+     "triggers[0].error_acceleration_time",
+     "0.4"
+    ],
+    [
+     "set",
+     "triggers[0].error_deceleration_time",
+     "0.5"
+    ],
+    [
+     "set",
+     "triggers[0].projectile_object",
+     "zteam\\objects\\weapons\\single\\magnum\\h3o\\bullet.projectile"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_effect",
+     "zteam/objects/weapons/single/magnum/h3o/effects/fire_bullet.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].empty_effect",
+     "weapons\\pistol\\effects\\empty.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\magnum\\h3o\\effects\\trigger.damage_effect"
+    ]
+   ],
+   "why": "the Xbox models; ZTeam's flashlight (a light and its light volume) left out; everything the map's stock pistol has (muzzle flash, materials, drop sound, melee, ammo pickup and zoom sounds, message indices, empty click) is the map's; the firing kick is the stock pistol's with a rumble; our own numbers: 12 a magazine, 48 to start and in reserve, 2.4 rounds a second, the first round exact, the error growing to 1.25 degrees over 0.4 s of fire, one 2x zoom (the stock pistol HUD's scope, whose label reads 2x)"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-03, revision 1); re-pinned 2026-11-04 for ZTeam's own HUD and picture; re-pinned 2026-11-04 for the pack-flaws fixes (revision 31; the donor's hash is left to the box build)",
+  "donor_sha256": "",
+  "pack_sha256": "e58b682d268fc24da0d66c4e50f7d630e13a3d00a233bd58c1a1b568ced6752e",
+  "pack_own_sha256": "58924381a0666d5a030349b367ee8460b03c7ae0443e25959c5ad55fe6935da1",
+  "pack_size": 40424621,
+  "own_tags": 33,
+  "external_tags": 48
+ },
+ "extra_sources": {
+  "tsce": {
+   "name": "CMT's Silent Cartographer Evolved source release, stock-compatible tags (its pistol HUD's aiming reticle)",
+   "file": "tsce_1-4_source_release_stock.zip",
+   "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833"
+  }
+ },
+ "derived": {
+  "cmt_pistol_hud.weapon_hud_interface": {
+   "script": "copy_input.py",
+   "input": "cmt_pistol_hud.weapon_hud_interface",
+   "sha256": "66237558b294ca137dcca201788fe1f46ca8323797bd7327335a238494645771"
+  },
+  "cmt_weapon_reticules.bitmap": {
+   "script": "copy_input.py",
+   "input": "cmt_weapon_reticules.bitmap",
+   "sha256": "98472547b38d084502b30f01720fa89e5866525204f92949214c5860bc2818d3"
+  }
+ }
+}

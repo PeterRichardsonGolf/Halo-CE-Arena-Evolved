@@ -1,0 +1,303 @@
+{
+ "format": 1,
+ "about": "The AE bolt-action sniper pack: the sniper rifle of the CE+ X modded disc (VKMT's CE+ team; its tag dw2\\weapons\\sniper_rifle\\e3_2000\\sniper rifle, on every CE+ X multiplayer map) taken as the disc has it from the map's tags into the donor map and the pack: its weapon, third-person and first-person models, first-person animations, shaders, bitmaps, trigger and HUD. make_pack.py runs it; the locations of the source map, the stock map and the programs are given on its command line (--source-map).",
+ "pack": {
+  "id": "ae_sniper_bolt",
+  "revision": 31,
+  "display": "BOLT SNIPER",
+  "prefix": "ae\\packs\\sniper_bolt\\",
+  "weapon": "dw2\\weapons\\sniper_rifle\\e3_2000\\sniper rifle",
+  "weapon_key": "sniper_bolt",
+  "labels": "sg",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "roots": [
+   "bitm:dw2\\ui\\standard\\hud\\bitmaps\\pickups\\ce_plus_pickup_icons"
+  ],
+  "icon": "dw2\\ui\\standard\\hud\\bitmaps\\pickups\\ce_plus_pickup_icons:29"
+ },
+ "source": {
+  "kind": "map",
+  "name": "CE+ X 1.01 (VKMT's CE+ team; the modded Xbox disc): its Blood Gulch, bloodgulch.map",
+  "file": "bloodgulch.map",
+  "sha256": "7d6edf513925439c74f78e86670d6287cdc03417cd83225f774e7ecc41935d72",
+  "tags": 1761,
+  "verbatim": [
+   "digsite/_shared/00_e3/bitmaps/reflection diffuse cubemap.bitmap",
+   "digsite/_shared/00_e3/bitmaps/reflection rifle cubemap.bitmap",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg multipurpose.bitmap",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp_multipurpose.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/screen.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/00_e3_fp_zoom.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/00_e3.model",
+   "digsite/weapons/sniper_rifle/00_e3/00_e3.model_collision_geometry",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/2-sided.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/decal.shader_transparent_generic",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/green lights.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/gun.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/primary.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/primary.shader_transparent_generic",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/red lights.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/red rifle screen.shader_transparent_chicago",
+   "dw2/alt/weapons/sniper/bolt/fp/fp.model",
+   "dw2/ui/standard/hud/bitmaps/pickups/ce_plus_pickup_icons.bitmap",
+   "dw2/weapons/sniper_rifle/e3_2000/fp/fp.model_animations",
+   "dw2/weapons/sniper_rifle/e3_2000/sniper rifle.weapon"
+  ],
+  "allowlist": [
+   "digsite/_shared/00_e3/bitmaps/reflection diffuse cubemap.bitmap",
+   "digsite/_shared/00_e3/bitmaps/reflection rifle cubemap.bitmap",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg multipurpose.bitmap",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp_multipurpose.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/screen.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/00_e3_fp_zoom.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/00_e3.model",
+   "digsite/weapons/sniper_rifle/00_e3/00_e3.model_collision_geometry",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/2-sided.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/decal.shader_transparent_generic",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/green lights.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/gun.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/primary.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/primary.shader_transparent_generic",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/red lights.shader_model",
+   "digsite/weapons/sniper_rifle/00_e3/shaders/red rifle screen.shader_transparent_chicago",
+   "dw2/alt/weapons/sniper/bolt/fp/fp.model",
+   "dw2/ui/standard/hud/bitmaps/pickups/ce_plus_pickup_icons.bitmap",
+   "dw2/ui/standard/hud/weapon_interfaces/e3000.weapon_hud_interface",
+   "dw2/weapons/sniper_rifle/e3_2000/fp/fp.model_animations",
+   "dw2/weapons/sniper_rifle/e3_2000/sniper rifle.weapon",
+   "dw2/weapons/sniper_rifle/e3_2000/trigger.damage_effect"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "dw2\\weapons\\sniper_rifle\\e3_2000\\sniper rifle.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "dw2\\ui\\standard\\hud\\bitmaps\\pickups\\ce_plus_pickup_icons.bitmap"
+    ]
+   ],
+   "why": "the donor map only: the stock HUD globals naming the source's own pickup icon sheet, so that the donor holds the sheet the pack's message icon is (the pack takes the sheet by its root, never these globals)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the source's pickup icon sheet)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "dw2/weapons/sniper_rifle/e3_2000/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "dw2/weapons/sniper_rifle/e3_2000/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.8"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.15"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.9"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.12"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a heavy single kick on both motors with each shot, the carbine's pattern made stronger for a sniper round; nothing else of CE+'s trigger is changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "dw2/ui/standard/hud/weapon_interfaces/e3000.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "dw2/ui/standard/hud/weapon_interfaces/e3000.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[0].width_scale",
+     "1"
+    ],
+    [
+     "set",
+     "crosshairs[2].crosshair_overlays[1].anchor_offset",
+     "189 0"
+    ],
+    [
+     "set",
+     "crosshairs[2].crosshair_overlays[2].anchor_offset",
+     "-93 0"
+    ],
+    [
+     "set",
+     "crosshairs[2].crosshair_overlays[3].anchor_offset",
+     "93 0"
+    ],
+    [
+     "set",
+     "crosshairs[2].crosshair_overlays[4].anchor_offset",
+     "0 57"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[0].anchor_offset",
+     "-101 18"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[1].anchor_offset",
+     "115 18"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[2].anchor_offset",
+     "-33 0"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[3].anchor_offset",
+     "33 0"
+    ],
+    [
+     "set",
+     "crosshairs[3].crosshair_overlays[4].anchor_offset",
+     "0 42"
+    ]
+   ],
+   "why": "CE+'s HUD keeps four elements the game never draws (its three static elements and its meter: the game's tag check reports each \"has no bitmap: not drawn\", on CE+ X's own maps too). They are dropped; everything that draws (the scope crosshairs, the ammunition child HUD) is CE+'s as it was, so the HUD looks the same; AE (owner, rc-075b: \"bolt rifle crosshair huge\"): CE+ X authored its scope crosshair ticks for its own, larger crosshair bitmaps (every offset twice the stock sniper's, a width scale of 11 on the split-screen one), but the pack takes the player's own stock bitmaps; the offsets and that scale are the stock sniper rifle's HUD's, so the crosshair draws at the stock sniper's size"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-03, revision 1); re-pinned 2026-11-03 for the credits' kind line; re-pinned 2026-11-04 for the haptics; re-pinned 2026-11-04 for CE+'s own pickup icon and the dropped empty HUD elements; re-pinned 2026-11-04 for the pack-flaws fixes (revision 31; the donor's hash is left to the box build); re-pinned 2026-11-04 for the pack-flaws fixes (revision 31; the donor's hash is left to the box build)",
+  "donor_sha256": "",
+  "pack_sha256": "25cd222f55d4c864ce25dc9c91a56f0837b6d7f74630a947b843693e570db870",
+  "pack_own_sha256": "e2c4de8cd7318d63f01947a72705f43db821ec7f074598a745be76a8cf56bf4a",
+  "pack_size": 3730147,
+  "own_tags": 24,
+  "external_tags": 23
+ }
+}

@@ -1,0 +1,16 @@
+battle_rifle
+smg
+smg_silenced
+carbine
+ar_silenced
+dmr
+evo_rifle
+needler
+sniper_bolt
+magnum_scoped
+brute_shot
+ar_modern
+sidearm
+energy_sword
+vehicle_damage
+bomb

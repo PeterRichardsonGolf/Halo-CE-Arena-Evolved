@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's multiplayer screens, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_nhe_item" type="text" left="51" top="342" width="232" height="32" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/multiplayer_setup/playlist_edit/playlist_edit_options" string_index="9" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="5">
+		<on event="a" open="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_screen"/>
+		<on event="start" open="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_screen" width="640" height="480" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/gradient">
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/header_nhe_options"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/header_nhe_options" controller="1" left="35" top="11" width="363" height="59" bitmap="main_menu/settings_select/multiplayer_setup/nhe_options_edit/header_nhe_options">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_help">
+		<data input="game settings lists text update"/>
+		<on event="created" run="mp profile init player opts"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_mode" x="54" y="73"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_extras" x="54" y="103"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_sound_filter" x="54" y="133"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_help" type="text" controller="1" left="68" top="321" width="482" height="79" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/cap_nhe_options" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<data input="common button bar update"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save"/>
+		<on event="start" run="port settings save"/>
+		<on event="a" run="mp profile set player options" back="true"/>
+		<on event="start" run="mp profile set player options" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_mode" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_mode_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_mode_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_mode_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_labels" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_mode_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/var_nhe_mode" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/var_nhe_mode">
+		<string text="BY VEHICLE SET"/>
+		<string text="VANILLA"/>
+		<string text="TIMER ONLY"/>
+		<string text="NHE &amp; TIMER"/>
+		<string text="NHE &amp; POWERUPS"/>
+		<string text="TRAINING"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_extras" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_extras_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_extras_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_extras_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_extras_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/var_nhe_extras" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" list_flags="items_from_strings" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/var_nhe_extras">
+		<string text="OFF"/>
+		<string text="ON"/>
+	</strings>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/op_nhe_sound_filter" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_sound_filter_label"/>
+		<child widget="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_sound_filter_spinner" x="320" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_sound_filter_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_sound_filter_spinner" type="spinner" left="2" top="2" width="176" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="audio.nhe_sound_filter" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="4" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 178 19 184">
+		<on event="created" run="port setting load"/>
+		<on event="left_mouse" run="mouse spinner 1wide click"/>
+	</widget>
+	<strings name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/nhe_options_labels">
+		<string text="NHE MODE:"/>
+		<string text="NHE EXTRAS:"/>
+		<string text="NHE SOUND FILTER:"/>
+	</strings>
+	<strings name="main_menu/settings_select/multiplayer_setup/nhe_options_edit/cap_nhe_options">
+		<string text="Halo 1: NHE's maps only: the vehicle set picks\nNHE's mode, as NHE did. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: no timers, as retail\nwith NHE's messages. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's talking and\non-screen timers. On other maps the\ngametype's vehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's talking and\non-screen timers (its host teleport stays off:\nAE hosts neutrally). Other maps: the gametype's."/>
+		<string text="On Halo 1: NHE's maps: NHE's timers and its\npowerup calls. On other maps the gametype's\nvehicles apply."/>
+		<string text="On Halo 1: NHE's maps: NHE's training: the\ncountdown, spawn markers, randoms and waypoints.\nOther maps: the gametype's vehicles."/>
+		<string text="Stock teams and camera."/>
+		<string text="As Halo 1: NHE: everyone joins red and keeps their\ncolour between games, the dead camera stays on you,\nand the match clock counts up."/>
+		<string text="Your game only, any map: mutes the plasma pistol's\ncharging hum and the needler's shots, as Halo 1:\nNHE's maps did."/>
+		<string text="Your game only: the plasma pistol's charging hum\nand the needler's shots play as usual."/>
+	</strings>
+</menus>
