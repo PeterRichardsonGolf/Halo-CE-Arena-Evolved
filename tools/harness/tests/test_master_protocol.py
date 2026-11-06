@@ -270,7 +270,9 @@ def generated(fault=None, faulty_function=None):
     config += structure(read("port/linux/src/update.h"), "update_response") + "\n"
     config += structure(publisher, "master") + "\n" + state.group(0) + "\n"
     config += enum_with(lobby, "LISTING_FORMAT = 1") + "\n" + label.group(0) + "\n" + structure(lobby, "listing") + "\n"
-    text = ""
+    # (listing_read's AE hook: the build-stamp stand-in reads no stamp)
+    text = ("unsigned long ae_listing_build_read(const unsigned char *stamp_after_kind)"
+            " { (void)stamp_after_kind; return 0; }\n")
     for path, names in SOURCES.items():
         source = read(path)
         for name in names:
