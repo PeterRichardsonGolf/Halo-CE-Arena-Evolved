@@ -1,0 +1,129 @@
+# 0.7.6 ELIMINATION: the danger zone you can see. Blood Gulch, AE ELIM TM, 7 bots. "round live" ends the countdown at once;
+# "goto start 40" puts you inside the zone, 20 m from its edge, looking along it; "start 4" is red's base looking at the middle.
+# Two looks for the zone's edge: A the energy wall (a violet band 10 wu tall) and B the light curtain (5 wu, ribs). The look is
+# the setting game.zone_look; `zone look a|b` (DEV MODE) sets it for one run. The strip's middle is the ROUND clock (m:ss, down to
+# the final zone's close); the zone's own countdown is a line just above the strip. Never the game's 15:00, never TIED.
+list elim-076
+revision 1
+title ELIMINATION: the danger zone
+
+group gulch
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test zone-wait
+title The zone waits: strip clock and the line
+setup round live
+setup goto start 4
+check No ring shown in the wait; strip counts down
+check Strip clock = round time counting down (m:ss)
+check Strip line counts down, flashes at 30/10; no top-left text
+
+test zone-look-b
+title Look B, the light curtain
+setup round live
+setup zone look b
+setup goto start 40
+check A thin curtain: light foot, ribs about 1.5 wu apart
+check It reads from far and does not hide aim or enemies
+
+test zone-look-a
+title Look A, the energy wall (the default)
+setup round live
+setup zone look a
+setup goto start 40
+check A mottled violet band, hot foot, ragged top
+check It reads from far, not blinding. A or B, which one?
+
+test zone-edge
+title The closing: edge line, then outside
+setup round live
+setup zone now
+setup goto start 40
+check Line over strip: DANGER ZONE CLOSING
+expect 1 zone phase 1
+check Edge within 10 m: ZONE EDGE 12M and an arrow in
+check Past the edge: tint, RETURN TO THE ZONE, arrow, distance
+
+test zone-out
+title Outside: the tint, the pulse, the death
+setup round live
+setup zone small
+setup goto start 40
+check Violet tint at the frame edge, the middle clear
+check A dark red pulse each second with each hit
+expect 2 out player 0
+check Dead in about 8 s; no revive marker where you fell
+
+test zone-bots
+title The bots go inside as it closes
+setup round live
+setup zone now
+check Bots go inside and do not chase enemies out
+
+test zone-pick
+title The circle sits between the bases
+setup round live
+setup goto start 4
+check No wall seen before it comes in; no tint, no warning
+
+# REVIVE you can see (HUD STYLE AE). The bots stand still (MOVEMENT SKILL STANDING), so nobody revives anybody but you.
+# "down mate" puts the nearest teammate bot down where it stands, "down mate here" in front of you, "down me" puts you down.
+# BLEEDOUT (the gametype's seconds a marker lasts, off by default) has no row yet: it is checked headless with HALO_AE_EXT.
+
+group revive
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+set bots.movement_skill standing
+
+test rev-marker
+title A downed teammate has a marker
+setup round live
+setup goto start 20
+setup down mate
+setup goto start 4
+check Waist-high team-colour orb, no body, label
+check Ring in your team colour; shows through walls; no red cross
+
+test rev-basic
+title Hold X on a downed teammate
+setup round live
+setup goto start 20
+setup down mate here
+check Name, Hold [X] to revive, six segments round the button
+check Hold X: button ring and marker ring fill white in 3 s
+check Feed: <you> REVIVED <mate> in team colours
+expect 2 revived revives 1
+
+test rev-reset
+title Let go and it starts over
+setup round live
+setup goto start 20
+setup down mate here
+check Hold X 2 s, let go: both rings empty at once
+check Hold again: it starts from nothing, the whole 3 s
+expect 2 revived revives 1
+
+# The bots here MOVE (default movement), so a mate walks over to a downed human and holds the action button.
+group revive-bots
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test rev-self
+title You are the one down
+setup round live
+setup goto start 20
+setup down me
+check Top centre: DOWNED helmet in its ring, WAITING FOR REVIVE
+check A bot mate runs to you and holds: reviving you
+expect 1 down player 0
+expect 2 revived player 0

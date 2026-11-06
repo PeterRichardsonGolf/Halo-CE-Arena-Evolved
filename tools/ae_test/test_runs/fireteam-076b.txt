@@ -1,0 +1,40 @@
+# Fireteam round b: the squad you lead takes your calls and no role. BTB Blood Gulch CTF, 16 bots, one load. You lead the first
+# red squad: REGROUP brings it to you and holds until it is there, FOLLOW sticks (no role takes it back), a bot-led squad
+# still runs its role. The dev command "fireteam" gives the orders the wheel's calls give.
+# Headless: run_list.py with --after 70 (each test stays that long).
+list fireteam-076b
+revision 1
+title FIRETEAMS, ROUND B
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 16
+set bots.skill easy
+
+test regroup
+title REGROUP brings your squad to you
+setup fireteam regroup
+check The dev command is taken
+expect 1 cmd fireteam regroup ok
+check Your squad gathers on you
+expect 2 log fireteam 0 regrouped
+check Nobody lets go of the order while members live
+expect 3 no log let go of its regroup
+
+test follow
+title FOLLOW sticks
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check No role takes your squad back
+expect 2 no log role fireteam 0
+check Your squad stays within 9 wu, in a V behind you
+expect 3 log follow ok
+
+test bot-squad
+title A bot-led squad still runs its role
+check A red bot squad is given a role
+expect 1 log team 0 role
+check A red squad holds its home spot
+expect 2 log anchor ok

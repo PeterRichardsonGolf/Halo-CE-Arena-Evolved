@@ -1,0 +1,393 @@
+{
+ "format": 1,
+ "about": "The AE silenced assault rifle pack: the ma5s of the Halo 2 Mappack Collection v2's Gemini (h2d_gemini, its boardingaction.map: the stock assault rifle's body with a silencer, its own sound and firing effect) taken from the map's tags into the donor map and the pack, the brass ejected from the side. make_pack.py runs it; the locations of the source map, the stock map and the programs are given on its command line (--source-map).",
+ "pack": {
+  "id": "ae_ar_silenced",
+  "revision": 30,
+  "display": "SUPPRESSED AR",
+  "prefix": "ae\\packs\\ar_silenced\\",
+  "weapon": "weapons\\ma5s\\ma5s",
+  "weapon_key": "ar_silenced",
+  "labels": "ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [
+   "ae_pack\\hud\\ar_silenced_meter_smooth:coverage",
+   "ae_pack\\hud\\ar_silenced_alphas_smooth"
+  ],
+  "stock_derived": {
+   "ae\\packs\\ar_silenced\\hud\\ar_silenced_ammo": "layout numbers set by AE, from the stock assault rifle HUD's structure: positions, sizes and references (hud_tag.py), no art",
+   "ae\\packs\\ar_silenced\\hud\\ar_silenced": "the stock assault rifle's HUD (its crosshairs, which stay the map's), its ammunition panel replaced by ours",
+   "ae\\packs\\ar_silenced\\ar_silenced\\trigger": "the stock assault rifle's firing damage effect (its view kick left as it is), with a pad rumble set"
+  },
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:0"
+ },
+ "source": {
+  "kind": "map",
+  "name": "Halo 2 Mappack Collection v2: Gemini (h2d_gemini, the collection's boardingaction.map)",
+  "file": "h2d_gemini.map",
+  "sha256": "821f25029a103406859056d443c2d7f7facb92e1061ef18e093107dad40af677",
+  "tags": 1840,
+  "verbatim": [
+   "weapons/assault rifle/shaders/bolt.shader_transparent_chicago",
+   "weapons/ma5s/bitmaps/silencer.bitmap",
+   "weapons/ma5s/bitmaps/silencer_multi.bitmap",
+   "weapons/ma5s/fp/fp.model",
+   "weapons/ma5s/ma5s.model",
+   "weapons/ma5s/shaders/silencer.shader_model",
+   "weapons/ma5s/sounds/fire.sound"
+  ],
+  "allowlist": [
+   "weapons/assault rifle/shaders/bolt.shader_transparent_chicago",
+   "weapons/ma5s/bitmaps/silencer.bitmap",
+   "weapons/ma5s/bitmaps/silencer_multi.bitmap",
+   "weapons/ma5s/effects/fire bullet.effect",
+   "weapons/ma5s/fp/fp.model",
+   "weapons/ma5s/ma5s.model",
+   "weapons/ma5s/ma5s.weapon",
+   "weapons/ma5s/shaders/silencer.shader_model",
+   "weapons/ma5s/sounds/fire.sound"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {
+  "pickup_icons.bitmap": {
+   "kind": "zip",
+   "zip": "cmt_stock",
+   "member": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "sha256": "8d3ae56a0dbf28a5ccd00e6a7d4002a048a8cd4f908931c45658150853445b23",
+   "scripts": [
+    "copy_tag.py"
+   ],
+   "root": "cmt_stock",
+   "tag": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap"
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "ar_silenced_meter_smooth.png": "counter_art.py",
+  "ar_silenced_alphas_smooth.png": "counter_art.py"
+ },
+ "art_drawings": {
+  "ar_silenced_meter_smooth.png": {
+   "draw": "counter_meter",
+   "layout": {
+    "columns": 20,
+    "rows": 3,
+    "group": 5,
+    "height": 6.2,
+    "width": 2.3,
+    "pitch": 4.5,
+    "group_gap": 1.8,
+    "point": 0.3
+   }
+  },
+  "ar_silenced_alphas_smooth.png": {
+   "draw": "counter_alphas",
+   "layout": {
+    "columns": 20,
+    "rows": 3,
+    "group": 5,
+    "height": 6.2,
+    "width": 2.3,
+    "pitch": 4.5,
+    "group_gap": 1.8,
+    "point": 0.3
+   }
+  }
+ },
+ "art": {
+  "ar_silenced_meter_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "f53bc46bcdf13c0ca2c0f2ed12365bf25e92c04102e0c0d400b981cb03b51636"
+  },
+  "ar_silenced_alphas_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "99517bb10e706221ce5e18d08e86185e84de65fb8a9bedffd2df3409407d7b62"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "weapons\\ma5s\\ma5s.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "weapons/ma5s/effects/fire bullet.effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "weapons/ma5s/effects/fire bullet.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].particles[2].location",
+     "1"
+    ]
+   ],
+   "why": "the brass came out of the barrel (owner 2026-10-22): the firing effect's casing (effects\\particles\\solid\\casing h ar bullet, the stock assault rifle's) was made at its location 0, the marker 'primary trigger', which on the ma5s's models is the silencer's tip (0.295 forward; the stock assault rifle's 0.22). The stock assault rifle's firing effect makes the same casing, with the same numbers, at 'primary ejection'; this effect's location 1 is that marker (its ejection sound is made there), on both models where the stock assault rifle has it: the casing now leaves the ejection port on the right side"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "op": "derived",
+   "derived": "pickup_icons.bitmap",
+   "why": "the prompts' picture: CMT's own pickup icon sheet (hudv4.1), taken whole from CMT's 1.4 release (an extra source: this recipe's own source is a map), its assault rifle's sequence 0; nothing drawn"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/hud/ar_silenced_ammo.weapon_hud_interface",
+   "op": "ammo_hud",
+   "icon_sheet": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap",
+   "from": [
+    "stock",
+    "weapons/assault rifle/assault rifle.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_silenced_meter_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ar_silenced_meter_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_silenced_alphas_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ar_silenced_alphas_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_silenced_ammo.weapon_hud_interface",
+   "op": "counter_hud",
+   "alphas": "ae_pack\\hud\\ar_silenced_alphas_smooth.bitmap",
+   "meter": "ae_pack\\hud\\ar_silenced_meter_smooth.bitmap",
+   "scale": 0.25,
+   "anchor": [
+    -1,
+    20
+   ],
+   "off_screen": [
+    -3000,
+    -3000
+   ],
+   "icon_sequence": 0,
+   "from": [
+    "fix-xbox",
+    "ae_pack/hud/ar_silenced_ammo.weapon_hud_interface"
+   ],
+   "why": "the ammunition panel: the counter of 60 rounds (counter_art.py), the low-ammo flash on it, the prompts' picture off the screen"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_silenced.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/assault rifle.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ae_pack/hud/ar_silenced_ammo.weapon_hud_interface"
+    ]
+   ],
+   "why": "the weapon's HUD: the stock assault rifle's (its crosshairs, which stay the map's) with its ammunition panel replaced by the pack's own counter and picture"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ar_silenced/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.1"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.06"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.24"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.06"
+      ]
+     ]
+    ]
+   ],
+   "why": "a bullet's kick on the pad (haptics, 2026-11-03): the stock assault rifle's firing damage effect with the suppressed SMG's soft pulse on both motors, 0.06 s a round (15 a second); the view kick the map's effect has is left as it is"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "weapons/ma5s/ma5s.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "weapons/ma5s/ma5s.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "hud_interface",
+     "ae_pack/hud/ar_silenced.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "ae_pack/ar_silenced/trigger.damage_effect"
+    ]
+   ],
+   "why": "the pack's HUD (counter and prompts' picture) and its firing damage effect with the pad rumble"
+  }
+ ],
+ "expected": {
+  "about": "recorded from a build of revision 2 (2026-11-03: the pack's own HUD (counter and the prompts' and kill feed's picture, drawn from the ma5s model) and a soft pad rumble a round); a pack built twice from the recipe was the same; re-pinned 2026-11-04 for CMT's own pickup icon",
+  "donor_sha256": "0cd73b9f17327e5f45efb4f91c5037e2bbb537ecd2b837373e6cb95f2a55e56e",
+  "donor_size": 20103168,
+  "pack_sha256": "280c35df157538aa3a460ada21acf0f8d32889c7b318eeddd79aaff52add8516",
+  "pack_own_sha256": "da11c564d57beb4e48508f759d342727817c3de57bdb57769f243372afb03d32",
+  "pack_size": 4189386,
+  "own_tags": 15,
+  "external_tags": 32
+ },
+ "extra_sources": {
+  "cmt_stock": {
+   "name": "The Silent Cartographer: Evolved 1.4 stock-compatible source release (CMT)",
+   "file": "tsce_1-4_source_release_stock.zip",
+   "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833"
+  }
+ },
+ "derived": {
+  "pickup_icons.bitmap": {
+   "script": "copy_tag.py",
+   "input": "pickup_icons.bitmap",
+   "sha256": "8d3ae56a0dbf28a5ccd00e6a7d4002a048a8cd4f908931c45658150853445b23"
+  }
+ }
+}

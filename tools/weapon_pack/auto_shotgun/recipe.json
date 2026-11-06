@@ -1,0 +1,624 @@
+{
+ "format": 1,
+ "about": "The AE auto-shotgun pack (folder auto_shotgun): ZTeam's modern combat shotgun (the ZTeam tag pack's shotgun/h3_hunter: its model, worn in first and third person as ZTeam's weapon wears it, shaders, bitmaps, first-person animations and HUD; shotgun/h3's collision and reload and melee sounds, shotgun/h2's shot) as an Xbox weapon tuned as AE's semi-automatic close-range shotgun; everything the stock shotgun has is the map's. The action is a semi-automatic's: the first-person animations are ours, made from ZTeam's by auto_shotgun_anims.py (a shot never works the forend; the forend is worked once, at the end of a reload, by the exit animation, whichever exit the engine picks, and the draw racks it once, ZTeam's ready with its sound, as a semi-automatic is charged; the reload's enter and shell loop play about a fifth faster; the idle posing is ZTeam's one that leaves the forend alone; the stroke sounds of the shot and the posing are taken off), and the third-person animation graph (a forend stroke) is left out. The role is the latest-gen sandbox's semi-automatic close-range shotgun, re-expressed for AE (its shield and body of 140 + 70, ours 75 + 75; a world unit taken as a world unit): there, 12 pellets of 10 inside 4 units falling to 4 past 9, 15 units of range, a 2-shot kill up close, 3 shots strip and 5 kill at the far edge, about 1.56 shots a second. Here: 12 pellets of 7.2 (86.4 a shot: 2 shots kill a full player, 1 never does) at full speed, 2.9 once slowed (34.8 a shot: 3 strip the 75 shield, 5 kill, 4 = 139.2 do not), x1.0 on shield and body, no headshots. The falloff is the round's speed (CE scales a hit's damage between its two bounds by the speed it hits at): 750 units a second slowing to 90 within its first tick, over the air damage range's 8-unit span (the lower bound 25, above the first tick's 25 units, only starts the slowing at once): full damage inside about 4 units, the lower bound past about 9.3, the pellets gone at 15. 5 degrees of pellet spread (the stock shotgun's 10), so the full-damage zone is reached; no bloom. 1.75 shots a second (0.57 s a shot: a 2-shot kill in 0.57 s, the semi-automatic fire animation 0.47 s); 6 shells loaded one at a time (the first 0.5 s, then 0.43 s each, 2.67 s for all 6 before the exit's one stroke: the engine times each shell by the enter and loop animations, ours made from ZTeam's 0.63 s and 0.53 s; the tag's reload time is set to the loop's 0.433 to agree), 12 to start and 24 in reserve. Aim assist 4 degrees to 10 units, magnetism 9 degrees to 12 units (the stock shotgun's 6 to 15 and 12 to 15). Against the stock shotgun (15 pellets of 18-25 with shields at x0.5, a one-shot kill up close, 1 shot a second, 12 shells, 10 degrees): never a one-shot, a tighter pattern, a faster follow-up. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_auto_shotgun",
+  "revision": 1,
+  "display": "AUTO SHOTGUN",
+  "prefix": "ae\\packs\\auto_shotgun\\",
+  "weapon": "zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\shotgun",
+  "weapon_key": "auto_shotgun",
+  "labels": "sg,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\auto_shotgun\\zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\pellet": "the stock shotgun's pellet (projectile and damage effect: impacts, materials) with our own speed, falloff, damage, shield factor and range",
+   "ae\\packs\\auto_shotgun\\zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\effects\\fire_shell": "the stock shotgun's firing effect (flash, smoke, casing) with ZTeam's shotgun shot",
+   "ae\\packs\\auto_shotgun\\zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\effects\\trigger": "the stock shotgun's firing kick (a damage effect) with our own rumble on both motors"
+  },
+  "icon": "ae_pack\\hud\\auto_shotgun_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\auto_shotgun_icon"
+  ]
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/icons/weapons/shotgun.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_shotgun.weapon_hud_interface",
+   "zteam/objects/weapons/single/shotgun/h2/sounds/fire.sound",
+   "zteam/objects/weapons/single/shotgun/h3/collisions/shotgun_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/melee_2.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/reload_exit_empty.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/reload_loop.sound",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/animations/shotgun_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/bitmaps/shotgun.bitmap",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/bitmaps/shotgun_multipurpose.bitmap",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_fp.gbxmodel",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_luminous.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_metal_black.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_metal_silver.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_rubber.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shotgun.weapon",
+   "zteam/shared/bitmaps/colors/cyan.bitmap",
+   "zteam/shared/bitmaps/colors/green.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_monochrome.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ],
+  "verbatim": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/objects/weapons/single/shotgun/h2/sounds/fire.sound",
+   "zteam/objects/weapons/single/shotgun/h3/collisions/shotgun_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/melee_2.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/reload_exit_empty.sound",
+   "zteam/objects/weapons/single/shotgun/h3/sounds/reload_loop.sound",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/bitmaps/shotgun.bitmap",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_luminous.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_metal_black.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_metal_silver.shader_model",
+   "zteam/objects/weapons/single/shotgun/h3_hunter/shaders/shotgun_rubber.shader_model",
+   "zteam/shared/bitmaps/colors/cyan.bitmap",
+   "zteam/shared/bitmaps/colors/green.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_monochrome.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {
+  "shotgun_picture.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/hud/h3/bitmaps/icons/weapons/shotgun.bitmap",
+   "sha256": "75ac8207f2a877c7f46db66cb166920981dbf7e26d23f981e8f0e766f11d317b",
+   "scripts": [
+    "source_icon.py"
+   ]
+  },
+  "shotgun_fp_src.model_animations": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/animations/shotgun_fp_spartan.model_animations",
+   "sha256": "c9ef6fca7bbc04a99ed2bf51003cc7e5f87004177239192cdead863a979acf3d",
+   "scripts": [
+    "auto_shotgun_anims.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "auto_shotgun_icon.png": "source_icon.py"
+ },
+ "art_drawings": {
+  "auto_shotgun_icon.png": {
+   "draw": "source_icon",
+   "input": "shotgun_picture.bitmap",
+   "width": 100
+  }
+ },
+ "art": {
+  "auto_shotgun_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    23
+   ],
+   "pixels_sha256": "23aea3daff131cbe3529a93c0e8c0aca6c3e4f79228b52292a9719a245d597d8"
+  }
+ },
+ "derived": {
+  "shotgun_fp_spartan.model_animations": {
+   "script": "auto_shotgun_anims.py",
+   "input": "shotgun_fp_src.model_animations",
+   "sha256": "d118e454d0faa31af6a2ed0b4d28c0adcaefdda607b682906899f5417b5b40aa"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\shotgun.weapon"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_fp.gbxmodel"
+   ],
+   "why": "the Xbox model format; ZTeam's weapon wears this one model in first and third person (its nodes are the gun's own, its origin the gun's)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_tp.model",
+   "op": "copy",
+   "from": [
+    "fix-ae",
+    "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_fp.model"
+   ],
+   "why": "the third-person model: ZTeam's same model under its own tag (ZTeam's weapon wears its one model in both views; its geometry is the gun alone, on the gun's own nodes), so that the weapon's world and first-person models are two tags, as every pack's are"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/bitmaps/shotgun_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/shotgun/h3_hunter/bitmaps/shotgun_multipurpose.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/animations/shotgun_fp_spartan.model_animations",
+   "op": "derived",
+   "derived": "shotgun_fp_spartan.model_animations",
+   "why": "the semi-automatic first-person animations (auto_shotgun_anims.py, from ZTeam's): no forend stroke on a shot, one rack on the draw (ZTeam's ready), one stroke at the end of every reload; the reload's enter and shell loop about a fifth faster (15 and 13 frames); the stroke sounds of the shot and the forend-check posing taken off"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/pellet.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/shotgun/pellet.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "2.9"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "7.2 7.2"
+    ],
+    [
+     "set",
+     "cyborg_armor",
+     "1"
+    ],
+    [
+     "set",
+     "cyborg_energy_shield",
+     "1"
+    ]
+   ],
+   "why": "the auto-shotgun's pellet: the stock shotgun pellet's damage effect (impacts, materials) at our numbers: 7.2 at full speed, 2.9 once slowed (the lower bound is the damage at the final speed), x1.0 on a Spartan's shield and body (the stock pellet's shield factor is 0.5): 12 pellets make 86.4 a shot up close (2 kill a full 150, 1 never does) and 34.8 at range (3 strip the 75 shield, 5 kill, 4 do not)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/pellet.projectile",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/shotgun/pellet.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "impact_damage",
+     "zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\pellet.damage_effect"
+    ],
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "750"
+      ],
+      [
+       "final_velocity",
+       "90"
+      ],
+      [
+       "air_damage_range",
+       "25 33"
+      ],
+      [
+       "maximum_range",
+       "15"
+      ]
+     ]
+    ]
+   ],
+   "why": "the auto-shotgun's pellet: the stock shotgun pellet (impacts) carrying our damage effect, 750 units a second (25 a tick) slowing to 90 (3 a tick) inside its first tick over the air damage range's 8-unit span (the lower bound 25 starts the slowing at once): full damage inside about 4 units, the lower bound past about 9.3 (the SMG round's slowing, measured on the box, and the same arithmetic); gone at 15 units"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/effects/fire_shell.effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/shotgun/effects/shotgun firing.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].parts[0].type",
+     "zteam/objects/weapons/single/shotgun/h2/sounds/fire.sound"
+    ],
+    [
+     "set",
+     "events[1].parts[0].type",
+     "zteam/objects/weapons/single/shotgun/h2/sounds/fire.sound"
+    ]
+   ],
+   "why": "the firing effect: the stock shotgun's (its flash, smoke and the casing thrown on the shot, as a semi-automatic ejects) with ZTeam's shotgun shot in place of the stock one in both of its sound events"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/shotgun/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.8"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.1"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.12"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): the stock shotgun's firing kick, made again under the pack's name with a shorter thump on both motors each shot (the stock one's 0.3 s high motor would run into the next shot at 1.75 a second)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/hud/temp/weapon_interfaces/test/h3_shotgun.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_shotgun.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ]
+   ],
+   "why": "the auto-shotgun's own HUD: ZTeam's shotgun HUD as released (its 6-shell meter, its round shotgun reticle and the weapon's picture), its rounds panel the map's stock one in place of ZTeam's chain of panels, whose last draws a full-screen visor frame over the game's own HUD; the source's own panel is out (its static elements and meter): no panel of the pack's draws under the classic HUD style"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/auto_shotgun_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "auto_shotgun_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: ZTeam's own picture of the shotgun (its HUD's weapon picture), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\auto_shotgun_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/shotgun/h3_hunter/shotgun.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/shotgun/h3_hunter/shotgun.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/shotgun/h3_hunter/models/shotgun_fp.model"
+    ],
+    [
+     "set",
+     "animation_graph",
+     ".model_animations"
+    ],
+    [
+     "erase",
+     "widgets[*]"
+    ],
+    [
+     "erase",
+     "attachments[1]"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "weapons\\assault rifle\\muzzle flash.light"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "sound\\sfx\\impulse\\weapon_drops\\shotgun_impact.sound"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "weapons\\shotgun\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\shotgun\\melee_response.damage_effect"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam\\hud\\temp\\weapon_interfaces\\test\\h3_shotgun.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "pickup_sound",
+     "sound\\sfx\\weapons\\weapon_pickup_ammo\\shotgun_ammo.sound"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "26"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "autoaim_angle",
+     "4"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "10"
+    ],
+    [
+     "set",
+     "magnetism_angle",
+     "9"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "6"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "1"
+    ],
+    [
+     "set",
+     "magazines[0].reload_time",
+     "0.433"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "24"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "1.75 1.75"
+    ],
+    [
+     "set",
+     "triggers[0].projectiles_per_shot",
+     "12"
+    ],
+    [
+     "set",
+     "triggers[0].error",
+     "0 0"
+    ],
+    [
+     "set",
+     "triggers[0].error_angle",
+     "5 5"
+    ],
+    [
+     "set",
+     "triggers[0].projectile_object",
+     "zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\pellet.projectile"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_effect",
+     "zteam/objects/weapons/single/shotgun/h3_hunter/effects/fire_shell.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].empty_effect",
+     "sound\\sfx\\weapons\\assault rifle\\dryfire.sound"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\shotgun\\h3_hunter\\effects\\trigger.damage_effect"
+    ]
+   ],
+   "why": "the Xbox models (ZTeam's one model, under a third-person and a first-person tag); no third-person animation graph (ZTeam's names shotgun/h3's, a forend stroke on another node set); ZTeam's flashlight (a light and its light volume) left out; everything the map's stock shotgun has (muzzle flash, materials, drop sound, melee, ammo pickup sound and message indices, empty click) is the map's; the firing kick is the stock shotgun's with our rumble; our own numbers (the about): 6 shells loaded one at a time (the reload time the shell loop's 13 frames, which the engine times a shell by), 12 to start, 24 in reserve, 1.75 shots a second, 12 pellets in 5 degrees, no bloom, aim assist 4 degrees to 10 units, magnetism 9 to 12"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the owner's answers (one rack on the draw, the reload about a fifth faster) and its credits text: built twice (a, b) from a clean checkout, byte-identical, then verified; re-pinned for the pack's HUD without the source's own panel (nothing of the pack's draws under the classic HUD style); a pack built twice from the recipe was the same",
+  "donor_sha256": "5afc3e5701df83f95f5d3ffe15da8d98b10ce682b42c4107a901f61f9f10ab13",
+  "donor_size": 21168128,
+  "pack_sha256": "0ab022a7270c6edbff1c242bf484bae4b77185be108a06aab8f6dd4acddef1a5",
+  "pack_own_sha256": "db2ed31e3c2ef59ea0b7d908b52d2bc8c34972f112cf1ca27f0ea7f5052028e0",
+  "pack_size": 9440868,
+  "own_tags": 31,
+  "external_tags": 44
+ }
+}
