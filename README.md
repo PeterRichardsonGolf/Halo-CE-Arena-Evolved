@@ -8,7 +8,7 @@
 <p align="center"><b>Halo: Combat Evolved with modern quality of life, on any PC. Every addition optional, CE's balance kept.</b></p>
 
 <p align="center">
-  <a href="https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/"><b>Website</b></a> ·
+  <a href="https://arenaevolved.com/"><b>Website</b></a> ·
   <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest"><b>Download</b></a> ·
   <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><b>Get it with Quiver</b></a> ·
   <a href="docs/how-to-play.md"><b>How to play</b></a> ·
@@ -34,6 +34,21 @@ Chief Collection on Steam, that's all you need: Arena Evolved finds it and plays
 Workshop maps included. No disc image, nothing to convert. Many of its ideas come from other
 community projects, credited below. Halo CE is still played because its community kept it going; this is our part.
 [Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported as an option.
+
+## Play on the official servers
+
+Three Arena Evolved test servers run on the US West Coast, with bots keeping the games going until players join. In the
+game, open **JOIN BY ADDRESS** and enter one of these:
+
+| Server | Address | What it plays |
+|---|---|---|
+| AE Official #1 | `play.arenaevolved.com:10033` | 4v4 casual and competitive Arena Evolved modes, map vote |
+| AE BTB+ #1 | `btb.arenaevolved.com:10545` | Big team battle with vehicles |
+| AE Crossplay | `crossplay.arenaevolved.com:10551` | A mix of MCC, Workshop, Custom Edition and community maps |
+
+The live list (who's on, map, mode) is on [arenaevolved.com](https://arenaevolved.com/). They need Arena Evolved 0.7.5 or
+later; MCC and Workshop maps also need your own MCC install. The in-game server browser will list them from the next release. Want to run your own? See
+[Host a game or server](docs/host-a-server.md).
 
 > **Status: beta, in active development.** Supported and tested with every release: **Windows and Linux**. macOS on
 > Apple silicon is built with every release. Android and the other platforms OpenCE builds come from the same code and
