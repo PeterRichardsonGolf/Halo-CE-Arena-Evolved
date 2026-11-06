@@ -192,6 +192,13 @@ section{padding:clamp(56px,7vw,96px) 0}
 .links h3{flex-basis:100%;font-size:16px;letter-spacing:.1em;margin-bottom:4px}
 .links a{display:inline-flex;align-items:center;padding:10px 18px;border-radius:999px;text-decoration:none;font-weight:700;font-size:14px;color:var(--white);box-shadow:inset 0 0 0 1px var(--rule-strong);transition:box-shadow .2s var(--ease),background .2s var(--ease)}
 .links a:hover,.links a:focus-visible{background:rgba(40,148,254,.12);box-shadow:var(--glow);outline:2px solid transparent}
+.links button{display:inline-flex;align-items:center;padding:10px 18px;border:0;border-radius:999px;background:none;font:inherit;font-weight:700;font-size:14px;color:var(--white);cursor:pointer;box-shadow:inset 0 0 0 1px var(--rule-strong);transition:box-shadow .2s var(--ease),background .2s var(--ease)}
+.links button:hover,.links button:focus-visible{background:rgba(40,148,254,.12);box-shadow:var(--glow);outline:2px solid transparent}
+.links button[hidden]{display:none}
+.links a svg{margin-right:8px;flex:none}
+footer .links{margin:0 0 28px}
+footer .links h3{color:var(--white)}
+.share-status{flex-basis:100%;min-height:1.4em;margin-top:2px;font-size:13px;color:var(--ice)}
 /* footer */
 footer{padding:64px 0 48px;border-top:1px solid var(--rule);font-size:14px;color:var(--dim)}
 footer .credits{max-width:80ch}
@@ -220,7 +227,7 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
   .rows b,.upstream .rows b{width:auto}
   .dl a{flex-direction:column;align-items:flex-start;gap:3px;min-height:52px}
   .dl a span{text-align:left}
-  .links a,.more summary{min-height:44px}
+  .links a,.links button,.more summary{min-height:44px}
 }
 </style>
 </head>
@@ -286,11 +293,13 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
     <div class="copy">
       <h2>Online, LAN, and bots to fill it</h2>
       <p>Server browser, LAN search, invite links, join by address, dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come from the host as you join.</p>
-      <p><strong>Bots in every mode</strong>, six levels from RECRUIT to DEMON: a wingman for each player, squads that flank, flag crews that escort, bombers that plant and defend. They drive, ride, know the item timers, and step aside when a player joins.</p>
+      <p><strong>Bots in every mode</strong>, six levels from RECRUIT to DEMON: a wingman for each player, squads that flank, flag crews that escort, bombers that plant and defend. They drive, ride, know the item timers, and step aside when a player joins. Every bot plays in a fireteam of up to five, and the one you lead holds your FOLLOW ME, REGROUP, ATTACK and DEFEND orders.</p>
       <ul class="rows">
         <li><b>Party</b><span>A live CREATE GAME lobby: friends and bots join while you set up.</span></li>
         <li><b>Split screen</b><span>Up to four players on one PC, each with their own profile and settings.</span></li>
-        <li><b>Crossplay</b><span>Plays with ChupathingyCE and OpenCE build-334 and later (network version 41) on Halo CE's own gametypes. Older Arena Evolved builds cannot join 0.7.5 games.</span></li>
+        <li><b>Crossplay</b><span>Plays with ChupathingyCE and OpenCE build-334 and later (network version 41) on Halo CE's own gametypes. Arena Evolved 0.7.5 and later play together; older builds cannot join.</span></li>
+        <li><b>Moderation</b><span>Open any player's card to move them to the other team, kick them for 2 minutes or ban them from your games. BANNED PLAYERS lists every ban, to lift any of them.</span></li>
+        <li><b>Coming soon</b><span>Official Arena Evolved test servers on the US West Coast.</span></li>
       </ul>
     </div>
     <figure class="screen" style="margin:0"><a class="full" href="img/create-game.webp" aria-label="Open the full screenshot"><img src="img/create-game.webp" alt="CREATE GAME lobby on Battle Creek from MCC, with MY PARTY and the quick options" width="1600" height="900" loading="lazy"></a><figcaption>Create game · my party</figcaption></figure>
@@ -302,14 +311,14 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
     <h2>Everything it adds, and every bit optional</h2>
     <p class="intro">Each of these is a setting or a gametype rule you can switch off. Halo CE's own gametypes keep Halo CE's rules.</p>
     <div class="lead3">
-      <article class="row big"><h3>Weapons for CE's sandbox</h3><p>Battle rifle, EVO RIFLE, DMR, SMG, carbine and suppressed weapons as packs that work on stock, Custom Edition and MCC maps. Each turns on or off per gametype.</p><p class="opt">Fresh this week, in testing: the NEEDLER, BOLT SNIPER, COMBAT RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope) and BRUTE SHOT are in as betas, and the ENERGY SWORD as an alpha. Numbers will move as people play them.</p></article>
+      <article class="row big"><h3>Weapons for CE's sandbox</h3><p>Battle rifle, EVO RIFLE, DMR, SMG, carbine and suppressed weapons as packs that work on stock, Custom Edition and MCC maps. Each turns on or off per gametype.</p><p class="opt">In testing: the NEEDLER, BOLT SNIPER, COMBAT RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope) and BRUTE SHOT are in as betas, and the ENERGY SWORD as an alpha. Numbers will move as people play them.</p></article>
       <article class="row big"><h3>Modern spawns</h3><p>Better spawns for every game bigger than 2v2, on small maps and in big team battles. You come back away from the fight and out of enemy sight, not in front of someone's gun.</p><p class="opt">Optional: the SPAWNS row in GAME OPTIONS switches back to CLASSIC. The CLASSIC COMP set and Halo CE's own gametypes keep classic spawns.</p></article>
-      <article class="row big"><h3>Bots in every mode</h3><p>Six levels from RECRUIT to DEMON. They flank in squads, escort the flag, plant and defend the bomb, drive and ride vehicles (the Scorpion too), answer your team's calls, and step aside when a player joins. PLAYFIGHT bots aim but never shoot, for practice.</p></article>
+      <article class="row big"><h3>Bots in every mode</h3><p>Six levels from RECRUIT to DEMON. They flank in squads, escort the flag, plant and defend the bomb, drive and ride vehicles (the Scorpion too), answer your team's calls, and step aside when a player joins. They play in fireteams of up to five, each with a job for the mode: defend the flag, push, hold a site. Lead yours with FOLLOW ME, REGROUP, ATTACK and DEFEND and it keeps the order, through the fights. PLAYFIGHT bots aim but never shoot, for practice.</p></article>
       <article class="row big"><h3>Classic competitive</h3><p>Competitive rules and gametypes inspired by Halo 1: NHE and modern competitive arena shooters: the CLASSIC COMP set, AE COMP 2v2 and 4v4, NO SPREAD: FIRST SHOT, item timers with spoken callouts, a match clock, and the community's competitive maps from the Workshop.</p></article>
-      <article class="row big"><h3>Round modes</h3><p>Search and Destroy and Bomb: one life a round, a real bomb carried on the back, a fuse timer on its face. Built on the ChupathingyCE team's Bomb engine.</p></article>
+      <article class="row big"><h3>Round modes</h3><p>Search and Destroy and Bomb: one life a round, a real bomb carried on the back, a fuse timer on its face. Built on the ChupathingyCE team's Bomb engine.</p><p>New: ELIMINATION (beta). A downed teammate waits as a glowing orb, marked through walls: hold the button near it to revive them, while a danger zone closes in. Up to 16 players, bots included, and bots revive too.</p></article>
       <article class="row big"><h3>Team calls</h3><p>One button to talk to your team without a mic: tap to mark what you aim at, double tap to call an enemy, hold for the communication wheel: calls such as ATTACK, DEFEND, HELP and RIDE. A mark knows what it points at: when a power item comes back, where a flag is, a Warthog's open seat. Bots on your team answer and go, and NEED A RIDE brings a bot driver to you.</p></article>
     </div>
-    <details class="more"><summary>Everything else it adds <span>(16 more)</span></summary>
+    <details class="more"><summary>Everything else it adds <span>(17 more)</span></summary>
     <div class="menu">
       <article class="row"><h3>Ready-made gametypes</h3><p>More than 250 built in and kept current by each update, sorted in a nested CHANGE GAMETYPE picker: FFA, 2v2, 4v4 casual and COMP, big team with heavy vehicles, objective modes, party modes such as Juggernaut, Grifball, SWAT, Crazy King and Race, the new TERRITORIES mode (beta), and warm-up drills. Start each mode with a pistol, a BR or the EVO RIFLE.</p></article>
       <article class="row"><h3>Second-generation game settings</h3><p>GAME OPTIONS gains rounds and round time, respawn time modifiers, damage resistance and extra damage, weapon respawn, flag and bomb carrier rules, and hill rules such as uncontested hills and team time multipliers. Halo CE plays as before unless you set them. Shields now break with a pop and a flash, the score strip counts rounds, and RESTART ROUND works in any rounds game.</p></article>
@@ -317,11 +326,12 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
       <article class="row"><h3>Vehicles</h3><p>In AE's gametypes vehicles take damage from small arms by armour class, come back on their own timer by class (a Scorpion takes longer than a Ghost), and a hold of the action button gets you in, flips them or gets you out. A quicker Ghost with a sharper cannon leaves a burning hull when destroyed.</p></article>
       <article class="row"><h3>Training aids</h3><p>Item timers and waypoints with pictures, spoken callouts in seven voices, a match clock, spawn heat markers, dead ally markers, a green ally reticle and an enemies-only motion sensor.</p></article>
 
-      <article class="row"><h3>Host tools</h3><p>OFFLINE games that really pause. RESTART GAME and RESTART ROUND, bots changed mid-game, CHANGE MAP and GAME OPTIONS from the pause menu, SHUFFLE TEAMS.</p></article>
-      <article class="row"><h3>Controllers</h3><p>Many layouts including MCC's and a CUSTOM one per player, DualSense adaptive triggers and lightbar, PlayStation and Nintendo prompts, gyro aiming, stick dead zones.</p></article>
+      <article class="row"><h3>Host tools</h3><p>OFFLINE games that really pause. RESTART GAME and RESTART ROUND, bots changed mid-game, CHANGE MAP and GAME OPTIONS from the pause menu, SHUFFLE TEAMS. A playlist editor in the lobby, with weights for each game and SAME AGAIN as a vote.</p></article>
+      <article class="row"><h3>Controllers</h3><p>Many layouts including MCC's and a CUSTOM one per player, DualSense adaptive triggers and lightbar, PlayStation and Nintendo prompts, A/B SWAP for Nintendo pads, gyro aiming, stick dead zones.</p></article>
       <article class="row"><h3>Mouse and keyboard</h3><p>KEY BINDINGS, wheel zoom, hold-to-zoom, MCC-style sensitivity, and key prompts that show your own keys.</p></article>
       <article class="row"><h3>Menus for today's PCs</h3><p>Controller-first, just as good with a mouse, sized for anything from a handheld to an ultrawide. Search, favourites and RECENT in the map and gametype pickers.</p></article>
       <article class="row"><h3>Medals, kill feed and assists</h3><p>118 medals for kills, sprees, objectives and game ends, with MCC's own medal art read from your install when you own MCC. A kill feed shows everyone's kills with the weapon and head shots. Assists count on the scoreboard and the post-game, and a driver gets an assist for the kills their gunner makes.</p></article>
+      <article class="row"><h3>Carnage report and service record</h3><p>A CARNAGE REPORT after every game with each player's numbers. Your PC keeps a SERVICE RECORD for each player name: games, wins, kills and medals, per mode. SET RIVAL on a player's card highlights them and keeps your head-to-head record.</p></article>
       <article class="row"><h3>Competitive HUD</h3><p>A clean, modern HUD built for competitive play. A score bar shows both teams, the clock and the objective at a glance: who has the flag, the ball or the hill. Power weapon and overshield timers count down in the corner. Compact and big-screen layouts, or switch back to Halo CE's own HUD in one setting.</p></article>
       <article class="row"><h3>Graphics</h3><p>Field of view and viewmodel settings, FXAA, SMAA and MSAA, HDR, resolution scaling and anisotropic filtering, and custom magnum colors for your first-person magnum (only on your screen).</p></article>
       <article class="row"><h3>Accessibility</h3><p>REDUCE MOTION, a menu size setting, values you can type, and help lines that name your own buttons.</p></article>
@@ -381,7 +391,7 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
           <a data-asset="macos.tar" href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest">macOS <span>13 or later, Apple silicon&ensp;·&ensp;built, untested</span></a>
           <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved">Quiver <span>install and update it from the launcher</span></a>
         </div>
-        <p class="note">Each release also has the dedicated server, an untested Android build and its complete source.</p>
+        <p class="note">Each release also has the dedicated server, an untested Android build (it does not start in 0.7.6; 0.7.7 fixes it) and its complete source.</p>
       </div>
       <div class="panel">
         <h3>You need your own copy of the game</h3>
@@ -438,6 +448,21 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
 
 <footer>
   <div class="wrap">
+    <nav class="links share" aria-label="Share Arena Evolved">
+      <h3>Share Arena Evolved</h3>
+      <button type="button" data-share="copy">Copy link</button>
+      <button type="button" data-share="native" hidden>Share</button>
+      <a href="https://www.reddit.com/submit?url=https%3A%2F%2Fpeterrichardsongolf.github.io%2FHalo-CE-Arena-Evolved%2F&amp;title=Halo%20CE%3A%20Arena%20Evolved" target="_blank" rel="noopener noreferrer">Reddit</a>
+      <a href="https://x.com/intent/post?url=https%3A%2F%2Fpeterrichardsongolf.github.io%2FHalo-CE-Arena-Evolved%2F&amp;text=Halo%20CE%3A%20Arena%20Evolved" target="_blank" rel="noopener noreferrer">X</a>
+      <a href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fpeterrichardsongolf.github.io%2FHalo-CE-Arena-Evolved%2F" target="_blank" rel="noopener noreferrer">Facebook</a>
+      <button type="button" data-share="app">Instagram</button>
+      <button type="button" data-share="app">TikTok</button>
+      <p class="share-status" role="status" aria-live="polite"></p>
+    </nav>
+    <nav class="links follow" aria-label="Follow Arena Evolved">
+      <h3>Follow</h3>
+      <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+    </nav>
     <p class="credits">Built on <a href="https://github.com/OpenCommunityEdition/OpenCE">OpenCE</a>, <a href="https://github.com/ChupathingyCE/chupathingyce">ChupathingyCE</a>, <a href="https://github.com/chestahh/GulchCE">GulchCE</a>, CMT's source release and the ideas of <a href="https://halo1nhe.com/">Halo 1: NHE</a>. Full credits in the <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved#credits">README</a>.</p>
     <p class="legal">Halo is a trademark of its owner. Halo CE: Arena Evolved is a non-commercial fan project, not made or endorsed by the game's owners or developers, and includes none of the game's content. The ORBIT logo and the ARENA EVOLVED wordmark: all rights reserved by the project.</p>
   </div>
@@ -463,6 +488,20 @@ footer .legal{margin-top:28px;font-size:13px;opacity:.85}
     held=!held;btn.textContent=held?'Play slides':'Pause slides';
     if(held)heldAt=performance.now();else start+=performance.now()-heldAt});
   requestAnimationFrame(tick);
+
+  var SITE='https://peterrichardsongolf.github.io/Halo-CE-Arena-Evolved/',TITLE='Halo CE: Arena Evolved',status=document.querySelector('.share-status'),said=0;
+  function say(t){status.textContent=t;clearTimeout(said);said=setTimeout(function(){status.textContent=''},5000)}
+  function copy(then){
+    function done(){say(then)}
+    function fail(){say('Copy this link: '+SITE)}
+    if(navigator.clipboard&&window.isSecureContext)navigator.clipboard.writeText(SITE).then(done,fail);else fail()}
+  var canShare=!!navigator.share;
+  if(canShare)document.querySelector('[data-share="native"]').hidden=false;
+  [].forEach.call(document.querySelectorAll('[data-share]'),function(b){b.addEventListener('click',function(){
+    var k=b.dataset.share;
+    if(k==='copy')return copy('Link copied.');
+    if(canShare&&(k==='native'||phone))return navigator.share({title:TITLE,url:SITE}).catch(function(){});
+    copy('Link copied. Paste it into your '+b.textContent+' post or bio.')})});
 
   var ua=navigator.userAgent,phone=/Android|iPhone|iPad|iPod|Mobile/.test(ua)||(/Mac OS X/.test(ua)&&navigator.maxTouchPoints>1),os=phone?null:/Windows/.test(ua)?'windows64.zip':(/Linux/.test(ua)&&!/Android/.test(ua))?'linux64.zip':/Mac OS X/.test(ua)?'macos.tar':null;
   var names={'windows64.zip':'Windows','linux64.zip':'Linux','macos.tar':'macOS'};
