@@ -13,7 +13,7 @@ tables):
 - every alias's successor in the table; an alias's info its successor's set,
   order, team and engine, its own stored name as display_name, no
   description, not special;
-- the sets: AE 73, AE BR 39, AE COMP 18, OCTAGON 12, CLASSIC COMP 25, TRAINING 1, NEW MODES 34 (202), each set's orders
+- the sets: AE 75, AE BR 39, AE COMP 18, OCTAGON 12, CLASSIC COMP 25, TRAINING 1, NEW MODES 94 (264), each set's orders
   0..n-1 in the table's order, NHE's own set after VANILLA and POWERUPS
   (TS 50 first, CTF WIZARD last), and the set names;
 - lookups letters' case aside; an unknown name FALSE, displayed as it is;
@@ -99,7 +99,7 @@ static void check_text(char const *what, char const *text, size_t maximum)
 
 int main(void)
 {
-	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 73, 39, 18, 12, 25, 1, 34 };
+	short const expected_counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0, 75, 39, 18, 12, 25, 1, 94 };
 	char const *const expected_set_names[NUMBER_OF_ARENA_GAMETYPE_SETS] =
 		{ "", "AE", "AE BR", "AE COMP", "OCTAGON", "CLASSIC COMP", "TRAINING", "NEW MODES" };
 	short counts[NUMBER_OF_ARENA_GAMETYPE_SETS] = { 0 };
@@ -111,8 +111,9 @@ int main(void)
 
 	/* the table */
 	/* (the table grew with the built-in AE gametypes' EVO and pistol starts, revision 27's and 28's rows) */
-	if (arena_gametype_catalog_count() != 202)
-		fail("catalog count is not 202", "");
+	/* (revision 29 derived a battle rifle and an EVO start name for the NEW MODES presets without one: 34 presets, 94 names; revision 30 added AE PACKS TEST and AE NEEDLER TS) */
+	if (arena_gametype_catalog_count() != 264)
+		fail("catalog count is not 264", "");
 	for (index = 0; index < (short)NUMBEROF(arena_gametype_names); index++)
 	{
 		struct arena_gametype_name const *entry = &arena_gametype_names[index];
@@ -381,7 +382,7 @@ int main(void)
 				{ "", "AE FFA", "AE 2V2", "AE 4V4", "AE BTB", "AE OBJECTIVE", "AE ACTION SACK", "AE PRACTICE",
 				"CLASSIC COMP", "NEW MODES", "STOCK" };
 			short const expected_category_counts[NUMBER_OF_ARENA_GAMETYPE_CATEGORIES] =
-				{ 0, 14, 24, 24, 30, 2, 33, 16, 25, 34, 0 };
+				{ 0, 14, 24, 24, 30, 2, 33, 18, 25, 94, 0 };
 
 			for (category = 0; category < NUMBER_OF_ARENA_GAMETYPE_CATEGORIES; category++)
 			{

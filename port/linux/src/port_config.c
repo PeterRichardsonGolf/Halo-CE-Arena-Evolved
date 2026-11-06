@@ -1318,7 +1318,7 @@ static const struct config_setting config_settings[] =
 		"A test override: BOMB DROP in any SEARCH AND DESTROY game you host, as\n"
 		"the gametype's BOMB DROP row turns it on: the carrier drops the bomb at\n"
 		"their feet by holding the action button with nothing in reach." },
-	{ "game.zone_look", _config_string, "\"a\"", "HALO_ZONE_LOOK", _environment_value, _platform_all, /* AE hook */
+	{ "game.zone_look", _config_string, "\"b\"", "HALO_ZONE_LOOK", _environment_value, _platform_all, /* AE hook */
 		"How the round modes' danger zone's edge is drawn: \"a\" the energy wall\n"
 		"(a violet band 10 world units tall), \"b\" the light curtain (5 units, a\n"
 		"light foot and ribs). The DEV MODE command zone look a|b sets it for\n"

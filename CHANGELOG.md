@@ -82,7 +82,9 @@ Known issues: Android does not start yet (fixed in 0.7.7).
   ends a downed player's wait after that many seconds. The danger zone is drawn as a violet wall (game.zone_look a|b)
   that closes to nothing: a tint and RETURN TO THE ZONE outside it, a "DANGER ZONE CLOSING IN" line above the score
   strip, ZONE / CLOSING / FINAL ZONE in the strip, and a REVIVED line in the kill feed. Bots revive, and leave a fight
-  outside the ring. Round modes take up to 16 players.
+  outside the ring or near its rim while it closes (a small ring leaves its middle to fight in: bots fight in the final
+  circle again, and a bot a player revived fights back). Round modes take up to 16 players. Downed players' orbs and
+  revives sit on the ground, also after a death in the air. The zone wall's default look is the light curtain (look B).
 - FIRETEAMS. Every bot plays in a squad of up to 5. Lead yours with the communication wheel: FOLLOW ME, REGROUP, ATTACK
   and DEFEND are orders now and the bots hold them (DEFEND keeps them within 8 wu of the spot, through fights). SMART
   CALL on a near place is FOLLOW ME, on a far place it sends the squad there. A squad you don't lead takes a role for

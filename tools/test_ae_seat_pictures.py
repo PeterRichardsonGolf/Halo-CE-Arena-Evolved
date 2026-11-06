@@ -20,6 +20,7 @@ def _pngs():
 
 
 def test_listed_in_bitmaps_xml_and_menus_json():
+    pytest.importorskip("fontTools", reason="ae_seat_pictures draws its labels with fontTools, which the CI image lacks")
     xml = (MENUS / "ce" / "bitmaps.xml").read_text()
     listed = json.loads((MENUS / "menus.json").read_text())
     listed = set(listed if isinstance(listed, list) else [p for v in listed.values() for p in v])

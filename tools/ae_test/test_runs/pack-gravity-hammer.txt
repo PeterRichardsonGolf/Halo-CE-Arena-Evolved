@@ -47,7 +47,7 @@ test gh-safe
 title Gravity hammer: reach, and no harm to you
 check The reticle turns red just past arm's length, not farther
 check Swing at a wall right in front: your shield is untouched
-check The melee button is a blow of the hammer: a full bot right in front dies to one
+check Melee is a hammer blow: a full bot in front dies to one
 map octagon_b
 gametype AE BR TS
 set bots.count 3

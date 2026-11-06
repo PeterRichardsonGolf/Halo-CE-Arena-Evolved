@@ -340,16 +340,16 @@ boolean ae_round_bot_zone_leash(long player_index, real_point3d const *position)
 {
 	long now = game_time_get(), elapsed;
 	int phase;
-	real edge;
+	real edge, radius;
 
 	if (!ae_round_on() || network_game_distributed_client() || player_index == NONE || !zone_running(now))
 		return FALSE;
 	elapsed = now - ae_round_host.zone_start;
 	phase = ae_zone_phase_at(&ae_round_host.zone_plan, elapsed);
-	edge = ae_zone_edge_distance(ae_round_host.zone_centre.x, ae_round_host.zone_centre.y,
-		ae_zone_radius_at(&ae_round_host.zone_plan, elapsed), position->x, position->y);
+	radius = ae_zone_radius_at(&ae_round_host.zone_plan, elapsed);
+	edge = ae_zone_edge_distance(ae_round_host.zone_centre.x, ae_round_host.zone_centre.y, radius, position->x, position->y);
 	/* (outside the ring: back in. While it closes, near its edge too: a ring that moves on catches a bot in a fight) */
-	return (boolean)ae_zone_leashes(phase, edge);
+	return (boolean)ae_zone_leashes(phase, edge, radius);
 }
 
 boolean ae_round_bot_zone_goal(long player_index, real_point3d const *position, real_point3d *goal)

@@ -72,7 +72,7 @@ int ae_zone_world_look(void)
 	if (override_look)
 		return override_look;
 	text = config_string("game.zone_look");
-	return text && (text[0] == 'b' || text[0] == 'B') ? 'b' : 'a';
+	return text && (text[0] == 'a' || text[0] == 'A') ? 'a' : 'b';
 }
 
 /* the floor under a ring point: a kept height, a new ray when it is stale and the frame has rays left */

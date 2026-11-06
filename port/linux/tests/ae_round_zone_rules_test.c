@@ -162,9 +162,12 @@ int main(void)
 		CHECK(ae_zone_round_seconds_left(180, 0, 31) == 180 - 1 && ae_zone_round_seconds_left(180, 120, 0) == 120);
 		CHECK(ae_zone_round_seconds_left(100, 300, 0) == 100 && ae_zone_round_seconds_left(100, 0, 99999) == 0);
 		/* the leash: outside always; near the edge only while it closes */
-		CHECK(ae_zone_leashes(AE_ZONE_PHASE_WAIT, -0.5f) && !ae_zone_leashes(AE_ZONE_PHASE_WAIT, 0.5f));
-		CHECK(ae_zone_leashes(AE_ZONE_PHASE_CLOSING, 5.0f) && !ae_zone_leashes(AE_ZONE_PHASE_CLOSING, 7.0f));
-		CHECK(ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, 0.0f) && !ae_zone_leashes(AE_ZONE_PHASE_WAIT_2, 5.0f));
+		CHECK(ae_zone_leashes(AE_ZONE_PHASE_WAIT, -0.5f, 65.0f) && !ae_zone_leashes(AE_ZONE_PHASE_WAIT, 0.5f, 65.0f));
+		CHECK(ae_zone_leashes(AE_ZONE_PHASE_CLOSING, 5.0f, 65.0f) && !ae_zone_leashes(AE_ZONE_PHASE_CLOSING, 7.0f, 65.0f));
+		CHECK(ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, 0.0f, 65.0f) && !ae_zone_leashes(AE_ZONE_PHASE_WAIT_2, 5.0f, 65.0f));
+		/* (a ring of 6.5 closing: its middle fights, its rim does not; the margin never passes half the radius) */
+		CHECK(!ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, 4.0f, 6.5f) && ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, 3.0f, 6.5f));
+		CHECK(!ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, 1.0f, 2.0f) && ae_zone_leashes(AE_ZONE_PHASE_CLOSING_2, -0.1f, 2.0f));
 		(void)bright;
 	}
 

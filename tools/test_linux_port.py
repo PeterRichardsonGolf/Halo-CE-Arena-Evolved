@@ -331,7 +331,11 @@ def test_menu_settings_exist():
     # (TEST RUN's verdict keys are bindable DEV MODE actions in AE's KEY BINDINGS only: same)
     test_run = {f"controls.test_{name}" for name in ("pass", "fail", "note", "skip", "reload", "back", "hide_card")}
     assert test_run <= controls
-    assert controls - delta_chat - dev_mode - test_run == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
+    # (the grenade layer's keys are config keys with no row yet in the classic Controls Setup, which is frozen, nor in
+    # AE's KEY BINDINGS: SWITCH GRENADE's step, N by default, and an unbound previous)
+    grenade_layer = {"controls.grenade_next", "controls.grenade_previous"}
+    assert grenade_layer <= controls
+    assert controls - delta_chat - dev_mode - test_run - grenade_layer == set(re.findall(r'\{ "(controls\.[a-z_]+)", L"', functions))
 
 
 def test_report_joined_games_stops_claims():

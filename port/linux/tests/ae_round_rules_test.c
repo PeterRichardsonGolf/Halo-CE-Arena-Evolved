@@ -150,6 +150,17 @@ int main(void)
 	CHECK(ae_round_bot_revive_safe(31, 1) && !ae_round_bot_revive_safe(30, 1) && !ae_round_bot_revive_safe(60, 0) &&
 		ae_round_bot_revive_safe(91, 0));
 
+	/* a downed player's spot drops to the ground: found below, kept on the ground, none in reach = out */
+	{
+		float z = 0.0f;
+
+		CHECK(ae_round_ground_spot_rule(1, 2.0f, 12.0f, &z) && z == 2.0f);
+		CHECK(ae_round_ground_spot_rule(1, 5.0f, 5.0f, &z) && z == 5.0f);
+		CHECK(!ae_round_ground_spot_rule(0, 0.0f, 12.0f, &z));
+		CHECK(!ae_round_ground_spot_rule(1, -20.0f, 12.0f, &z));
+		CHECK(!ae_round_ground_spot_rule(1, 13.0f, 12.0f, &z));
+	}
+
 	if (failures)
 		return 1;
 	printf("ae_round_rules_test: ok\n");

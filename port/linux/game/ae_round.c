@@ -18,6 +18,7 @@ lives of 1; the spawn hold keeps a late joiner, and everyone once the round is o
 #include "memory/data.h"
 #include "networking/network_game_globals.h"
 #include "objects/objects.h"
+#include "physics/collisions.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
 #include "units/units.h"
@@ -374,10 +375,38 @@ static void goes_down(long player_index, struct ae_round_slot *slot, long now)
 {
 	char name[16];
 	boolean revivable = ae_round_host.revive && !slot->zone_death && ae_round_zone_inside(&slot->last_position, now);
+	real_point3d spot = slot->last_position;
 
 	name_of(player_index, name, sizeof(name));
+	if (revivable)
+	{
+		/* (the orb and the revive sit on the ground: a death in the air drops straight down to the floor; no floor in reach
+		= nobody to revive there, out) */
+		struct collision_result collision;
+		real_point3d from = slot->last_position;
+		real_vector3d down = { 0.0f, 0.0f, -(AE_ROUND_GROUND_ABOVE + AE_ROUND_GROUND_REACH) };
+		float ground_z;
+		boolean hit;
+
+		from.z += AE_ROUND_GROUND_ABOVE;
+		hit = collision_test_vector(FLAG(_collision_test_front_facing_surfaces_bit) |
+			FLAG(_collision_test_ignore_invisible_surfaces_bit) | FLAG(_collision_test_structure_bit), &from, &down, NONE,
+			&collision) != 0;
+		if (ae_round_ground_spot_rule(hit, hit ? collision.point.z : 0.0f, slot->last_position.z, &ground_z))
+		{
+			if (fabsf(ground_z - spot.z) > 0.05f)
+				ae_round_log("%s's spot drops %.1f to the ground (%.1f %.1f %.1f)", name, spot.z - ground_z, spot.x,
+					spot.y, ground_z);
+			spot.z = ground_z;
+		}
+		else
+		{
+			revivable = FALSE;
+			ae_round_log("%s has no ground under the death spot (%.1f %.1f %.1f): out", name, spot.x, spot.y, spot.z);
+		}
+	}
 	slot->state = revivable ? AE_ROUND_PLAYER_DOWN : AE_ROUND_PLAYER_OUT;
-	slot->spot = slot->last_position;
+	slot->spot = spot;
 	slot->progress = 0;
 	slot->reviver = NONE;
 	slot->down_since = now;

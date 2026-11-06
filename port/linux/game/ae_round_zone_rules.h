@@ -119,8 +119,9 @@ real ae_zone_tint_alpha(real across, real down);
 real ae_zone_pulse_alpha(long ticks_after);
 
 /* whether a bot at this edge distance (positive inside) breaks off its fight and goes back in: outside the ring, or
-within AE_ZONE_LEASH_MARGIN of the edge while the ring closes */
-int ae_zone_leashes(int phase, real edge_distance);
+within AE_ZONE_LEASH_MARGIN of the edge while the ring closes (the margin never more than half the ring's radius, so a
+small ring leaves its middle to fight in) */
+int ae_zone_leashes(int phase, real edge_distance, real radius);
 
 /* the round clock's whole seconds left, from the zone's total length and the round time limit (0 none): the least, never below 0 */
 long ae_zone_round_seconds_left(long total_seconds, long limit_seconds, long elapsed_ticks);

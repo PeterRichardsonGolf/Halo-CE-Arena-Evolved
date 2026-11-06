@@ -2687,7 +2687,7 @@ source/render/render.c	void ae_zone_world_draw(short local_player_index); /* AE 
 source/render/render.c	ae_zone_world_draw(local_player_index); /* AE hook */
 source/interface/hud.c	#include "ae_zone_hud.h" /* AE hook */
 source/interface/hud.c	if (game_engine_running() && !cinematic_in_progress()) ae_zone_hud_draw(render.local_player_index); /* AE hook */
-port/linux/src/port_config.c	{ "game.zone_look", _config_string, "\"a\"", "HALO_ZONE_LOOK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.zone_look", _config_string, "\"b\"", "HALO_ZONE_LOOK", _environment_value, _platform_all, /* AE hook */
 # (0.7.6) ELIMINATION: a downed player is a glowing orb in the world and their body is not drawn; the orb is drawn with the zone's wall
 source/render/render_objects.c	#include "ae_revive_orb.h" /* AE hook */
 source/render/render_objects.c	!ae_revive_hides_body(object_index)) /* AE hook */

@@ -13,7 +13,10 @@ lp64 = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(lp64)
 
 # a printf-style call: its name, then an open parenthesis, before the literal in the same statement
-PRINTF_CALL = re.compile(r"\b(?:\w*(?:printf|scanf|_log)|error)\s*\([^;{}]*$")
+# (AE's own wrappers of printf too: answer, tell_players, ae_dev_event and the service record's put take a format and
+# arguments, and the earlier literals of a call that goes on in the next line, "...; " in them, are taken out first)
+PRINTF_CALL = re.compile(r"\b(?:\w*(?:printf|scanf|_log)|error|answer|tell_players|ae_dev_event|put)\s*\([^;{}]*$")
+LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
 
 
 def ae_sources():
@@ -23,11 +26,13 @@ def ae_sources():
 
 def changed_literals(text):
     """(literal, the statement's text before it) for each string literal the rewrite would change"""
+    # (the statement starts after a ; { or } outside the literals: a format's own "; " is not an end)
+    masked = LITERAL.sub(lambda found: '"' + " " * (len(found.group(0)) - 2) + '"', text)
     for match in lp64.TOKEN.finditer(text):
         literal = match.group("string")
         if literal and lp64.rewrite_format(literal) != literal:
-            start = max(text.rfind(";", 0, match.start()), text.rfind("{", 0, match.start()),
-                        text.rfind("}", 0, match.start())) + 1
+            start = max(masked.rfind(";", 0, match.start()), masked.rfind("{", 0, match.start()),
+                        masked.rfind("}", 0, match.start())) + 1
             yield literal, text[start:match.start()]
 
 
@@ -36,7 +41,7 @@ def test_ae_literals_survive_the_lp64_rewrite():
     for path in ae_sources():
         text = lp64.read(path)
         for literal, before in changed_literals(text):
-            if not PRINTF_CALL.search(before):
+            if not PRINTF_CALL.search(LITERAL.sub('""', before)):
                 bad.append(f"{path.relative_to(ROOT)}: {literal}")
     assert not bad, "string literals the 64-bit rewrite would change (split them into two literals):\n" + "\n".join(bad)
 

@@ -169,11 +169,13 @@ void ae_zone_point_toward(real centre_x, real centre_y, real x, real y, real dis
 	*out_y = centre_y + dy / length * distance;
 }
 
-int ae_zone_leashes(int phase, real edge_distance)
+int ae_zone_leashes(int phase, real edge_distance, real radius)
 {
 	int closing = phase == AE_ZONE_PHASE_CLOSING || phase == AE_ZONE_PHASE_CLOSING_2;
+	/* (a ring smaller than twice the margin has no ground a bot may fight on: the margin is half the radius at most) */
+	real margin = radius * 0.5f < AE_ZONE_LEASH_MARGIN ? radius * 0.5f : AE_ZONE_LEASH_MARGIN;
 
-	return edge_distance < (closing ? AE_ZONE_LEASH_MARGIN : 0.0f);
+	return edge_distance < (closing ? margin : 0.0f);
 }
 
 long ae_zone_round_seconds_left(long total_seconds, long limit_seconds, long elapsed_ticks)

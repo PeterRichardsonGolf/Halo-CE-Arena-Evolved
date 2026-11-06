@@ -217,4 +217,17 @@ static inline int ae_scoreboard_status_rule(int round_state_down, int out_of_liv
 	return quit ? AE_SCOREBOARD_STATUS_QUIT : AE_SCOREBOARD_STATUS_NONE;
 }
 
+/* the ground a downed player's spot drops to (0.7.6): the look goes straight down from AE_ROUND_GROUND_ABOVE over the death spot for
+AE_ROUND_GROUND_REACH under it. A floor found gives the spot's height (a death on the ground stays where it was); none found
+inside the reach (a pit, the void) means no revive there: the player is out */
+#define AE_ROUND_GROUND_ABOVE 0.5f
+#define AE_ROUND_GROUND_REACH 30.0f
+static inline int ae_round_ground_spot_rule(int hit, float hit_z, float spot_z, float *ground_z)
+{
+	if (!hit || hit_z > spot_z + AE_ROUND_GROUND_ABOVE + 0.001f || hit_z < spot_z - AE_ROUND_GROUND_REACH - 0.001f)
+		return 0;
+	*ground_z = hit_z;
+	return 1;
+}
+
 #endif

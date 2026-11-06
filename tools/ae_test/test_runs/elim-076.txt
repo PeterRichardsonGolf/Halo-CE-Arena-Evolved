@@ -1,6 +1,6 @@
 # 0.7.6 ELIMINATION: the danger zone you can see. Blood Gulch, AE ELIM TM, 7 bots. "round live" ends the countdown at once;
 # "goto start 40" puts you inside the zone, 20 m from its edge, looking along it; "start 4" is red's base looking at the middle.
-# Two looks for the zone's edge: A the energy wall (a violet band 10 wu tall) and B the light curtain (5 wu, ribs). The look is
+# Two looks for the zone's edge: A the energy wall (a violet band 10 wu tall) and B the light curtain (5 wu, ribs; the default). The look is
 # the setting game.zone_look; `zone look a|b` (DEV MODE) sets it for one run. The strip's middle is the ROUND clock (m:ss, down to
 # the final zone's close); the zone's own countdown is a line just above the strip. Never the game's 15:00, never TIED.
 list elim-076
@@ -31,7 +31,7 @@ check A thin curtain: light foot, ribs about 1.5 wu apart
 check It reads from far and does not hide aim or enemies
 
 test zone-look-a
-title Look A, the energy wall (the default)
+title Look A, the energy wall (B is the default)
 setup round live
 setup zone look a
 setup goto start 40

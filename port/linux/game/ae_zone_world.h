@@ -7,7 +7,7 @@ the world pass (render.c, after the spawn markers: depth tested, alpha blended, 
 geometry's triangles, so no tag and no texture is needed; each look's pattern is made in its vertices' colours
 (ae_round_zone_rules.h: ae_zone_wall_sample, unit tested). Display only, from ae_zone_view.h's state; nothing is networked.
 
-The look: game.zone_look ("a" or "b", default "a"), or the DEV MODE command `zone look a|b` for this run.
+The look: game.zone_look ("a" or "b", default "b"), or the DEV MODE command `zone look a|b` for this run.
 */
 #ifndef AE_ZONE_WORLD_H
 #define AE_ZONE_WORLD_H
