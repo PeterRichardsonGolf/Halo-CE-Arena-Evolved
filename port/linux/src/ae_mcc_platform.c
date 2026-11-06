@@ -396,6 +396,14 @@ int ae_mcc_workshop_catalog_copy(struct ae_mcc_workshop_map *maps, int maximum)
 
 /* ---------- the Workshop collections (ae_workshop_collections.h): Steam's answer, kept a day beside the saves */
 
+/* Steam is asked on Linux, Windows and Mac only (the browser build has no threads; Android has no Steam and its
+guest links no update_https_request) */
+#if !defined(__EMSCRIPTEN__) && !defined(HALO_ANDROID)
+#define AE_WSC_ASKS_STEAM 1
+#else
+#define AE_WSC_ASKS_STEAM 0
+#endif
+
 #define COLLECTIONS_CACHE "workshop-collections.cache"
 #define COLLECTIONS_API "https://api.steampowered.com"
 /* (a test's own server: HALO_AE_WORKSHOP_API=http://127.0.0.1:<port>, update_https_request's plain http to this machine) */
@@ -433,7 +441,7 @@ static void collections_cache_save(struct ae_wsc_table const *table)
 	free(text);
 }
 
-#ifndef __EMSCRIPTEN__
+#if AE_WSC_ASKS_STEAM
 /* one POST to the web API: its answer (malloc'd by the request; freed by the caller), NULL for none */
 static int collections_post(const char *method, const char *form, struct update_response *response)
 {
@@ -499,7 +507,7 @@ static void collections_start(void)
 {
 	struct ae_wsc_table *fresh;
 	int stale;
-#ifndef __EMSCRIPTEN__
+#if AE_WSC_ASKS_STEAM
 	pthread_t thread;
 	pthread_attr_t attributes;
 #endif
@@ -513,7 +521,7 @@ static void collections_start(void)
 	collections_cache_load(collections_table);
 	stale = ae_wsc_stale(collections_table, (long long)time(NULL));
 	platform_log("mcc workshop: collections: %d in the cache%s", collections_table->count, stale ? ", asking Steam" : "");
-#ifndef __EMSCRIPTEN__
+#if AE_WSC_ASKS_STEAM
 	if (!stale || !(fresh = malloc(sizeof(*fresh))))
 		return;
 	pthread_attr_init(&attributes);

@@ -36,9 +36,9 @@ int ae_view_model_valid(struct ae_view_model const *model)
 	int axis;
 
 	for (axis = 0; axis < 3; axis++)
-		if (!isfinite(model->offset[axis]) || fabsf(model->offset[axis]) > AE_VIEW_MODEL_OFFSET_MAXIMUM)
+		if (!__builtin_isfinite(model->offset[axis]) || fabsf(model->offset[axis]) > AE_VIEW_MODEL_OFFSET_MAXIMUM)
 			return 0;
-	return isfinite(model->scale) && model->scale >= AE_VIEW_MODEL_SCALE_MINIMUM &&
+	return __builtin_isfinite(model->scale) && model->scale >= AE_VIEW_MODEL_SCALE_MINIMUM &&
 		model->scale <= AE_VIEW_MODEL_SCALE_MAXIMUM;
 }
 
