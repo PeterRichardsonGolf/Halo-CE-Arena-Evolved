@@ -1,0 +1,49 @@
+# The HEAVY REVOLVER pack (ZTeam's heavy revolver, dark red and metal; the role's numbers, AE's damage: one slow,
+# heavy slug, 46.4 a hit: two strip a shield, the third to the head kills, four to the body, a slug and a blow kill):
+# spawns with the pack's weapon on every life on Octagon 2, a few bots, as the other pack tests do.
+# Needs the pack's slot (17: mask 65536, START 17) registered in the game; until then the lists below cannot run.
+list pack-revolver
+revision 2
+title HEAVY REVOLVER PACK
+
+test revolver-look
+title Heavy revolver: how it looks and reads
+check In hand: red drum and side panel, no glowing lines
+check HUD: eight rounds, one gone a shot; round reticle
+check Sits lower right like the HJ magnum, not mid-screen
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 17
+
+test revolver-dropped
+title Heavy revolver: in a bot's hands
+check A bot's or a dropped one: same red finish, no grey parts
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 17
+
+test revolver-hits
+title Heavy revolver: hits to kill
+check Full bot: 2 slugs pop the shield, 3rd to head kills
+check Body only: 3 slugs leave it alive, the 4th kills
+check Full bot: one slug, then a melee blow kills it
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 17
+
+test revolver-feel
+title Heavy revolver: pace and the slug
+check Mash the trigger: 8 slugs take about 5 s, no faster
+check At range the slug travels and drops: lead it
+check Pad and mouse: easy on a close strafing bot; pad thumps
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 17

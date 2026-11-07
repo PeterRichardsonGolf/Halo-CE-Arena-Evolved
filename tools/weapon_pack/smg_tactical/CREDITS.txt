@@ -1,0 +1,29 @@
+AE TACTICAL SMG (weapon pack ae_smg_tactical) - credits
+
+The tactical SMG's model, textures, shaders, first-person arms and animations, effects, sounds and zoom lines are the
+work of CMT (the Custom Mapping Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the
+Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their credits.txt names). Sound design: Beaucephal
+and Xalener. They are used under the release's own terms ("Just don't take credit for things you didn't make") and
+are unchanged but for what an Xbox map needs: Open Sauce's extension blocks removed, the multipurpose maps' channels
+reordered, the Ogg Vorbis sounds encoded again as Xbox ADPCM, the models converted. CMT's model carries its
+first-person arms and two flashlight cones: the third-person model has the arms and the cones cut out, the
+first-person model the cones cut out. The zoom lines are CMT's with the magnification label and the small print
+left out, and the zoom mask is carried out to a wider picture.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the lighting values and the brightened base map;
+- the aiming reticle, drawn from geometry in the form of a plain SMG reticle;
+- the ammunition counter (3 rows of 20 rounds in groups of 5) and its low-ammo flash;
+- the ammunition panel's layout: its positions, sizes and references are numbers set by AE, in the structure of
+  the stock assault rifle's HUD (no art of the game's);
+- the weapon's numbers (rate of fire, magazine, error, zoom, aim assist, bullet speed and range), set to values
+  that are the first set and will be tuned in play;
+- the damage of a round, set by AE.
+
+The pack holds no pixel, sound or model of the game's own: what the tactical SMG needs of the game (the stock HUD's
+numbers and frames, reflection maps, impact materials, the held weapon's collision) it names, and the map the
+player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1).
+
+Thank you, CMT.

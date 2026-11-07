@@ -1,0 +1,71 @@
+# 0.7.8 DEV tools, on Octagon 2: ttk (time to kill) and dummy (a target that stands still) for weapon pack tuning, the
+# hud mover for a pack weapon's HUD pieces, and the benchmark run. Typed in the DEV console: ttk on, dummy, hud.
+list devtools-078
+revision 2
+title DEV TOOLS 0.7.8
+
+test benchmark-run
+title The benchmark: four maps, then a file
+menus
+check Start the game with HALO_BENCHMARK=standard: 4 maps play
+check Each map plays 15 s; the game quits, benchmark.txt follows
+
+group octagon
+map octagon_b
+gametype slayer
+set bots.count 0
+set debug.network_test_time_limit 10
+
+test ttk-dummy
+title ttk and a dummy: a kill's time
+setup give smg
+setup dummy
+setup ttk on
+check Shoot the dummy dead: a line shows on screen: time, hits
+check The line names you, the dummy and the weapon
+expect 1 cmd dummy ok
+expect 1 cmd ttk ok
+
+test dummy-still
+title Dummies stand still and do not shoot
+setup dummy 2 15
+check Two dummies stand 15 units ahead, side by side, facing you
+check They never move, aim away or shoot, shot or not
+expect 1 cmd dummy ok
+
+test dummy-heal
+title A dummy heals and comes back
+setup give smg
+setup dummy
+check Hurt it, stop: it is full again 3 s after the last hit
+check Kill it: it is back where it stood about 1 s later
+expect 1 cmd dummy ok
+
+test dummy-clear
+title dummy clear sends them away
+setup dummy 3 here
+check Three dummies stand at your feet, facing you
+check Type dummy clear: all three leave
+expect 1 cmd dummy ok
+
+test hud-list
+title hud lists the pack weapon's HUD pieces
+setup give smg
+setup config display.hud_style classic
+check Type hud: each piece has a number, a kind and a picture
+check The list is the weapon's own HUD (HUD STYLE CE draws it)
+
+test hud-move
+title hud moves and hides a piece
+setup give smg
+setup config display.hud_style classic
+check Type hud <i> 40 0: piece i goes 40 units right
+check hud <i> hide, then hud <i> show: it goes, comes back
+check hud save: hud_offsets.txt is written in the config folder
+
+test hud-reset
+title hud reset puts a piece back
+setup give smg
+setup config display.hud_style classic
+check hud <i> 0 40 1.5, then hud reset <i>: as the tag has it
+check Switch to another weapon: its HUD is not moved

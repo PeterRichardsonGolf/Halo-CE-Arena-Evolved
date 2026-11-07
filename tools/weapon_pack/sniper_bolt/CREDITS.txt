@@ -1,0 +1,32 @@
+AE BOLT SNIPER (weapon pack ae_sniper_bolt) - credits
+
+The bolt-action sniper rifle is the CE+ team's (VKMT), from CE+ X 1.01, the CE+ project's Xbox release: its
+weapon, its first-person model and animations, its trigger and its HUD (the dw2 folders), and the third-person
+model with its shaders and textures, which CE+ X carries from Digsite (the Digsite Crew's work, the digsite
+folders). They are taken from CE+ X's own multiplayer map as the disc has them. One change: four empty elements of
+its HUD, which the game never draws (its tag check reports each "has no bitmap: not drawn"), are dropped; and the
+scope crosshairs' offsets (which CE+ X laid out twice as wide) are the stock sniper rifle's, so they draw at its size. The
+HUD otherwise looks the same.
+
+CE+ project credits (2019-2021), as the team gives them: project leads Sean T (lead, tagging, Xbox porting, design
+and balancing) and Ludus (lead, 3D art); 3D art Ludus, Omargabagu, Killzone64, PopeTX28; AI (animation, tagging,
+scripting); Vengeful Vadam (design, dev support); tjsase / TJ Sauce (HD upscales); xScruffyDaSasquatchx (MP
+balancing); Holy Crust (UI/HUD); DDS; Shelly (scripting); Vuthakral; savinpvtmike (rigging, skinning); Roushyy
+(animation); Henskelion; Elote; Neo Te Aika. Additional support: Kavawuvi (Invader), R93 Sniper, ConnorDawn, Rosy
+Muscovy, Booey (Odyssey Sound Team), MrChromed, Maik, Spiral, Galaxy, aLTis, SBB Crew, Berthalamew, Aegis Wolf,
+Digsite Crew. Special thanks: the TSCE team and the Odyssey Sound Team.
+
+The weapon's numbers are CE+ X's (one round every 1.25 s, 4 a magazine, 12 to start and 24 at most, zoom 2x and
+8x); its bullet, damage, firing effect, sounds and melee are the stock sniper rifle's, which it names.
+
+The pack holds no pixel, sound or model of the game's own: what the rifle needs of the game (the stock sniper
+rifle's bullet, firing effect, sounds, melee, ammunition pickup and scope pictures, the HUD's numbers and frames)
+it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture of the rifle is CE+'s own, from CE+ X's pickup icon sheet.
+
+Kind: community model. The rifle's weapon, first-person model, animations and HUD are the CE+ team's own (CE+'s
+dw2 folders); the third-person model is Digsite's (the Digsite Crew's release of early official material, which
+CE+ X carries in its digsite folders). Nothing of it is taken from another Halo game.
+
+Thank you, VKMT, the CE+ team and the Digsite Crew.
