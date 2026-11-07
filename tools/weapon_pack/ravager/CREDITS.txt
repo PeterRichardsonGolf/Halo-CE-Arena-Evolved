@@ -1,0 +1,35 @@
+AE RAVAGER (weapon pack ae_ravager) - credits
+
+The ravager's model, first-person model and animations, shaders, HUD, effects and sounds, and its weapon, bolt and
+damage, are the work of CMT (the Custom Mapping Team), from the stock-compatible source release of The Silent
+Cartographer: Evolved 1.4 (the Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their credits.txt
+names): CMT's prototype ravager (evolved_prototypes/ravager), which uses CMT's spiker model and animations, and the charge
+glow, burst and burn effects of CMT's prototype devourer (evolved_prototypes/devourer). They are
+used under the release's own terms ("Just don't take credit for things you didn't make") and are unchanged but for
+what an Xbox map needs (the models converted, the multipurpose maps' channels reordered, the high-resolution HUD made
+the Xbox's, a flesh impact sound's Ogg Vorbis samples encoded again as Xbox ADPCM, one shader's detail map, which names
+a campaign bitmap no multiplayer map has, left empty) and for its look.
+
+Its look is ours, made from CMT's own textures: the spiker's body and clip pictures recoloured by numbers
+(tools/weapon_pack/ravager_art.py, look B3bd: crimson panels, near-black steel trim, a tempered-steel blade from straw
+to blue, white-cyan glowing seams and panel lines through the self-illumination, cyan lights),
+under the ravager's own copies of CMT's shaders and models, so that the ravager does not look like the spiker. No new
+art is drawn; the HUD's weapon picture and the message icon are CMT's own spiker picture (the ravager's model).
+
+The weapon's numbers are AE's own, not CMT's: the latest-generation ravager's setup tuned for CE. Three lobbed
+bolts a pull, a pull every 0.77 s, each bolt bursting with a small splash (4 bolts strip a full shield, 7 kill, x2 on
+the head once the shield is down); hold to charge (CMT's devourer charge glow) and release for one big bolt whose
+burst leaves a burning pool (CMT's devourer burn pulses, our damage); a 1.4x zoom, 6 pulls to overheat, a 3 s vent and
+a battery of 36 bolts; a pad pulse with each pull and a heavy one with a charged bolt. The held weapon's collision and
+melee are the stock assault rifle's, left to the map.
+
+The pack holds no pixel, sound or model of the game's own: what the ravager needs of the game (impact materials,
+decals, particles, sounds and a reflection map) it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1).
+
+Kind: community model. CMT's attribution note in the release says its models, textures and shaders are CMT's own
+and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music and sfx
+files": the ravager's models, animations and textures are CMT's. Which sounds those are the note does not say.
+
+Thank you, CMT.
