@@ -37,18 +37,19 @@ community projects, credited below. Halo CE is still played because its communit
 
 ## Play on the official servers
 
-Three Arena Evolved test servers run on the US West Coast, with bots keeping the games going until players join. In the
-game, open **JOIN BY ADDRESS** and enter one of these:
+Three Arena Evolved test servers run on the US West Coast, with bots keeping the games going until players join.
+Arena Evolved 0.7.7 lists them in **MULTIPLAYER > SERVER BROWSER**: pick one and join, and a map you lack downloads as
+you join. **JOIN BY ADDRESS** takes these addresses too:
 
 | Server | Address | What it plays |
 |---|---|---|
-| AE Official #1 | `play.arenaevolved.com:10033` | 4v4 casual and competitive Arena Evolved modes, map vote |
-| AE BTB+ #1 | `btb.arenaevolved.com:10545` | Big team battle with vehicles |
-| AE Crossplay | `crossplay.arenaevolved.com:10551` | A mix of MCC, Workshop, Custom Edition and community maps |
+| AE Official #1 | `play.arenaevolved.com:10660` | 4v4 casual and competitive Arena Evolved modes, map vote |
+| AE BTB+ #1 | `btb.arenaevolved.com:10672` | 16v16 Big Team Battle with vehicles |
+| AE Comp Test | `comp.arenaevolved.com:10683` | The competitive playlist test: AE COMP modes with EVO, battle rifle and pistol starts |
 
-The live list (who's on, map, mode) is on [arenaevolved.com](https://arenaevolved.com/). They need Arena Evolved 0.7.5 or
-later; MCC and Workshop maps also need your own MCC install. The in-game server browser will list them from the next release. Want to run your own? See
-[Host a game or server](docs/host-a-server.md).
+The live list (who's on, map, mode) is on [arenaevolved.com](https://arenaevolved.com/). MCC and Workshop maps also need
+your own MCC install. Want to run your own? See [Host a game or server](docs/host-a-server.md); the server packages for
+Linux and Windows are on the [release page](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest).
 
 > **Status: beta, in active development.** Supported and tested with every release: **Windows and Linux**. macOS on
 > Apple silicon is built with every release. Android and the other platforms OpenCE builds come from the same code and
