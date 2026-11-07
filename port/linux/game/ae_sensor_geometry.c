@@ -41,5 +41,5 @@ void ae_sensor_range_label(real range_world_units, char *out)
 
 	if (rounded > 999)
 		rounded = 999;
-	snprintf(out, 8, "%ldm", rounded);
+	snprintf(out, 8, "%dm", (int)(rounded % 1000));
 }

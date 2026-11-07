@@ -847,8 +847,12 @@ static void offer_handle(long machine_index, unsigned short const *data, unsigne
 	{
 		char key[AE_INGAME_KEY_HEX + 8];
 
+#ifdef HALO_GAME_BROWSER
 		if (!browser_moderator_key(key, (int)sizeof(key)))
 			key[0] = 0;
+#else
+		key[0] = 0;
+#endif
 		/* (the key is only ever shown here and in PROFILES: it is sent only where the offer holds it) */
 		platform_log("ae server admin: the server's sign-in offer: %d keys listed%s (this PC's moderator key: %s)",
 			read.count, (read.flags & AE_INGAME_OFFER_BY_ADDRESS) ? ", this address holds a role" : "", key);

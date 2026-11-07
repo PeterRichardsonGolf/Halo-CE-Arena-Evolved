@@ -279,12 +279,12 @@ void ae_server_playlist_vote_order(
 	ae_pl_people_reset(&nominations);
 }
 
-static void tell(
+static void tell_machine(
 	long machine_index,
 	char const *format,
 	...) __attribute__((format(printf, 2, 3)));
 
-static void tell(
+static void tell_machine(
 	long machine_index,
 	char const *format,
 	...)
@@ -334,12 +334,12 @@ static void command_nominate(
 
 	if (!config_boolean("server.vote_nominate") || !config_boolean("server.map_vote"))
 	{
-		tell(machine_index, "Nominations are off on this server.");
+		tell_machine(machine_index, "Nominations are off on this server.");
 		return;
 	}
 	if (!query[0])
 	{
-		tell(machine_index, "Say !nominate and a map's name to put it in the next vote.");
+		tell_machine(machine_index, "Say !nominate and a map's name to put it in the next vote.");
 		return;
 	}
 	for (index = 0; rotation && index < rotation->count; index++)
@@ -353,30 +353,30 @@ static void command_nominate(
 	found = ae_pl_match_entry(names, texts, count, query);
 	if (found == -1)
 	{
-		tell(machine_index, "No map here is called \"%.40s\".", query);
+		tell_machine(machine_index, "No map here is called \"%.40s\".", query);
 		return;
 	}
 	if (found == -2)
 	{
-		tell(machine_index, "More than one map matches \"%.40s\": say more of its name.", query);
+		tell_machine(machine_index, "More than one map matches \"%.40s\": say more of its name.", query);
 		return;
 	}
 	if (depth > 0 && ae_pl_history_recent(&history, texts[found], depth))
 	{
-		tell(machine_index, "%s was played too recently to be in the next vote.", names[found]);
+		tell_machine(machine_index, "%s was played too recently to be in the next vote.", names[found]);
 		return;
 	}
 	if (entry_blocked(&rotation->entries[map[found]]))
 	{
-		tell(machine_index, "%s needs Arena Evolved (or MCC's files) and not everyone here has it.", names[found]);
+		tell_machine(machine_index, "%s needs Arena Evolved (or MCC's files) and not everyone here has it.", names[found]);
 		return;
 	}
 	if (!ae_pl_nominate(&nominations, machine_index, map[found]))
 	{
-		tell(machine_index, "The nominations are full.");
+		tell_machine(machine_index, "The nominations are full.");
 		return;
 	}
-	tell(-1, "%.20s nominated %s (%s) for the next vote.", player_name, names[found], rotation->entries[map[found]].gametype);
+	tell_machine(-1, "%.20s nominated %s (%s) for the next vote.", player_name, names[found], rotation->entries[map[found]].gametype);
 }
 
 static void command_rtv(
@@ -387,12 +387,12 @@ static void command_rtv(
 
 	if (!config_boolean("server.vote_rtv"))
 	{
-		tell(machine_index, "Rock the vote is off on this server.");
+		tell_machine(machine_index, "Rock the vote is off on this server.");
 		return;
 	}
 	if (!server_director_playing())
 	{
-		tell(machine_index, "Rock the vote works while a game is being played.");
+		tell_machine(machine_index, "Rock the vote works while a game is being played.");
 		return;
 	}
 	humans = humans_present(machines, AE_PL_PEOPLE, &non_ae);
@@ -401,13 +401,13 @@ static void command_rtv(
 		return;
 	if (ae_pl_rtv_passed(&rock_asks, machines, humans))
 	{
-		tell(-1, "Enough players want to move on: the game ends now.");
+		tell_machine(-1, "Enough players want to move on: the game ends now.");
 		server_log(_server_log_info, "game", "rock the vote: %d of %d people asked: the game ends", asks, humans);
 		ae_pl_people_reset(&rock_asks);
 		server_director_end_game(_server_end_command, FALSE);
 		return;
 	}
-	tell(-1, "%d of %d people want to move on (%d needed): say !rtv.", asks, humans, ae_pl_rtv_needed(humans));
+	tell_machine(-1, "%d of %d people want to move on (%d needed): say !rtv.", asks, humans, ae_pl_rtv_needed(humans));
 }
 
 static void command_extend(
@@ -418,17 +418,17 @@ static void command_extend(
 
 	if (config_integer("server.vote_extend_minutes") <= 0)
 	{
-		tell(machine_index, "Extending the game is off on this server.");
+		tell_machine(machine_index, "Extending the game is off on this server.");
 		return;
 	}
 	if (!server_director_playing() || game_variant_options_get()->time_limit <= 0)
 	{
-		tell(machine_index, "Extending works in a timed game that is being played.");
+		tell_machine(machine_index, "Extending works in a timed game that is being played.");
 		return;
 	}
 	if (!ae_pl_extend_allowed(extension_used))
 	{
-		tell(machine_index, "This game was extended once already.");
+		tell_machine(machine_index, "This game was extended once already.");
 		return;
 	}
 	humans = humans_present(machines, AE_PL_PEOPLE, &non_ae);
@@ -440,12 +440,12 @@ static void command_extend(
 		extension_used = 1;
 		extension_ticks += (long)minutes * 60L * TICKS_PER_SECOND;
 		ae_pl_people_reset(&extend_asks);
-		tell(-1, "The game is extended by %d minute%s.", minutes, minutes == 1 ? "" : "s");
+		tell_machine(-1, "The game is extended by %d minute%s.", minutes, minutes == 1 ? "" : "s");
 		server_log(_server_log_info, "game", "extended by %d minute%s (%d of %d people asked)", minutes,
 			minutes == 1 ? "" : "s", asks, humans);
 		return;
 	}
-	tell(-1, "%d of %d people want %d more minute%s (%d needed): say !extend.", asks, humans, minutes,
+	tell_machine(-1, "%d of %d people want %d more minute%s (%d needed): say !extend.", asks, humans, minutes,
 		minutes == 1 ? "" : "s", ae_pl_rtv_needed(humans));
 }
 
@@ -710,7 +710,7 @@ void ae_server_playlist_map_answer(
 		int missing = ae_pl_missing(&holdings[machine_index], entry_slot(entry));
 
 		ae_pl_missing_text(missing, entry->level, text, sizeof(text));
-		tell(machine_index, "%s", text);
+		tell_machine(machine_index, "%s", text);
 		if (server_director_entry_can_change())
 		{
 			unsigned long now = system_milliseconds();

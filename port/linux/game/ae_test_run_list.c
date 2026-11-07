@@ -93,7 +93,7 @@ int ae_test_run_list_parse(const char *text, struct ae_test_run_list *out)
 	if (!text)
 		return 0;
 	/* (a UTF-8 byte order mark some editors write is not part of the first line) */
-	if (!memcmp(text, "\xEF\xBB\xBF", 3))
+	if (!strncmp(text, "\xEF\xBB\xBF", 3))
 		at = text + 3;
 	while (*at)
 	{

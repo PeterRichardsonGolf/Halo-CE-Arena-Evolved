@@ -2402,6 +2402,9 @@ port/linux/game/server_gametypes.c	ae_variant_ext_pending_clear(); /* AE hook */
 port/linux/game/server_gametypes.c	ae_variant_ext_pending_block(block); /* AE hook */
 port/linux/game/server_director.c	#include "ae_variant_ext.h" /* AE hook */
 port/linux/game/server_director.c	ae_variant_ext_pending_apply(); /* AE hook */
+# (0.7.7) the Android and web builds compile the director to stubs (HALO_SERVER_BUILD 0): the playlist's two readers get NULL
+port/linux/game/server_director.c	struct server_rotation const *server_director_rotation(void) /* AE hook */
+port/linux/game/server_director.c	struct server_entry const *server_director_current(void) /* AE hook */
 # (0.7.6) a dedicated server's map vote always offers SAME AGAIN, its last choice (ae_server_vote.c)
 port/linux/game/server_director.c	#include "ae_server_vote.h" /* AE hook */
 port/linux/game/server_director.c	server.map_vote_count = ae_server_vote_same_again(&server.rotation, server.current_set ? server.current_index : NONE, server.map_vote_entries, server.map_vote_count, map_names, gametypes, &json); /* AE hook */
@@ -2478,6 +2481,8 @@ port/linux/src/port_config.c	{ "display.server_empty", _config_boolean, "true", 
 port/linux/src/port_config.c	{ "display.server_full", _config_boolean, "false", "HALO_SERVER_FULL", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.server_ae_games", _config_boolean, "true", "HALO_SERVER_AE_GAMES", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/p2p_lobby.c	#include "ae_listing_build.h" /* AE hook */
+# (0.7.7) the web build has no game browser: p2p.c's invite lives inside HALO_GAME_BROWSER, so the open invite is none there
+port/linux/src/p2p_lobby.c	int result = 0; /* AE hook */
 port/linux/src/p2p_lobby.c	const char *updater_version(void); /* AE hook */
 port/linux/src/p2p_lobby.c	unsigned long ae_build; /* AE hook */
 port/linux/src/p2p_lobby.c	ae_listing_build_write(bytes + size + 1, updater_version()); /* AE hook */

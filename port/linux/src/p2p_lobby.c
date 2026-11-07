@@ -1169,7 +1169,11 @@ void p2p_set_hosting_password(const char *password)
 
 int p2p_hosting_open_invite_locked(char *text, int size) /* AE hook */
 { /* AE hook */
+#ifdef HALO_GAME_BROWSER
 	int result = lobby.public && !lobby.has_password && p2p_hosting_invite_locked(text, size); /* AE hook */
+#else
+	int result = 0; /* AE hook */
+#endif
 	if (!result && size > 0) /* AE hook */
 		text[0] = 0; /* AE hook */
 	return result; /* AE hook */

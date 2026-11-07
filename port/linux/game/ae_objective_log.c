@@ -287,7 +287,11 @@ static long ae_obj_team_score(long team)
 	if (!game_engine || !game_engine_has_teams())
 		return 0;
 	if (game_engine_get_variant()->game_engine_index == game_engine_bomb)
+#ifdef HALO_GAME_BROWSER
 		return game_engine_bomb_team_score(team);
+#else
+		return 0;
+#endif
 	return game_engine_get_team_score(team);
 }
 
@@ -1063,7 +1067,11 @@ static void ae_obj_snapshot_words(struct ae_bots_objective_snapshot const *snaps
 				snapshot->bomb_position.z);
 		else
 			snprintf(o1, size1, "none");
+#ifdef HALO_GAME_BROWSER
 		snprintf(o2, size2, "%ld", (long)game_engine_bomb_round());
+#else
+		snprintf(o2, size2, "0");
+#endif
 		break;
 	default:
 		break;

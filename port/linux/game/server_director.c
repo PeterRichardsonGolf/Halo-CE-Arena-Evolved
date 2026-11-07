@@ -2493,4 +2493,14 @@ void server_director_player_removed(long machine_index, char const *reason)
 {
 }
 
+struct server_rotation const *server_director_rotation(void) /* AE hook */
+{
+	return NULL;
+}
+
+struct server_entry const *server_director_current(void) /* AE hook */
+{
+	return NULL;
+}
+
 #endif
