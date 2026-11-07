@@ -19,6 +19,11 @@ The warned stop and restart of a dedicated server (ae_server_restart.h). One hoo
 #include "../src/posix_server.h"
 #include "../src/server_json.h"
 #include "../src/server_log.h"
+#include "../src/server_mode.h"
+
+/* (the dedicated server's: the Android and web builds compile it to nothing, as server_mode.h says) */
+#if HALO_SERVER_BUILD
+
 
 #include <stdio.h>
 #include <string.h>
@@ -174,3 +179,5 @@ void ae_restart_status_json(struct server_json *json)
 	server_json_string(json, "reason", countdown.reason);
 	server_json_object_end(json);
 }
+
+#endif /* HALO_SERVER_BUILD */

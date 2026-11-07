@@ -9,6 +9,11 @@ See ae_server_secret.h.
 #include "ae_server_secret.h"
 #include "ae_server_secret_rules.h"
 #include "../src/server_log.h"
+#include "../src/server_mode.h"
+
+/* (the dedicated server's: the Android and web builds compile it to nothing, as server_mode.h says) */
+#if HALO_SERVER_BUILD
+
 
 #include <stdio.h>
 #include <string.h>
@@ -46,3 +51,5 @@ void ae_server_secret_show(
 		server_log(_server_log_warning, "server", "%s could not be written to a file (the data folder is not writable): "
 			"it is not shown", what);
 }
+
+#endif /* HALO_SERVER_BUILD */
