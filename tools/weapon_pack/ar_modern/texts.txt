@@ -1,0 +1,5 @@
+# The combat assault rifle's texts in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is longer than the pack's display name. The ammo line names the rounds picked up once, as a decimal.
+menu_name=COMBAT ASSAULT RIFLE
+weapon_pickup=Picked up a combat assault rifle
+ammo_pickup=Picked up %d rounds for combat assault rifle

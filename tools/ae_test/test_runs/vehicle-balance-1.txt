@@ -1,0 +1,118 @@
+# Vehicle balance, round 1: what hurts a vehicle and in how many shots (VEHICLES DESTRUCTIBLE ON, every AE gametype with
+# vehicles). Counts are for a vehicle nobody sits in, shots that all land near its middle; two or three either way is fine.
+# Bullets now damage a vehicle: before, only explosives did. Sniper rifle and rockets are on the map; the other
+# weapons come from the pack rifles (battle rifle, DMR) or the map's pistol and rifle. Health shows as smoke under 44%.
+list vehicle-balance-1
+revision 1
+title VEHICLE BALANCE
+
+test bullets-hurt
+title Bullets now damage a vehicle
+check Empty Warthog, pistol: about 125 rounds burn it down
+check Empty Warthog, assault rifle: about 210 rounds
+check Smoke shows once it is under 44% health
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test sniper-counts
+title Sniper rifle against vehicles
+check Empty Warthog: 12 sniper hits destroy it
+check Empty Ghost: 8 sniper hits destroy it
+check Scorpion: sniper hits do nothing at all
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test rocket-counts
+title Rockets (as before)
+check Empty Warthog: 2 rockets; Ghost: 1 rocket
+check Empty Scorpion: 2 rockets near its middle, else 3
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test grenade-counts
+title Grenades against light vehicles
+check Empty Warthog: 2 frag grenades, or 3 plasma grenades
+check Empty Ghost: 2 frag grenades, or 2 plasma grenades
+check A stuck plasma grenade does nothing to a vehicle
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test shotgun-counts
+title Shotgun against a Warthog
+check Point blank, empty Warthog: about 7 shells destroy it
+check Same shots on the Scorpion: nothing
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test pack-rifles
+title Pack rifles against a Warthog
+check Battle rifle on an empty Warthog: about 83 rounds
+check DMR on an empty Warthog: about 31 rounds
+check Same rifles on the Scorpion: nothing
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test tank-shell
+title Tank shell against vehicles
+check Empty Warthog and Ghost: 2 shells each
+check Empty Scorpion: 3 shells
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test vehicle-guns
+title Vehicle guns against vehicles
+check Warthog gun on an empty Ghost: about 26 rounds
+check Warthog gun on an empty Warthog: about 36 rounds
+check Ghost cannon on an empty Warthog: about 18 hits
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test rider-hull-shots
+title A rider while the hull is shot
+check Driver is not hurt by bullets that hit the Warthog
+check Hull at zero with the driver in it: it holds, burning
+check Driver gets out alive: it comes back with a quarter
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test rider-dies-wreck
+title A rider when the vehicle is destroyed
+check Rocket the Warthog with someone in it: they die in it
+check Explosion credits the one who fired
+check The wreck burns 10 s, then it respawns on its pad
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test turret-banshee
+title Gun turret and Banshee
+check Gun turret: 1 rocket, or 13 bolts from a Ghost
+check Banshee: 1 rocket, 8 sniper hits
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+
+test small-arms-weak
+title Plasma and needles hardly scratch
+check Plasma rifle on a Warthog: it takes hundreds of bolts
+check Flamethrower: no damage to a vehicle
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+
+test stock-unchanged
+title Stock Slayer: vehicles never die
+check Rockets, grenades and sniper hits: the Warthog is fine
+check Pistol and rifle: no smoke, no damage
+map bloodgulch
+gametype slayer
+set bots.count 0

@@ -1,0 +1,39 @@
+# The burst PDW pack (slot 16, mask bit 15): in hand on every life on Octagon 2, a few bots.
+# Needs the slot registration (slot 16, weapon key pdw) before it runs. Close = a few steps (inside 5 units),
+# mid = across the middle (past 6.5 units).
+list pack-pdw
+revision 1
+title BURST PDW PACK
+
+test pdw-look
+title Burst PDW: the look
+check A dark, near-black compact SMG in hand, not light grey
+check Ammo meter: 36 rounds in two rows, emptying as you fire
+check Reticle: a ring with four ticks; red on a bot
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 16
+
+test pdw-burst
+title Burst PDW: one pull, three rounds
+check Each pull fires 3 rounds; holding the trigger fires no more
+check Mashing: never 4 rounds in a burst, about 2 bursts a second
+check The first round comes at once (no lag you notice)
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 16
+
+test pdw-kill
+title Burst PDW: 3 bursts close, 4 at mid
+check A few steps away: 3 bursts kill a full-shield bot, 2 do not
+check Across the middle: 4 bursts kill, 3 do not
+check Mid: just slower than the BR's 4 bursts (about 1.6 s)
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 16

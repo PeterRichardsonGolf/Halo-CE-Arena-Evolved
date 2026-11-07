@@ -1,0 +1,42 @@
+# The RAVAGER pack (CMT's prototype ravager set up as the latest-generation ravager is, tuned for CE: three lobbed,
+# bursting bolts a pull, paced by the engine one after another; hold to charge one big bolt that leaves a burning
+# pool): spawns with the pack's weapon on every life on Octagon 2, a few bots, as the other pack tests do.
+# Needs the pack's slot (20: mask 524288, START 20) registered in the game; until then the lists below cannot run.
+# NETWORKED DAMAGE: these run in a local game. The triggers keep CMT's "projectile is client side only" flag; a
+# hosted game with a joiner must show the joiner's bolts, splash and pool hurting the host's player as the host's do.
+list pack-ravager
+revision 3
+title RAVAGER PACK
+
+test ravager-look
+title Ravager: how it looks and reads
+check In hand: crimson body, tempered blade, cyan seams glow
+check Not the spiker: side by side they read as two guns
+check Heat meter fills as you fire; zoom is 1.4x
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 20
+
+test ravager-pulls
+title Ravager: three pulls kill
+check A tap: 3 bolts leave one after another, not together
+check 2 taps pop a full bot's shield; the 3rd tap kills it
+check 7 taps back to back overheat it; about 3 s to vent
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 20
+
+test ravager-charge
+title Ravager: the charged bolt and its pool
+check Hold the trigger: it charges, release fires one big bolt
+check A charged hit takes most of a full bot's shield
+check Where it bursts the ground burns about 2 s and hurts
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 20
