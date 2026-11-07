@@ -1,0 +1,1218 @@
+/* ae_widgets_pick.c: Arena Evolved menus, picking (see ae_widgets.h): the value picker's open list (a popover screen),
+chips, the help / preview panel. No engine includes.
+
+Spec 4.5 (value picker), 4.6 (chips), 4.7 (help panel). A popover's spec is in layout units of the whole frame, with
+the view it draws in (preflight P12: a VIEW popover draws in the player's own view, inside its panel). The in-place
+value step is ae_value_step (ae_widgets_nav.c: the shared step, round past the ends). Text is placed by its capitals' middle;
+2 px of horizontal ink are allowed. */
+
+#include <stdio.h>
+#include <string.h>
+
+#include "../src/ae_draw.h"
+#include "ae_motion.h"
+#include "ae_sound.h"
+#include "ae_strings.h"
+#include "ae_widgets.h"
+
+/* spec units */
+#define PICKER_TEXT_U 22.0f
+#define PICKER_EXTRA_U 76.0f
+#define PICKER_MINIMUM_U 240.0f
+#define PICKER_ITEM_PER_ROW (42.0f / 50.0f)   /* items 42 u where rows are 50 u (VIEW: in the same ratio) */
+#define PICKER_VISIBLE 8
+#define PICKER_TEXT_X_U 48.0f                 /* the values' left, after the check's column */
+#define PICKER_CHECK_X_U 24.0f                /* the check's middle */
+#define PICKER_CHECK_U 6.0f                   /* the check's half width */
+#define PICKER_CHECK_STROKE_U 3.0f
+#define PICKER_TRACK_U 6.0f
+#define PICKER_WHEEL_ROWS 3
+#define PICKER_TYPEAHEAD_MS 900ul
+#define PICKER_TITLE_U 32.0f                  /* (0.4.2) the title line over the values */
+#define PICKER_TITLE_TEXT_U 13.0f
+#define PICKER_TITLE_X_U 18.0f
+/* (0.7.7) the grid: tiles about 120 u (as many as fit, stretched to the width), 8 u apart, a header line 36 u, the title band
+48 u, the name's room at a tile's foot 30 u */
+#define GRID_PAD_U 20.0f
+#define GRID_GAP_U 8.0f
+#define GRID_TILE_U 120.0f
+#define GRID_TILE_TALL_U 1.0f
+#define GRID_HEADER_U 36.0f
+#define GRID_GROUP_GAP_U 12.0f
+#define GRID_BAND_U 48.0f
+#define GRID_LABEL_U 30.0f
+#define GRID_LABEL_TEXT_U 14.0f
+#define GRID_ART_INSET_U 14.0f
+#define NOTCH_U 6.0f
+#define CHIP_PAD_U 14.0f
+/* the focus ring (2 u, 2 u out) leaves 9 u to the next chip: at least 8 px at 1080p (0.7.0; it was 3 u) */
+#define CHIP_GAP_U 13.0f
+#define CHIP_COUNT_GAP_U 10.0f
+#define CHIP_BOX_U 15.0f
+#define CHIP_BOX_GAP_U 9.0f
+#define CHIP_RING_GAP_U 2.0f
+#define CHIP_RING_U 2.0f
+#define CHIP_DASH_U 4.0f
+#define STRIKE_U 2.0f
+#define HELP_INSET_U 28.0f
+#define HELP_GAP_U 14.0f
+#define HELP_TRACKING 0.09f
+#define HELP_DOT_U 5.0f
+#define HELP_DASH_U 6.0f
+#define TEXT_FLOOR_PIXELS 16.0f
+#define MINOR_FLOOR_PIXELS 14.0f
+#define LINE 1.4f                            /* a line of text: its size x this, at least */
+/* the pickers' hits: PICKER_HIT_ID + the slot (one per local player, one full-screen): ids 0x7E01..0x7E05 are
+reserved for them (AE's on-screen keyboard's are 0x7E11..0x7E15, ae_widgets_text.c) */
+enum { PICKER_HIT_ID = 0x7E01 };
+
+static float units(struct ae_density const *density, float spec_units)
+{
+	return spec_units * density->unit;
+}
+
+static float floored(struct ae_density const *density, float spec_units, float floor_pixels)
+{
+	return ae_size(density, spec_units, density->kind == AE_DENSITY_VIEW ? floor_pixels : 0.0f);
+}
+
+static float text_top(int font, float size, float center_y)
+{
+	return center_y - ae_draw_cap_height(font, size) * 0.5f;
+}
+
+/* ---------- the value picker */
+
+static float picker_text(struct ae_density const *density)
+{
+	return floored(density, PICKER_TEXT_U, TEXT_FLOOR_PIXELS);
+}
+
+float ae_picker_width(struct ae_density const *density, const char *const *values, short count)
+{
+	float longest = 0.0f, minimum = units(density, PICKER_MINIMUM_U);
+	short index;
+
+	for (index = 0; index < count; index++)
+	{
+		float width = values && values[index] ? ae_draw_text_width(AE_FONT_ROW, picker_text(density), values[index]) : 0.0f;
+
+		longest = width > longest ? width : longest;
+	}
+	longest += units(density, PICKER_EXTRA_U);
+	return longest > minimum ? longest : minimum;
+}
+
+void ae_picker_place(struct ae_rect const *row, struct ae_rect const *bounds, short count, short current,
+	float item_height, float width, struct ae_rect *popover, short *first_visible)
+{
+	short visible = count < PICKER_VISIBLE ? count : PICKER_VISIBLE, first;
+	float y;
+
+	/* (no more items than the bounds hold) */
+	if (item_height > 0.0f && (float)visible * item_height > bounds->height)
+		visible = (short)(bounds->height / item_height);
+	if (visible < 1)
+		visible = 1;
+	if (current < 0 || current >= count)
+		current = 0;
+	/* the window: the current item in it, a little up from the middle where it can be */
+	first = (short)(current - visible / 2 + (visible > 1 ? 1 : 0));
+	if (first > count - visible)
+		first = (short)(count - visible);
+	if (first < 0)
+		first = 0;
+	/* the current item over the row; upward (then into the bounds) near the bottom; never outside them */
+	y = row->y + row->height * 0.5f - ((float)(current - first) + 0.5f) * item_height;
+	if (y + (float)visible * item_height > bounds->y + bounds->height)
+		y = bounds->y + bounds->height - (float)visible * item_height;
+	if (y < bounds->y)
+		y = bounds->y;
+	/* (bounds shorter than one item: the popover as tall as they are, never past them) */
+	popover->height = (float)visible * item_height;
+	if (popover->height > bounds->height)
+		popover->height = bounds->height;
+	popover->width = width < bounds->width ? width : bounds->width;
+	popover->x = row->x + row->width - popover->width;
+	if (popover->x + popover->width > bounds->x + bounds->width)
+		popover->x = bounds->x + bounds->width - popover->width;
+	if (popover->x < bounds->x)
+		popover->x = bounds->x;
+	popover->y = y;
+	*first_visible = first;
+}
+
+/* the open pickers: one slot per local player and one for a full-screen (anyone's) picker, so every view can have
+its own open at once; each picker screen's data is its slot, its hits' id PICKER_HIT_ID + the slot */
+enum { PICKER_SLOTS = AE_MAXIMUM_PLAYERS + 1 };
+struct picker_state
+{
+	int open, picked;
+	short slot;
+	struct ae_picker_spec spec;
+	struct ae_list list;
+	struct ae_rect popover;        /* layout units */
+	float band;                    /* layout units: the title band as the edge rule grew it (0: the default) */
+	char prefix[8];                /* (0.7.6) the type-ahead's letters so far, and when the last came */
+	unsigned long prefix_at;
+	/* (0.7.7) a grid's: its layout, how far its tiles are scrolled and the step a wheel notch takes (drawing units, as last
+	drawn), the focus the scroll last followed */
+	struct ae_picker_grid grid;
+	float scroll, wheel_step;
+	short seen_focus;
+};
+static struct picker_state pickers[PICKER_SLOTS];
+
+/* (0.7.6) a value that starts with AE_PICKER_HEADER is a section's header: drawn small and muted, never focused, picked
+or found by the type-ahead (a long list's sections: KENNEY, CUSTOM) */
+static int is_header(const char *const *values, short index)
+{
+	return values && values[index] && values[index][0] == AE_PICKER_HEADER;
+}
+
+/* the focus off a header, on to the next entry in direction (round the ends), else back; none left: where it was */
+static void focus_off_header(struct picker_state *state, short direction)
+{
+	short step;
+
+	for (step = 0; step < state->list.count && is_header(state->spec.values, state->list.focus); step++)
+		ae_list_move(&state->list, direction, 1);
+}
+
+/* ---------- (0.7.7) the grid's layout and moves (pure) */
+
+void ae_picker_grid_layout(const char *const *values, short count, short columns, struct ae_picker_grid *grid)
+{
+	short index, row = -1, column = 0;
+	int new_row = 1;
+
+	memset(grid, 0, sizeof(*grid));
+	if (count > AE_PICKER_GRID_MAXIMUM)
+		count = AE_PICKER_GRID_MAXIMUM;
+	grid->count = count < 0 ? 0 : count;
+	grid->columns = columns < 1 ? 1 : columns;
+	for (index = 0; index < grid->count; index++)
+	{
+		if (is_header(values, index))
+		{
+			grid->row_of[index] = -1;
+			grid->column_of[index] = -1;
+			new_row = 1;
+			continue;
+		}
+		if (new_row || column >= grid->columns)
+		{
+			row++;
+			column = 0;
+			new_row = 0;
+		}
+		grid->row_of[index] = row;
+		grid->column_of[index] = column++;
+	}
+	grid->rows = (short)(row + 1);
+}
+
+/* the first entry of the group an index is in (the entry after its header; the list's first when it has none) */
+static short group_first(struct ae_picker_grid const *grid, short index)
+{
+	while (index > 0 && grid->row_of[index - 1] >= 0)
+		index--;
+	return index;
+}
+
+static short grid_first(struct ae_picker_grid const *grid)
+{
+	short index;
+
+	for (index = 0; index < grid->count; index++)
+		if (grid->row_of[index] >= 0)
+			return index;
+	return -1;
+}
+
+short ae_picker_grid_move(struct ae_picker_grid const *grid, const char *const *values, short focus, int dx, int dy,
+	int family, int wrap)
+{
+	short count = grid->count, index, step;
+
+	(void)values;
+	if (count <= 0 || focus < 0 || focus >= count || grid->row_of[focus] < 0)
+		return grid_first(grid);
+	if (dx)
+	{
+		for (step = 1, index = focus; step <= count; step++)
+		{
+			index = (short)(index + (dx > 0 ? 1 : -1));
+			if (index < 0 || index >= count)
+			{
+				if (!wrap)
+					return focus;
+				index = (short)(index < 0 ? count - 1 : 0);
+			}
+			if (grid->row_of[index] >= 0)
+				return index;
+		}
+		return focus;
+	}
+	if (dy)
+	{
+		short row = (short)(grid->row_of[focus] + (dy > 0 ? 1 : -1)), best = -1;
+
+		if (row < 0 || row >= grid->rows)
+		{
+			if (!wrap)
+				return focus;
+			row = (short)(row < 0 ? grid->rows - 1 : 0);
+		}
+		/* (the same column, else the row's last) */
+		for (index = 0; index < count; index++)
+			if (grid->row_of[index] == row && (best < 0 || grid->column_of[index] <= grid->column_of[focus]))
+				best = index;
+		return best >= 0 ? best : focus;
+	}
+	if (family < 0)
+	{
+		short first = group_first(grid, focus);
+
+		if (first != focus)
+			return first;
+		for (index = (short)(first - 1); index >= 0; index--)
+			if (grid->row_of[index] >= 0)
+				return group_first(grid, index);
+		return wrap ? group_first(grid, (short)(count - 1)) : focus;
+	}
+	if (family > 0)
+	{
+		for (index = (short)(focus + 1); index < count; index++)
+			if (grid->row_of[index] >= 0 && grid->row_of[index - 1] < 0)
+				return index;
+		return wrap ? grid_first(grid) : focus;
+	}
+	return focus;
+}
+
+static short picker_slot(short owner);
+
+short ae_picker_focus(short owner)
+{
+	struct picker_state const *state = &pickers[picker_slot(owner)];
+
+	return state->open && ae_ui_holds(state) ? state->list.focus : -1;
+}
+
+static short picker_slot(short owner)
+{
+	return (short)(owner >= 0 && owner < AE_MAXIMUM_PLAYERS ? owner : AE_MAXIMUM_PLAYERS);
+}
+
+static short picker_hit_id(struct picker_state const *state)
+{
+	return (short)(PICKER_HIT_ID + state->slot);
+}
+
+static void picker_enter(struct ae_screen *screen)
+{
+	(void)screen;
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
+static void picker_leave(struct ae_screen *screen)
+{
+	struct picker_state *state = screen->data;
+	void (*closed)(void *) = state->spec.closed;
+	void *context = state->spec.context;
+
+	state->open = 0;
+	if (!state->picked && closed)
+		closed(context);
+}
+
+static float view_scale(void)
+{
+	struct ae_view view;
+
+	ae_draw_current_view(&view);
+	return view.scale;
+}
+
+/* the popover in the current view's drawing units, and its items' height */
+static void picker_frame(struct picker_state const *state, struct ae_rect *popover, float *item)
+{
+	struct ae_view view;
+
+	ae_draw_current_view(&view);
+	popover->x = (state->popover.x - view.x) / view.scale;
+	popover->y = (state->popover.y - view.y) / view.scale;
+	popover->width = state->popover.width / view.scale;
+	popover->height = state->popover.height / view.scale;
+	*item = popover->height / (float)(state->list.rows > 0 ? state->list.rows : 1);
+}
+
+/* the open list in popover (drawing units), its items item tall: the panel, the items, the focus bar, the current
+value's check, the scrollbar; hits under id */
+static void picker_list_draw(struct ae_density const *density, struct ae_rect const *popover_rect, float item,
+	struct ae_list const *list, const char *const *values, short current_value, short id, const char *title, float band_units)
+{
+	struct ae_rect popover = *popover_rect;
+	float size = picker_text(density), track = units(density, PICKER_TRACK_U);
+	short row;
+
+	/* (0.4.2) the title: the row's name, muted, on its own line over the values (part of the popover: a click on it
+	keeps it open) */
+	if (title && *title)
+	{
+		float band = band_units > 0.0f ? band_units : units(density, PICKER_TITLE_U), title_size = units(density, PICKER_TITLE_TEXT_U);
+
+		ae_draw_rect(popover.x, popover.y - band, popover.width, band, 0.0f, AE_COLOR_POPOVER);
+		ae_draw_text_tracked(AE_FONT_BODY, title_size, 0.09f, popover.x + units(density, PICKER_TITLE_X_U),
+			text_top(AE_FONT_BODY, title_size, popover.y - band * 0.5f), AE_ALIGN_LEFT, AE_COLOR_MUTED, title);
+		ae_hit_add(popover.x, popover.y - band, popover.width, band, id, AE_PART_CARD, -1);
+	}
+
+	ae_draw_rect(popover.x, popover.y, popover.width, popover.height, units(density, density->metrics->corner),
+		AE_COLOR_POPOVER);
+	ae_hit_add(popover.x, popover.y, popover.width, popover.height, id, AE_PART_CARD, -1);
+	ae_draw_clip_push(popover.x, popover.y, popover.width, popover.height);
+	for (row = 0; row < list->rows; row++)
+	{
+		short index = ae_list_item_at_row(list, row);
+		float y = popover.y + (float)row * item, center = y + item * 0.5f;
+		int focused = index == list->focus, current = index == current_value;
+		unsigned int color = focused ? AE_COLOR_SELECTION_TEXT : current ? AE_COLOR_ACCENT : AE_COLOR_TEXT;
+
+		if (index < 0)
+			break;
+		/* (a section's header: its name small and muted, no bar and no hit) */
+		if (is_header(values, index))
+		{
+			float small = units(density, PICKER_TITLE_TEXT_U);
+
+			ae_draw_text_tracked(AE_FONT_BODY, small, 0.09f, popover.x + units(density, PICKER_TEXT_X_U),
+				text_top(AE_FONT_BODY, small, center), AE_ALIGN_LEFT, AE_COLOR_MUTED, values[index] + 1);
+			continue;
+		}
+		/* the focus: a white bar with a notch */
+		if (focused)
+		{
+			ae_draw_rect(popover.x, y, popover.width - (list->count > list->rows ? track * 2.0f : 0.0f), item,
+				0.0f, AE_COLOR_SELECTION);
+			ae_draw_rect(popover.x, y, units(density, NOTCH_U), item, 0.0f, AE_COLOR_ACCENT);
+		}
+		/* the current value: an accent check (two strokes) */
+		if (current)
+		{
+			float x = popover.x + units(density, PICKER_CHECK_X_U), half = units(density, PICKER_CHECK_U);
+			float stroke = units(density, PICKER_CHECK_STROKE_U);
+
+			ae_draw_line(x - half, center, x - half * 0.35f, center + half * 0.65f, stroke, color);
+			ae_draw_line(x - half * 0.35f, center + half * 0.65f, x + half, center - half * 0.8f, stroke, color);
+		}
+		if (values && values[index])
+			ae_draw_text(AE_FONT_ROW, size, popover.x + units(density, PICKER_TEXT_X_U), text_top(AE_FONT_ROW, size, center),
+				AE_ALIGN_LEFT, color, values[index]);
+		ae_hit_add(popover.x, y, popover.width, item, id, AE_PART_ITEM, index);
+	}
+	ae_draw_clip_pop();
+	/* more than it shows: a 6 u scrollbar */
+	if (list->count > list->rows)
+	{
+		float thumb_y, thumb_height, x = popover.x + popover.width - track * 1.5f;
+
+		ae_scrollbar_thumb(list->count, list->rows, (float)list->first, popover.height, item, &thumb_y, &thumb_height);
+		ae_draw_rect(x, popover.y, track, popover.height, track * 0.5f, AE_COLOR_TRACK);
+		ae_draw_rect(x, popover.y + thumb_y, track, thumb_height, track * 0.5f, AE_COLOR_MUTED);
+	}
+}
+
+static void grid_draw(struct picker_state *state, struct ae_rect const *popover, short id);
+
+static void picker_draw(struct ae_screen *screen)
+{
+	struct picker_state *state = screen->data;
+	struct ae_rect popover;
+	float item;
+	short id = picker_hit_id(state);
+
+	/* (P12: in the player's own view for VIEW; else in the view before_draw set, the dialog's scale included) */
+	if (state->spec.view.width > 0.0f && state->spec.view.height > 0.0f)
+		ae_draw_view(state->spec.view.x, state->spec.view.y, state->spec.view.width, state->spec.view.height);
+	picker_frame(state, &popover, &item);
+	/* clicks anywhere else in its view close it: a hit over the view under the popover's own */
+	ae_hit_add(0.0f, 0.0f, ae_draw_view_width(), (float)AE_LAYOUT_HEIGHT, id, AE_PART_OUTSIDE, -1);
+	if (state->spec.tile)
+	{
+		grid_draw(state, &popover, id);
+		return;
+	}
+	picker_list_draw(&state->spec.density, &popover, item, &state->list, state->spec.values, state->spec.current, id,
+		state->spec.title, state->band > 0.0f ? state->band / view_scale() : 0.0f);
+}
+
+void ae_widget_picker_sample(struct ae_density const *density, struct ae_rect const *row, struct ae_rect const *bounds,
+	const char *const *values, short count, short current, short focus, short hit_id)
+{
+	struct ae_list list;
+	struct ae_rect popover;
+	float item = ae_size_row(density) * PICKER_ITEM_PER_ROW;
+	short first, rows;
+
+	if (count <= 0)
+		return;
+	ae_picker_place(row, bounds, count, current, item, ae_picker_width(density, values, count), &popover, &first);
+	rows = (short)(popover.height / item + 0.5f);
+	ae_list_init(&list, count, rows > 0 ? rows : 1);
+	ae_list_set_focus(&list, focus >= 0 && focus < count ? focus : 0);
+	list.first = first;
+	picker_list_draw(density, &popover, item, &list, values, current, hit_id, NULL, 0.0f);
+}
+
+/* picks an item: the forward sound, closed, then the callback (which may open another) */
+static void picker_pick(struct picker_state *state, short index)
+{
+	void (*picked)(short, void *) = state->spec.picked;
+	void *context = state->spec.context;
+
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+	state->picked = 1;
+	ae_ui_pop();
+	if (picked)
+		picked(index, context);
+}
+
+/* ---------- (0.7.6) type-ahead: letters and digits jump to the next value that starts with them */
+
+static int (*typeahead_take)(char *chars, int maximum);
+
+void ae_picker_set_typeahead(int (*take)(char *chars, int maximum))
+{
+	typeahead_take = take;
+}
+
+static char upper(char c)
+{
+	return c >= 'a' && c <= 'z' ? (char)(c - 32) : c;
+}
+
+short ae_picker_find_prefix(const char *const *values, short count, short start, const char *prefix)
+{
+	short step;
+
+	if (!values || count <= 0 || !prefix || !*prefix)
+		return -1;
+	for (step = 0; step < count; step++)
+	{
+		short index = (short)(((start + step) % count + count) % count);
+		const char *text = values[index];
+		short at;
+
+		if (!text || text[0] == AE_PICKER_HEADER)
+			continue;
+		while (*text == ' ' || *text == '"')
+			text++;
+		for (at = 0; prefix[at] && upper(text[at]) == upper(prefix[at]); at++)
+			;
+		if (!prefix[at])
+			return index;
+	}
+	return -1;
+}
+
+static void picker_typeahead(struct picker_state *state, char c)
+{
+	unsigned long now = ae_motion_now();
+	size_t length;
+	short found, start;
+
+	if (now - state->prefix_at > PICKER_TYPEAHEAD_MS || strlen(state->prefix) >= sizeof(state->prefix) - 1)
+		state->prefix[0] = 0;
+	state->prefix_at = now;
+	length = strlen(state->prefix);
+	if (length == 1 && state->prefix[0] == c)
+	{
+		/* (the same letter again: the next value with it) */
+		start = (short)(state->list.focus + 1);
+	}
+	else
+	{
+		state->prefix[length] = c;
+		state->prefix[length + 1] = 0;
+		start = state->list.focus;
+	}
+	found = ae_picker_find_prefix(state->spec.values, state->list.count, start, state->prefix);
+	if (found < 0 && length > 0)
+	{
+		/* (no value goes on with what was typed: the new letter alone, from the next value) */
+		state->prefix[0] = c;
+		state->prefix[1] = 0;
+		found = ae_picker_find_prefix(state->spec.values, state->list.count, (short)(state->list.focus + 1), state->prefix);
+	}
+	if (found < 0)
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	if (found != state->list.focus)
+	{
+		ae_list_set_focus(&state->list, found);
+		ae_sound_request(AE_SOUND_CURSOR, 0);
+	}
+}
+
+static void picker_update(struct ae_screen *screen)
+{
+	struct picker_state *state = screen->data;
+	char chars[8];
+	int count, index;
+
+	if (!typeahead_take || state->picked)
+		return;
+	count = typeahead_take(chars, (int)sizeof(chars));
+	for (index = 0; index < count; index++)
+		picker_typeahead(state, upper(chars[index]));
+}
+
+
+/* ---------- (0.7.7) the grid (the crosshair SHAPE picker's) */
+
+struct grid_metrics { float pad, gap, tile_width, tile_height, header, group_gap, band, label; short columns; };
+
+static void grid_metrics(struct ae_density const *density, float width, struct grid_metrics *m)
+{
+	float avail;
+	short columns;
+
+	m->pad = units(density, GRID_PAD_U);
+	m->gap = units(density, GRID_GAP_U);
+	m->header = units(density, GRID_HEADER_U);
+	m->group_gap = units(density, GRID_GROUP_GAP_U);
+	m->band = units(density, GRID_BAND_U);
+	m->label = units(density, GRID_LABEL_U);
+	avail = width - 2.0f * m->pad;
+	columns = (short)((avail + m->gap) / (units(density, GRID_TILE_U) + m->gap));
+	if (columns < 1)
+		columns = 1;
+	m->columns = columns;
+	m->tile_width = (avail - (float)(columns - 1) * m->gap) / (float)columns;
+	m->tile_height = m->tile_width * GRID_TILE_TALL_U;
+}
+
+/* each entry's top from the content's top (a header's line, a tile's row), and the content's height */
+static float grid_tops(struct picker_state const *state, struct grid_metrics const *m, float *tops)
+{
+	struct ae_picker_grid const *grid = &state->grid;
+	float y = 0.0f;
+	short index, last_row = -1;
+	int any = 0;
+
+	for (index = 0; index < grid->count; index++)
+	{
+		if (grid->row_of[index] < 0)
+		{
+			if (last_row >= 0)
+				y += m->tile_height + m->group_gap;
+			last_row = -1;
+			tops[index] = y;
+			y += m->header;
+			any = 1;
+			continue;
+		}
+		if (grid->row_of[index] != last_row)
+		{
+			if (last_row >= 0)
+				y += m->tile_height + m->gap;
+			last_row = grid->row_of[index];
+		}
+		tops[index] = y;
+		any = 1;
+	}
+	return any ? y + (last_row >= 0 ? m->tile_height : 0.0f) : 0.0f;
+}
+
+static void grid_draw(struct picker_state *state, struct ae_rect const *popover, short id)
+{
+	struct ae_density const *density = &state->spec.density;
+	struct grid_metrics m;
+	float tops[AE_PICKER_GRID_MAXIMUM], content, area_y, area_height, maximum, track = units(density, PICKER_TRACK_U);
+	float label_size = units(density, GRID_LABEL_TEXT_U), small = units(density, PICKER_TITLE_TEXT_U);
+	short index, focus = state->list.focus;
+
+	ae_draw_rect(popover->x, popover->y, popover->width, popover->height, units(density, density->metrics->corner),
+		AE_COLOR_POPOVER);
+	ae_hit_add(popover->x, popover->y, popover->width, popover->height, id, AE_PART_CARD, -1);
+	grid_metrics(density, popover->width, &m);
+	/* (the title band: the row's name, and the note on its right) */
+	if (state->spec.title && *state->spec.title)
+		ae_draw_text_tracked(AE_FONT_BODY, small, 0.09f, popover->x + m.pad, text_top(AE_FONT_BODY, small,
+			popover->y + m.band * 0.5f), AE_ALIGN_LEFT, AE_COLOR_MUTED, state->spec.title);
+	if (state->spec.note && *state->spec.note)
+		ae_draw_text_tracked(AE_FONT_BODY, small, 0.09f, popover->x + popover->width - m.pad, text_top(AE_FONT_BODY, small,
+			popover->y + m.band * 0.5f), AE_ALIGN_RIGHT, AE_COLOR_MUTED, state->spec.note);
+	area_y = popover->y + m.band;
+	area_height = popover->height - m.band - m.pad * 0.5f;
+	content = grid_tops(state, &m, tops);
+	maximum = content > area_height ? content - area_height : 0.0f;
+	state->wheel_step = m.tile_height + m.gap;
+	/* (the scroll follows a new focus: its row in view, and its group's header when it is the group's first row) */
+	if (focus >= 0 && focus < state->grid.count && focus != state->seen_focus && state->grid.row_of[focus] >= 0)
+	{
+		float top = tops[focus], bottom = top + m.tile_height;
+		short first = group_first(&state->grid, focus);
+
+		if (first > 0 && state->grid.row_of[first] == state->grid.row_of[focus] && state->grid.row_of[first - 1] < 0)
+			top = tops[first - 1];
+		if (top < state->scroll)
+			state->scroll = top;
+		if (bottom > state->scroll + area_height)
+			state->scroll = bottom - area_height;
+		state->seen_focus = focus;
+	}
+	if (state->scroll > maximum)
+		state->scroll = maximum;
+	if (state->scroll < 0.0f)
+		state->scroll = 0.0f;
+	ae_draw_clip_push(popover->x, area_y, popover->width, area_height);
+	for (index = 0; index < state->grid.count; index++)
+	{
+		float y = area_y + tops[index] - state->scroll, x, size;
+		int focused = index == focus, current = index == state->spec.current;
+		const char *name = state->spec.values ? state->spec.values[index] : NULL;
+		unsigned int ink = focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_TITLE;
+
+		if (state->grid.row_of[index] < 0)
+		{
+			if (y + m.header >= area_y && y <= area_y + area_height && name)
+				ae_draw_text_tracked(AE_FONT_BODY, small, 0.09f, popover->x + m.pad, text_top(AE_FONT_BODY, small,
+					y + m.header * 0.55f), AE_ALIGN_LEFT, AE_COLOR_MUTED, name + 1);
+			continue;
+		}
+		if (y + m.tile_height < area_y || y > area_y + area_height)
+			continue;
+		x = popover->x + m.pad + (float)state->grid.column_of[index] * (m.tile_width + m.gap);
+		ae_draw_rect(x, y, m.tile_width, m.tile_height, 0.0f, focused ? AE_COLOR_SELECTION : AE_COLOR_ROW);
+		if (focused)
+			ae_draw_rect(x, y, units(density, NOTCH_U), m.tile_height, 0.0f, AE_COLOR_ACCENT);
+		if (state->spec.tile)
+		{
+			float art = m.tile_height - m.label, half = (art < m.tile_width ? art : m.tile_width) * 0.5f -
+				units(density, GRID_ART_INSET_U);
+
+			state->spec.tile(index, x + m.tile_width * 0.5f, y + units(density, 6.0f) + art * 0.5f, half > 4.0f ? half : 4.0f,
+				ink, state->spec.context);
+		}
+		/* (the current value: the list's check, in the tile's corner) */
+		if (current)
+		{
+			float half = units(density, PICKER_CHECK_U), stroke = units(density, PICKER_CHECK_STROKE_U);
+			float cx = x + m.tile_width - half - units(density, 10.0f), cy = y + half + units(density, 10.0f);
+			unsigned int color = focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT;
+
+			ae_draw_line(cx - half, cy, cx - half * 0.35f, cy + half * 0.65f, stroke, color);
+			ae_draw_line(cx - half * 0.35f, cy + half * 0.65f, cx + half, cy - half * 0.8f, stroke, color);
+		}
+		if (name)
+		{
+			float room = m.tile_width - units(density, 12.0f), width;
+
+			size = label_size;
+			width = ae_draw_text_width(AE_FONT_ROW, size, name);
+			if (width > room && width > 0.0f)
+				size *= room / width;
+			ae_draw_text(AE_FONT_ROW, size, x + m.tile_width * 0.5f, text_top(AE_FONT_ROW, size, y + m.tile_height -
+				m.label * 0.5f - units(density, 4.0f)), AE_ALIGN_CENTER, focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_TEXT, name);
+		}
+		ae_hit_add(x, y, m.tile_width, m.tile_height, id, AE_PART_ITEM, index);
+	}
+	ae_draw_clip_pop();
+	/* (more than it shows: the list's 6 u scrollbar on the right) */
+	if (maximum > 0.0f)
+	{
+		float x = popover->x + popover->width - track * 1.5f, thumb_height = area_height * area_height / content;
+		float thumb_y = (area_height - thumb_height) * state->scroll / maximum;
+
+		ae_draw_rect(x, area_y, track, area_height, track * 0.5f, AE_COLOR_TRACK);
+		ae_draw_rect(x, area_y + thumb_y, track, thumb_height, track * 0.5f, AE_COLOR_MUTED);
+	}
+}
+
+static int grid_handle(struct picker_state *state, struct ae_event const *event)
+{
+	short before = state->list.focus, after = before;
+	int wrap = event->repeat == 0;
+
+	switch (event->action)
+	{
+	case AE_ACTION_UP: after = ae_picker_grid_move(&state->grid, state->spec.values, before, 0, -1, 0, wrap); break;
+	case AE_ACTION_DOWN: after = ae_picker_grid_move(&state->grid, state->spec.values, before, 0, 1, 0, wrap); break;
+	case AE_ACTION_LEFT: after = ae_picker_grid_move(&state->grid, state->spec.values, before, -1, 0, 0, wrap); break;
+	case AE_ACTION_RIGHT: after = ae_picker_grid_move(&state->grid, state->spec.values, before, 1, 0, 0, wrap); break;
+	case AE_ACTION_PAGE_UP: after = ae_picker_grid_move(&state->grid, state->spec.values, before, 0, 0, -1, wrap); break;
+	case AE_ACTION_PAGE_DOWN: after = ae_picker_grid_move(&state->grid, state->spec.values, before, 0, 0, 1, wrap); break;
+	case AE_ACTION_HOME: after = ae_picker_grid_move(&state->grid, state->spec.values, -1, 0, 0, 0, 0); break;
+	case AE_ACTION_END:
+		for (after = (short)(state->grid.count - 1); after > 0 && state->grid.row_of[after] < 0; after--)
+			;
+		break;
+	case AE_ACTION_ACCEPT:
+		if (before >= 0 && before < state->grid.count && state->grid.row_of[before] >= 0)
+			picker_pick(state, before);
+		return 1;
+	case AE_ACTION_X:
+		if (state->spec.x_pressed)
+		{
+			state->spec.x_pressed(state->spec.context);
+			ae_sound_request(AE_SOUND_CURSOR, 0);
+		}
+		return 1;
+	case AE_ACTION_BACK: return 0;
+	default: return 1;
+	}
+	if (after >= 0 && after != before)
+	{
+		state->list.focus = after;
+		ae_sound_request(AE_SOUND_CURSOR, event->repeat);
+	}
+	return 1;
+}
+
+static int picker_handle(struct ae_screen *screen, struct ae_event const *event)
+{
+	struct picker_state *state = screen->data;
+	short before = state->list.focus, page = (short)(state->list.rows > 1 ? state->list.rows - 1 : 1);
+
+	if (state->spec.tile)
+		return grid_handle(state, event);
+	switch (event->action)
+	{
+	/* (0.7.6) a fresh press goes round the ends, a held one stops at them (ae_value_step's rule) */
+	case AE_ACTION_UP: ae_list_move(&state->list, -1, event->repeat == 0); focus_off_header(state, -1); break;
+	case AE_ACTION_DOWN: ae_list_move(&state->list, 1, event->repeat == 0); focus_off_header(state, 1); break;
+	case AE_ACTION_HOME: ae_list_set_focus(&state->list, 0); focus_off_header(state, 1); break;
+	case AE_ACTION_END: ae_list_set_focus(&state->list, (short)(state->list.count - 1)); focus_off_header(state, -1); break;
+	case AE_ACTION_PAGE_UP: ae_list_move(&state->list, (short)-page, 0); focus_off_header(state, -1); break;
+	case AE_ACTION_PAGE_DOWN: ae_list_move(&state->list, page, 0); focus_off_header(state, 1); break;
+	case AE_ACTION_ACCEPT:
+		if (is_header(state->spec.values, state->list.focus))
+			return 1;
+		picker_pick(state, state->list.focus);
+		return 1;
+	/* (B: not handled: the stack closes it, with the back sound) */
+	case AE_ACTION_BACK: return 0;
+	default: return 1;
+	}
+	if (state->list.focus != before)
+		ae_sound_request(AE_SOUND_CURSOR, event->repeat);
+	return 1;
+}
+
+static void picker_pointer(struct ae_screen *screen, struct ae_pointer const *pointer)
+{
+	struct picker_state *state = screen->data;
+	struct ae_hit hit;
+	int mine;
+
+	mine = ae_hit_at(pointer->x, pointer->y, 0, &hit) && hit.id == picker_hit_id(state);
+	if (pointer->wheel_steps && mine && hit.part != AE_PART_OUTSIDE)
+	{
+		/* (a grid scrolls a row of tiles a notch; its draw keeps the scroll in range) */
+		if (state->spec.tile)
+			state->scroll -= state->wheel_step * (float)pointer->wheel_steps;
+		else
+			ae_list_scroll(&state->list, (short)(-PICKER_WHEEL_ROWS * pointer->wheel_steps));
+	}
+	/* (hover focuses, never scrolls) */
+	if (pointer->moved && mine && hit.part == AE_PART_ITEM && hit.index >= 0 && hit.index < state->list.count &&
+		!is_header(state->spec.values, hit.index))
+	{
+		state->list.focus = hit.index;
+		state->seen_focus = hit.index;
+	}
+	if (!pointer->left_clicks)
+		return;
+	if (mine && hit.part == AE_PART_ITEM && hit.index >= 0 && hit.index < state->list.count)
+		picker_pick(state, hit.index);
+	else if (!mine || hit.part == AE_PART_OUTSIDE)
+	{
+		/* a click outside: closed unchanged */
+		ae_sound_request(AE_SOUND_BACK, 0);
+		ae_ui_pop();
+	}
+}
+
+static struct ae_screen_class const picker_class =
+{
+	.name = "picker", .enter = picker_enter, .leave = picker_leave, .handle = picker_handle, .draw = picker_draw,
+	.pointer = picker_pointer, .popover = 1, .update = picker_update,
+};
+
+int ae_picker_open(struct ae_picker_spec const *spec, short owner)
+{
+	struct picker_state *state;
+	float scale, item;
+	short first, rows, slot = picker_slot(owner);
+
+	if (!spec || spec->count <= 0)
+		return 0;
+	state = &pickers[slot];
+	/* (the owner's picker is open: refused, never replaced; a slot left marked by a reset stack is free) */
+	if (state->open && ae_ui_holds(state))
+		return 0;
+	memset(state, 0, sizeof(*state));
+	state->slot = slot;
+	state->spec = *spec;
+	/* (the density's drawing units are its view's: layout units are those x the view's scale) */
+	scale = spec->view.width > 0.0f && spec->view.height > 0.0f ? spec->view.height / (float)AE_LAYOUT_HEIGHT : 1.0f;
+	item = ae_size_row(&spec->density) * PICKER_ITEM_PER_ROW * scale;
+	{
+		struct ae_rect bounds = spec->bounds;
+		float band = spec->title && *spec->title ? units(&spec->density, PICKER_TITLE_U) * scale : 0.0f;
+
+		/* (the title's line over the values stays in the bounds too) */
+		bounds.y += band;
+		bounds.height -= band;
+		ae_picker_place(&spec->row, &bounds, spec->count, spec->current, item,
+			ae_picker_width(&spec->density, spec->values, spec->count) * scale, &state->popover, &first);
+	}
+	/* (0.7.5) the edge rule of the folder menu: a title band top that would cut a row's words behind it goes out to the
+	middle of that row's gap */
+	if (spec->title && *spec->title && spec->pitch > 0.0f)
+	{
+		float band = units(&spec->density, PICKER_TITLE_U) * scale, top = state->popover.y - band;
+		float gap = spec->pitch - spec->row_height, words = spec->row_height * 0.3f;
+		float at = spec->rows_top + (float)(int)((top - spec->rows_top) / spec->pitch) * spec->pitch;
+		float center = at + spec->row_height * 0.5f;
+
+		if (top >= spec->rows_top && top > center - words && top < center + words && at - gap * 0.5f >= spec->bounds.y)
+		{
+			state->band = state->popover.y - (at - gap * 0.5f);
+		}
+	}
+	/* (0.7.7) a grid fills its bounds; its columns are as many tiles as the width holds */
+	if (spec->tile)
+	{
+		struct grid_metrics m;
+
+		state->popover = spec->bounds;
+		state->band = 0.0f;
+		grid_metrics(&spec->density, spec->bounds.width / scale, &m);
+		ae_picker_grid_layout(spec->values, spec->count, m.columns, &state->grid);
+		state->seen_focus = -1;
+		state->scroll = 0.0f;
+		first = 0;
+	}
+	rows = (short)(state->popover.height / item + 0.5f);
+	if (rows < 1)
+		rows = 1;
+	ae_list_init(&state->list, spec->count, rows);
+	ae_list_set_focus(&state->list, spec->current >= 0 && spec->current < spec->count ? spec->current : 0);
+	focus_off_header(state, 1);
+	/* (the window as placed: the current item over the row) */
+	state->list.first = first;
+	if (!ae_ui_push(&picker_class, owner, state))
+		return 0;
+	state->open = 1;
+	/* (letters typed before it opened are not its type-ahead) */
+	if (typeahead_take)
+	{
+		char stale[16];
+
+		typeahead_take(stale, (int)sizeof(stale));
+	}
+	return 1;
+}
+
+/* ---------- chips */
+
+static float chip_height(struct ae_density const *density)
+{
+	return units(density, density->metrics->chip);
+}
+
+static float chip_text(struct ae_density const *density)
+{
+	return floored(density, density->metrics->chip_text, MINOR_FLOOR_PIXELS);
+}
+
+/* a chip's width: its label (and count), 14 u in from each side */
+static float chip_width(struct ae_density const *density, struct ae_chip const *chip, char *count_text, int count_size)
+{
+	float width = ae_draw_text_width(AE_FONT_ROW, chip_text(density), chip->label ? chip->label : "");
+
+	count_text[0] = 0;
+	if (chip->count >= 0)
+	{
+		snprintf(count_text, (size_t)count_size, "%d", chip->count);
+		width += units(density, CHIP_COUNT_GAP_U) + ae_draw_text_width(AE_FONT_ROW, chip_text(density), count_text);
+	}
+	if (chip->flags & AE_CHIP_CHECK)
+		width += units(density, CHIP_BOX_U + CHIP_BOX_GAP_U);
+	return width + 2.0f * units(density, CHIP_PAD_U);
+}
+
+float ae_chips_layout(struct ae_density const *density, float width, struct ae_chip const *chips, short count,
+	struct ae_rect *rects)
+{
+	float x = 0.0f, y = 0.0f, height = chip_height(density), gap = units(density, CHIP_GAP_U);
+	short index;
+	char number[16];
+
+	for (index = 0; index < count; index++)
+	{
+		float chip = chip_width(density, &chips[index], number, sizeof(number));
+
+		/* (wrapping: a chip that doesn't fit starts the next row, unless it is the row's first) */
+		if (x > 0.0f && x + chip > width)
+		{
+			x = 0.0f;
+			y += height + gap;
+		}
+		rects[index].x = x;
+		rects[index].y = y;
+		rects[index].width = chip;
+		rects[index].height = height;
+		x += chip + gap;
+	}
+	return count > 0 ? y + height : 0.0f;
+}
+
+float ae_widget_chips(struct ae_density const *density, float x, float y, float width, struct ae_chip const *chips,
+	short count, short hit_id)
+{
+	struct ae_rect rects[32];
+	float height, size = chip_text(density), corner = units(density, density->metrics->corner);
+	short index;
+
+	if (count > 32)
+		count = 32;
+	height = ae_chips_layout(density, width, chips, count, rects);
+	for (index = 0; index < count; index++)
+	{
+		struct ae_chip const *chip = &chips[index];
+		struct ae_rect r = rects[index];
+		unsigned int flags = chip->flags, text = AE_COLOR_MUTED, count_color = AE_COLOR_MUTED;
+		float center = y + r.y + r.height * 0.5f, label_width, label_x;
+		char number[16];
+
+		r.x += x;
+		r.y += y;
+		chip_width(density, chip, number, sizeof(number));
+		if (flags & AE_CHIP_DISABLED)
+		{
+			ae_draw_outline(r.x, r.y, r.width, r.height, corner, units(density, 1.0f), AE_COLOR_CHIP_DISABLED);
+			text = count_color = AE_COLOR_CHIP_DISABLED_TEXT;
+		}
+		else if (flags & AE_CHIP_UNSUPPORTED)
+			ae_widget_dashed(r.x, r.y, r.width, r.height, units(density, 1.0f), units(density, CHIP_DASH_U), AE_COLOR_RULE);
+		else if (flags & AE_CHIP_CHECK)
+		{
+			/* (a switch: the chip stays an outline, its box says on or off; focused: the selection's fill) */
+			if (flags & AE_CHIP_FOCUSED)
+			{
+				ae_draw_rect(r.x, r.y, r.width, r.height, corner, AE_COLOR_SELECTION);
+				text = count_color = AE_COLOR_SELECTION_TEXT;
+			}
+			else
+			{
+				ae_draw_outline(r.x, r.y, r.width, r.height, corner, units(density, 1.0f), AE_COLOR_RULE);
+				text = count_color = AE_COLOR_TEXT;
+				if (flags & AE_CHIP_HOVER)
+					ae_draw_rect(r.x, r.y, r.width, r.height, corner, AE_COLOR_HOVER);
+			}
+		}
+		else if (flags & AE_CHIP_ON)
+		{
+			ae_draw_rect(r.x, r.y, r.width, r.height, corner, AE_COLOR_ACCENT);
+			text = count_color = AE_COLOR_SELECTION_TEXT;
+			/* on + focus: a 2 u white ring 3 u outside */
+			if (flags & AE_CHIP_FOCUSED)
+			{
+				float out = units(density, CHIP_RING_GAP_U + CHIP_RING_U);
+
+				ae_draw_outline(r.x - out, r.y - out, r.width + 2.0f * out, r.height + 2.0f * out, corner + out,
+					units(density, CHIP_RING_U), AE_COLOR_RING);
+			}
+		}
+		else if (flags & AE_CHIP_FOCUSED)
+		{
+			ae_draw_rect(r.x, r.y, r.width, r.height, corner, AE_COLOR_SELECTION);
+			text = count_color = AE_COLOR_SELECTION_TEXT;
+		}
+		else
+		{
+			ae_draw_outline(r.x, r.y, r.width, r.height, corner, units(density, 1.0f), AE_COLOR_RULE);
+			if (flags & AE_CHIP_HOVER)
+				ae_draw_rect(r.x, r.y, r.width, r.height, corner, AE_COLOR_HOVER);
+		}
+		label_x = r.x + units(density, CHIP_PAD_U);
+		if ((flags & AE_CHIP_CHECK) && !(flags & AE_CHIP_DISABLED))
+		{
+			float box = units(density, CHIP_BOX_U), box_y = center - box * 0.5f, stroke = units(density, 2.0f);
+			unsigned int mark = (flags & AE_CHIP_FOCUSED) ? AE_COLOR_SELECTION_TEXT : AE_COLOR_ACCENT;
+
+			if (flags & AE_CHIP_ON)
+			{
+				ae_draw_rect(label_x, box_y, box, box, 0.0f, mark);
+				ae_draw_line(label_x + box * 0.22f, center + box * 0.02f, label_x + box * 0.42f, center + box * 0.24f,
+					stroke, AE_COLOR_POPOVER);
+				ae_draw_line(label_x + box * 0.42f, center + box * 0.24f, label_x + box * 0.78f, center - box * 0.22f,
+					stroke, AE_COLOR_POPOVER);
+			}
+			else
+				ae_draw_outline(label_x, box_y, box, box, 0.0f, stroke, AE_COLOR_MUTED);
+		}
+		if (flags & AE_CHIP_CHECK)
+			label_x += units(density, CHIP_BOX_U + CHIP_BOX_GAP_U);
+		label_width = ae_draw_text(AE_FONT_ROW, size, label_x, text_top(AE_FONT_ROW, size, center),
+			AE_ALIGN_LEFT, text, chip->label ? chip->label : "");
+		if (number[0])
+			ae_draw_text(AE_FONT_ROW, size, label_x + label_width + units(density, CHIP_COUNT_GAP_U),
+				text_top(AE_FONT_ROW, size, center), AE_ALIGN_LEFT, count_color, number);
+		/* unsupported: struck */
+		if (flags & AE_CHIP_UNSUPPORTED && !(flags & AE_CHIP_DISABLED))
+			ae_draw_rect(r.x + units(density, CHIP_PAD_U), center - units(density, STRIKE_U) * 0.5f, label_width,
+				units(density, STRIKE_U), 0.0f, AE_COLOR_MUTED);
+		ae_hit_add(r.x, r.y, r.width, r.height, hit_id, AE_PART_CHIP, index);
+	}
+	return height;
+}
+
+/* an LB / RB mark at the end of a chip row: its ink centred on center_y (the line's middle sat low), a keyboard's words
+by their capitals' middle */
+float ae_widget_chip_key(int device_font, int button, float size, float x, float center_y)
+{
+	float top, bottom;
+
+	if (ae_draw_button_ink(device_font, button, size, &top, &bottom))
+		return ae_draw_button(device_font, button, size, x, center_y - (top + bottom) * 0.5f, AE_COLOR_PROMPT_WHITE);
+	return ae_draw_button(device_font, button, size, x, text_top(AE_FONT_ROW, size, center_y), AE_COLOR_PROMPT_WHITE);
+}
+
+/* ---------- the help panel */
+
+/* the device's Y (keyboard: the R cap), its left at x, its middle at center_y; its width */
+static float reset_mark(struct ae_density const *density, float x, float center_y)
+{
+	float glyph = floored(density, density->metrics->minor, MINOR_FLOOR_PIXELS) * LINE;
+
+	switch (ae_ui_last_device())
+	{
+	case AE_DEVICE_KEYBOARD_MOUSE:
+		return ae_widget_key_cap(density, x, center_y - glyph * 0.5f, glyph, ae_prompt_key(AE_BUTTON_Y));
+	case AE_DEVICE_PLAYSTATION:
+		return ae_draw_button(AE_FONT_PLAYSTATION, AE_BUTTON_Y, glyph, x, center_y - glyph * 0.5f,
+			ae_prompt_tint(AE_DEVICE_PLAYSTATION, AE_BUTTON_Y));
+	case AE_DEVICE_NINTENDO:
+		return ae_draw_button(AE_FONT_NINTENDO, AE_BUTTON_Y, glyph, x, center_y - glyph * 0.5f,
+			ae_prompt_tint(AE_DEVICE_NINTENDO, AE_BUTTON_Y));
+	case AE_DEVICE_XBOX: case AE_DEVICE_UNIVERSAL: break;
+	}
+	return ae_draw_button(AE_FONT_XBOX, AE_BUTTON_Y, glyph, x, center_y - glyph * 0.5f,
+		ae_prompt_tint(AE_DEVICE_XBOX, AE_BUTTON_Y));
+}
+
+void ae_widget_help(struct ae_density const *density, struct ae_rect const *rect, struct ae_help const *help,
+	short hit_id, struct ae_rect *preview)
+{
+	char lines[12][160], text[200];
+	char expanded[320];
+	float inset = units(density, HELP_INSET_U), gap = units(density, HELP_GAP_U);
+	float x = rect->x + inset, width = rect->width - 2.0f * inset, y = rect->y + inset;
+	float title = floored(density, density->metrics->help_title, TEXT_FLOOR_PIXELS);
+	float body = floored(density, density->metrics->body, MINOR_FLOOR_PIXELS);
+	float body_line = units(density, density->metrics->body_line);
+	float minor = floored(density, density->metrics->minor, MINOR_FLOOR_PIXELS), minor_line = minor * LINE * 1.2f;
+	float group = floored(density, density->metrics->group, MINOR_FLOOR_PIXELS);
+	float bottom = rect->y + rect->height - inset, allowance = 2.0f * density->pixel;
+	int count, index, room;
+
+	if (body_line < body * LINE)
+		body_line = body * LINE;
+	if (preview)
+		preview->x = preview->y = preview->width = preview->height = 0.0f;
+	ae_draw_rect(rect->x, rect->y, rect->width, rect->height, units(density, density->metrics->corner), AE_COLOR_PANEL);
+	ae_draw_outline(rect->x, rect->y, rect->width, rect->height, units(density, density->metrics->corner),
+		units(density, 1.0f), AE_COLOR_RULE);
+	if (!help)
+		return;
+	/* (the sections stop at the panel's inset bottom: what has no room is left out, a body cut short with "…";
+	the clip guards the rest) */
+	ae_draw_clip_push(x - allowance, rect->y, width + 2.0f * allowance, bottom - rect->y);
+	/* the title */
+	if (help->title && *help->title)
+	{
+		ae_draw_text(AE_FONT_ROW, title, x, y, AE_ALIGN_LEFT, AE_COLOR_TITLE, help->title);
+		y += ae_draw_cap_height(AE_FONT_ROW, title) + gap;
+	}
+	/* the body, 21 on 31 u */
+	room = body_line > 0.0f ? (int)((bottom - y) / body_line) : 0;
+	room = room < 0 ? 0 : room > 12 ? 12 : room;
+	count = help->body && room > 0 ? ae_wrap_text(AE_FONT_BODY, body, ae_help_expand(help->body, expanded, sizeof(expanded)), width, lines, room) : 0;
+	for (index = 0; index < count; index++)
+		ae_draw_text(AE_FONT_BODY, body, x, text_top(AE_FONT_BODY, body, y + body_line * ((float)index + 0.5f)),
+			AE_ALIGN_LEFT, AE_COLOR_TEXT, lines[index]);
+	y += (float)count * body_line + gap;
+	/* VALUES and every value as a chip, the current one filled */
+	if (help->values && help->value_count > 0)
+	{
+		struct ae_chip chips[16];
+		struct ae_rect rects[16];
+		short value, values = help->value_count < 16 ? help->value_count : 16;
+
+		for (value = 0; value < values; value++)
+		{
+			chips[value].label = help->values[value];
+			chips[value].count = -1;
+			chips[value].flags = value == help->current ? AE_CHIP_ON : 0;
+		}
+		/* (no room for them all: none, and nothing after them) */
+		if (y + ae_draw_cap_height(AE_FONT_BODY, group) + gap + ae_chips_layout(density, width, chips, values, rects) > bottom)
+			y = bottom + 1.0f;
+		else
+		{
+			ae_draw_text_tracked(AE_FONT_BODY, group, HELP_TRACKING, x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED,
+				ae_string(AE_STR_VALUES));
+			y += ae_draw_cap_height(AE_FONT_BODY, group) + gap;
+			y += ae_widget_chips(density, x, y, width, chips, values, hit_id) + gap;
+		}
+	}
+	/* Default: X */
+	if (help->default_value && y + minor_line <= bottom)
+	{
+		snprintf(text, sizeof(text), ae_string(AE_STR_DEFAULT), help->default_value);
+		ae_draw_text(AE_FONT_BODY, minor, x, text_top(AE_FONT_BODY, minor, y + minor_line * 0.5f), AE_ALIGN_LEFT,
+			AE_COLOR_MUTED, text);
+		y += minor_line;
+	}
+	/* changed: "Changed from X" • [Y] Reset (the mark and Reset clickable) */
+	if (help->changed_from && y + minor_line <= bottom)
+	{
+		float center = y + minor_line * 0.5f, pen = x, mark_x;
+
+		snprintf(text, sizeof(text), ae_string(AE_STR_CHANGED_FROM), help->changed_from);
+		pen += ae_draw_text(AE_FONT_BODY, minor, pen, text_top(AE_FONT_BODY, minor, center), AE_ALIGN_LEFT, AE_COLOR_ACCENT,
+			text);
+		pen += gap * 0.6f;
+		ae_widget_separator(density, pen + units(density, HELP_DOT_U) * 0.5f, center, HELP_DOT_U, AE_COLOR_ACCENT);
+		pen += units(density, HELP_DOT_U) + gap * 0.6f;
+		mark_x = pen;
+		pen += reset_mark(density, pen, center) + gap * 0.4f;
+		pen += ae_draw_text(AE_FONT_BODY, minor, pen, text_top(AE_FONT_BODY, minor, center), AE_ALIGN_LEFT, AE_COLOR_ACCENT,
+			ae_string(AE_STR_RESET));
+		ae_hit_add(mark_x, y, pen - mark_x, minor_line, hit_id, AE_PART_PROMPT, -1);
+		y += minor_line;
+	}
+	/* the preview area: the rest, dashed */
+	if (help->preview)
+	{
+		float top = y + gap;
+
+		if (bottom > top && preview)
+		{
+			preview->x = x;
+			preview->y = top;
+			preview->width = width;
+			preview->height = bottom - top;
+			ae_widget_dashed(x, top, width, bottom - top, units(density, 1.0f), units(density, HELP_DASH_U), AE_COLOR_RULE);
+		}
+	}
+	ae_draw_clip_pop();
+}

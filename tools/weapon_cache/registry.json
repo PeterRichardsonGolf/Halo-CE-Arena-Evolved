@@ -1,0 +1,900 @@
+{
+ "comment": "AE weapon cache id registry (design section 4). Ids are assigned only by tools/weapon_cache/registry.py; rows are append-only. Weapon ids 1-23 are today's slots 1-23. columns_from: code = what the engine hard-codes today, name_search = what a name search yields today, proposed = new weapon, values to confirm.",
+ "revision": 5,
+ "serial": 1,
+ "rows": [
+  {
+   "id": 1,
+   "kind": "weapon",
+   "key": "battle_rifle",
+   "display": "BATTLE RIFLE",
+   "recipe": "tools/weapon_pack/battle_rifle",
+   "fragment_weapon_key": "battle_rifle",
+   "legacy_slot": 1,
+   "stock_fallback": "pistol",
+   "replaces_map_own": "map_battle_rifle",
+   "power": false,
+   "aliases": [
+    "br"
+   ],
+   "feed": {
+    "word": "BR",
+    "picture": "BATTLE_RIFLE"
+   },
+   "medal_role": "battle_rifle",
+   "trigger_family": "battle_rifle",
+   "bot": {
+    "value": 8,
+    "range": 11.0,
+    "tap_ticks": null,
+    "precision": true,
+    "scoped": true
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PRECISION"
+  },
+  {
+   "id": 2,
+   "kind": "weapon",
+   "key": "smg",
+   "display": "SMG",
+   "recipe": "tools/weapon_pack/smg",
+   "fragment_weapon_key": "smg",
+   "legacy_slot": 2,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "SMG",
+    "picture": "SMG"
+   },
+   "medal_role": "smg",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 6,
+    "range": 5.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "AUTOMATIC"
+  },
+  {
+   "id": 3,
+   "kind": "weapon",
+   "key": "smg_silenced",
+   "display": "SUPPRESSED SMG",
+   "recipe": "tools/weapon_pack/smg_silenced",
+   "fragment_weapon_key": "smg_silenced",
+   "legacy_slot": 3,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "silenced_smg"
+   ],
+   "feed": {
+    "word": "SMG",
+    "picture": "SMG_SILENCED"
+   },
+   "medal_role": "smg",
+   "trigger_family": "smg_silenced",
+   "bot": {
+    "value": 6,
+    "range": 6.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "AUTOMATIC"
+  },
+  {
+   "id": 4,
+   "kind": "weapon",
+   "key": "carbine",
+   "display": "CARBINE",
+   "recipe": "tools/weapon_pack/carbine",
+   "fragment_weapon_key": "carbine",
+   "legacy_slot": 4,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "CARBINE",
+    "picture": "CARBINE"
+   },
+   "medal_role": "carbine",
+   "trigger_family": "carbine",
+   "bot": {
+    "value": 8,
+    "range": 11.0,
+    "tap_ticks": 11,
+    "precision": true,
+    "scoped": true
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PRECISION"
+  },
+  {
+   "id": 5,
+   "kind": "weapon",
+   "key": "ar_silenced",
+   "display": "SUPPRESSED AR",
+   "recipe": "tools/weapon_pack/ar_silenced",
+   "fragment_weapon_key": "ar_silenced",
+   "legacy_slot": 5,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "silenced_ar"
+   ],
+   "feed": {
+    "word": "AR",
+    "picture": "AR_SILENCED"
+   },
+   "medal_role": "assault_rifle",
+   "trigger_family": "ar_silenced",
+   "bot": {
+    "value": 6,
+    "range": 7.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "AUTOMATIC"
+  },
+  {
+   "id": 6,
+   "kind": "weapon",
+   "key": "dmr",
+   "display": "DMR",
+   "recipe": "tools/weapon_pack/dmr",
+   "fragment_weapon_key": "dmr",
+   "legacy_slot": 6,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "DMR",
+    "picture": "DMR"
+   },
+   "medal_role": "dmr",
+   "trigger_family": "carbine",
+   "bot": {
+    "value": 8,
+    "range": 11.0,
+    "tap_ticks": null,
+    "precision": true,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PRECISION",
+   "bot_parity": "columns equal what the 0.7.5 engine did (ae_bots.c switch, ae_bots_combat.c, bots.c name search); T2-4 helper A"
+  },
+  {
+   "id": 7,
+   "kind": "weapon",
+   "key": "evo_rifle",
+   "display": "EVO RIFLE",
+   "recipe": "tools/weapon_pack/evo_rifle",
+   "fragment_weapon_key": "evo_rifle",
+   "legacy_slot": 7,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "evo"
+   ],
+   "feed": {
+    "word": "EVO",
+    "picture": "EVO"
+   },
+   "medal_role": "evo_rifle",
+   "trigger_family": "carbine",
+   "bot": {
+    "value": 8,
+    "range": 11.0,
+    "tap_ticks": null,
+    "precision": true,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PRECISION",
+   "bot_parity": "columns equal what the 0.7.5 engine did (ae_bots.c switch, ae_bots_combat.c, bots.c name search); T2-4 helper A"
+  },
+  {
+   "id": 8,
+   "kind": "weapon",
+   "key": "needler",
+   "display": "NEEDLER",
+   "recipe": "tools/weapon_pack/needler",
+   "fragment_weapon_key": "needler",
+   "legacy_slot": 8,
+   "stock_fallback": "needler",
+   "replaces_map_own": "map_needler",
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "NEEDLER",
+    "picture": "NEEDLER"
+   },
+   "medal_role": "needler",
+   "trigger_family": "none",
+   "bot": {
+    "value": 7,
+    "range": 6.5,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "AUTOMATIC"
+  },
+  {
+   "id": 9,
+   "kind": "weapon",
+   "key": "sniper_bolt",
+   "display": "BOLT SNIPER",
+   "recipe": "tools/weapon_pack/sniper_bolt",
+   "fragment_weapon_key": "sniper_bolt",
+   "legacy_slot": 9,
+   "stock_fallback": "sniper_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "bolt_sniper"
+   ],
+   "feed": {
+    "word": "SNIPER",
+    "picture": "SNIPER_BOLT"
+   },
+   "medal_role": "sniper",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 18.0,
+    "tap_ticks": null,
+    "precision": true,
+    "scoped": false
+   },
+   "columns_from": "name_search",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "LONG RANGE",
+   "bot_parity": "columns equal what the 0.7.5 engine did (ae_bots.c switch, ae_bots_combat.c, bots.c name search); T2-4 helper A"
+  },
+  {
+   "id": 10,
+   "kind": "weapon",
+   "key": "magnum_scoped",
+   "display": "HJ MAGNUM",
+   "recipe": "tools/weapon_pack/magnum_scoped",
+   "fragment_weapon_key": "magnum_scoped",
+   "legacy_slot": 10,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "scoped_magnum"
+   ],
+   "feed": {
+    "word": "HJ MAGNUM",
+    "picture": "MAGNUM_SCOPED"
+   },
+   "medal_role": "pistol",
+   "trigger_family": "none",
+   "bot": {
+    "value": 7,
+    "range": 9.0,
+    "tap_ticks": 14,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PISTOL",
+   "bot_parity": "columns equal what the 0.7.5 engine did (ae_bots.c switch, ae_bots_combat.c, bots.c name search); T2-4 helper A"
+  },
+  {
+   "id": 11,
+   "kind": "weapon",
+   "key": "brute_shot",
+   "display": "BRUTE SHOT",
+   "recipe": "tools/weapon_pack/brute_shot",
+   "fragment_weapon_key": "brute_shot",
+   "legacy_slot": 11,
+   "stock_fallback": "rocket_launcher",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [],
+   "feed": {
+    "word": "BRUTE SHOT",
+    "picture": "BRUTE_SHOT"
+   },
+   "medal_role": "rocket",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 9.0,
+    "tap_ticks": 12,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "HEAVY"
+  },
+  {
+   "id": 12,
+   "kind": "weapon",
+   "key": "ar_modern",
+   "display": "COMBAT AR",
+   "recipe": "tools/weapon_pack/ar_modern",
+   "fragment_weapon_key": "ar_modern",
+   "legacy_slot": 12,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "combat_ar"
+   ],
+   "feed": {
+    "word": "AR",
+    "picture": "AR_MODERN"
+   },
+   "medal_role": "assault_rifle",
+   "trigger_family": "none",
+   "bot": {
+    "value": 6,
+    "range": 8.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "AUTOMATIC"
+  },
+  {
+   "id": 13,
+   "kind": "weapon",
+   "key": "sidearm",
+   "display": "SIDEARM",
+   "recipe": "tools/weapon_pack/sidearm",
+   "fragment_weapon_key": "sidearm",
+   "legacy_slot": 13,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "SIDEARM",
+    "picture": "SIDEARM"
+   },
+   "medal_role": "pistol",
+   "trigger_family": "none",
+   "bot": {
+    "value": 4,
+    "range": 7.0,
+    "tap_ticks": null,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "name_search",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "PISTOL",
+   "bot_parity": "columns equal what the 0.7.5 engine did (ae_bots.c switch, ae_bots_combat.c, bots.c name search); T2-4 helper A"
+  },
+  {
+   "id": 14,
+   "kind": "weapon",
+   "key": "energy_sword",
+   "display": "ENERGY SWORD",
+   "recipe": "tools/weapon_pack/energy_sword",
+   "fragment_weapon_key": "energy_sword",
+   "legacy_slot": 14,
+   "stock_fallback": "none",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [
+    "sword"
+   ],
+   "feed": {
+    "word": "SWORD",
+    "picture": "SWORD"
+   },
+   "medal_role": "sword",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 2.5,
+    "tap_ticks": null,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "code",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "shipped 0.7.5",
+   "status": "active",
+   "menu_kind": "MELEE"
+  },
+  {
+   "id": 15,
+   "kind": "weapon",
+   "key": "smg_tactical",
+   "display": "TACTICAL SMG",
+   "recipe": "tools/weapon_pack/smg_tactical",
+   "fragment_weapon_key": "smg_tactical",
+   "legacy_slot": 15,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "tactical_smg"
+   ],
+   "feed": {
+    "word": "SMG",
+    "picture": "text"
+   },
+   "medal_role": "smg",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 6,
+    "range": 5.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/packs-076a",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "AUTOMATIC",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 16,
+   "kind": "weapon",
+   "key": "pdw",
+   "display": "BURST PDW",
+   "recipe": "tools/weapon_pack/pdw",
+   "fragment_weapon_key": "pdw",
+   "legacy_slot": 16,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "burst_pdw"
+   ],
+   "feed": {
+    "word": "PDW",
+    "picture": "text"
+   },
+   "medal_role": "smg",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 7,
+    "range": 6.5,
+    "tap_ticks": 16,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-pdw",
+   "status": "held",
+   "bot_from": "bots_values_md",
+   "id_confirmed": true,
+   "menu_kind": "AUTOMATIC",
+   "menu_kind_provisional": true,
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 17,
+   "kind": "weapon",
+   "key": "revolver",
+   "display": "HEAVY REVOLVER",
+   "recipe": "tools/weapon_pack/revolver",
+   "fragment_weapon_key": "revolver",
+   "legacy_slot": 17,
+   "stock_fallback": "pistol",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [
+    "heavy_revolver"
+   ],
+   "feed": {
+    "word": "REVOLVER",
+    "picture": "text"
+   },
+   "medal_role": "pistol",
+   "trigger_family": "carbine",
+   "bot": {
+    "value": 7,
+    "range": 9.0,
+    "tap_ticks": 14,
+    "precision": true,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-revolver",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "PISTOL",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 18,
+   "kind": "weapon",
+   "key": "focus_beam",
+   "display": "FOCUS BEAM",
+   "recipe": "tools/weapon_pack/focus_beam",
+   "fragment_weapon_key": "focus_beam",
+   "legacy_slot": 18,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "FOCUS BEAM",
+    "picture": "text"
+   },
+   "medal_role": "other",
+   "trigger_family": "none",
+   "bot": {
+    "value": 7,
+    "range": 8.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-focus-beam",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "AUTOMATIC",
+   "menu_kind_provisional": true,
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 19,
+   "kind": "weapon",
+   "key": "spiker",
+   "display": "SPIKER",
+   "recipe": "tools/weapon_pack/spiker",
+   "fragment_weapon_key": "spiker",
+   "legacy_slot": 19,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "SPIKER",
+    "picture": "text"
+   },
+   "medal_role": "assault_rifle",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 7,
+    "range": 8.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-spiker-ravager",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "AUTOMATIC",
+   "menu_kind_provisional": true,
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 20,
+   "kind": "weapon",
+   "key": "ravager",
+   "display": "RAVAGER",
+   "recipe": "tools/weapon_pack/ravager",
+   "fragment_weapon_key": "ravager",
+   "legacy_slot": 20,
+   "stock_fallback": "assault_rifle",
+   "replaces_map_own": null,
+   "power": false,
+   "aliases": [],
+   "feed": {
+    "word": "RAVAGER",
+    "picture": "text"
+   },
+   "medal_role": "other",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 7,
+    "range": 9.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-ravager-burst",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "HEAVY",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 21,
+   "kind": "weapon",
+   "key": "auto_shotgun",
+   "display": "AUTO SHOTGUN",
+   "recipe": "tools/weapon_pack/auto_shotgun",
+   "fragment_weapon_key": "auto_shotgun",
+   "legacy_slot": 21,
+   "stock_fallback": "shotgun",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [],
+   "feed": {
+    "word": "AUTO SHOTGUN",
+    "picture": "text"
+   },
+   "medal_role": "shotgun",
+   "trigger_family": "smg",
+   "bot": {
+    "value": 8,
+    "range": 4.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-auto-shotgun",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "CLOSE",
+   "menu_kind_provisional": true,
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 22,
+   "kind": "weapon",
+   "key": "grenade_launcher",
+   "display": "GRENADE LAUNCHER",
+   "recipe": "tools/weapon_pack/grenade_launcher",
+   "fragment_weapon_key": "grenade_launcher",
+   "legacy_slot": 22,
+   "stock_fallback": "rocket_launcher",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [],
+   "feed": {
+    "word": "GRENADE LAUNCHER",
+    "picture": "text"
+   },
+   "medal_role": "rocket",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 12.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-grenade-launcher",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "HEAVY",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 23,
+   "kind": "weapon",
+   "key": "concussion_rifle",
+   "display": "CONCUSSION RIFLE",
+   "recipe": "tools/weapon_pack/concussion_rifle",
+   "fragment_weapon_key": "concussion_rifle",
+   "legacy_slot": 23,
+   "stock_fallback": "rocket_launcher",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [],
+   "feed": {
+    "word": "CONCUSSION RIFLE",
+    "picture": "text"
+   },
+   "medal_role": "rocket",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 14.0,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-concussion-rifle",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "HEAVY",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 24,
+   "kind": "weapon",
+   "key": "gravity_hammer",
+   "display": "GRAVITY HAMMER",
+   "recipe": "tools/weapon_pack/gravity_hammer",
+   "fragment_weapon_key": "gravity_hammer",
+   "legacy_slot": 24,
+   "stock_fallback": "rocket_launcher",
+   "replaces_map_own": null,
+   "power": true,
+   "aliases": [
+    "gravity_hammer",
+    "hammer"
+   ],
+   "feed": {
+    "word": "GRAVITY HAMMER",
+    "picture": "ae_pack\\hud\\hammer_icon:0"
+   },
+   "medal_role": "hammer",
+   "trigger_family": "none",
+   "bot": {
+    "value": 8,
+    "range": 2.8,
+    "tap_ticks": 0,
+    "precision": false,
+    "scoped": false
+   },
+   "columns_from": "proposed",
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/pack-hammer-076",
+   "status": "held",
+   "bot_from": "provisional (helper 1 values, flagged)",
+   "id_confirmed": true,
+   "menu_kind": "MELEE",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 33554433,
+   "kind": "tag_set",
+   "key": "vehicle_damage",
+   "display": "VEHICLE DAMAGE",
+   "recipe": "tools/weapon_pack/vehicle_damage",
+   "fragment_pack_id": "ae_vehicle_damage",
+   "attach_when": "vehicles_destructible",
+   "part": "main",
+   "since": "0.7.6",
+   "status": "active"
+  },
+  {
+   "id": 33554434,
+   "kind": "tag_set",
+   "key": "bomb",
+   "display": "SND BOMB",
+   "recipe": "tools/weapon_pack/bomb",
+   "fragment_pack_id": "ae_bomb",
+   "attach_when": "bomb_game",
+   "part": "main",
+   "since": "0.7.6",
+   "status": "active"
+  },
+  {
+   "id": 50331648,
+   "kind": "grenade",
+   "key": "emp",
+   "display": "EMP GRENADE",
+   "recipe": "tools/weapon_pack/grenades",
+   "fragment_pack_id": "ae_grenades",
+   "grenade_catalogue_id": 0,
+   "part": "main",
+   "since": "0.7.6",
+   "source": "ae/grenades-content",
+   "status": "held",
+   "held_note": "pulled from 0.7.6 (owner 11-05): reserved, comes back in 0.7.7; the linker leaves a held row out unless --include-held"
+  },
+  {
+   "id": 50331649,
+   "kind": "grenade",
+   "key": "smoke",
+   "display": "SMOKE GRENADE",
+   "recipe": null,
+   "fragment_pack_id": null,
+   "grenade_catalogue_id": 1,
+   "part": "main",
+   "since": null,
+   "status": "held"
+  },
+  {
+   "id": 67108865,
+   "kind": "base",
+   "key": "base",
+   "display": "BASE LAYER",
+   "recipe": "tools/weapon_cache/base",
+   "fragment_pack_id": "ae_base",
+   "part": "main",
+   "since": "0.7.6",
+   "status": "active"
+  }
+ ]
+}

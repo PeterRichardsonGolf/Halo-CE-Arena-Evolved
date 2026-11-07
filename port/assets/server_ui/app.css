@@ -1,0 +1,705 @@
+/* The admin page (index.html) in the look of Arena Evolved's in-game menus
+   (port/linux/game/ae_style.h: the colour tokens and the metrics; ae_draw.c:
+   the faces). Slate rows on a deep-space ground, a near-white selection bar
+   with the accent's left edge, cyan values, muted tracked section labels,
+   2 px corners, the menu blue's outlined buttons, no amber.
+   Faces, served by the page itself (no outside request): OpenCE for the
+   titles (opence.woff, OpenCE-OFL.txt) and Overpass 900 / 750 for rows and
+   body text (overpass.woff, Overpass-OFL.txt), both SIL OFL 1.1 without a
+   Reserved Font Name; the release packages carry both licences.
+   Sizes are the menus' 1080p spec units at about 0.75 (a page read at a
+   desk, not across a room). Tables become cards on a phone. */
+
+@font-face {
+  font-family: "Overpass"; src: url(overpass.woff) format("woff"); font-weight: 100 900; font-display: swap;
+}
+@font-face {
+  font-family: "OpenCE"; src: url(opence.woff) format("woff"); font-weight: 400; font-display: swap;
+}
+
+:root {
+  color-scheme: dark;
+  /* ae_style.h */
+  --panel: rgba(24, 31, 38, 0.82);        /* AE_COLOR_PANEL */
+  --row: rgba(32, 40, 48, 0.74);          /* AE_COLOR_ROW */
+  --popover: #10161c;                     /* AE_COLOR_POPOVER, AE_COLOR_VIEW_PANEL */
+  --well: rgba(12, 18, 24, 0.86);         /* AE_COLOR_WELL: a text field */
+  --rule: rgba(200, 214, 224, 0.2);       /* AE_COLOR_RULE */
+  --track: rgba(200, 214, 224, 0.12);     /* AE_COLOR_TRACK */
+  --thumb: #b9c7d2;                       /* AE_COLOR_THUMB_MOUSE */
+  --text: #cdd6dd;                        /* AE_COLOR_TEXT */
+  --title: #eef3f6;                       /* AE_COLOR_TITLE */
+  --muted: #84939f;                       /* AE_COLOR_MUTED */
+  --selection: #e8eef2;                   /* AE_COLOR_SELECTION, AE_COLOR_RING */
+  --selection-text: #0f171e;              /* AE_COLOR_SELECTION_TEXT */
+  --accent: #5fc8ec;                      /* AE_COLOR_ACCENT */
+  --menu-blue: #2894fe;                   /* AE_COLOR_WARNING: the OG theme's attention colour */
+  --hover: rgba(232, 238, 242, 0.14);     /* AE_COLOR_HOVER */
+  --pressed: rgba(95, 200, 236, 0.35);    /* AE_COLOR_PRESSED */
+  --text-select: rgba(95, 200, 236, 0.43);/* AE_COLOR_TEXT_SELECT */
+  --bad-ink: #ec8074;                     /* AE_COLOR_DESTRUCTIVE_INK */
+  --bad-frame: #c0392b;                   /* AE_COLOR_DESTRUCTIVE_FRAME, the team red */
+  --scrim: rgba(4, 7, 10, 0.62);          /* AE_COLOR_SCRIM */
+  --team-red: #c0392b; --team-blue: #2e86de;   /* the menus' team bars (players card, measured) */
+  --team-red-ink: #f07a6c; --team-blue-ink: #6fb2f2; /* a team's name and score as text: the bars lifted to 5.7 and 6.9:1 on a row */
+  --ok: rgb(120, 210, 140);               /* a running server (the server mockups' good-ping green) */
+  --ground: #07080c;
+  /* the menus' metrics (ae_metrics_full x ~0.75, px) */
+  --row-h: 42px; --gap: 5px; --pad: 16px; --corner: 2px; --edge: 5px;
+  --font: "Overpass", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  --title-font: "OpenCE", "Overpass", system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { scrollbar-color: var(--thumb) var(--track); background: var(--ground); }
+html, body { margin: 0; color: var(--text); font: 600 15px/1.5 var(--font); }
+/* the menus' deep space, drawn here (no game art): a cold glow above, a violet one below, five layers of stars */
+body {
+  min-height: 100vh; -webkit-font-smoothing: antialiased; font-variant-numeric: tabular-nums;
+  background:
+    radial-gradient(1px 1px at 20% 30%, rgba(232, 238, 242, 0.55) 50%, transparent 51%) 0 0 / 260px 260px,
+    radial-gradient(1px 1px at 70% 80%, rgba(232, 238, 242, 0.35) 50%, transparent 51%) 0 0 / 190px 190px,
+    radial-gradient(1.5px 1.5px at 45% 60%, rgba(150, 210, 240, 0.45) 50%, transparent 51%) 0 0 / 420px 420px,
+    radial-gradient(1px 1px at 85% 15%, rgba(232, 238, 242, 0.4) 50%, transparent 51%) 0 0 / 137px 137px,
+    radial-gradient(1px 1px at 35% 85%, rgba(200, 180, 240, 0.35) 50%, transparent 51%) 0 0 / 311px 311px,
+    radial-gradient(1100px 520px at 78% -8%, rgba(95, 200, 236, 0.16), transparent 70%),
+    radial-gradient(900px 640px at 6% 108%, rgba(112, 64, 140, 0.26), transparent 70%),
+    linear-gradient(180deg, #0a0d14 0%, var(--ground) 55%, #0b0710 100%);
+  background-attachment: fixed;
+}
+::selection { background: var(--text-select); color: var(--title); }
+
+/* the type's steps: the page title (OpenCE 40), a card's title (OpenCE 21,
+   as the menus' titles), a section label (Overpass 750 12 tracked, muted, as
+   QUICK OPTIONS), a row's label (Overpass 900 13 caps), a value (900 15 in
+   the accent), body text (600 15) and help (600 13, muted, sentence case) */
+h1, h2, h3 { margin: 0; color: var(--title); text-transform: uppercase; line-height: 1.1; text-wrap: balance; }
+h2 { font: 400 21px/1.1 var(--title-font); letter-spacing: 0.02em; margin: 28px 0 12px; }
+h2:first-child { margin-top: 0; }
+h3 { font-size: 12px; font-weight: 750; letter-spacing: 0.12em; color: var(--muted); margin: 22px 0 8px; }
+p { text-wrap: pretty; }
+/* (the title face draws 1 as I, 0 as O and ? nearly as P: a title with digits or a question in it, as a server's
+   own name, a question, a count or a clock, takes the body face's heaviest weight instead) */
+.face-plain, .sheet h2, .count, .stop-time { font-family: var(--font) !important; font-weight: 900 !important; letter-spacing: 0.01em; }
+.note { margin: 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 600; line-height: 1.55; max-width: 65ch; }
+.note:empty, .error:empty { display: none; }
+/* an empty list says so in its own place: a dashed outline where the rows will be, a sentence on what fills it */
+.empty-state { max-width: none; margin: 12px 0 0; padding: 12px 14px 11px; border: 1px dashed rgba(200, 214, 224, 0.26);
+  border-radius: var(--corner); color: var(--text); font-size: 13.5px; }
+h3 + .empty-state, .list + .empty-state { margin-top: 6px; }
+.error { margin: 8px 0 0; color: var(--bad-ink); font-size: 14px; }
+.mono, code { font-family: var(--mono); font-size: 0.9em; font-weight: 500; overflow-wrap: anywhere; }
+.note code { color: var(--text); }
+.nowrap { white-space: nowrap; }
+
+/* ---------- buttons: a menu row's slate, START GAME's blue frame; focus is the selection bar */
+
+button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 36px; padding: 0 16px;
+  border: 0; border-radius: var(--corner); background: var(--row); box-shadow: inset 0 0 0 1px var(--rule);
+  color: var(--title); font: 900 13px/1 var(--font); letter-spacing: 0.06em; text-transform: uppercase;
+  white-space: nowrap; cursor: pointer; transition: background-color 90ms ease-out, color 90ms ease-out;
+}
+button:hover:not(:disabled) { background-color: rgba(64, 76, 88, 0.85); }
+button:active:not(:disabled) { background-color: var(--pressed); }
+/* the focused row: the near-white bar, the accent's edge on its left */
+button:focus-visible {
+  outline: 2px solid transparent; background: var(--selection); color: var(--selection-text);
+  box-shadow: inset var(--edge) 0 0 var(--accent);
+}
+button:disabled { color: rgba(132, 147, 159, 0.67); background: rgba(32, 40, 48, 0.43); box-shadow: none; cursor: not-allowed; }
+button.primary { box-shadow: inset 0 0 0 2px var(--menu-blue); background: rgba(16, 22, 28, 0.9); }
+button.primary:hover:not(:disabled) { background: rgba(40, 148, 254, 0.2); }
+button.primary:focus-visible { background: var(--selection); box-shadow: inset 0 0 0 2px var(--menu-blue), inset 7px 0 0 var(--accent); }
+button.primary:disabled, button.danger:disabled, button.small.danger:disabled {
+  color: rgba(132, 147, 159, 0.67); background: rgba(32, 40, 48, 0.43); box-shadow: inset 0 0 0 1px rgba(200, 214, 224, 0.08); }
+button.danger { color: var(--bad-ink); box-shadow: inset 0 0 0 2px var(--bad-frame); }
+button.danger:hover:not(:disabled) { background: rgba(192, 57, 43, 0.22); }
+button.danger:focus-visible { background: var(--selection); color: #9e2a1e; box-shadow: inset 0 0 0 2px var(--bad-frame), inset 7px 0 0 var(--bad-frame); }
+button.small { min-height: 30px; padding: 0 11px; font-size: 12px; }
+button.small.danger { box-shadow: inset 0 0 0 1.5px var(--bad-frame); }
+
+/* ---------- fields: the menus' well, a white ring on focus */
+
+input, select, textarea {
+  min-height: 40px; padding: 6px 12px; border: 1px solid var(--rule); border-radius: var(--corner); background: var(--well);
+  color: var(--title); font: 750 15px var(--font); max-width: 100%; caret-color: var(--accent);
+}
+input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--title); transition: background-color 9999s 0s; box-shadow: inset 0 0 0 40px #0e141a;
+}
+/* (a placeholder is an example or a default, never a value: lighter weight, the muted ink) */
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; font-weight: 500; }
+/* the select drawn as the other fields: the same well, its value always shown, a drawn chevron in the muted ink */
+select {
+  -webkit-appearance: none; appearance: none; cursor: pointer; padding-right: 34px; text-overflow: ellipsis;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 19px) 52%, calc(100% - 14px) 52%; background-size: 5px 5px; background-repeat: no-repeat;
+}
+select:hover:not(:disabled) { border-color: rgba(200, 214, 224, 0.38); }
+/* (nothing to pick yet: the placeholder option in the muted ink) */
+select.waiting { color: var(--muted); font-weight: 600; }
+option, optgroup { background: var(--popover); color: var(--text); }
+input:focus-visible, select:focus-visible, textarea:focus-visible, .log:focus-visible {
+  outline: 2px solid var(--selection); outline-offset: 0; border-color: transparent;
+}
+input[type="checkbox"] { min-height: 0; width: 18px; height: 18px; padding: 0; accent-color: var(--accent); cursor: pointer; }
+input[type="checkbox"]:focus-visible { outline: 2px solid var(--selection); outline-offset: 2px; }
+input:disabled, select:disabled { opacity: 0.55; cursor: not-allowed; }
+textarea:read-only { opacity: 0.75; }
+textarea { font: 500 13px/1.5 var(--mono); width: 100%; resize: vertical; }
+label { color: var(--muted); font-size: 13px; }
+.check { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+
+/* tags, as the menus' AE and HOST tags: an outline in the word's own colour */
+.badge {
+  display: inline-flex; align-items: center; height: 22px; padding: 1px 8px 0; border: 1.5px solid currentColor;
+  border-radius: var(--corner); color: var(--text); font-size: 11px; font-weight: 900; letter-spacing: 0.08em;
+  line-height: 1; text-transform: uppercase; white-space: nowrap; vertical-align: middle;
+}
+.badge:empty { display: none; }
+.state-playing, .state-lobby, .state-postgame, .link-live { color: var(--ok); }
+.state-loading, .state-stopping, .link-connecting { color: var(--menu-blue); }
+.link-polling { color: var(--muted); }
+
+/* ---------- the sign-in: the menus' card on deep space */
+
+.login { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px 16px; }
+.login-panel.panel {
+  width: min(440px, 100%); display: flex; flex-direction: column; gap: 8px; padding: 28px 28px 30px;
+  background: rgba(16, 22, 28, 0.94); box-shadow: inset 0 4px 0 var(--accent), 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.login-head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+.login-head img { border-radius: 10px; }
+.login-head h1 { font: 400 30px/1 var(--title-font); color: var(--title); letter-spacing: 0.01em; }
+.login-panel label { font-size: 12px; letter-spacing: 0.09em; text-transform: uppercase; }
+.login-panel button.primary { min-height: 44px; margin-top: 8px; font-size: 14px; }
+
+/* ---------- the header: the menus' title, a context line on the right, the rule under them */
+
+.top {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; max-width: 1280px; margin: 0 auto;
+  padding: 26px 32px 18px; border-bottom: 1px solid var(--rule);
+}
+.top img { border-radius: 8px; flex: none; }
+.top h1 { font: 400 40px/1 var(--title-font); letter-spacing: 0.01em; overflow-wrap: anywhere; padding-top: 4px; }
+.top-end { margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.top-end button.small { min-height: 26px; margin-left: 6px; padding: 1px 10px 0; font-size: 11px; }
+/* tabs: the menus' section list laid sideways: the current one on the panel, the accent under it */
+.tabs {
+  display: flex; gap: 2px; overflow-x: auto; max-width: 1280px; margin: 0 auto; padding: 14px 32px 0;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button {
+  flex: none; min-height: var(--row-h); padding: 0 16px; border-radius: var(--corner) var(--corner) 0 0;
+  background: transparent; box-shadow: none; color: var(--text); font-size: 14px; letter-spacing: 0.04em;
+}
+.tabs button:hover:not(:disabled) { background: var(--hover); color: var(--title); }
+.tabs button.current { background: var(--panel); color: var(--title); box-shadow: inset 0 -4px 0 var(--accent); }
+.tabs button:focus-visible { background: var(--selection); color: var(--selection-text); box-shadow: inset 0 -4px 0 var(--accent); }
+
+main { max-width: 1280px; margin: 0 auto; padding: 22px 32px 56px; }
+/* the server not answering, or asking the page to slow down: a line under the tabs, the menus' blue frame (no answer:
+   the destructive frame), until it answers again */
+.conn-banner { max-width: calc(1280px - 64px); margin: 16px auto 0; padding: 11px 16px 10px; border-radius: var(--corner);
+  background: var(--popover); box-shadow: inset 0 0 0 1.5px var(--menu-blue); color: var(--title); font-size: 14px; font-weight: 750; }
+.conn-banner.conn-down { box-shadow: inset 0 0 0 1.5px var(--bad-frame); }
+.empty-state.failed { border-color: rgba(192, 57, 43, 0.6); color: var(--bad-ink); }
+
+/* ---------- panels: the menus' card */
+
+/* (About: the server and its ports, then the files, which need the room) */
+.about-grid { display: grid; gap: 18px; align-items: start; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 900px) { .about-grid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); } }
+/* (Gametypes: the files and a new one, then the built-in ones) */
+.gt-cols { display: grid; gap: 4px 32px; align-items: start; grid-template-columns: repeat(auto-fit, minmax(min(360px, 100%), 1fr)); }
+.gt-cols > div > h3:first-child, .gt-cols > div > :first-child > h3:first-child { margin-top: 4px; }
+.builtins { max-width: none; }
+
+/* the status page by content: the game and the server's facts, then the
+   players and the listing, then the events as a column as tall as the
+   others; two columns (the events under them) on a narrower screen, one on
+   a phone */
+.status-grid { display: grid; gap: 18px; align-items: start; grid-template-columns: minmax(0, 1fr); }
+.status-col { display: grid; gap: 18px; min-width: 0; }
+@media (min-width: 760px) {
+  .status-grid { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+  .status-side { grid-column: 1 / -1; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: start; }
+}
+/* (three columns: the game and the server; the players and stop or restart; the invite over the events) */
+@media (min-width: 1240px) {
+  .status-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr) minmax(0, 1fr); }
+  .status-side { grid-column: auto; grid-template-columns: minmax(0, 1fr); }
+  .status-events .feed { max-height: 560px; }
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(380px, 100%), 1fr)); gap: 18px; align-items: start; }
+.grid .wide { grid-column: 1 / -1; }
+.panel { min-width: 0; padding: 18px 20px 20px; background: var(--panel); border-radius: var(--corner); }
+.bar, .inline, .fields { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 14px; }
+.inline input { flex: 1 1 200px; min-width: 0; }
+.fields label { display: flex; flex-direction: column; gap: 6px; flex: 1 1 160px; letter-spacing: 0.09em; text-transform: uppercase; font-size: 12px; }
+.fields button { align-self: flex-end; min-height: 40px; }
+/* each form on its own grid: fields as wide as what they hold, the button on the fields' bottom edge, the same
+   heights everywhere; on a narrow card the grid folds to two columns, the button the full width */
+.fields.grid-form { display: grid; align-items: end; gap: 12px 10px; }
+.fields.grid-form label { min-width: 0; }
+.fields.grid-form select, .fields.grid-form input { width: 100%; }
+#rotation-add { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(0, 1fr) auto; }
+#gametype-new { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+#key-add { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr) minmax(0, 0.9fr) minmax(0, 1.3fr) auto; }
+#whitelist-add { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.5fr) auto; }
+#admin-add { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+#admin-add > label { grid-column: span 2; }
+#admin-add > label.narrow { grid-column: span 1; }
+#admin-add > #admin-allow-label { grid-column: span 3; }
+#admin-add > button { grid-column: span 1; }
+@media (max-width: 760px) {
+  .fields.grid-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important; grid-auto-flow: row dense; }
+  .fields.grid-form > label, #admin-add > label, #admin-add > label.narrow { grid-column: auto; }
+  .fields.grid-form > label.wide-on-phone, #admin-add > label.wide-on-phone, #admin-add > #admin-allow-label { grid-column: 1 / -1; }
+  #admin-add > button { grid-column: 1 / -1; }
+  .fields.grid-form > button { grid-column: 1 / -1; }
+}
+
+/* label and value rows, one rule on every page: a label column as wide as
+   the card's widest label (at most 42 %), the values on one left edge beside
+   it, on the label's baseline; a long value wraps in its own column */
+.facts { margin: 0; display: grid; grid-template-columns: fit-content(42%) minmax(0, 1fr); gap: var(--gap) 0; }
+.facts > div {
+  grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; align-items: baseline; column-gap: 18px;
+  min-height: 38px; padding: 8px 14px 7px; border-radius: var(--corner); background: var(--row);
+}
+.facts dt { min-width: 10.5em; color: var(--text); font-size: 13px; font-weight: 900; letter-spacing: 0.03em;
+  text-transform: uppercase; }
+@media (max-width: 480px) { .facts dt { min-width: 0; } }
+.facts dd { margin: 0; color: var(--accent); font-weight: 900; overflow-wrap: break-word; min-width: 0; }
+.facts dd.empty { color: var(--muted); }
+.facts .fact-note { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; font-weight: 600; text-wrap: pretty; }
+.facts .notice { box-shadow: inset var(--edge) 0 0 var(--menu-blue); }
+/* (sentences, not values: the row's ink, body weight) */
+.facts.prose dd { color: var(--text); font-weight: 600; font-size: 14px; text-wrap: pretty; }
+@media (min-width: 481px) { .facts.prose dt { white-space: nowrap; } }
+#about-ports dd { color: var(--accent); font-weight: 900; font-size: 15px; }
+.facts.files dt { font: 500 13px var(--mono); text-transform: none; letter-spacing: 0; color: var(--title); }
+
+.count { margin: 0; font: 900 44px/1 var(--font); color: var(--title); }
+.count .of { font: 750 16px var(--font); color: var(--muted); }
+.count { margin-top: 2px; }
+.spark { display: block; width: 100%; height: 64px; margin-top: 12px; border-radius: var(--corner); background: var(--row); }
+.spark-line { fill: none; stroke: var(--accent); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.spark-fill { fill: var(--accent); stroke: none; opacity: 0.16; }
+
+.feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; max-height: 420px;
+  overflow-y: auto; font-size: 14px; }
+.feed li { display: grid; grid-template-columns: max-content minmax(0, 1fr); column-gap: 10px; align-items: baseline;
+  padding: 7px 12px 6px; border-radius: var(--corner); background: var(--row); text-wrap: pretty; }
+.feed li > :not(time) { grid-column: 2; }
+.feed time { color: var(--muted); font: 500 12px var(--mono); }
+.feed .feed-bad { color: var(--bad-ink); }
+.feed .feed-moderation { color: var(--accent); }
+.feed .feed-chat { background: transparent; color: var(--muted); }
+
+/* ---------- tables: menu rows; a team's bar on a player's row */
+
+table { width: 100%; border-collapse: separate; border-spacing: 0 var(--gap); }
+th { padding: 0 14px; color: var(--muted); text-align: left; font-size: 12px; font-weight: 750; letter-spacing: 0.1em;
+  text-transform: uppercase; vertical-align: bottom; }
+td { height: var(--row-h); padding: 6px 14px; background: var(--row); vertical-align: middle; color: var(--text); overflow-wrap: anywhere; }
+td:first-child { border-radius: var(--corner) 0 0 var(--corner); }
+td:last-child { border-radius: 0 var(--corner) var(--corner) 0; }
+tbody tr:hover td { background-color: rgba(44, 54, 64, 0.82); }
+th.num, td.num { text-align: right; }
+th.row-actions { text-align: right; }
+/* the master servers: a row each, the host over how it stands; red only for
+   a failure (not published is a choice: a private server, no key) */
+.masters { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.masters li { display: flex; flex-direction: column; gap: 2px; padding: 9px 14px 8px; border-radius: var(--corner);
+  background: var(--row); }
+.master-host { color: var(--title); font-weight: 900; overflow-wrap: normal; }
+.master-line { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 14px; font-size: 13px; }
+.master-state { color: var(--muted); }
+.master-when { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.master-ok .master-state { color: var(--ok); }
+.master-bad .master-state { color: var(--bad-ink); }
+tr.bad td, tr.muted td { color: var(--bad-ink); }
+.actions { display: inline-flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.row-actions { text-align: right; }
+.dossier td { background: var(--well); box-shadow: inset 0 0 0 1px var(--rule); }
+.dossier .facts > div { background: var(--panel); }
+.team { display: inline-block; width: 9px; height: 9px; margin-right: 8px; border-radius: 50%; background: var(--muted); }
+.team-0 { background: var(--team-red); }
+.team-1 { background: var(--team-blue); }
+@supports selector(:has(a)) {
+  tr:has(.team-0) > td:first-child { box-shadow: inset var(--edge) 0 0 var(--team-red); }
+  tr:has(.team-1) > td:first-child { box-shadow: inset var(--edge) 0 0 var(--team-blue); }
+}
+td .badge { margin-left: 8px; color: var(--bad-ink); }
+/* (a table in a column of the status page: tighter, so it keeps inside its card) */
+.grid th, .grid td { padding-left: 9px; padding-right: 9px; }
+.grid th { letter-spacing: 0.05em; }
+
+@media (max-width: 700px) {
+  table.cards thead { display: none; }
+  table.cards, table.cards tbody, table.cards tr, table.cards td { display: block; width: 100%; }
+  table.cards tr { margin-bottom: 6px; padding: 10px 14px; border-radius: var(--corner); background: var(--row); }
+  tbody tr:hover td { background: none; }
+  /* (the facts' rule: a label column, the values on one left edge) */
+  table.cards td { display: grid; grid-template-columns: 6.5em minmax(0, 1fr); align-items: baseline; column-gap: 14px;
+    height: auto; padding: 3px 0; background: none; border-radius: 0; text-align: left; overflow-wrap: break-word;
+    box-shadow: none !important; }
+  table.cards td.num { text-align: left; }
+  table.cards td::before { content: attr(data-label); color: var(--muted); font-size: 12px; font-weight: 750;
+    letter-spacing: 0.1em; text-transform: uppercase; }
+  table.cards td.row-actions { display: flex; justify-content: flex-start; padding-top: 10px; }
+  table.cards td.row-actions .actions { justify-content: flex-start; width: 100%; }
+  .rotation .actions button { flex: 1 1 0; }
+  /* (a player's five actions: three on a row, then two, each row filled) */
+  table.cards td.row-actions .actions button { flex: 1 1 30%; }
+  .rotation .actions { flex: 1 1 100%; display: flex; }
+  table.cards td.row-actions::before { content: none; }
+  @supports selector(:has(a)) {
+    table.cards tr:has(.team-0) { box-shadow: inset var(--edge) 0 0 var(--team-red); }
+    table.cards tr:has(.team-1) { box-shadow: inset var(--edge) 0 0 var(--team-blue); }
+  }
+  .dossier td { box-shadow: none; }
+  /* (a finger's target on a phone) */
+  button.small, .chip { min-height: 40px; }
+  .top { padding: 18px 16px 12px; gap: 8px 12px; }
+  .top h1 { font-size: 28px; }
+  .top-end { margin-left: 0; width: 100%; }
+  /* (every tab in view on a phone: the strip wraps instead of scrolling them off the edge) */
+  .tabs { flex-wrap: wrap; overflow: visible; gap: 2px 0; padding: 8px 8px 0; }
+  .tabs button { min-height: 40px; padding: 0 11px; font-size: 12.5px; }
+  .conn-banner { margin: 12px 10px 0; }
+  .panel { padding: 16px 14px; }
+  main { padding: 14px 10px 40px; }
+  .login-panel.panel { padding: 24px 20px 26px; }
+  .login-head h1 { font-size: 22px; }
+}
+
+/* ---------- a rotation entry for people: the map (and a small tag of where
+   it comes from), the gametype, the rules as chips that never break inside;
+   the entry's own words only in a small muted line for an admin */
+
+.map-name { display: inline; }
+.tag { display: inline-block; margin-left: 8px; padding: 2px 5px 1px; border: 1px solid currentColor; border-radius: var(--corner);
+  color: var(--muted); font-size: 10.5px; font-weight: 900; letter-spacing: 0.08em; line-height: 1.2; text-transform: uppercase;
+  white-space: nowrap; vertical-align: 2px; }
+.entry-view { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.entry-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; }
+.entry-gametype { color: var(--text); }
+/* (the separator drawn, not the font's middle dot, whose side bearing set it off centre: a 4 px dot on the x-height) */
+.entry-main .map-name + .entry-gametype::before { content: ""; display: inline-block; width: 4px; height: 4px;
+  margin: 0 9px; border-radius: 50%; background: var(--muted); vertical-align: 0.2em; }
+.rule-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.rule { display: inline-block; padding: 2px 7px 1px; border-radius: var(--corner); background: rgba(95, 200, 236, 0.12);
+  color: var(--title); font-size: 12px; font-weight: 750; white-space: nowrap; }
+.entry-raw { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.facts dd .entry-gametype { color: var(--accent); }
+.rotation .entry-main { color: var(--title); font-weight: 900; }
+.rejected .entry-main { color: var(--muted); text-decoration: line-through; }
+.gt-file { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.gt-file strong { color: var(--title); font-weight: 900; }
+.gt-file-meta { display: flex; flex-wrap: wrap; gap: 0 12px; color: var(--muted); font-size: 12.5px; }
+.gt-file-meta code { color: var(--muted); }
+
+/* ---------- the rotation */
+
+.rotation { margin: 0; padding: 0 0 0 30px; display: flex; flex-direction: column; gap: var(--gap); }
+.rotation li { display: list-item; padding: 8px 10px 8px 14px; border-radius: var(--corner); background: var(--row); }
+.rotation li::marker { color: var(--muted); font-weight: 900; font-variant-numeric: tabular-nums; }
+.entry-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.rotation .entry { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; flex: 1 1 260px; }
+.rotation .actions { flex: none; }
+.rotation .current { box-shadow: inset var(--edge) 0 0 var(--accent); background: rgba(40, 52, 62, 0.86); }
+.rotation .current::marker { color: var(--accent); }
+.rotation .badge { color: var(--accent); }
+.entry-main .current-tag { margin-left: 10px; align-self: center; }
+.reason { flex-basis: 100%; color: var(--bad-ink); font-size: 13px; }
+
+/* ---------- gametypes */
+
+.list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--gap); }
+.list li { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: var(--row-h);
+  padding: 6px 8px 6px 14px; border-radius: var(--corner); background: var(--row); }
+.list strong { color: var(--title); font-weight: 900; }
+.list .note { margin: 0; }
+/* Arena Evolved's built-in gametypes: a folder a style and in it a folder a group, as CHANGE GAMETYPE's (menu rows
+   that open, the groups indented), the names in a grid with the word a rotation uses under each */
+.ae-folders { display: flex; flex-direction: column; gap: var(--gap); }
+.ae-folder summary {
+  display: flex; align-items: center; gap: 10px; min-height: var(--row-h); padding: 0 14px; border-radius: var(--corner);
+  background: var(--row); color: var(--title); font-size: 13px; font-weight: 900; letter-spacing: 0.04em;
+  text-transform: uppercase; cursor: pointer; list-style: none;
+}
+.ae-folder summary::-webkit-details-marker { display: none; }
+.ae-folder summary::before { content: ""; width: 7px; height: 7px; border: solid var(--accent); border-width: 0 2px 2px 0;
+  transform: rotate(-45deg); transition: transform 90ms ease-out; flex: none; }
+.ae-folder[open] > summary::before { transform: rotate(45deg); }
+.ae-folder summary:hover { background: rgba(44, 54, 64, 0.82); }
+.ae-folder summary:focus-visible { outline: 2px solid transparent; background: var(--selection); color: var(--selection-text);
+  box-shadow: inset var(--edge) 0 0 var(--accent); }
+.ae-folder summary .ae-count { margin-left: auto; color: var(--muted); font-weight: 750; letter-spacing: 0; }
+.ae-folder summary:focus-visible .ae-count { color: var(--selection-text); }
+.ae-folder[open] { display: flex; flex-direction: column; gap: var(--gap); }
+.ae-subfolder { margin-left: 22px; }
+.ae-subfolder summary { min-height: 34px; background: rgba(32, 40, 48, 0.5); color: var(--text); font-size: 12px;
+  font-weight: 750; letter-spacing: 0.1em; }
+.ae-subfolder .ae-names, .ae-loose { padding: 2px 0 6px 22px; }
+.ae-names { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 4px; }
+.ae-names li { display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; border-radius: var(--corner);
+  background: rgba(32, 40, 48, 0.5); }
+.ae-names span { color: var(--title); font-size: 13px; font-weight: 900; letter-spacing: 0.02em; }
+.ae-names code { color: var(--muted); font-size: 11.5px; }
+.editor { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; align-items: start; }
+.schema-form fieldset {
+  margin: 0 0 14px; padding: 8px 14px 12px; border: 0; border-radius: var(--corner); background: var(--row);
+}
+legend { float: left; width: 100%; padding: 6px 0 8px; color: var(--muted); font: 750 12px var(--font);
+  letter-spacing: 0.12em; text-transform: uppercase; }
+legend + * { clear: both; }
+.schema-form label { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 4px 0;
+  color: var(--text); font-weight: 900; text-transform: uppercase; font-size: 12px; letter-spacing: 0.03em; }
+.schema-form input, .schema-form select { width: 12em; flex: none; }
+/* (a rule the file leaves to its base: "Base's" in the placeholder's ink, as the number fields show it) */
+.schema-form select:has(> option[value=""]:checked) { color: var(--muted); font-weight: 500; }
+.schema-form .range { margin-left: 8px; color: var(--muted); font-weight: 750; letter-spacing: 0; text-transform: none; }
+.raw { display: flex; flex-direction: column; gap: 6px; font-family: var(--mono); }
+@media (max-width: 900px) { .editor { grid-template-columns: 1fr; } }
+
+/* ---------- the console: chips filled in the accent when on */
+
+.console { display: flex; flex-direction: column; gap: 12px; }
+.console-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px 0 7px;
+  border-radius: var(--corner); box-shadow: inset 0 0 0 1.5px var(--rule); color: var(--muted); font-size: 12px;
+  font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; cursor: pointer; }
+.chip:has(input:checked) { background: rgba(95, 200, 236, 0.14); box-shadow: inset 0 0 0 1.5px var(--accent); color: var(--title); }
+/* (the chip's box: an outline when off, the accent filled when on) */
+.chip input { -webkit-appearance: none; appearance: none; width: 10px; height: 10px; min-height: 0; margin: 0; padding: 0;
+  border: 1.5px solid var(--muted); border-radius: 1px; background: transparent; }
+.chip input:checked { border-color: var(--accent); background: var(--accent); }
+.chip:has(input:focus-visible) { outline: 2px solid var(--selection); outline-offset: 2px; }
+.chip input:focus-visible { outline: none; }
+.log {
+  height: min(62vh, 640px); overflow-y: auto; padding: 10px 12px; border-radius: var(--corner); background: var(--well);
+  box-shadow: inset 0 0 0 1px var(--rule); color: var(--text); font: 500 12.5px/1.55 var(--mono); overflow-wrap: anywhere;
+}
+.line { white-space: pre-wrap; }
+.line time { color: var(--muted); }
+.line .cat { display: inline-block; min-width: 10.5ch; color: var(--accent); }
+.level-warn { color: var(--title); }
+.level-error { color: var(--bad-ink); font-weight: 700; }
+.mine { color: var(--title); }
+.command-line { color: var(--accent); margin-top: 4px; }
+.line.bad { color: var(--bad-ink); }
+.line.note { color: var(--muted); font-style: italic; }
+.hide-server .cat-server, .hide-lobby .cat-lobby, .hide-game .cat-game, .hide-player .cat-player,
+.hide-chat .cat-chat, .hide-moderation .cat-moderation, .hide-net .cat-net, .hide-master .cat-master,
+.hide-console .cat-console, .hide-health .cat-health { display: none; }
+.command { display: flex; gap: 8px; }
+.command input { flex: 1; min-width: 0; font-family: var(--mono); font-weight: 500; }
+@media (max-width: 700px) {
+  .log { height: 55vh; font-size: 12px; }
+  .command { position: sticky; bottom: 0; padding: 8px 0 env(safe-area-inset-bottom); background: var(--popover); }
+}
+
+/* ---------- settings: each a menu row (name in words, help, key; the control
+   in one column with its default under it), in sections by table and topic,
+   a list of the sections beside them, Save kept in view */
+
+.settings { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 18px; align-items: start; }
+.settings-nav { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 14px; padding: 16px 12px;
+  background: var(--panel); border-radius: var(--corner); max-height: calc(100vh - 32px); overflow-y: auto; }
+.settings-nav-group { display: flex; flex-direction: column; gap: 2px; }
+.settings-nav-table { padding: 0 8px 4px; color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: 0.12em;
+  text-transform: uppercase; }
+.settings-nav button { justify-content: flex-start; min-height: 32px; padding: 1px 8px 0; background: transparent;
+  box-shadow: none; color: var(--text); font-size: 12px; letter-spacing: 0.04em; text-align: left; white-space: normal; }
+.settings-nav button:hover:not(:disabled) { background: var(--hover); color: var(--title); }
+.settings-main { padding-bottom: 0; }
+.settings-intro { margin: 0 0 6px; }
+.settings-table h2 { margin-top: 30px; }
+.settings-topic { scroll-margin-top: 16px; }
+.settings-topic h3 { margin-top: 20px; }
+.setting { display: grid; grid-template-columns: minmax(0, 1fr) 17.5rem; align-items: start; gap: 6px 28px;
+  margin-bottom: var(--gap); padding: 12px 14px 12px 16px; border-radius: var(--corner); background: var(--row); }
+.setting-text { min-width: 0; }
+.setting-name { display: block; color: var(--title); font-size: 13px; font-weight: 900; letter-spacing: 0.03em;
+  text-transform: uppercase; line-height: 1.35; padding-top: 2px; }
+.setting-help { margin: 4px 0 0; max-width: 65ch; color: var(--text); font-size: 13.5px; line-height: 1.5; }
+.setting-key { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 5px 0 0; }
+.setting-key code { color: var(--muted); font-size: 11.5px; overflow-wrap: anywhere; }
+.setting-control { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.setting-control > input:not(.toggle), .setting-control > select, .secret input[type="password"] { width: 100%; }
+.setting-default, .setting-lock { display: flex; flex-wrap: wrap; gap: 2px 14px; margin: 0; color: var(--text);
+  font-size: 13px; overflow-wrap: anywhere; }
+.setting-default .k { color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase;
+  margin-right: 4px; }
+.setting-lock { display: block; color: var(--muted); }
+.setting-lock .badge { margin-right: 6px; color: var(--muted); }
+.setting .error { margin: 0; }
+.pinned .setting-name { color: var(--text); }
+.secret { display: flex; gap: 12px; align-items: center; }
+.secret input[type="password"] { flex: 1; min-width: 0; }
+.settings-bar { position: sticky; bottom: 0; z-index: 2; display: flex; flex-wrap: wrap; align-items: center;
+  justify-content: flex-end; gap: 8px 10px; margin: 20px -20px 0; padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+  background: rgba(16, 22, 28, 0.96); border-top: 1px solid var(--rule); }
+.settings-bar .note { margin: 0 auto 0 0; }
+@media (max-width: 1000px) {
+  .settings { grid-template-columns: minmax(0, 1fr); }
+  .settings-nav { position: static; flex-direction: row; overflow-x: auto; padding: 10px; gap: 16px; max-height: none; }
+  .settings-nav-group { flex-direction: row; align-items: center; flex: none; }
+  .settings-nav-table { padding: 0 6px 0 4px; }
+  .settings-nav button { white-space: nowrap; }
+}
+@media (max-width: 700px) {
+  .setting { grid-template-columns: minmax(0, 1fr); padding: 12px; }
+  .settings-bar { margin: 16px -14px 0; padding-left: 14px; padding-right: 14px; }
+}
+
+/* a setting that is on or off: a switch, the knob on the left (off) or right
+   (on, the accent) */
+input.toggle {
+  -webkit-appearance: none; appearance: none; flex: none; width: 48px; height: 26px; min-height: 0; margin: 0; padding: 0;
+  border: 1px solid rgba(200, 214, 224, 0.4); border-radius: var(--corner); cursor: pointer;
+  background: linear-gradient(var(--thumb), var(--thumb)) no-repeat 3px 50% / 18px 18px, var(--well);
+  transition: background-position 120ms ease-out, background-color 120ms ease-out;
+}
+input.toggle:checked { border-color: var(--accent);
+  background: linear-gradient(var(--selection-text), var(--selection-text)) no-repeat calc(100% - 3px) 50% / 18px 18px, var(--accent); }
+input.toggle:focus-visible { outline: 2px solid var(--selection); outline-offset: 2px; }
+input.toggle:disabled { opacity: 0.45; }
+
+/* ---------- the dialog and the notice: the menus' popover */
+
+.sheet { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 16px;
+  background: var(--scrim); z-index: 10; }
+.sheet-body { width: min(520px, 100%); max-height: 100%; overflow: auto; border-radius: var(--corner);
+  background: var(--popover); box-shadow: inset 0 4px 0 var(--accent), 0 24px 60px rgba(0, 0, 0, 0.5); }
+.sheet h2 { margin: 0; padding: 26px 24px 4px; font-size: 20px; overflow-wrap: anywhere; }
+#dialog-body { padding: 12px 24px 0; display: flex; flex-direction: column; gap: 12px; color: var(--text); }
+#dialog-body p { margin: 0; }
+#dialog-body label { display: flex; flex-direction: column; gap: 6px; font-size: 12px; letter-spacing: 0.09em;
+  text-transform: uppercase; color: var(--muted); }
+#dialog-body input, #dialog-body select { text-transform: none; letter-spacing: 0; }
+.sheet .error { padding: 0 24px; }
+.sheet .actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; padding: 14px 24px 20px;
+  border-top: 1px solid var(--rule); }
+.toast { position: fixed; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); transform: translateX(-50%);
+  max-width: calc(100% - 32px); padding: 14px 18px 12px; border-radius: var(--corner); background: var(--popover);
+  color: var(--title); box-shadow: inset 0 3px 0 var(--accent), 0 16px 40px rgba(0, 0, 0, 0.5); z-index: 20;
+  overflow-wrap: anywhere; }
+.toast.bad { color: var(--bad-ink); box-shadow: inset 0 3px 0 var(--bad-frame), 0 16px 40px rgba(0, 0, 0, 0.5); }
+
+/* ---------- (0.7.7) the score in the teams' colours */
+
+.scores { display: inline-flex; flex-wrap: wrap; gap: 4px 18px; }
+.score { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; }
+.score .team { margin-right: 0; align-self: center; }
+.score-0 { color: var(--team-red-ink); }
+.score-1 { color: var(--team-blue-ink); }
+.score strong { color: var(--title); font-weight: 900; }
+
+/* ---------- stop or restart: the countdown as the menus' big number, the choice as chips */
+
+.stop-badge { color: var(--menu-blue); }
+.stop-live { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; padding: 12px 14px 14px;
+  border-radius: var(--corner); background: var(--row); box-shadow: inset 0 0 0 1.5px var(--menu-blue); }
+.stop-clock { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; color: var(--title);
+  font-size: 13px; font-weight: 900; letter-spacing: 0.03em; text-transform: uppercase; }
+.stop-time { font: 900 38px/1 var(--font); color: var(--title); }
+.stop-time:empty { display: none; }
+.stop-live .note { margin: 0; }
+.stop-live button { margin-top: 6px; }
+.stop-form { display: flex; flex-direction: column; gap: 8px; }
+/* (three short choices on a row, the two long ones under them, a row each) */
+.choices { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; border: 0; min-width: 0; }
+.choices .chip { grid-column: span 2; min-height: 34px; padding-top: 2px; line-height: 1.15; }
+.choices .chip-row { grid-column: 1 / -1; }
+.chip input { flex: none; }
+.choices legend, .stop-form .field { float: none; width: auto; padding: 0 0 2px; color: var(--muted); font: 750 12px var(--font);
+  letter-spacing: 0.12em; text-transform: uppercase; }
+.choices legend { width: 100%; grid-column: 1 / -1; }
+.stop-form .field { margin-top: 8px; }
+.chip input[type="radio"] { border-radius: 50%; }
+.chip-field input[type="number"] { -webkit-appearance: textfield; appearance: textfield; width: 4.2em; min-height: 24px;
+  height: 24px; margin: 0 -2px; padding: 0 6px; border-radius: var(--corner); border: 1px solid var(--rule); background: var(--well);
+  color: var(--title); font: 900 12px var(--font); letter-spacing: 0; text-align: right; }
+.chip-field input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.stop-form .bar { margin-top: 6px; }
+.stop-form .note { margin: 0; }
+
+/* ---------- a card's title with its actions on the same line */
+
+.panel-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px;
+  margin-bottom: 12px; }
+.panel-head h2 { margin: 0; }
+.head-bar { display: flex; flex-wrap: wrap; gap: 6px; }
+
+/* ---------- access, keys and backups: menu rows, the thing on the left in words, its facts under it, actions right */
+
+.access-grid { display: grid; gap: 18px; align-items: start; grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1000px) { .access-grid { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+.list.rows { margin-top: 12px; }
+.list.rows li { align-items: center; padding-top: 8px; padding-bottom: 8px; }
+.row-main { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.row-title { color: var(--title); font-weight: 900; overflow-wrap: break-word; }
+.row-title.mono { font: 500 14px var(--mono); }
+.row-title .tag { vertical-align: 1px; }
+.row-kind { color: var(--muted); font-size: 12px; font-weight: 750; letter-spacing: 0.1em; text-transform: uppercase; }
+.row-meta { display: flex; flex-wrap: wrap; gap: 2px 14px; color: var(--text); font-size: 13px; }
+.row-meta .bad, .ended .row-meta .bad { color: var(--bad-ink); }
+.row-code { color: var(--title); font-size: 13px; }
+.row-code.muted { color: var(--muted); font-size: 11.5px; }
+.row-value { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--accent); font-weight: 900;
+  white-space: nowrap; text-align: right; }
+.row-ago { color: var(--muted); font-size: 12.5px; font-weight: 600; }
+.ended .row-title, tr.ended td { color: var(--muted); }
+.key-name { color: var(--title); font-weight: 900; }
+tr.ended .key-name { color: var(--muted); }
+.switch-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: var(--row-h);
+  padding: 6px 14px; border-radius: var(--corner); background: var(--row); }
+.switch-label { color: var(--title); font-size: 13px; font-weight: 900; letter-spacing: 0.03em; text-transform: uppercase;
+  cursor: pointer; }
+#reserved-form input { flex: 0 1 8em; }
+.fields label.narrow { flex: 0 1 7.5em; }
+.fields label[hidden] { display: none; }
+.backups { display: flex; flex-direction: column; gap: 14px; margin-top: 12px; }
+.backup-file { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; margin: 0; }
+.backup-file code { color: var(--title); font-size: 13.5px; }
+.backup-file span { color: var(--muted); font-size: 12.5px; }
+.backup-group .list.rows { margin-top: 6px; }
+
+/* ---------- the dialog's extras: a secret shown once, an import's list */
+
+.secret-row { margin-top: 0; }
+.secret-text { flex: 1 1 260px; min-height: 0; resize: none; font: 500 13.5px/1.5 var(--mono); letter-spacing: 0;
+  word-break: break-all; color: var(--title); }
+textarea.secret-text:read-only { opacity: 1; }
+.secret-row { align-items: stretch; }
+.note + table { margin-top: 12px; }
+/* (the warning as START GAME's blue frame: the menus' attention, not a side stripe) */
+.once { margin: 0; padding: 10px 12px 9px; border-radius: var(--corner); background: var(--row);
+  box-shadow: inset 0 0 0 1.5px var(--menu-blue); color: var(--title); font-weight: 750; }
+#dialog-body .copied { margin: -4px 0 0; }
+#dialog-body .facts { margin: 0; }
+.import-list { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 3px; max-height: 220px;
+  overflow-y: auto; font-size: 13.5px; }
+.import-list li { padding: 6px 10px 5px; border-radius: var(--corner); background: var(--row); overflow-wrap: anywhere; }
+
+@media (max-width: 700px) {
+  .list.rows li { flex-wrap: wrap; }
+  .row-value { align-items: flex-start; text-align: left; }
+  .stop-time { font-size: 34px; }
+}
+
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+[hidden] { display: none !important; }
