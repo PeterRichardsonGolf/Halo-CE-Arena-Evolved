@@ -23,11 +23,18 @@ import shutil
 import subprocess
 import sys
 import tarfile
+import urllib.error
 import urllib.request
 from pathlib import Path
 
 FFMPEG_VERSION = "7.1"
-FFMPEG_URL = f"https://ffmpeg.org/releases/ffmpeg-{FFMPEG_VERSION}.tar.xz"
+# the release tarball, from FFmpeg first, then a mirror that keeps the same
+# file (the digest below is checked whichever answers; ffmpeg.org resets or
+# refuses the CI runners now and then)
+FFMPEG_URLS = [
+    f"https://ffmpeg.org/releases/ffmpeg-{FFMPEG_VERSION}.tar.xz",
+    f"https://ftp.osuosl.org/pub/blfs/conglomeration/ffmpeg/ffmpeg-{FFMPEG_VERSION}.tar.xz",
+]
 FFMPEG_SHA256 = "40973d44970dbc83ef302b0609f2e74982be2d85916dd2ee7472d30678a7abe6"
 # (the release's own tarball: this is the digest of the file signed by the
 # FFmpeg release signing key, B4322F04D67658D8)
@@ -85,13 +92,21 @@ def fetch(root):
     if (source / "configure").is_file():
         return source
     archive = root / f"ffmpeg-{FFMPEG_VERSION}.tar.xz"
-    print(f"{Path(__file__).name}: downloading FFmpeg {FFMPEG_VERSION}")
-    urllib.request.urlretrieve(FFMPEG_URL, archive)
-    digest = hashlib.sha256(archive.read_bytes()).hexdigest()
-    if digest != FFMPEG_SHA256:
+    errors = []
+    for url in FFMPEG_URLS:
+        print(f"{Path(__file__).name}: downloading FFmpeg {FFMPEG_VERSION} from {url}")
+        try:
+            urllib.request.urlretrieve(url, archive)
+        except (OSError, urllib.error.URLError) as error:
+            errors.append(f"{url}: {error}")
+            continue
+        digest = hashlib.sha256(archive.read_bytes()).hexdigest()
+        if digest == FFMPEG_SHA256:
+            break
         archive.unlink()
-        raise SystemExit(f"{Path(__file__).name}: {archive.name}: SHA-256 {digest}, "
-                         f"expected {FFMPEG_SHA256}")
+        errors.append(f"{url}: SHA-256 {digest}, expected {FFMPEG_SHA256}")
+    else:
+        raise SystemExit(f"{Path(__file__).name}: no source for FFmpeg {FFMPEG_VERSION}:\n  " + "\n  ".join(errors))
     with tarfile.open(archive) as tar:
         tar.extractall(root)
     (root / f"ffmpeg-{FFMPEG_VERSION}").rename(source)
