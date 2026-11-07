@@ -5,6 +5,16 @@
 
 #include "ae_host_dedicated_rules.h"
 
+/* a decimal stamp (unsigned, 64-bit); the game's files build as C89 on macOS, where <stdlib.h> declares no strtoull */
+static unsigned long long read_decimal(char const *at)
+{
+	unsigned long long value = 0;
+
+	while (*at >= '0' && *at <= '9')
+		value = value * 10 + (unsigned long long)(*at++ - '0');
+	return value;
+}
+
 static int const bots_steps[AE_HD_BOTS_STEPS] = { 0, 2, 4, 6, 8, 12, 16 };
 
 static void copy_text(char *to, int size, char const *from)
@@ -284,7 +294,7 @@ int ae_host_dedicated_running_read(char const *text, struct ae_hd_running *runni
 			else if (!strncmp(line, "started=", 8))
 				running->started = strtoul(line + 8, NULL, 10);
 			else if (!strncmp(line, "stamp=", 6))
-				running->stamp = strtoull(line + 6, NULL, 10);
+				running->stamp = read_decimal(line + 6);
 			else if (!strncmp(line, "name=", 5))
 				copy_text(running->name, (int)sizeof(running->name), line + 5);
 		}

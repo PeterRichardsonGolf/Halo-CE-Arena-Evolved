@@ -14,10 +14,10 @@ HOST A SERVER's process work (ae_host_dedicated.h).
 #include "port_config.h"
 #include "posix.h"
 
-#include <SDL3/SDL.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <SDL3/SDL.h>
 
 void platform_log(char const *format, ...);
 
