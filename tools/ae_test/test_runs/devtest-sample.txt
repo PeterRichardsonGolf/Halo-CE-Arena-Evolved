@@ -1,0 +1,49 @@
+# DEV MODE's sample grouped list: one Blood Gulch load, each test set up by dev commands, the game's own checks
+# judged by tools/ae_test/expect.py from the event stream, the look-and-feel ones left to the owner. (Between two
+# tests of a group the runner resets the game before a test's window opens: a check of the reset itself calls it.)
+list devtest-sample
+revision 1
+title DEV TEST SAMPLE
+
+group gulch
+map bloodgulch
+set debug.network_test_time_limit 5
+setup goto start 0
+
+test give-sniper
+title A sniper rifle given
+setup give sniper_rifle
+check The sniper rifle is in your hands
+expect 1 weapon sniper_rifle loaded 4
+check The scope's picture looks right
+
+test warthog
+title A warthog made ahead
+setup spawn warthog ahead
+check A warthog stands ahead of you
+expect 1 object vehicle warthog
+
+test score
+title The score set
+setup score me 7
+check Your score reads 7
+expect 1 score player 0 individual 7
+
+test kill-respawn
+title Killed and back
+setup kill
+setup respawn
+check You die
+expect 1 death player 0
+check You are back at once
+expect 2 cmd respawn ok
+
+test reset
+title Reset
+setup spawn ghost ahead
+setup reset
+check The reset answers
+expect 1 cmd reset ok
+check The ghost made before it is gone
+expect 2 gone vehicle ghost
+check You are back at your start, no line in the kill feed

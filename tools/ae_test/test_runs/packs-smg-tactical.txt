@@ -1,0 +1,31 @@
+# The TACTICAL SMG pack (CMT's smg_tactical, first set of numbers: provisional): spawns with the pack's weapon on every
+# life on Octagon 2, a few bots, as the other pack tests do.
+# TODO (waits for the 32-slot widening): the mask bit and the START slot below are the slot the pack takes once it has
+# one (slot 15: mask 16384, START 15); change both if the widening numbers it differently.
+list packs-smg-tactical
+revision 1
+title TACTICAL SMG PACK
+
+test tactical-look
+title Tactical SMG: how it looks in your hands and on the ground
+check In hand: gun and arms, no light cone on it
+check Dropped: the gun alone, no arms, no cones
+check Zoomed: round scope lines, no number, no print
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 16384
+set debug.network_test_pack_start 15
+
+test tactical-feel
+title Tactical SMG: fire, zoom, reload
+check Fires about 13 a second, steadier than the SMG
+check Zoom is 2x and the unzoomed reticle goes
+check Reload: arms move, 48 rounds a magazine
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 16384
+set debug.network_test_pack_start 15

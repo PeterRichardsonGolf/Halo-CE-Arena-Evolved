@@ -1,0 +1,3 @@
+# The gravity hammer's texts in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is the pack's display name. The hammer has no ammunition: no ammo line.
+weapon_pickup=Picked up a gravity hammer
