@@ -1,0 +1,820 @@
+{
+ "format": 1,
+ "about": "The AE spiker pack: CMT's multiplayer spiker (spiker_mp) from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (tags for the stock tool kit, no Open Sauce), with what an Xbox map needs (the models converted, the multipurpose maps' channels reordered, the high-resolution HUD made the Xbox's, an Ogg Vorbis sound re-encoded, a shader's detail map that names a campaign bitmap left empty) and AE's own numbers: a close-to-mid automatic. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_spiker",
+  "revision": 1,
+  "display": "SPIKER",
+  "prefix": "ae\\packs\\spiker\\",
+  "weapon": "cmt\\weapons\\evolved\\spiker\\_spiker_mp\\spiker_mp",
+  "weapon_key": "spiker",
+  "labels": "c_spk,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "roots": [
+   "bitm:cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons"
+  ],
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:11"
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/characters/_shared/jackal/bitmaps/jackal_shield_noise.bitmap",
+   "cmt/effects/contrail/generic trail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal ballistic.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact stone ballistic.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "cmt/effects/particles/air/dirty smoke.particle",
+   "cmt/effects/particles/air/fire_burst_round.particle",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/smg new.bitmap",
+   "cmt/effects/particles/flash/bitmaps/spiker fire.bitmap",
+   "cmt/effects/particles/flash/flash spiker muzzle tp.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle tpp.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle.particle",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/goop thin.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/goop.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person reload-full.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_ammo_pickup.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_fire_1.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_fire_2.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_flyby.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_impact.sound",
+   "cmt/textures/colours/solid/255-000-000-red.bitmap",
+   "cmt/textures/cubemaps/cube_grey_medium.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/evolved/covenant/spiker.weapon_hud_interface",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_front.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_side.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_heat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_multi.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_superheat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_cooled.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_glow_gradient.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_superheated.bitmap",
+   "cmt/weapons/_shared/spiker/contrails/spiker_spike.contrail",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_fire_lower.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_fire_upper.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_impact.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_sparks.effect",
+   "cmt/weapons/_shared/spiker/fp/fp.gbxmodel",
+   "cmt/weapons/_shared/spiker/fp/fp.model_animations",
+   "cmt/weapons/_shared/spiker/lights/spiker_illumination.light",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike.lens_flare",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike.light",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike_muzzle_flash.light",
+   "cmt/weapons/_shared/spiker/projectiles/spiker_spike/spiker_spike.gbxmodel",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_blade.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_dull.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_heat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_shiny.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_superheat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_clip.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_cooled.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_glow_front.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_glow_side.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_heated.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_superheated.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/spiker.gbxmodel",
+   "cmt/weapons/evolved/spiker/_spiker_mp/projectiles/spiker_mp_spike/spiker_mp_spike.projectile",
+   "cmt/weapons/evolved/spiker/_spiker_mp/spiker_mp.weapon",
+   "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_impact.damage_effect",
+   "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_trigger.damage_effect"
+  ],
+  "verbatim": [
+   "cmt/characters/_shared/jackal/bitmaps/jackal_shield_noise.bitmap",
+   "cmt/effects/contrail/generic trail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal ballistic.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact stone ballistic.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "cmt/effects/particles/air/dirty smoke.particle",
+   "cmt/effects/particles/air/fire_burst_round.particle",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/smg new.bitmap",
+   "cmt/effects/particles/flash/bitmaps/spiker fire.bitmap",
+   "cmt/effects/particles/flash/flash spiker muzzle tp.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle tpp.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle.particle",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/goop thin.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/goop.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person reload-full.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_ammo_pickup.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_fire_1.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_fire_2.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_flyby.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/fx/spiker_spike_impact.sound",
+   "cmt/textures/colours/solid/255-000-000-red.bitmap",
+   "cmt/textures/cubemaps/cube_grey_medium.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_front.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_side.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_heat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_superheat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_cooled.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_glow_gradient.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_spike_superheated.bitmap",
+   "cmt/weapons/_shared/spiker/contrails/spiker_spike.contrail",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_fire_lower.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_fire_upper.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_impact.effect",
+   "cmt/weapons/_shared/spiker/effects/spiker_spike_sparks.effect",
+   "cmt/weapons/_shared/spiker/fp/fp.model_animations",
+   "cmt/weapons/_shared/spiker/lights/spiker_illumination.light",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike.lens_flare",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike.light",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/spiker/lights/spiker_spike_muzzle_flash.light",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_blade.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_heat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_shiny.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_superheat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_clip.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_cooled.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_glow_front.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_glow_side.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_heated.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_spike_superheated.shader_transparent_chicago"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-nopanel",
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved\\spiker\\_spiker_mp\\spiker_mp.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap"
+    ]
+   ],
+   "why": "the donor map only: the stock HUD globals naming the source's own pickup icon sheet, so that the donor holds the sheet the pack's message icon is (the pack takes the sheet by its root, never these globals)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the source's pickup icon sheet)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/spiker.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/spiker.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/fp/fp.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/projectiles/spiker_spike/spiker_spike.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/projectiles/spiker_spike/spiker_spike.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/bitmaps/spiker_body_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/shaders/spiker_body_dull.shader_model",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/shaders/spiker_body_dull.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "detail_map",
+     ".bitmap"
+    ]
+   ],
+   "why": "the dull body shader's detail map names a stock campaign bitmap (vehicles\\lifepod\\bitmaps\\detail_leather_seat) that no stock multiplayer map has and CMT's release does not carry: the detail map left empty, as the body's other shaders have it"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/effects/impacts/flesh_impact.sound"
+   ],
+   "why": "CMT's flesh impact (the bolts' and spikes' hit on a body) holds Ogg Vorbis samples, which an Xbox map cannot: decoded and encoded again as Xbox ADPCM, nothing else of it changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved/covenant/spiker.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/evolved/covenant/spiker.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-nopanel",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved/covenant/spiker.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/ui/hudv4.1/weapons/evolved/covenant/spiker.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ]
+   ],
+   "why": "no panel of the pack's draws under the classic HUD style or any other: CMT's own panel (its static elements, meters and numbers) is out and the map's stock rounds panel is the child HUD, so the classic style shows the stock meter and the AE style draws its own"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/spiker/_spiker_mp/spiker_mp.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/spiker/_spiker_mp/spiker_mp.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/spiker/spiker.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/spiker/fp/fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ]
+   ],
+   "why": "the Xbox models; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/spiker/_spiker_mp/projectiles/spiker_mp_spike/spiker_mp_spike.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/spiker/_spiker_mp/projectiles/spiker_mp_spike/spiker_mp_spike.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/spiker/projectiles/spiker_spike/spiker_spike.model"
+    ]
+   ],
+   "why": "the Xbox model"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/spiker/_spiker_mp/spiker_mp.weapon",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved/spiker/_spiker_mp/spiker_mp.weapon"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "player_melee_damage",
+       "weapons\\assault rifle\\melee.damage_effect"
+      ],
+      [
+       "player_melee_response",
+       "weapons\\assault rifle\\melee_response.damage_effect"
+      ],
+      [
+       "collision_model",
+       "weapons\\assault rifle\\assault rifle.model_collision_geometry"
+      ],
+      [
+       "magazines[0].rounds_loaded_maximum",
+       "40"
+      ],
+      [
+       "magazines[0].rounds_reloaded",
+       "40"
+      ],
+      [
+       "magazines[0].rounds_total_initial",
+       "80"
+      ],
+      [
+       "magazines[0].rounds_reserved_maximum",
+       "160"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "10 10"
+      ],
+      [
+       "triggers[0].error_angle",
+       "0.6 2.4"
+      ],
+      [
+       "triggers[0].minimum_error",
+       "0.4"
+      ],
+      [
+       "triggers[0].error_acceleration_time",
+       "0.8"
+      ],
+      [
+       "triggers[0].error_deceleration_time",
+       "0.2"
+      ],
+      [
+       "autoaim_angle",
+       "3.5"
+      ],
+      [
+       "autoaim_range",
+       "15"
+      ],
+      [
+       "magnetism_angle",
+       "8"
+      ],
+      [
+       "magnetism_range",
+       "20"
+      ]
+     ]
+    ]
+   ],
+   "why": "AE's spiker, a close-to-mid automatic (owner: CMT's spiker_mp as it is, AE-balanced): CMT's 10 spikes a second and magazine of 40, 80 spikes in reserve to start and 160 at most (120 and 200 with the magazine; CMT's 120 and 200 in reserve); error 0.6 to 2.4 degrees (a spike at least 0.4 off), reached in 0.8 s of fire and lost in 0.2 s (CMT's 1 to 2.1, at least 0.75, 0.7 s and 0.1 s: the first spikes of a burst land at mid range, a held trigger sprays up close); aim assist 3.5 degrees / 15 units and magnetism 8 / 20 (CMT's 5 / 14 and 10 / 21: the assault rifle's reach, a little wider for the slower spike); the held weapon's collision and the melee the stock assault rifle's, left to the map, as every pack weapon's (CMT's blade melee took 30 flat at 1.0)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/spiker/_spiker_mp/projectiles/spiker_mp_spike/spiker_mp_spike.projectile",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved/spiker/_spiker_mp/projectiles/spiker_mp_spike/spiker_mp_spike.projectile"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "50"
+      ],
+      [
+       "final_velocity",
+       "30"
+      ],
+      [
+       "maximum_range",
+       "60"
+      ]
+     ]
+    ]
+   ],
+   "why": "the spike: 50 units a second slowing to 30 (CMT's 37 to 17: 1.7 and 1 a tick, the stock plasma rifle's bolt is 50 to 25), CMT's arc (gravity x0.35) kept, carried 60 units (CMT's spike flew its 8 s timer out): it lands at mid range with a visible lead and drop, and loses to the rifles past it"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "10"
+      ],
+      [
+       "damage_upper_bound",
+       "10 10"
+      ],
+      [
+       "cyborg_energy_shield",
+       "0.85"
+      ],
+      [
+       "cyborg_armor",
+       "1.3"
+      ]
+     ]
+    ]
+   ],
+   "why": "10 a spike (CMT's 8) at x0.85 on a player's shield (8.5) and x1.3 on the body (13): 9 spikes strip a full shield (76.5 of 75), 6 more kill (78 of 75), 15 in all, 1.4 s at 10 a second: quicker than the assault rifle's 20 rounds (1.6 s) for a slow arcing spike, slower than the SMG up close (13, 0.8 s); a spike's bite is in the body, as CMT's spike (x0.7 on shields) has it"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/spiker/damage_effects/spiker_spike_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.2"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.07"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.35"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.07"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a short pulse on both motors for 0.07 s a spike (10 a second: a chunky buzz, a little heavier than the assault rifle's; CMT's 0.15 and 0.2 s pulses ran into each other); CMT's view kick and shake are left as they are"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1), built twice (a, b) with the same result; re-pinned for the pack's HUD without its own panel (the map's stock panel is the child HUD); a pack built twice from the recipe was the same",
+  "donor_sha256": "fdad3062e332565a5b915f913b9b62976db234ef45d8e1b0675b0b7a9488f492",
+  "donor_size": 22454272,
+  "pack_sha256": "4089ca13f987ce54a26955f55ba540018e5837613047489f1bcf38f48cf45e25",
+  "pack_own_sha256": "c7a04e222093ae8f3a529ecc05e89ab739eb27e75cc496fbb0db8ad4fa5c3f2f",
+  "pack_size": 12706200,
+  "own_tags": 164,
+  "external_tags": 44
+ }
+}

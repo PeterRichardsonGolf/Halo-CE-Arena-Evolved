@@ -1,0 +1,33 @@
+AE BURST PDW (weapon pack ae_pdw) - credits
+
+The burst PDW's models (ZTeam's compact submachine gun, third-person and first-person), shaders, textures (the
+alternate "h3b" texture set the pack wears), first-person animations, collision, sounds and HUD (its ammunition
+meter and picture of the weapon) are ZTeam's, from the ZTeam tag pack (released on halomaps.org). The pack names no
+individual authors, so none are named here. They are used as released, but for what an Xbox map needs: the models
+converted to the Xbox model format, the multipurpose map's channels reordered.
+
+Made for Arena Evolved:
+- the weapon's numbers (magazine, burst, rate of fire, error, aim assist) and the damage and speed of a round, set to
+  our own values;
+- the round and the firing effect are the stock assault rifle's with our numbers and ZTeam's shot sound;
+- the models wear ZTeam's h3b texture set (its two shaders in place of the h3 ones); ZTeam's third-person reload
+  effect is left out;
+- the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a full-screen visor frame), and its
+  ammunition meter shows ZTeam's own 36-round art from the same sheet;
+- the swap and pickup prompts' picture is ZTeam's own picture of the weapon, resampled onto a sprite sheet (nothing
+  drawn);
+- the firing kick is the stock assault rifle's with a rumble.
+
+The aiming reticle is CMT's, from the SMG HUD of the stock-compatible release of The Silent Cartographer: Evolved's
+source (the reticle sheet unchanged; the Xbox-map scale CMT's HUD needs applied). ZTeam's reticle is not used.
+Thank you, CMT.
+
+The pack's round and firing effect are built from the stock assault rifle's tags (no pixel, sound or model of the
+game's): what else the PDW needs of the game (the stock rounds panel, ammunition pickup, melee, impacts, materials,
+muzzle flash) it names, and the map the player owns provides.
+
+Kind: unknown. ZTeam's models are made for Custom Edition (their own nodes, a Custom Edition polygon budget) and
+recreate a later game's submachine gun; nothing in the release says whether they and the sounds were modelled and
+recorded by ZTeam or taken from that game, so this pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.
