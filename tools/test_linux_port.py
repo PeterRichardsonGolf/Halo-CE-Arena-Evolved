@@ -731,16 +731,16 @@ def test_config_has_each_section_once(tmp_path):
         return re.findall(r"^\[(\w+)\]$", config.read_text(), re.M)
 
     # the defaults
-    assert run("get", "display.first_person_legs")[0] == "false"
-    assert len(sections()) == len(set(sections())), sections()
-    run("write", "display.first_person_legs", "true")
     assert run("get", "display.first_person_legs")[0] == "true"
+    assert len(sections()) == len(set(sections())), sections()
+    run("write", "display.first_person_legs", "false")
+    assert run("get", "display.first_person_legs")[0] == "false"
 
     # an older version's
     config.write_text("[display]\nvsync = false\n\n[game]\nconsole_log = \"all\"\n\n"
-                      "[display]\nfirst_person_legs = true\n")
+                      "[display]\nfirst_person_legs = false\n")
     value, log = run("get", "display.first_person_legs")
-    assert value == "true" and "joined" in log
+    assert value == "false" and "joined" in log
     assert sections().count("display") == 1
     assert run("get", "display.vsync")[0] == "false"
     assert run("get", "game.console_log")[0] == "all"
