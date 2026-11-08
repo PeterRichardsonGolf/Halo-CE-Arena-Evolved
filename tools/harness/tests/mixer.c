@@ -55,6 +55,19 @@ static const char *config_string(const char *name)
 	return !strcmp(name, "audio.resampler") ? resampler_setting : NULL;
 }
 
+/* the menus' MCC music (game/ae_mcc_music.c): none */
+void ae_mcc_music_mix(float *output, unsigned long frames, unsigned long channels, float master_volume)
+{
+	(void)output;
+	(void)frames;
+	(void)channels;
+	(void)master_volume;
+}
+
+void ae_mcc_music_update(void)
+{
+}
+
 /* the players' voices (voice_audio.c): none */
 static void voice_audio_mix(float *output, unsigned long frames)
 {
