@@ -74,7 +74,9 @@ static void look(char const *map)
 	state.phase = _phase_done;
 	state.path[0] = 0;
 	state.alive = FALSE;
-	/* (the list filled for the name: a map a game was set up for without the menus has no row yet) */
+	/* (the list filled for the name: a map a game was set up for without the menus has no row yet; a build without
+	the port's map list, the web build, has no rows, so no map there is given a picture) */
+#ifdef HALO_MAP_LIST
 	row = ui_map_list_lookup(map);
 	if (row != NONE)
 		stock = ae_map_auto_picture_stock_frame(ui_map_list_picture_index(row));
@@ -85,6 +87,9 @@ static void look(char const *map)
 		ui_map_list_xbox_picture(map, &own);
 		stock = own;
 	}
+#else
+	row = NONE;
+#endif
 	candidate = ae_map_picture_missing(map, path, sizeof(path));
 	/* (no row: not a map of the list, so not one to give a picture) */
 	if (row != NONE && ae_map_auto_picture_wanted(map, candidate, stock, !network_game_distributed_client()))
