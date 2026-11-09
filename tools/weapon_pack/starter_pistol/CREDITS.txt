@@ -1,0 +1,21 @@
+AE STARTER PISTOL (weapon pack ae_starter_pistol) - credits
+
+The pistol's models (third-person and first-person), animations, collision, shaders, textures, sounds, firing and
+reload effects, round and damage effects are the Digsite mod's 00_e3 pistol, from the official Halo CE
+Mod Tools (the Halo Editing Kit's tags, digsite/weapons/pistol/00_e3 and the shared bitmaps and sounds it names).
+Digsite's team is credited with thanks; the tags name no individual authors, so none are named here. They are used as
+released, but for what an Xbox map needs: the models converted to the Xbox model format, the multipurpose maps'
+channels reordered, the first-person animation sounds encoded again as Xbox ADPCM.
+
+Made for Arena Evolved:
+- the weapon's numbers (magazine, rate of fire, error, zoom, aim assist, ranges) and the damage of a round, set to
+  our own values; the round's range shortened;
+- the HUD is the map's stock rounds panel, aiming reticles and zoom mask in place of Digsite's suit interface,
+  ammunition bar and ring reticle;
+- the round is a real one fired from the camera (Digsite's trigger flags it client-side only and offsets it);
+- the swap and pickup prompts' picture is a side view drawn from the model's geometry (nothing drawn by hand,
+  nothing of the game's HUD);
+- the firing kick is Digsite's with a lighter rumble.
+
+What else the pistol needs of the game (the stock rounds panel, ammunition pickup, melee, impacts, materials, muzzle
+flash, particles) it names, and the map the player owns provides.

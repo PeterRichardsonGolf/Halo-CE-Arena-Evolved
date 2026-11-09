@@ -1,0 +1,244 @@
+# 0.7.7 round A on the release tree (ae/release-077): the server lobby and its vote on the live servers, HOST A SERVER on
+# Linux, the crosshair editor and the scope and vehicle-gun crosshairs, the server's web page, a Bluetooth pad paired after
+# the start, the Nintendo A/B swap in the menus, the shotgun's first-person model on an @smp conversion, and the fireteam
+# rules in arena games against BTB. The menus tests set nothing up: the owner walks there as the checks say. The live
+# servers run preview 2.4.1 (no new web screens there): the web page of your own HOST A SERVER shows the new ones.
+# Headless pre-run: run_list.py with --after 70 (the fireteam tests need the time).
+# Revision 2 (final tip): the IN SCOPE row and the STOCK word in the crosshair menus, pads found with udev off (wired at
+# the start, plugged after it, Bluetooth), BUTTON PROMPTS UNIVERSAL's glyphs, the AE HUD's names (allies always, enemies in
+# sight; AE TEAM SLY is the game where names went missing before) against CLASSIC, and the zone's default look A.
+# Revision 3: give lines name the stock tag path (packs add a second sniper and shotgun); the arena rules line is logged
+# at load, outside a test's window, so the arena tests judge the roles and release lines without a squad number.
+list rc-077a
+revision 5
+title 0.7.7 RELEASE, ROUND A
+
+test server-join
+title SERVER LOBBY: join AE Official #1 by address
+check JOIN BY ADDRESS play.arenaevolved.com:10660: the lobby
+check Title = server name; WAITING or VOTE state; players list
+check UP NEXT names the next map and gametype
+menus
+
+test server-vote
+title SERVER LOBBY: the vote on AE Comp Test
+check JOIN BY ADDRESS comp.arenaevolved.com:10683 near a game end
+check VOTE FOR THE NEXT GAME: one vote per PC, THIS PC'S VOTE
+check WON THE VOTE, then COUNTDOWN and the game starts
+menus
+
+test server-leave
+title SERVER LOBBY: leave and rejoin
+check LEAVE returns to the main menu, no error dialog
+check Rejoin the same address: the lobby comes back
+check A kicked player sees REMOVED FROM THE SERVER (if tried)
+menus
+
+test host-server
+title HOST A SERVER: start and auto-join
+check MULTIPLAYER > HOST A SERVER: name, playlist, START SERVER
+check STARTING, then READY and this PC joins on its own
+check Pause: RUN THE SERVER page (you own it): UP NEXT, SAY
+menus
+
+test host-my-server
+title HOST A SERVER: MY SERVER page and card
+check Main menu shows a MY SERVER card while it runs
+check MY SERVER: status, players, COPY INVITE, OPEN ITS WEB PAGE
+check Its web page opens and shows the API KEYS and ACCESS tabs
+menus
+
+test host-quit
+title HOST A SERVER: the quit choices
+check Quit: KEEP RUNNING / STOP WHEN EMPTY / STOP NOW stacked
+check KEEP RUNNING: the game closes, the server stays up
+check Start AE again: MY SERVER finds it; STOP NOW ends it
+menus
+
+test xh-new
+title CROSSHAIR EDITOR: NEW takes over from STOCK
+check SETTINGS > HUD > RETICLE: CROSSHAIR = STOCK
+check EDIT CROSSHAIR... > NEW: a fresh default, named
+check Back: CROSSHAIR now names the new one (main)
+menus
+
+test xh-duplicate
+title CROSSHAIR EDITOR: DUPLICATE and CUSTOM COLOR
+check DUPLICATE: a copy with its own name, main unchanged
+check COLOR CUSTOM: RED GREEN BLUE rows and the hex read the same
+check Typing a hex sets the three rows; the preview follows
+menus
+
+test web-admin
+title SERVER WEB PAGE through the tunnel
+check http://127.0.0.1:18080/ logs in; AE theme, tabs readable
+check Rotation rows read as map + gametype names, no raw keys
+check Gametypes tab lists the AE built-ins in folders
+menus
+
+test pad-bluetooth
+title PADS: Bluetooth pad paired after the start
+check Pair the Switch Pro over Bluetooth now: the game takes it
+check A wired 8BitDo plugged in works too, both at once
+check SETTINGS > CONTROLLER lists no stray devices
+menus
+
+test pad-ab-swap
+title PADS: Nintendo A/B swap, no menu loop
+check Profile with A/B SWAP EVERYWHERE: CREATE GAME opens once
+check B in the lobby leaves once; the menu stays put
+check Main menu: no CREATE GAME / leave loop with the button held
+menus
+
+test xh-scope-row
+title RETICLE: the IN SCOPE row and its default
+check SETTINGS > HUD > RETICLE: IN SCOPE reads SAME CROSSHAIR
+check Its other value is WEAPON'S SCOPE; help text names both
+check Back and in again: the pick is kept
+menus
+
+test xh-stock-word
+title RETICLE: the word is STOCK, never WEAPON'S OWN
+check CROSSHAIR picker: the first choice is STOCK
+check WEAPONS... rows say STOCK or USE MAIN, nowhere WEAPON'S OWN
+check EDIT CROSSHAIR... and help lines: STOCK too
+menus
+
+test pad-hotplug
+title PADS: found with udev off, wired and plugged later
+check Wired 8BitDo in at start: SETTINGS > CONTROLLER names it
+check Unplug and replug it: found again, one row, no duplicate
+check A second pad plugged after the start: found, no stray rows
+menus
+
+test prompts-universal
+title BUTTON PROMPTS UNIVERSAL: readable glyphs
+check UNIVERSAL in your profile: diamond, pressed face filled
+check D-pad cross; START/SELECT, L/R and LT/RT read as pills
+check TEST RUN card: the same glyphs, readable at its size
+menus
+
+group scope
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup give weapons\sniper_rifle\sniper_rifle
+
+test xh-scope-same
+title IN SCOPE = SAME CROSSHAIR (set the row in SETTINGS > HUD > RETICLE first): sniper and pistol zoom
+check Zoom the sniper: your crosshair stays, at the zoom's size
+check Pistol zoom: yours alone, no stock reticle drawn under it
+check Zoom out: the crosshair is back at its normal size
+
+group scope-weapon
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup give weapons\sniper_rifle\sniper_rifle
+
+test xh-scope-weapon
+title IN SCOPE = WEAPON'S SCOPE (set the row in SETTINGS > HUD > RETICLE first): the weapon's own scope
+check Zoom the sniper: its own scope reticle, no custom one
+check Pistol zoom: its own zoom reticle
+check Zoom out: your custom crosshair again
+
+group vehicles
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn warthog ahead
+setup spawn ghost ahead
+
+test xh-vehicle
+title CROSSHAIR WEAPONS: the vehicle gun rows
+check WEAPONS... lists the warthog, ghost and scorpion guns
+check Warthog gunner seat: the crosshair that row names
+check Ghost driver: its row's crosshair; USE MAIN follows main
+
+group smp
+map sympathy@smp
+gametype AE TEAM SLY
+set bots.count 0
+setup give weapons\shotgun\shotgun
+
+test shotgun-smp
+title SHOTGUN: first-person model on an @smp conversion
+check You hold a shotgun in first person, not a world model
+check Fire and reload: the animations play on the right model
+
+group arena
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.skill easy
+
+test arena-roles
+title ARENA 4v4: your squad plays its role
+check Your squad has a role (the log names it)
+expect 1 log roles fireteam
+check Nobody trails you
+expect 2 no log follow ok
+check Die once: the squad keeps its role, no FOLLOW by itself
+
+test arena-follow-temp
+title ARENA 4v4: FOLLOW ME is temporary
+setup fireteam follow
+check The call is taken: the squad comes to you
+expect 1 cmd fireteam follow ok
+check The order lets go by itself, with its reason in the log
+expect 2 log arena release fireteam
+check The squad goes back to its role after that
+
+group btb
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 16
+set bots.skill easy
+
+test btb-follow
+title BTB: your squad follows you by default
+check Your squad trails you with no call given
+expect 1 log follow ok
+check No role takes your squad
+expect 2 no log role fireteam 0
+check A bot-led squad still runs its role
+expect 3 log team 0 role
+
+group names
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test hud-names-ae
+title AE HUD: ally names always, enemy names in sight
+check HUD STYLE AE in your profile: ally names over heads, alive
+check Enemy names only in your line of sight, none through walls
+check No green triangle where a name is drawn
+
+group names-classic
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test hud-names-classic
+title CLASSIC HUD: names as before
+check HUD STYLE CLASSIC in your profile: no names over heads alive
+check Green friend triangles as before
+
+group zone
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test zone-look-default
+title ELIMINATION: the zone's default look is A
+setup round live
+setup goto start 40
+check The zone edge is the energy wall: a violet band, hot foot
+check No light curtain: no thin ribs, no light foot

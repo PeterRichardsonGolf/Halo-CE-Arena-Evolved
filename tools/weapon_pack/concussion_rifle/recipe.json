@@ -1,0 +1,644 @@
+{
+ "format": 1,
+ "about": "The AE concussion rifle pack (folder concussion_rifle): ZTeam's arc launcher (the ZTeam tag pack's concussion_rifle/hr: its weapon, third-person and first-person models, shaders, bitmaps, first-person animations (from its hr_cad folder), collision, sounds, explosive bolt with its effects, and its launcher HUD) as an Xbox weapon tuned for displacement and splash: 6 bolts a magazine at 2 a second, each bolt a 1.5-unit blast of 30 at the centre falling to 10 at the edge that throws players and vehicles. Everything the stock weapons have that it uses (materials, melee, drop and pickup sounds, the rounds panel) is the map's. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_concussion_rifle",
+  "revision": 1,
+  "display": "CONCUSSION RIFLE",
+  "prefix": "ae\\packs\\concussion_rifle\\",
+  "weapon": "zteam\\objects\\weapons\\single\\concussion_rifle\\hr\\concussion_rifle",
+  "weapon_key": "concussion_rifle",
+  "labels": "cr,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {}
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/effects/contrails/plasma_bolt/concussion_bolt_trail.contrail",
+   "zteam/effects/contrails/plasma_bolt/plasma_bolt.bitmap",
+   "zteam/effects/decals/impact/bullet_dirt/impact_bullet_dirt.bitmap",
+   "zteam/effects/decals/scorch/char_explosion/char_explosion.decal",
+   "zteam/effects/particle_systems/explosions/concussion_bolt_explosion/concussion_bolt_explosion.particle_system",
+   "zteam/effects/particles/energy/electric_bolts/electric_bolts.bitmap",
+   "zteam/effects/particles/energy/electric_bolts/electric_bolts.particle",
+   "zteam/effects/particles/energy/electric_rings/electric_rings.bitmap",
+   "zteam/effects/particles/energy/electric_rings/electric_rings_expand.particle",
+   "zteam/effects/particles/flash/burst_long/burst_long.bitmap",
+   "zteam/effects/particles/flash/burst_long/explosion_burst_long.particle",
+   "zteam/effects/particles/flash/burst_sharp/burst_sharp.bitmap",
+   "zteam/effects/particles/flash/burst_sharp/burst_sharp.particle",
+   "zteam/effects/particles/flash/burst_sharp/explosion_burst_sharp.particle",
+   "zteam/effects/particles/flash/dust/dust.bitmap",
+   "zteam/effects/particles/flash/dust/dust_burst.particle",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.bitmap",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.particle",
+   "zteam/effects/particles/flash/flame/flame.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft_flash.particle",
+   "zteam/effects/particles/flash/flash_large/flash_large.bitmap",
+   "zteam/effects/particles/flash/flash_large/flash_large_concussion_bolt.particle",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center.bitmap",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center_expand.particle",
+   "zteam/effects/particles/flash/muzzle_flash/muzzle_flash.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash/muzzle_flash_expand.particle",
+   "zteam/effects/particles/flash/muzzle_flash_long/muzzle_flash_long.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_long/muzzle_flash_long_expand.particle",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.bitmap",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.particle",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.bitmap",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/concussion_bolt_smoke.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/fuel_rod_smoke.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/smoke_firey_small.bitmap",
+   "zteam/effects/point_physics/cold_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/cold_smoke_puff.point_physics",
+   "zteam/effects/point_physics/fire_explosion.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud_nowind.point_physics",
+   "zteam/effects/point_physics/stones.point_physics",
+   "zteam/effects/point_physics/vacuum_particle.point_physics",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_brute_shot.weapon_hud_interface",
+   "zteam/objects/weapons/grenade/plasma_grenade/hr/bitmaps/plasma_grenade.bitmap",
+   "zteam/objects/weapons/grenade/plasma_grenade/hr/bitmaps/plasma_grenade_multipurpose.bitmap",
+   "zteam/objects/weapons/grenade/plasma_grenade/hr/shaders/plasma_grenade.shader_model",
+   "zteam/objects/weapons/single/assault_rifle/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_hologram_blue.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_hologram_purple.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_multipurpose.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt.light_volume",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt.projectile",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt_explosion.damage_effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt_explosion.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/collisions/concussion_rifle_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/concussion_rifle/hr/concussion_rifle.weapon",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/bolt_constant.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/bolt_explosion.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/fire_bolt.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/models/bolt.gbxmodel",
+   "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_fp.gbxmodel",
+   "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_tp.gbxmodel",
+   "zteam/objects/weapons/single/concussion_rifle/hr/muzzle_flash.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_blue.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_pulse_blue.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_pulse_purple.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_metal_grey.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_metal_red.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_plasma.shader_transparent_plasma",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_rubber.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/sounds/fire.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/animations/concussion_rifle_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/sounds/ready.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/plasma_pistol/h3/effects/dryfire.effect",
+   "zteam/objects/weapons/single/plasma_pistol/h3/sounds/dryfire.sound",
+   "zteam/shared/bitmaps/colors/black.bitmap",
+   "zteam/shared/bitmaps/cube_maps/dark_gray.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/mirror_surface.bitmap",
+   "zteam/shared/bitmaps/detail_maps/covenant_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap",
+   "zteam/shared/bitmaps/misc/covenant_hologram_mask.bitmap",
+   "zteam/shared/bitmaps/noise_maps/plasma_shield.bitmap",
+   "zteam/shared/damage_effects/screen_effects/darken_medium_medium.damage_effect",
+   "zteam/shared/damage_effects/trigger/trigger_rifle_kickback_strong.damage_effect",
+   "zteam/shared/shaders/black.shader_model",
+   "zteam/shared/sounds/sfx/projectile_explosions/brute_shot_grenade_explosion2.sound",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/brute_shot_grenade.sound_looping",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/loop.sound"
+  ],
+  "verbatim": [
+   "zteam/effects/contrails/plasma_bolt/concussion_bolt_trail.contrail",
+   "zteam/effects/contrails/plasma_bolt/plasma_bolt.bitmap",
+   "zteam/effects/decals/impact/bullet_dirt/impact_bullet_dirt.bitmap",
+   "zteam/effects/decals/scorch/char_explosion/char_explosion.decal",
+   "zteam/effects/particles/energy/electric_bolts/electric_bolts.bitmap",
+   "zteam/effects/particles/energy/electric_bolts/electric_bolts.particle",
+   "zteam/effects/particles/energy/electric_rings/electric_rings.bitmap",
+   "zteam/effects/particles/energy/electric_rings/electric_rings_expand.particle",
+   "zteam/effects/particles/flash/burst_long/burst_long.bitmap",
+   "zteam/effects/particles/flash/burst_long/explosion_burst_long.particle",
+   "zteam/effects/particles/flash/burst_sharp/burst_sharp.bitmap",
+   "zteam/effects/particles/flash/burst_sharp/burst_sharp.particle",
+   "zteam/effects/particles/flash/burst_sharp/explosion_burst_sharp.particle",
+   "zteam/effects/particles/flash/dust/dust.bitmap",
+   "zteam/effects/particles/flash/dust/dust_burst.particle",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.bitmap",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.particle",
+   "zteam/effects/particles/flash/flame/flame.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft_flash.particle",
+   "zteam/effects/particles/flash/flash_large/flash_large.bitmap",
+   "zteam/effects/particles/flash/flash_large/flash_large_concussion_bolt.particle",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center.bitmap",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center_expand.particle",
+   "zteam/effects/particles/flash/muzzle_flash/muzzle_flash.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash/muzzle_flash_expand.particle",
+   "zteam/effects/particles/flash/muzzle_flash_long/muzzle_flash_long.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_long/muzzle_flash_long_expand.particle",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.bitmap",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.particle",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.bitmap",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/concussion_bolt_smoke.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/fuel_rod_smoke.particle",
+   "zteam/effects/particles/smoke/smoke_firey_small/smoke_firey_small.bitmap",
+   "zteam/effects/point_physics/cold_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/cold_smoke_puff.point_physics",
+   "zteam/effects/point_physics/fire_explosion.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud_nowind.point_physics",
+   "zteam/effects/point_physics/stones.point_physics",
+   "zteam/effects/point_physics/vacuum_particle.point_physics",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/objects/weapons/grenade/plasma_grenade/hr/bitmaps/plasma_grenade.bitmap",
+   "zteam/objects/weapons/grenade/plasma_grenade/hr/shaders/plasma_grenade.shader_model",
+   "zteam/objects/weapons/single/assault_rifle/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_hologram_blue.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_hologram_purple.bitmap",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt.light_volume",
+   "zteam/objects/weapons/single/concussion_rifle/hr/bolt_explosion.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/collisions/concussion_rifle_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/bolt_constant.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/bolt_explosion.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/effects/fire_bolt.effect",
+   "zteam/objects/weapons/single/concussion_rifle/hr/muzzle_flash.light",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_blue.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_pulse_blue.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_hologram_pulse_purple.shader_transparent_chicago",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_metal_grey.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_metal_red.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_plasma.shader_transparent_plasma",
+   "zteam/objects/weapons/single/concussion_rifle/hr/shaders/concussion_rifle_rubber.shader_model",
+   "zteam/objects/weapons/single/concussion_rifle/hr/sounds/fire.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/animations/concussion_rifle_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/sounds/ready.sound",
+   "zteam/objects/weapons/single/concussion_rifle/hr_cad/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/plasma_pistol/h3/effects/dryfire.effect",
+   "zteam/objects/weapons/single/plasma_pistol/h3/sounds/dryfire.sound",
+   "zteam/shared/bitmaps/colors/black.bitmap",
+   "zteam/shared/bitmaps/cube_maps/dark_gray.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/mirror_surface.bitmap",
+   "zteam/shared/bitmaps/detail_maps/covenant_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap",
+   "zteam/shared/bitmaps/misc/covenant_hologram_mask.bitmap",
+   "zteam/shared/bitmaps/noise_maps/plasma_shield.bitmap",
+   "zteam/shared/damage_effects/screen_effects/darken_medium_medium.damage_effect",
+   "zteam/shared/shaders/black.shader_model",
+   "zteam/shared/sounds/sfx/projectile_explosions/brute_shot_grenade_explosion2.sound",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/brute_shot_grenade.sound_looping",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/loop.sound"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\concussion_rifle\\hr\\concussion_rifle.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_tp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_tp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/models/bolt.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/models/bolt.gbxmodel"
+   ],
+   "why": "the bolt's model in the Xbox's format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/bitmaps/concussion_rifle_multipurpose.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/grenade/plasma_grenade/hr/bitmaps/plasma_grenade_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/grenade/plasma_grenade/hr/bitmaps/plasma_grenade_multipurpose.bitmap"
+   ],
+   "why": "the bolt's multipurpose map (ZTeam's bolt wears its plasma grenade shader): Halo PC's channel order to the Xbox's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/bolt_explosion.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/bolt_explosion.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "radius",
+       "0.6 1.5"
+      ],
+      [
+       "damage_aoe_core_radius",
+       "0.35"
+      ],
+      [
+       "damage_lower_bound",
+       "10"
+      ],
+      [
+       "damage_upper_bound",
+       "30 30"
+      ],
+      [
+       "damage_instantaneous_acceleration",
+       "5"
+      ],
+      [
+       "damage_flags.detonates_explosives",
+       "0"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.5"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.3"
+      ],
+      [
+       "camera_shaking_duration",
+       "0.6"
+      ]
+     ]
+    ]
+   ],
+   "why": "the arc launcher's blast (AE's numbers): 30 at the centre (inside 0.35 units), falling to 10 at its 1.5-unit edge (ZTeam's 25 to 40 inside 1.25), so a direct hit is 20 % of a full 75 + 75 player: 3 strip the shield, 5 kill (the brute shot pack's 38 kills in 4 inside 0.8 units: this one hits softer and wider); the knockback (instantaneous acceleration) 5 from ZTeam's 1: the engine adds 5 x the object's acceleration scale world units a second along the blast's direction lifted by 0.45, halved for a living player, the same anywhere inside the blast: 1.75 units a second on a Spartan a bolt (the frag's 4 gives 1.4, the stock rocket's 6 gives 2.1), two bolts a second stacking; tried in the game on an empty warthog: at 8 one bolt flipped it, at 5 one bolt rears it up and it lands on its wheels, a second flips it; 'detonates explosives' cleared, so a vehicle takes 1.5 units a second a bolt on a warthog (the flag would double it; a rocket's is 3.6) and grenades on the ground are not set off; the hit's rumble 0.5 s and 0.3 s and its camera shake 0.6 s (ZTeam's 1.5, 0.5 and 1.5 s ran on at two bolts a second)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/effects/particle_systems/explosions/concussion_bolt_explosion/concussion_bolt_explosion.particle_system",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/effects/particle_systems/explosions/concussion_bolt_explosion/concussion_bolt_explosion.particle_system"
+   ],
+   "edits": [
+    [
+     "set",
+     "particle_types[0].complex_sprite_render_modes",
+     "simple"
+    ]
+   ],
+   "why": "the blast's fire cloud drawn as plain sprites: ZTeam set it to rotational sprites, which take each state's next sequence, and its two bitmaps (explosion cloud, flame) have sprites in their first sequence only; the game would turn the cloud off (one correction), a corrected donor makes no pack"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/bolt.projectile",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/bolt.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/concussion_rifle/hr/models/bolt.model"
+    ],
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "20"
+      ],
+      [
+       "final_velocity",
+       "16"
+      ],
+      [
+       "air_gravity_scale",
+       "0.25"
+      ],
+      [
+       "danger_radius",
+       "1.5"
+      ]
+     ]
+    ]
+   ],
+   "why": "the bolt's flight: the Xbox model; 20 world units a second falling to 16 (ZTeam's 13 to 7: a lob slower than the stock rocket's 12 to 10 at range), a quarter of the gravity (ZTeam's 0.15): about half a unit of drop over 20 units, the arc its reticle's ladder reads; the AI's danger radius the blast's 1.5"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/shared/damage_effects/trigger/trigger_rifle_kickback_strong.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.12"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.1"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): ZTeam's firing kick (its camera push) with a thump on both motors with each bolt, the brute shot pack's numbers; made under the pack's own name, as ZTeam's file is a kick its other weapons share"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/hud/concussion_rifle.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_brute_shot.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "sequence_index",
+     "-1"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_overlays[0].sequence_index",
+     "17"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_overlays[0].height_scale",
+     "0.4125"
+    ],
+    [
+     "erase",
+     "overlay_elements[*]"
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ]
+   ],
+   "why": "the HUD ZTeam gave this weapon (its launcher HUD): its six-shell ammunition meter kept as ZTeam set it (it did not draw in the box's capture: the stock rounds panel shows the six loaded bolts), its rounds panel the map's stock one in place of ZTeam's chain of panels, whose last draws a full-screen visor frame over the game's own HUD; made under the pack's own name (ZTeam's file is a test HUD it shares between weapons, and another pack takes the same file with other edits: one name, two contents in a merged cache); its reticle ZTeam's launcher reticle with the drop ladder (sequence 17 of ZTeam's sheet) in place of the brute shot one, at an even scale (height 0.4125, the width's: ZTeam's 0.55 drew it tall); ZTeam's picture of a brute shot (overlay 0) left out; no messaging icon (sequence -1): no licensed picture of a concussion rifle exists, so the weapon's name is written where a picture would be (the prompts, the kill feed and the HUD's weapon picture: ae_pack_names.c, the grenade launcher's opt-in); the source's own panel is out (its static elements and meter): no panel of the pack's draws under the classic HUD style"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/concussion_rifle/hr/concussion_rifle.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/concussion_rifle/hr/concussion_rifle.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/concussion_rifle/hr/models/concussion_rifle_fp.model"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam\\objects\\weapons\\single\\concussion_rifle\\hr\\hud\\concussion_rifle.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\concussion_rifle\\hr\\effects\\trigger.damage_effect"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "sound\\sfx\\impulse\\weapon_drops\\rlauncher_impact.sound"
+    ],
+    [
+     "set",
+     "pickup_sound",
+     "sound\\sfx\\weapons\\weapon_pickup_ammo\\rocket_ammo.sound"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "weapons\\assault rifle\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\assault rifle\\melee_response.damage_effect"
+    ],
+    [
+     "sets",
+     [
+      [
+       "magazines[0].rounds_loaded_maximum",
+       "6"
+      ],
+      [
+       "magazines[0].rounds_reloaded",
+       "6"
+      ],
+      [
+       "magazines[0].rounds_total_initial",
+       "18"
+      ],
+      [
+       "magazines[0].rounds_reserved_maximum",
+       "24"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "2 2"
+      ],
+      [
+       "autoaim_angle",
+       "4"
+      ],
+      [
+       "autoaim_range",
+       "20"
+      ],
+      [
+       "magnetism_angle",
+       "6.5"
+      ],
+      [
+       "magnetism_range",
+       "25"
+      ]
+     ]
+    ]
+   ],
+   "why": "the Xbox models; its HUD the pack's own copy of ZTeam's launcher HUD; what the map's stock weapons have (materials, the rocket launcher's drop and ammunition pickup sounds, the assault rifle's melee: 40 to 60 a blow, x1.4 on a Spartan) is the map's; our numbers: 6 bolts a magazine (its six-shell HUD meter, the six rounds on the first-person model), 18 to start, 24 in reserve, a semi-automatic 2 bolts a second (ZTeam's 2.5; the brute shot pack's 2.6): a magazine in 3 s, a direct-hit kill (5 bolts) in 2 s against the brute shot's 4 in about 1.2 s; ZTeam's error kept (0.25 degrees, a 0.6-degree cone); aim assist 4 degrees out to 20 units (ZTeam's 15) and magnetism 6.5 degrees to 25 units, the bolt's reach in the time it flies"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-05, revision 1); re-pinned 2026-11-05 for the pack's own names of ZTeam's shared HUD and kick; re-pinned 2026-11-05 for no picture (its name in words: no icon, the HUD's messaging icon -1); re-pinned for the pack's HUD without the source's own panel (nothing of the pack's draws under the classic HUD style); a pack built twice from the recipe was the same",
+  "donor_sha256": "ecaf2bfcc02d6961ce2babf93ad08ec1b15697d48e9fcdbe47699e6d532288f7",
+  "donor_size": 21954560,
+  "pack_sha256": "38ac033f10206bf8b66d4938434b29fb3bacc8ba1a08dc209d0bb28476dc0d4e",
+  "pack_own_sha256": "db0ce0925dd372740e606ad137a1ea92b2398f0a1ed4b1d5bec197eb42374cb3",
+  "pack_size": 12114625,
+  "own_tags": 95,
+  "external_tags": 6
+ }
+}

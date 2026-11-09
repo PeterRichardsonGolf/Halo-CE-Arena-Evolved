@@ -1,0 +1,4 @@
+# The battle rifle's texts in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is the pack's display name. The ammo line names the rounds picked up once, as a decimal.
+weapon_pickup=Picked up a battle rifle
+ammo_pickup=Picked up %d rounds for battle rifle

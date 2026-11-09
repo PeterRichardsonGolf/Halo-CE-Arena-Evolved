@@ -1,0 +1,667 @@
+{
+ "format": 1,
+ "about": "The AE starter pistol pack: the Digsite mod's 00_e3 pistol (the official Halo CE Mod Tools' digsite/weapons/pistol/00_e3: its third-person and first-person models, animations, collision, shaders, textures, sounds, effects, round, damage effects and reticle) as an Xbox weapon tuned as AE's starter sidearm: one precise round a pull, a small 1.5x zoom, a tight first shot and a wide bloom when the trigger is held, a killing head shot after the shield. Numbers (AE's 75 + 75 player, headshots as the rifles' profiles use them): 24 a round within 15 units (falling to 20 at 35 units: four hits and a head shot still kill there, six to the body), x1.0 on a shield (three hits leave 3 of its 75: none of the third hit carries through, so the third is never a head kill) and x1.75 on the body (42): four hits kill with the last to the head, five to the body, 3.4 rounds a second (a pull every 9 ticks: a head kill 0.88 s, a body kill 1.18 s, the stock pistol's pace), 12 a magazine, 48 at first, 72 at most, error 0.1 to 2.5 degrees reached in 0.35 s of a held trigger (0.25 s back: paced shots stay on the dot), a 1.5x zoom (one level), aim assist 2.5 degrees to 15 units, magnetism 6 degrees to 18, the round 2000 units a second to 60 units, the stock pistol's melee. The Digsite suit HUD and ammunition panel are left out (the map's classic rounds panel draws the ammunition); The aiming reticle is the stock pistol's at 0.7 of its size (red on a target; no zoomed overlay or \"2x\" label). make_pack.py runs it; the locations of the source zip (a zip of the allowlist's tags from the Mod Tools), the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_starter_pistol",
+  "revision": 1,
+  "display": "STARTER PISTOL",
+  "prefix": "ae\\packs\\starter_pistol\\",
+  "weapon": "digsite\\weapons\\pistol\\00_e3\\pistol_00_e3",
+  "weapon_key": "starter_pistol",
+  "labels": "hp,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\starter_pistol\\digsite\\weapons\\pistol\\00_e3\\select pistol": "the stock pistol's small aiming reticle (red on a target; its two zoomed overlays, the scope sprite with the \"2x\" label, left out), grafted into Digsite's pistol HUD"
+  },
+  "icon": "ae_pack\\hud\\starter_pistol_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\starter_pistol_icon"
+  ]
+ },
+ "source": {
+  "name": "Halo CE Mod Tools (HCEEK) tags: the Digsite mod's official tags, a zip of the allowlist's tags only (digsite_00e3_hceek.zip)",
+  "file": "digsite_00e3_hceek.zip",
+  "sha256": "92bd8ac8932be36a50dd40a59e1ee1bbaece2e63602d609a1734d09138332f1e",
+  "root": "",
+  "allowlist": [
+   "digsite/_shared/00_e3/bitmaps/reflection diffuse cubemap.bitmap",
+   "digsite/_shared/00_e3/bitmaps/reflection rifle cubemap.bitmap",
+   "digsite/sound/sfx/weapons/pistol/pistol_00e_fire.sound",
+   "digsite/sound/sfx/weapons/pistol/pistol_00e_reload.sound",
+   "digsite/sound/sfx/weapons/weapon_anims/luger_melee.sound",
+   "digsite/sound/sfx/weapons/weapon_anims/luger_posing.sound",
+   "digsite/sound/sfx/weapons/weapon_anims/luger_ready.sound",
+   "digsite/sound/sfx/weapons/weapon_anims/luger_reload.sound",
+   "digsite/sound/sfx/weapons/weapon_anims/luger_reload_empty.sound",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg multipurpose.bitmap",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg.bitmap",
+   "digsite/weapons/pistol/00_e3/00_e3.gbxmodel",
+   "digsite/weapons/pistol/00_e3/00_e3.model_animations",
+   "digsite/weapons/pistol/00_e3/00_e3.model_collision_geometry",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp_multipurpose.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/screen.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/fp.gbxmodel",
+   "digsite/weapons/pistol/00_e3/_dig/fp/fp.model_animations",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/00_e3_fp_zoom.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/decal_fp.shader_transparent_generic",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/green lights.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/red lights.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/red rifle screen.shader_transparent_chicago",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/silver.shader_model",
+   "digsite/weapons/pistol/00_e3/effects/fire bullet.effect",
+   "digsite/weapons/pistol/00_e3/effects/ready.effect",
+   "digsite/weapons/pistol/00_e3/effects/reload.effect",
+   "digsite/weapons/pistol/00_e3/h pistol bullet.damage_effect",
+   "digsite/weapons/pistol/00_e3/h pistol bullet.projectile",
+   "digsite/weapons/pistol/00_e3/pistol_00_e3.weapon",
+   "digsite/weapons/pistol/00_e3/select pistol.weapon_hud_interface",
+   "digsite/weapons/pistol/00_e3/shaders/black.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/decal.shader_transparent_generic",
+   "digsite/weapons/pistol/00_e3/shaders/green lights.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/red lights.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/silver.shader_model",
+   "digsite/weapons/pistol/00_e3/trigger.damage_effect"
+  ],
+  "verbatim": [
+   "digsite/_shared/00_e3/bitmaps/reflection diffuse cubemap.bitmap",
+   "digsite/_shared/00_e3/bitmaps/reflection rifle cubemap.bitmap",
+   "digsite/sound/sfx/weapons/pistol/pistol_00e_fire.sound",
+   "digsite/sound/sfx/weapons/pistol/pistol_00e_reload.sound",
+   "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg.bitmap",
+   "digsite/weapons/pistol/00_e3/00_e3.model_animations",
+   "digsite/weapons/pistol/00_e3/00_e3.model_collision_geometry",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/screen.bitmap",
+   "digsite/weapons/pistol/00_e3/_dig/fp/fp.model_animations",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/00_e3_fp_zoom.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/decal_fp.shader_transparent_generic",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/green lights.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/red lights.shader_model",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/red rifle screen.shader_transparent_chicago",
+   "digsite/weapons/pistol/00_e3/_dig/shaders/silver.shader_model",
+   "digsite/weapons/pistol/00_e3/effects/fire bullet.effect",
+   "digsite/weapons/pistol/00_e3/effects/ready.effect",
+   "digsite/weapons/pistol/00_e3/effects/reload.effect",
+   "digsite/weapons/pistol/00_e3/shaders/black.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/decal.shader_transparent_generic",
+   "digsite/weapons/pistol/00_e3/shaders/green lights.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/red lights.shader_model",
+   "digsite/weapons/pistol/00_e3/shaders/silver.shader_model"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08",
+    "invader-recover": "cf21c64b3f0a04f1727371902fb3dcb9eacbedf22f5ee2099ad46b03bfb378e0",
+    "invader-model": "f9ef0e57f55046b77d95dc29e5e2b6a8037259a9ba8807b34dd64596c7357883"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "digsite/weapons/pistol/00_e3/pistol_00_e3.weapon"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/00_e3.model",
+   "op": "model",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/00_e3.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/_dig/fp/fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/_dig/fp/fp.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/_dig/fp/bitmaps/00_e3_fp_multipurpose.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "digsite/weapons/_shared/00_e3/bitmaps/h zoom weapons sr hg multipurpose.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/sound/sfx/weapons/weapon_anims/luger_melee.sound",
+   "op": "sound",
+   "oggs": "digsite/sound/sfx/weapons/weapon_anims/luger_melee.sound",
+   "from": [
+    "source",
+    "digsite/sound/sfx/weapons/weapon_anims/luger_melee.sound"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/sound/sfx/weapons/weapon_anims/luger_posing.sound",
+   "op": "sound",
+   "oggs": "digsite/sound/sfx/weapons/weapon_anims/luger_posing.sound",
+   "from": [
+    "source",
+    "digsite/sound/sfx/weapons/weapon_anims/luger_posing.sound"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/sound/sfx/weapons/weapon_anims/luger_ready.sound",
+   "op": "sound",
+   "oggs": "digsite/sound/sfx/weapons/weapon_anims/luger_ready.sound",
+   "from": [
+    "source",
+    "digsite/sound/sfx/weapons/weapon_anims/luger_ready.sound"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/sound/sfx/weapons/weapon_anims/luger_reload.sound",
+   "op": "sound",
+   "oggs": "digsite/sound/sfx/weapons/weapon_anims/luger_reload.sound",
+   "from": [
+    "source",
+    "digsite/sound/sfx/weapons/weapon_anims/luger_reload.sound"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/sound/sfx/weapons/weapon_anims/luger_reload_empty.sound",
+   "op": "sound",
+   "oggs": "digsite/sound/sfx/weapons/weapon_anims/luger_reload_empty.sound",
+   "from": [
+    "source",
+    "digsite/sound/sfx/weapons/weapon_anims/luger_reload_empty.sound"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/h pistol bullet.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/h pistol bullet.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "20"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "24 24"
+    ],
+    [
+     "set",
+     "cyborg_armor",
+     "1.75"
+    ],
+    [
+     "set",
+     "cyborg_energy_shield",
+     "1.0"
+    ]
+   ],
+   "why": "the starter pistol's round: Digsite's damage effect (its impacts, materials, stun, can_cause_headshots) at AE's numbers: 24 a round within 15 units (20 from 35 units: the round's falloff; four hits still break the shield there, a body kill takes six), x1.0 on a player's shield and x1.75 on the body (42): three hits leave 3 of the 75 shield, so no damage carries through and the third hit is never a head kill (the game kills on a head hit whose shield-breaking round carries any damage through: 25 or more a hit makes the third a kill, as the stock pistol's three); the fourth breaks it and carries 21 (36.75 on the body): a head kill is four hits, a body kill five (36.75 + 42)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/h pistol bullet.projectile",
+   "op": "edit",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/h pistol bullet.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "maximum_range",
+     "60"
+    ],
+    [
+     "set",
+     "final_velocity",
+     "1000"
+    ],
+    [
+     "set",
+     "air_damage_range",
+     "15 35"
+    ]
+   ],
+   "why": "Digsite's round (2000 units a second, no drop) with its range cut from 100 to 60 units, as a starter weapon's, and a falloff (owner 11-09: \"a slight nerf especially at distance\"): it slows from 2000 to 1000 units a second between 15 and 35 units, and its damage follows its speed from 24 down to the damage effect's minimum of 20"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.45"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.08"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.55"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.08"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): Digsite's firing kick with the rumble made short and light on both motors for each round (the sidearm's pattern)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/select pistol.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/select pistol.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "erase",
+     "crosshairs[*]"
+    ],
+    [
+     "insert",
+     "crosshairs",
+     1,
+     "end"
+    ],
+    [
+     "graft",
+     "stock",
+     "weapons/pistol/pistol.weapon_hud_interface",
+     "crosshairs[0]",
+     "crosshairs[0]"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_overlays[0].width_scale",
+     "0.7"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_overlays[0].height_scale",
+     "0.7"
+    ],
+    [
+     "set",
+     "total_ammo_cutoff",
+     "18"
+    ],
+    [
+     "set",
+     "loaded_ammo_cutoff",
+     "3"
+    ]
+   ],
+   "why": "Digsite's pistol HUD with its blue ammunition bar and panel, its suit interface chain and its big ring reticle left out: the map's stock rounds panel is the child, the small aiming reticle (red on a target) is the stock pistol's, grafted from the map's own pistol HUD and drawn at 0.7 of its size (owner 11-09: \"a bit smaller precise crosshair\"); the stock pistol's zoomed overlays (a scope sprite with a \"2x\" label) are left out, as AE's scopes leave their magnification labels out; the stock zoom mask kept; the low-ammo cutoffs scaled to a 12 round magazine"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/starter_pistol_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "starter_pistol_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: a side view of the pistol drawn from its model's geometry (hud_sheet.py), nothing of the game's HUD"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\starter_pistol_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "digsite/weapons/pistol/00_e3/pistol_00_e3.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "digsite/weapons/pistol/00_e3/pistol_00_e3.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "digsite/weapons/pistol/00_e3/00_e3.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "digsite/weapons/pistol/00_e3/_dig/fp/fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "20"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "zoom_levels",
+     "1"
+    ],
+    [
+     "set",
+     "zoom_magnification_range",
+     "1.5 1.5"
+    ],
+    [
+     "set",
+     "near_reticle_range",
+     "2"
+    ],
+    [
+     "set",
+     "far_reticle_range",
+     "6"
+    ],
+    [
+     "set",
+     "intersection_reticle_range",
+     "60"
+    ],
+    [
+     "set",
+     "autoaim_angle",
+     "2.5"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "15"
+    ],
+    [
+     "set",
+     "magnetism_angle",
+     "6"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "18"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "48"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "72"
+    ],
+    [
+     "set",
+     "magazines[0].magazine_objects[0].rounds",
+     "24"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "3.4 3.4"
+    ],
+    [
+     "set",
+     "triggers[0].error",
+     "0 1"
+    ],
+    [
+     "set",
+     "triggers[0].minimum_error",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].error_angle",
+     "0.1 2.5"
+    ],
+    [
+     "set",
+     "triggers[0].error_acceleration_time",
+     "0.35"
+    ],
+    [
+     "set",
+     "triggers[0].error_deceleration_time",
+     "0.25"
+    ],
+    [
+     "set",
+     "triggers[0].flags.projectile_is_client_side_only",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].first_person_offset",
+     "0 0 0"
+    ],
+    [
+     "set",
+     "triggers[0].acceleration_time",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].deceleration_time",
+     "0"
+    ]
+   ],
+   "why": "the Xbox models; Digsite's own HUD (its ammunition panel out), round, effects, sounds, animations and shaders; the stock pistol's melee, materials, drop sound, ammunition pickup and zoom sounds and empty click are the map's; our numbers: 12 a magazine, 48 to start, 72 at most, 3.4 a second, error 0.1 to 2.5 degrees over 0.35 s of a held trigger or pulls at the full rate (0.25 s back: shots paced half a second apart stay on the dot, a held trigger sprays), one 1.5x zoom, aim assist 2.5 degrees to 15 units, magnetism 6 degrees to 18, the red reticle out to 60 units, pickups of 24 rounds; the round made a real one (Digsite's trigger flags it client-side only, which a host does not count), fired from the camera like the stock pistol's (Digsite's first_person_offset moves it 0.15 units down and 0.05 aside), no fire-rate ramp"
+  }
+ ],
+ "art_inputs": {
+  "pistol_geo.txt": {
+   "kind": "geometry",
+   "root": "source",
+   "tag": "digsite/weapons/pistol/00_e3/00_e3.gbxmodel",
+   "geometry": 0,
+   "parts": 5,
+   "sha256": "51c1b0be6a85caea34dd925863b5593d7a235aa9e49433e7e73ca4de77c28d8b",
+   "scripts": [
+    "hud_sheet.py"
+   ]
+  }
+ },
+ "art_settings": {
+  "icon_size": [
+   86,
+   43
+  ]
+ },
+ "art_scripts": {
+  "starter_pistol_icon.png": "hud_sheet.py"
+ },
+ "art_drawings": {
+  "starter_pistol_icon.png": {
+   "draw": "icon",
+   "input": "pistol_geo.txt",
+   "width": 86
+  }
+ },
+ "art": {
+  "starter_pistol_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    88,
+    45
+   ],
+   "pixels_sha256": "beb4579a5187b091ddf7937dbc16e1f1efd343cf6d5c38ed787f5ae78a9ee88d"
+  }
+ },
+ "expected": {
+  "about": "the first build of the recipe (2026-11-08, revision 1); re-pinned for the real round, the four-shot numbers, the aiming reticle only, the held-trigger spread, the falloff and the smaller reticle; a pack built twice from the recipe was the same",
+  "donor_sha256": "6032f756219d01ea293e048c5ed7482c04f5722820cc170cda005dfaac996291",
+  "donor_size": 20508672,
+  "pack_sha256": "918bf55a60c299fa9721192801d65629ae58171bd868f9e0666c55e92f1fdd72",
+  "pack_own_sha256": "7cd75702bc64c4cd9035e1fde42108c7c3f1876721f4df363167f91b57e1c76e",
+  "pack_size": 4266374,
+  "own_tags": 39,
+  "external_tags": 52
+ }
+}
