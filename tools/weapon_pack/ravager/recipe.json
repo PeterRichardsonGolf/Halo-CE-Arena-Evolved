@@ -1,0 +1,1818 @@
+{
+ "format": 1,
+ "about": "The AE ravager pack: CMT's prototype ravager from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (tags for the stock tool kit, no Open Sauce), set up as the latest-generation ravager is and then tuned for CE. Taken from the source: three bolts a pull (its 3-round burst) leaving one after another 4 ticks apart (7.5 a second), a pull every 0.77 s (0.5 s from a burst's last bolt to the next's first), no bloom, a lobbed 45 unit/s bolt under heavy gravity that bursts on whatever it hits (a hit and a small splash, x0.5 on shields for the splash), x2 on the head, hold to charge and release for one big bolt (a bigger hit and burst) that leaves a burning pool, a 1.4x zoom, its aim assist, a 3 s vent once overheated and a battery of 36 bolts; 4 bolts strip a full shield and 7 kill (the third pull), as in the source. Changed for CE: the damage brought to CE's 75 shield and 75 body (CE spills a stripping bolt's excess onto the body, the source does not, so the body multiplier is x0.8), the burst paced by the engine (pack behaviour 5, the RAVAGER profile in port/linux/game/ae_rifle_profiles.c, played by ae_burst_rifle.c: CE has no burst trigger; the tags' trigger fires one bolt a shot, the tap's first on the trigger's release as the stock plasma pistol's, and the engine fires the other two and holds the recovery; the bolts, heat, battery, zoom, aim assist, kick and the charged shot stay the tags'), the pool made of CMT's devourer pulses (a fixed spot burning 2.25 s, AE's numbers), one heat-loss rate (CE has no separate overheated rate), the stock assault rifle's melee. What an Xbox map needs (the models converted, the multipurpose maps' channels reordered, the high-resolution HUD made the Xbox's, an Ogg Vorbis sound re-encoded), its own look (CMT's spiker model, which it shares, under its own copies of the shaders and models naming CMT's spiker textures recoloured by ravager_art.py, look B3bd). make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_ravager",
+  "revision": 2,
+  "display": "RAVAGER",
+  "prefix": "ae\\packs\\ravager\\",
+  "weapon": "cmt\\weapons\\evolved_prototypes\\ravager\\ravager",
+  "weapon_key": "ravager",
+  "labels": "c_bs,ar",
+  "behaviour": 5,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "roots": [
+   "bitm:cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons"
+  ],
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:11"
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/effects/contrail/electric_contrail.bitmap",
+   "cmt/effects/decals/bitmaps/plasma grenade splatter.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn inner glow.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma splat orange.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange inner glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange outer glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma splat orange.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith inner glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith outer glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass plasma.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact ice plasma.effect",
+   "cmt/effects/impacts/impact jackal shield hit.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal plasma.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact snow plasma.effect",
+   "cmt/effects/impacts/impact stone plasma.effect",
+   "cmt/effects/impacts/impact water plasma.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/particles/air/bitmaps/small_flames.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade_bright.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp cold.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/air/wispy smoke long.particle",
+   "cmt/effects/particles/air/wispy smoke plasma.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma flames small.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/energy cloud.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma electric bolts.particle",
+   "cmt/effects/particles/energy/plasma flames small.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/pp trail orbs.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/energy/sparks energy trail.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new c sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/flash small fire.particle",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst thick.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/goop thick.particle",
+   "cmt/effects/particles/solid/goop thin.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/goop.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/effects/shared effects/energy sword drop impact.effect",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_plasma_pistol/fx/brute_plasma_pistol_bolt_fire.sound",
+   "cmt/sounds/sfx/weapons/covenant/carbine/fx/carbine_zoom_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/carbine/fx/carbine_zoom_out.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person reload-full.sound",
+   "cmt/textures/cubemaps/cube_grey_medium.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/evolved_prototypes/ravager.weapon_hud_interface",
+   "cmt/weapons/_shared/plasma_rifle/effects/plasma_rifle_bolt_impact_wood.effect",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_heat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_multi.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_superheat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_diff.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap",
+   "cmt/weapons/_shared/spiker/fp/fp.gbxmodel",
+   "cmt/weapons/_shared/spiker/fp/fp.model_animations",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_blade.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_dull.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_heat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_shiny.shader_model",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_superheat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_clip.shader_model",
+   "cmt/weapons/_shared/spiker/spiker.gbxmodel",
+   "cmt/weapons/evolved_prototypes/devourer/damage_effects/devourer_charged_bolt_burning.damage_effect",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_charged_bolt_impact.effect",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_charging.effect",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid.particle",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid_collision.decal",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid_collision.effect",
+   "cmt/weapons/evolved_prototypes/ravager/contrails/ravager_bolt.contrail",
+   "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_impact.damage_effect",
+   "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_trigger.damage_effect",
+   "cmt/weapons/evolved_prototypes/ravager/effects/ravager_bolt_fire.effect",
+   "cmt/weapons/evolved_prototypes/ravager/effects/ravager_bolt_impact.effect",
+   "cmt/weapons/evolved_prototypes/ravager/projectiles/ravager_bolt.projectile",
+   "cmt/weapons/evolved_prototypes/ravager/ravager.weapon"
+  ],
+  "verbatim": [
+   "cmt/effects/contrail/electric_contrail.bitmap",
+   "cmt/effects/decals/bitmaps/plasma grenade splatter.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn inner glow.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma splat orange.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange inner glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange outer glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma burn orange.decal",
+   "cmt/effects/decals/bullet holes/covenant/brute plasma pistol/plasma splat orange.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith inner glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith outer glow.decal",
+   "cmt/effects/decals/bullet holes/covenant/wraith/plasma burn wraith.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass plasma.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact ice plasma.effect",
+   "cmt/effects/impacts/impact jackal shield hit.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal plasma.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact snow plasma.effect",
+   "cmt/effects/impacts/impact stone plasma.effect",
+   "cmt/effects/impacts/impact water plasma.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/particles/air/bitmaps/small_flames.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade_bright.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp cold.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/air/wispy smoke long.particle",
+   "cmt/effects/particles/air/wispy smoke plasma.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma flames small.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/energy cloud.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma electric bolts.particle",
+   "cmt/effects/particles/energy/plasma flames small.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/pp trail orbs.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/energy/sparks energy trail.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new c sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/flash small fire.particle",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst thick.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/goop thick.particle",
+   "cmt/effects/particles/solid/goop thin.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/goop.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/effects/shared effects/energy sword drop impact.effect",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_plasma_pistol/fx/brute_plasma_pistol_bolt_fire.sound",
+   "cmt/sounds/sfx/weapons/covenant/carbine/fx/carbine_zoom_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/carbine/fx/carbine_zoom_out.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/spiker/animations/first-person reload-full.sound",
+   "cmt/textures/cubemaps/cube_grey_medium.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/weapons/_shared/plasma_rifle/effects/plasma_rifle_bolt_impact_wood.effect",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_heat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/bitmaps/spiker_body_superheat_glow.bitmap",
+   "cmt/weapons/_shared/spiker/fp/fp.model_animations",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_heat.shader_transparent_chicago",
+   "cmt/weapons/_shared/spiker/shaders/spiker_body_superheat.shader_transparent_chicago",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_charging.effect",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid.particle",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid_collision.decal",
+   "cmt/weapons/evolved_prototypes/devourer/effects/devourer_liquid_collision.effect",
+   "cmt/weapons/evolved_prototypes/ravager/contrails/ravager_bolt.contrail",
+   "cmt/weapons/evolved_prototypes/ravager/effects/ravager_bolt_fire.effect",
+   "cmt/weapons/evolved_prototypes/ravager/effects/ravager_bolt_impact.effect"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 13.0.0 and numpy 2.5.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-nopanel",
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {
+  "spiker_body_diff.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_body_diff.bitmap",
+   "sha256": "f0b904faa0143c31b6298ad5d0a55f92bfe5ec97a6bcf171f99cf6d3b885b92d",
+   "scripts": [
+    "ravager_art.py"
+   ]
+  },
+  "spiker_body_multi.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_body_multi.bitmap",
+   "sha256": "ef158533e44fc2a28f68791277ff180af5c1aaa29e2128dabf93ee8be86a2456",
+   "scripts": [
+    "ravager_art.py"
+   ]
+  },
+  "spiker_clip_diff.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_diff.bitmap",
+   "sha256": "24f2ef9ca3bcbeef93f491f63ec3826e8efffcf5c55cf8e5a476efcd0de07fe1",
+   "scripts": [
+    "ravager_art.py"
+   ]
+  },
+  "spiker_clip_multi.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap",
+   "sha256": "f165360e17cc48db03f94defb26927d84d3750d2c2dcb86fb30b14c7df6915f8",
+   "scripts": [
+    "ravager_art.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "ravager_body.png": "ravager_art.py",
+  "ravager_clip.png": "ravager_art.py",
+  "ravager_multi.png": "ravager_art.py"
+ },
+ "art_drawings": {
+  "ravager_body.png": {
+   "draw": "ravager_diffuse",
+   "input": "spiker_body_diff.bitmap",
+   "multi": "spiker_body_multi.bitmap",
+   "look": "B3bd",
+   "glow": true
+  },
+  "ravager_clip.png": {
+   "draw": "ravager_diffuse",
+   "input": "spiker_clip_diff.bitmap",
+   "multi": "spiker_clip_multi.bitmap",
+   "look": "B3bd",
+   "glow": false
+  },
+  "ravager_multi.png": {
+   "draw": "ravager_multi",
+   "input": "spiker_body_diff.bitmap",
+   "multi": "spiker_body_multi.bitmap",
+   "look": "B3bd"
+  }
+ },
+ "art": {
+  "ravager_body.png": {
+   "mode": "RGBA",
+   "size": [
+    1024,
+    1024
+   ],
+   "pixels_sha256": "18fd61f7fe66edd9b9069b99ff5a2abb78bc66ab3fad243c57715f56404e61b4"
+  },
+  "ravager_clip.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "9e7885e5198256b3c5a9fe557d5f5adde3647ea4d1e759bbc30b21829d7a01a9"
+  },
+  "ravager_multi.png": {
+   "mode": "RGBA",
+   "size": [
+    1024,
+    1024
+   ],
+   "pixels_sha256": "f34addc4f1e5f5b6b288102a14d70d2ed02b63b0aae81fb71786a4947bae8b53"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved_prototypes\\ravager\\ravager.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap"
+    ]
+   ],
+   "why": "the donor map only: the stock HUD globals naming the source's own pickup icon sheet, so that the donor holds the sheet the pack's message icon is (the pack takes the sheet by its root, never these globals)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the source's pickup icon sheet)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/spiker.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/spiker.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/fp/fp.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/bitmaps/spiker_clip_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_multi_pc.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ravager_multi.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt1"
+   ],
+   "why": "the ravager body's multipurpose picture in Halo PC's channel order (ravager_art.py): CMT's own, the look's glow (B3bd: the blade seam, the X marks and the deep panel lines) in its self-illumination channel; converted to the Xbox's order by the next step"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "fix-xbox",
+    "ae_pack/ravager/ravager_body_multi_pc.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_diff.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ravager_body.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt1"
+   ],
+   "why": "the ravager's body picture: CMT's spiker body recoloured by numbers (ravager_art.py, look B3bd: crimson panels, near-black steel trim, a tempered-steel blade, white-cyan glowing seams, cyan lights), DXT1 as CMT's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_clip_diff.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ravager_clip.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt1"
+   ],
+   "why": "the ravager's clip picture, recoloured the same way"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_shiny.shader_model",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/shaders/spiker_body_shiny.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "base_map",
+     "ae_pack/ravager/ravager_body_diff.bitmap"
+    ],
+    [
+     "set",
+     "multipurpose_map",
+     "ae_pack/ravager/ravager_body_multi.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "animation_color_lower_bound",
+       "0.35 0.95 1"
+      ],
+      [
+       "animation_color_upper_bound",
+       "0.35 0.95 1"
+      ]
+     ]
+    ]
+   ],
+   "why": "the ravager's own copy of CMT's shiny body shader, naming the ravager's pictures; its self-illumination colour the glow's cyan (0.35, 0.95, 1)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_dull.shader_model",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/shaders/spiker_body_dull.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "base_map",
+     "ae_pack/ravager/ravager_body_diff.bitmap"
+    ],
+    [
+     "set",
+     "multipurpose_map",
+     "ae_pack/ravager/ravager_body_multi.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "animation_color_lower_bound",
+       "0.35 0.95 1"
+      ],
+      [
+       "animation_color_upper_bound",
+       "0.35 0.95 1"
+      ]
+     ]
+    ],
+    [
+     "set",
+     "detail_map",
+     ".bitmap"
+    ]
+   ],
+   "why": "the ravager's own copy of CMT's dull body shader, naming the ravager's pictures; its self-illumination colour the glow's cyan (0.35, 0.95, 1); the dull body shader's detail map names a stock campaign bitmap (vehicles\\lifepod\\bitmaps\\detail_leather_seat) that no stock multiplayer map has and CMT's release does not carry: the detail map left empty, as the body's other shaders have it"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_body_blade.shader_model",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/shaders/spiker_body_blade.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "base_map",
+     "ae_pack/ravager/ravager_body_diff.bitmap"
+    ],
+    [
+     "set",
+     "multipurpose_map",
+     "ae_pack/ravager/ravager_body_multi.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "animation_color_lower_bound",
+       "0.35 0.95 1"
+      ],
+      [
+       "animation_color_upper_bound",
+       "0.35 0.95 1"
+      ]
+     ]
+    ]
+   ],
+   "why": "the ravager's own copy of CMT's blade body shader, naming the ravager's pictures; its self-illumination colour the glow's cyan (0.35, 0.95, 1)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_clip.shader_model",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/spiker/shaders/spiker_clip.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "base_map",
+     "ae_pack/ravager/ravager_clip_diff.bitmap"
+    ]
+   ],
+   "why": "the ravager's own copy of CMT's clip shader, naming the ravager's clip picture"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager.model",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/_shared/spiker/spiker.model"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "shaders[0].shader",
+       "ae_pack/ravager/ravager_body_shiny.shader_model"
+      ],
+      [
+       "shaders[2].shader",
+       "ae_pack/ravager/ravager_body_dull.shader_model"
+      ],
+      [
+       "shaders[3].shader",
+       "ae_pack/ravager/ravager_body_blade.shader_model"
+      ],
+      [
+       "shaders[4].shader",
+       "ae_pack/ravager/ravager_clip.shader_model"
+      ]
+     ]
+    ]
+   ],
+   "why": "the ravager's own copy of the spiker's model (the Xbox's), its shaders the ravager's (CMT's heat shader kept): the two weapons share CMT's mesh and must not look alike"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/ravager/ravager_fp.model",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/_shared/spiker/fp/fp.model"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "shaders[0].shader",
+       "ae_pack/ravager/ravager_body_shiny.shader_model"
+      ],
+      [
+       "shaders[1].shader",
+       "ae_pack/ravager/ravager_clip.shader_model"
+      ],
+      [
+       "shaders[3].shader",
+       "ae_pack/ravager/ravager_body_dull.shader_model"
+      ],
+      [
+       "shaders[4].shader",
+       "ae_pack/ravager/ravager_body_blade.shader_model"
+      ]
+     ]
+    ]
+   ],
+   "why": "the ravager's own copy of the spiker's first-person model, its shaders the ravager's the same way"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/effects/impacts/flesh_impact.sound"
+   ],
+   "why": "CMT's flesh impact (the bolts' and spikes' hit on a body) holds Ogg Vorbis samples, which an Xbox map cannot: decoded and encoded again as Xbox ADPCM, nothing else of it changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved_prototypes/ravager.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/evolved_prototypes/ravager.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "sequence_index",
+     "11"
+    ],
+    [
+     "set",
+     "static_elements[0].sequence_index",
+     "11"
+    ]
+   ],
+   "why": "the high-resolution HUD made the Xbox's; its weapon picture and message icon CMT's own spiker picture (sequence 11 of CMT's sheets, the ravager's model), where CMT's prototype borrowed sequence 7 (another weapon's)"
+  },
+  {
+   "layer": "fix-nopanel",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved_prototypes/ravager.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/ui/hudv4.1/weapons/evolved_prototypes/ravager.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master plasma.weapon_hud_interface"
+    ]
+   ],
+   "why": "no panel of the pack's draws under the classic HUD style or any other: CMT's own panel (its static elements, meters and numbers) is out and the map's stock plasma panel is the child HUD, so the classic style shows the stock meter and the AE style draws its own"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved_prototypes/ravager/ravager.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/ravager.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "ae_pack/ravager/ravager.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "ae_pack/ravager/ravager_fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ]
+   ],
+   "why": "the ravager's own Xbox models; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/ravager/ravager.weapon",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved_prototypes/ravager/ravager.weapon"
+   ],
+   "edits": [
+    [
+     "copy",
+     "triggers[0]",
+     "end"
+    ],
+    [
+     "sets",
+     [
+      [
+       "player_melee_damage",
+       "weapons\\assault rifle\\melee.damage_effect"
+      ],
+      [
+       "player_melee_response",
+       "weapons\\assault rifle\\melee_response.damage_effect"
+      ],
+      [
+       "collision_model",
+       "weapons\\assault rifle\\assault rifle.model_collision_geometry"
+      ],
+      [
+       "zoom_magnification_range",
+       "1.4 1.4"
+      ],
+      [
+       "autoaim_angle",
+       "4.5"
+      ],
+      [
+       "autoaim_range",
+       "20"
+      ],
+      [
+       "magnetism_angle",
+       "6.75"
+      ],
+      [
+       "magnetism_range",
+       "24"
+      ],
+      [
+       "heat_loss_rate",
+       "0.33"
+      ],
+      [
+       "heat_recovery_threshold",
+       "0.015"
+      ],
+      [
+       "age_misfire_start",
+       "0"
+      ],
+      [
+       "age_misfire_chance",
+       "0"
+      ],
+      [
+       "triggers[0].projectiles_per_shot",
+       "1"
+      ],
+      [
+       "triggers[0].error_angle",
+       "0 0"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "7.5 7.5"
+      ],
+      [
+       "triggers[0].charging_time",
+       "0.75"
+      ],
+      [
+       "triggers[0].charged_time",
+       "45"
+      ],
+      [
+       "triggers[0].charging_effect",
+       "cmt\\weapons\\evolved_prototypes\\devourer\\effects\\devourer_charging.effect"
+      ],
+      [
+       "triggers[0].heat_generated_per_round",
+       "0.1267"
+      ],
+      [
+       "triggers[0].age_generated_per_round",
+       "0.0278"
+      ],
+      [
+       "triggers[0].firing_effects[0].firing_damage",
+       "ae_pack\\ravager\\bolt_trigger.damage_effect"
+      ],
+      [
+       "triggers[1].projectiles_per_shot",
+       "1"
+      ],
+      [
+       "triggers[1].error_angle",
+       "0 0"
+      ],
+      [
+       "triggers[1].maximum_rate_of_fire",
+       "0 0"
+      ],
+      [
+       "triggers[1].heat_generated_per_round",
+       "0.5"
+      ],
+      [
+       "triggers[1].age_generated_per_round",
+       "0.0278"
+      ],
+      [
+       "triggers[1].projectile_object",
+       "ae_pack\\ravager\\charged_bolt.projectile"
+      ],
+      [
+       "triggers[1].firing_effects[0].firing_damage",
+       "ae_pack\\ravager\\charged_trigger.damage_effect"
+      ]
+     ]
+    ]
+   ],
+   "why": "the latest-gen ravager's setup (owner: start with how it is set up there, then tune for CE). Taken: three bolts a pull and a pull every 0.77 s (its 3-round burst at 7.5 a second and 0.5 s between bursts: CE has no burst trigger, so the trigger fires one bolt a shot at 7.5 a second and the engine's RAVAGER profile, pack behaviour 5, fires a tap's other two 4 ticks apart and holds a 12-tick recovery, the tap's first bolt leaving on the trigger's release), no bloom (no spread); hold to charge (0.75 s, CE's charging trigger as the stock plasma pistol's, CMT's devourer charge glow) and release for one charged bolt (the second trigger); its 1.4x zoom; its aim assist (4.5 degrees / 20 units, magnetism 6.75 / 24); a 3 s vent once overheated (its 0.325 a second while overheated, down to 0.015); a battery of 36 bolts (its 0.0278 a bolt, a charged bolt too: a pull's three 0.0833). For CE: one heat-loss rate only (CE has no separate overheated rate): 0.33 a second, a pull 0.38 (0.1267 a bolt) and a charged bolt 0.5 of heat, so 7 pulls back to back overheat it (6 did when a pull's three bolts left together: the heat now bleeds over a burst's 8 ticks); no misfire (CMT's 50% past 90% battery); the held weapon's collision and melee the stock assault rifle's, left to the map, as every pack weapon's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/bolt_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.5"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.1"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.08"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a hard short pulse on both motors with each bolt (three a pull, 4 ticks apart) (the carbine's pattern, heavier; CMT's on the low motor only); CMT's flash and view kick kept"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/charged_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.9"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.25"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.15"
+      ],
+      [
+       "temporary_camera_impulse_rotation",
+       "1.5"
+      ]
+     ]
+    ]
+   ],
+   "why": "the charged bolt's kick: a long heavy rumble on both motors and a bigger view kick than a pull's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/ravager/projectiles/ravager_bolt.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/projectiles/ravager_bolt.projectile"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "45"
+      ],
+      [
+       "final_velocity",
+       "45"
+      ],
+      [
+       "air_gravity_scale",
+       "5.2"
+      ],
+      [
+       "water_gravity_scale",
+       "5.2"
+      ],
+      [
+       "maximum_range",
+       "200"
+      ],
+      [
+       "effect",
+       "ae_pack\\ravager\\bolt_splash.effect"
+      ],
+      [
+       "projectile_material_response[0].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[0].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[1].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[1].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[2].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[2].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[3].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[3].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[4].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[4].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[5].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[5].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[6].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[6].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[7].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[7].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[8].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[8].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[9].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[9].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[10].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[10].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[11].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[11].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[12].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[12].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[13].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[13].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[14].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[14].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[15].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[15].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[16].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[16].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[17].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[17].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[18].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[18].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[19].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[19].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[20].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[20].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[21].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[21].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[22].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[22].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[23].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[23].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[24].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[24].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[25].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[25].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[26].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[26].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[27].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[27].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[28].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[28].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[29].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[29].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[30].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[30].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[31].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[31].potential_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[32].default_response",
+       "detonate"
+      ],
+      [
+       "projectile_material_response[32].potential_response",
+       "detonate"
+      ]
+     ]
+    ]
+   ],
+   "why": "the latest-gen bolt: 45 units a second (1.5 a tick), its gravity x4 of its 4.17 units a second squared (16.7), which is x5.2 of CE's 3.21: a lobbed bolt that drops about 1.6 units over 20 (its world unit taken as CE's: not measured), 200 units of range; it bursts on whatever it hits (every material's response detonate, CMT's disappear), its burst the splash effect"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "16"
+      ],
+      [
+       "damage_upper_bound",
+       "16 16"
+      ],
+      [
+       "cyborg_energy_shield",
+       "1"
+      ],
+      [
+       "cyborg_armor",
+       "0.8"
+      ],
+      [
+       "damage_stun",
+       "0.5"
+      ],
+      [
+       "damage_maximum_stun",
+       "0.5"
+      ],
+      [
+       "damage_flags.can_cause_multiplayer_headshots",
+       "1"
+      ]
+     ]
+    ]
+   ],
+   "why": "a bolt's hit: the latest-gen 30 (x1 on shields) brought to CE's 75 shield (30 x 75/140 = 16), x1 on a player's shield and x0.8 on the body, x2 on the head once the shield is down (CE's multiplayer headshot, as the source's x2); half CMT's plasma slow"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/bolt_splash.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "radius",
+       "0.3 0.95"
+      ],
+      [
+       "damage_lower_bound",
+       "2.6"
+      ],
+      [
+       "damage_upper_bound",
+       "13 13"
+      ],
+      [
+       "cyborg_energy_shield",
+       "0.5"
+      ],
+      [
+       "cyborg_armor",
+       "0.8"
+      ],
+      [
+       "maximum_intensity",
+       "0"
+      ],
+      [
+       "camera_shaking_duration",
+       "0"
+      ],
+      [
+       "low_frequency_vibrate_frequency",
+       "0"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0"
+      ],
+      [
+       "damage_stun",
+       "0"
+      ],
+      [
+       "damage_maximum_stun",
+       "0"
+      ],
+      [
+       "damage_stun_time",
+       "0"
+      ]
+     ]
+    ]
+   ],
+   "why": "a bolt's splash: the latest-gen 25 at the centre to 5 at 0.95 units (full inside 0.3), x0.5 on shields as its explosion type, brought to CE (13 to 2.6); x0.8 on the body. A bolt on a full player: 16 + 6.5 = 22.5 of shield, so 4 bolts strip a full shield (3 leave 7.5) and, with CE's spill of the 4th bolt onto the body, 3 more kill: 7 bolts, the third pull, as the source's 4 / 7"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/bolt_splash.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/devourer/effects/devourer_charged_bolt_impact.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[9]"
+    ],
+    [
+     "erase",
+     "events[8]"
+    ],
+    [
+     "erase",
+     "events[7]"
+    ],
+    [
+     "erase",
+     "events[6]"
+    ],
+    [
+     "erase",
+     "events[5]"
+    ],
+    [
+     "erase",
+     "events[4]"
+    ],
+    [
+     "erase",
+     "events[3]"
+    ],
+    [
+     "erase",
+     "events[2]"
+    ],
+    [
+     "erase",
+     "events[1]"
+    ],
+    [
+     "erase",
+     "events[0].particles[*]"
+    ],
+    [
+     "erase",
+     "events[0].parts[1]"
+    ],
+    [
+     "erase",
+     "events[0].parts[0]"
+    ],
+    [
+     "set",
+     "events[0].parts[0].type",
+     "ae_pack/ravager/bolt_splash.damage_effect"
+    ]
+   ],
+   "why": "a bolt's burst: only its splash damage (CMT's devourer impact effect cut to one event and one part; the impact's look is the material's, as CMT's ravager has it)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/charged_bolt.projectile",
+   "op": "edit",
+   "from": [
+    "fix-ae",
+    "cmt/weapons/evolved_prototypes/ravager/projectiles/ravager_bolt.projectile"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "effect",
+       "ae_pack\\ravager\\charged_pool.effect"
+      ],
+      [
+       "impact_damage",
+       "ae_pack\\ravager\\charged_impact.damage_effect"
+      ]
+     ]
+    ]
+   ],
+   "why": "the charged bolt: the bolt's flight (45 units a second, the same lob), its own hit and its burst with the lingering pool"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/charged_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "fix-ae",
+    "cmt/weapons/evolved_prototypes/ravager/damage_effects/ravager_bolt_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "32"
+      ],
+      [
+       "damage_upper_bound",
+       "32 32"
+      ]
+     ]
+    ]
+   ],
+   "why": "the charged bolt's hit: the latest-gen 60 brought to CE (32), the bolt's multipliers and headshot"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/charged_splash.damage_effect",
+   "op": "edit",
+   "from": [
+    "fix-ae",
+    "ae_pack/ravager/bolt_splash.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "radius",
+       "0.6 2.5"
+      ],
+      [
+       "damage_lower_bound",
+       "10.7"
+      ],
+      [
+       "damage_upper_bound",
+       "48 48"
+      ],
+      [
+       "maximum_intensity",
+       "0.5"
+      ],
+      [
+       "camera_shaking_duration",
+       "0.3"
+      ]
+     ]
+    ]
+   ],
+   "why": "the charged burst: the latest-gen 90 at the centre to 20 at 2.5 units (full inside 0.6) brought to CE (48 to 10.7), x0.5 on shields and x0.8 on the body: a charged bolt on a full player takes 56 of its 75 shield (the source's 105 of 140)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/pool_burn.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/devourer/damage_effects/devourer_charged_bolt_burning.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "radius",
+       "0.5 1.5"
+      ],
+      [
+       "damage_aoe_core_radius",
+       "0"
+      ],
+      [
+       "damage_lower_bound",
+       "2"
+      ],
+      [
+       "damage_upper_bound",
+       "6 6"
+      ],
+      [
+       "cyborg_energy_shield",
+       "0.25"
+      ],
+      [
+       "cyborg_armor",
+       "0.75"
+      ]
+     ]
+    ]
+   ],
+   "why": "the pool's burn, a pulse every 0.25 s for 2.25 s where the charged bolt burst: 6 inside 0.5 units to 2 at 1.5, at the latest-gen fire type's x0.25 on shields and x0.75 on the body (1.5 and 4.5 a pulse: about 40 to a bare player who stands in it); the source's pool numbers are not read: these are AE's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/ravager/charged_pool.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/devourer/effects/devourer_charged_bolt_impact.effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "events[0].parts[2].type",
+       "ae_pack/ravager/charged_splash.damage_effect"
+      ],
+      [
+       "events[1].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[2].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[3].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[4].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[5].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[6].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[7].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[8].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ],
+      [
+       "events[9].parts[0].type",
+       "ae_pack/ravager/pool_burn.damage_effect"
+      ]
+     ]
+    ]
+   ],
+   "why": "the charged burst and its pool: CMT's devourer impact effect (a burst, then nine burning pulses 0.25 s apart with their flames), its damage the ravager's: the nearest CE has to the latest-gen lingering plasma pool (a fixed spot burning for 2.25 s)"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1, look B3-trim); re-pinned 2026-11-04 for the latest-gen setup tuned for CE and look B3bd (owner's picks), built twice (a, b) with the same result; re-pinned 2026-11-04 for the engine's paced burst (behaviour 5, revision 2: one bolt a shot, the RAVAGER profile); re-pinned for the pack's HUD without its own panel (the map's stock panel is the child HUD); a pack built twice from the recipe was the same",
+  "donor_sha256": "cd65f9580f359beee99bb0b42714d0cd709c5d4f883680536807dd7818a11bc4",
+  "donor_size": 22732800,
+  "pack_sha256": "0c2fea36f0f440ca1c3d81695c007542c957990e3287701c007ad3e7d93b9bdb",
+  "pack_own_sha256": "5e6e5c05efb3a09efc4582ee9eb5722f53f2229ec4880baeb04156031bafde2d",
+  "pack_size": 14497882,
+  "own_tags": 179,
+  "external_tags": 49
+ }
+}
