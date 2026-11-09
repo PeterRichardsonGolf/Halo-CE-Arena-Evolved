@@ -47,6 +47,9 @@ and Destroy rounds show no round won / lost screen yet.
   without a line keeps the map's own.
 
 ### Changed
+- Callouts: Aurora is the default voice (was Cori). The Selene voice is held back until a line of hers is fixed, and
+  Bastion is left out (Solace is the male AI voice). A player who chose either hears the first voice of voices/ (its
+  folder from an earlier download, if still there, still speaks).
 - Bots no longer go for a power item or weapon that hangs in the air out of reach (Workshop maps hang theirs to be shot
   down): an item more than 1.5 units above the ground under it, a crouch jump and a grab, is no goal, so they stop standing
   under it jumping.

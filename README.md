@@ -211,7 +211,7 @@ style, a scoreboard for big team games, more weapons and vehicles, and the newes
   (Watanoge/halo-content-evolved, AGPL-3.0-or-later), used with credit.
 - ChupathingyCE's Bomb engine and Grifball are the base of AE's Search and Destroy, Bomb and Grifball.
 - The callout voices were made for Arena Evolved with Qwen3-TTS (the Qwen team, Apache-2.0) and are CC0: Cori is a
-  clone of Cori Samuel's public-domain LibriVox reading, the other six were designed from a text description
+  clone of Cori Samuel's public-domain LibriVox reading, the others were designed from a text description
   (`voices/*/CREDITS.md`).
 - The vehicle damage pack's effects and wrecks (`packs/ae_vehicle_damage.aepack`) are CMT's, from the same TSC:E
   1.4.1c source release (the Evolved team), used with credit; its credits file is

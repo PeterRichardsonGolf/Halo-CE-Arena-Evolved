@@ -1202,7 +1202,7 @@ static const struct config_setting config_settings[] =
 		"and each item's own \"is up\" (a wave that can't be said so in 8 seconds\n"
 		"as \"standard\"). Waves start early enough to end by their 10 seconds\n"
 		"mark." },
-	{ "game.callout_voice", _config_string, "\"cori\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
+	{ "game.callout_voice", _config_string, "\"aurora\"", "HALO_CALLOUT_VOICE", _environment_value, _platform_all,
 		"The callouts' voice: a folder of voices/ (next to maps/) holding WAVs\n"
 		"named for what they say (one.wav, rockets.wav, ...); the modded disc\n"
 		"played's own discs/<disc>/voices/<folder>/ clips come first. With no such folder,\n"
