@@ -1,0 +1,42 @@
+# The FOCUS BEAM pack (CMT's prototype focus beam, AE's numbers: a heat beam that strips shields fast and needs a
+# finisher): spawns with the pack's weapon on every life on Octagon 2, a few bots, as the other pack tests do.
+# Needs the pack's slot (18: mask 131072, START 18) registered in the game; until then the lists below cannot run.
+# NETWORKED DAMAGE: these tests run in a local game. The beam's trigger keeps CMT's "projectile is client side only"
+# flag and fires 30 projectiles a second; both must be checked in a hosted game with a joiner (the joiner's beam
+# strips and damages the host's player as the host's does, no lag or dropped hits): the owner's hosted round does it.
+list pack-focus-beam
+revision 1
+title FOCUS BEAM PACK
+
+test beam-look
+title Focus beam: how it looks and reads
+check In hand: gun and arms; the beam reaches out to the aim point
+check The heat meter fills while you fire and empties after
+check Zoom is 2x; the battery count drops as you fire
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 18
+
+test beam-strip
+title Focus beam: shields melt, health does not
+check Held on a full bot: its shield pops in under a second
+check Beam held on: overheats in about 2 s, the bot alive
+check Overheated: no fire for about 1.5 s, then it fires again
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 18
+
+test beam-finish
+title Focus beam: strip, then finish
+check Strip a bot, switch weapons: a burst or a few rounds kill it
+check Strip a bot, keep the beam on 1 s more, melee: it dies
+check Pad: soft hum while it fires; beam holds a strafing bot
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 18

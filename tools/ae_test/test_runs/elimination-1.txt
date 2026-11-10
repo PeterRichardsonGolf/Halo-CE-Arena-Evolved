@@ -1,0 +1,147 @@
+# ELIMINATION, round 1: the round modes' game logic (rounds, the wipe, sides, the danger zone, revive, late joins,
+# AE players only, COMP's start). No HUD for it yet: DEV MODE's debug line near the bottom of the screen shows the
+# round, who is alive, the zone and the downed. Each test sets itself up: "round live" ends the countdown at once,
+# "down mate here" drops the nearest teammate bot in front of you.
+list elimination-1
+revision 1
+title ELIMINATION, ROUND 1
+
+group gulch
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test round-flow
+title A round: frozen start, then live
+setup round next
+check Round 2: 5 s frozen at your team's start, turning only
+expect 1 round_start round 2
+check Then you move; the line says ROUND 2/9 live
+check The log says AE players only (others may not join)
+expect 3 log AE players only: a machine without Arena Evolved may not join
+
+test wipe-win
+title A wiped team loses the round
+setup round live
+setup kill bots
+check Every bot dies: your team wins the round
+expect 1 score player 0 team 1
+check 4 s later round 2 starts, all back at their starts
+expect 2 round_start round 2
+check The map's weapons are back where they started
+
+test wipe-tie
+title Both wiped on one tick: a tie
+setup round live
+setup kill all
+check Everyone dies at once: the round is tied
+expect 1 round_end round 1 winner -1
+check Nobody scores; round 2 starts after 4 s
+expect 2 round_start round 2
+
+test side-switch
+title From round 5 the sides switch
+setup round next
+setup round next
+setup round next
+setup round next
+check Round 5: you start where the other team started
+expect 1 round_start round 5
+check The line says SWITCHED
+
+test revive-hold
+title You revive a teammate
+setup round live
+setup down mate here
+check A teammate bot drops in front of you
+expect 1 down
+check Hold the action key on it 3 s: it stands there
+expect 2 revived revives 1
+check The hold picks up none of its weapons
+
+test revive-growth
+title The second revive takes longer
+setup round live
+setup down mate here
+setup revive mate
+setup down mate here
+check The same bot drops again in front of you
+expect 1 revived revives 1
+check Hold on it: this one takes about 4.5 s
+expect 2 revived revives 2
+
+test bot-revive
+title A bot revives you
+setup round live
+setup down me
+check You go down; no respawn timer
+expect 1 down player 0
+check A teammate bot comes and holds by you
+check You stand up where you fell
+expect 3 revived player 0
+
+test spectate
+title Out of the round you follow a teammate
+setup round live
+setup zone off
+setup kill me
+check You die; after 3 s the camera follows a teammate
+expect 1 death player 0
+check LB and RB (Q and E) switch whom you follow
+
+test zone-damage
+title Outside the zone you lose health
+setup round live
+setup zone small
+check The zone stands small; you are far outside it
+expect 1 zone phase 2
+check You lose health each second: dead in about 8 s
+expect 2 out player 0
+check No revive spot is left where you died
+
+test zone-bots
+title The bots go inside as it closes
+setup round live
+setup zone now
+check The zone closes from its edge
+expect 1 zone phase 1
+check The bots head for the middle as it closes
+
+test late-join
+title A late joiner waits for the next round
+setup round live
+setup bots 8
+check A new bot joins and does not spawn this round
+expect 1 round_wait
+check Next round (round next) it spawns with its team
+
+group comp
+map bloodgulch
+gametype AE C ELIM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test comp-start
+title ELIMINATION COMP starts with the EVO rifle
+setup round next
+check Round 2: the EVO rifle in your hands
+expect 1 weapon evo
+check Revive is on: a downed teammate can be revived
+check The round line reads ROUND 2/9
+
+group classic
+map chillout
+gametype AE ELIMX
+set bots.count 5
+set bots.skill easy
+
+test classic-rounds
+title ELIMINATION CLASSIC/CE: free for all rounds
+setup round next
+check Round 2 starts with everyone alive
+expect 1 round_start round 2
+check A death is out: no revive, no zone
+check The last one standing wins the round

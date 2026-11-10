@@ -1,0 +1,5 @@
+# The Protomag's texts (the pack keeps its starter_pistol id and tag paths) in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is the weapon's name in the kill feed. The ammo line names the rounds picked up once, as a decimal.
+menu_name=PROTOMAG
+weapon_pickup=Picked up a Protomag
+ammo_pickup=Picked up %d rounds for the Protomag
