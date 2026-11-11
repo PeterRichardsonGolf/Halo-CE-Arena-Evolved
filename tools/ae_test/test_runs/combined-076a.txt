@@ -1,0 +1,143 @@
+# 0.7.6 COMBINED TEST BUILD, round A (test/combined-076): fireteams, bot driving, the combat AR's viewmodel, the lobby,
+# the post-game report, ELIMINATION, host moderation, map folders and the smoke grenade. Crosshairs are not in it (being
+# reworked). Each test sets itself up. The Blood Gulch tests share one load; the two Octagon 2 tests share another.
+# Headless pre-run: run_list.py with --after 130.
+list combined-076a
+revision 1
+title 0.7.6 COMBINED, ROUND A
+
+test lobby
+title LOBBY: invite, playlist, guest guard
+check INVITE sits above START GAME; MY PARTY has INVITE FRIEND
+check PLAYLIST... opens the editor; weights 1-5; reorder works
+check A pad with no player cannot press the host's rows
+screen 32
+
+test map-folders
+title CHANGE MAP: foldable sections
+check Sections show their map counts
+check A folds and opens a section; OTHER starts folded
+check A fold stays after closing and reopening the picker
+screen 31
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 18
+set bots.skill easy
+
+test roles
+title FIRETEAMS: squad roles and the anchor
+check A red squad holds its home spot
+expect 1 log anchor ok
+check Another red squad heads for the enemy spot
+expect 2 log team 0 role 2 order 3
+check The holders are never away for twenty seconds
+expect 3 no log anchor lost
+
+test follow-me
+title FIRETEAMS: FOLLOW ME
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check Your squad follows and keeps near you
+expect 2 log follow ok
+check The squad is never left behind while it stands
+expect 3 no log follow away
+
+test regroup-defend
+title FIRETEAMS: DEFEND, then REGROUP
+setup fireteam defend
+check DEFEND at your feet: your squad holds there
+expect 1 log anchor ok
+check Walk off 30 wu: they stay and defend
+check Then REGROUP (dev: fireteam regroup): they come back
+setup fireteam regroup
+expect 3 cmd fireteam regroup ok
+
+test drive-gulch
+title BOT DRIVING: Blood Gulch
+check Bots drive the vehicles toward the enemy
+check No driver is wedged on a rock or the base wall for long
+check Passengers ride along; the vehicle gets there
+
+group octagon
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 2048
+set debug.network_test_pack_start 12
+
+test combat-ar
+title COMBAT AR: same place as the stock AR
+setup give weapons\assault_rifle\assault_rifle
+check Combat AR in hand: gun and hands sit as the stock AR does
+check Switch to the stock AR: the same spot and size
+check Fire both: the muzzle flash comes from the barrel
+
+group arena
+map octagon_b
+gametype AE TEAM SLY
+set bots.count 3
+set bots.skill normal
+
+test moderation
+title HOST MODERATION: the player card
+check Pause, PLAYERS: A on a bot opens MOVE, KICK, BAN
+check MOVE puts it across; KICK and BAN ask, CANCEL first
+check Cancel everything: nobody is kicked
+
+test pgcr
+title POST-GAME REPORT: screen, record, rival
+setup end game
+check The report opens with the result counting in
+check A on a player row: the card; SET RIVAL marks it
+check The service record page shows your games and kills
+
+group elim
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test round-flow
+title ELIMINATION: a round, frozen start, then live
+setup round next
+check Round 2: 5 s frozen at your team's start
+expect 1 round_start round 2
+check Then you move; the line says ROUND 2/9 live
+check The log says AE players only
+expect 3 log AE players only: a machine without Arena Evolved may not join
+
+test wipe-win
+title ELIMINATION: a wiped team loses the round
+setup round live
+setup kill bots
+check Every bot dies: your team wins the round
+expect 1 score player 0 team 1
+check 4 s later round 2 starts
+expect 2 round_start round 2
+
+test revive-hold
+title ELIMINATION: you revive a teammate
+setup round live
+setup down mate here
+check A teammate bot drops in front of you
+expect 1 down
+check Hold the action key 3 s on it: it stands up
+expect 2 revived revives 1
+
+group smoke
+map bloodgulch
+gametype SNOWBALL FIGHT
+set bots.count 3
+set bots.skill normal
+set game.smoke_grenade true
+
+test smoke
+title SMOKE GRENADE: cloud and bot sight
+check Throw a plasma grenade: a grey cloud that drifts and fades
+check No damage from it; it hangs about 10 s
+check Bots cannot see you through it

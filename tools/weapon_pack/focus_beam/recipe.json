@@ -1,0 +1,727 @@
+{
+ "format": 1,
+ "about": "The AE focus beam pack: CMT's prototype focus beam from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (tags for the stock tool kit, no Open Sauce), with what an Xbox map needs (the models converted, the multipurpose map's channels reordered, the high-resolution HUD made the Xbox's) and AE's own numbers: a heat beam that strips shields fast and is weak on bare health. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_focus_beam",
+  "revision": 1,
+  "display": "FOCUS BEAM",
+  "prefix": "ae\\packs\\focus_beam\\",
+  "weapon": "cmt\\weapons\\evolved_prototypes\\focus_beam\\focus_beam",
+  "weapon_key": "focus_beam",
+  "labels": "c_pbr,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "roots": [
+   "bitm:cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons"
+  ],
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:3"
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/effects/contrail/energy beam center.bitmap",
+   "cmt/effects/contrail/energy beam outer.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn scorch.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn glow inner.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn glow outer.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn scorch.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn.decal",
+   "cmt/effects/particles/air/bitmaps/smoke new generic.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/plasma overheat new.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/energy/beam rifle arcs.particle",
+   "cmt/effects/particles/energy/beam rifle discharge.particle",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma_arcs_2.bitmap",
+   "cmt/effects/particles/energy/bitmaps/quarter_plasma.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_noise.bitmap",
+   "cmt/effects/particles/energy/plasma electric quickbolts.particle",
+   "cmt/effects/particles/energy/shield deplete noise.particle",
+   "cmt/effects/particles/flash/bitmaps/c_flare.bitmap",
+   "cmt/effects/particles/flash/bitmaps/energy flash side.bitmap",
+   "cmt/effects/particles/flash/c flare contract.particle",
+   "cmt/effects/particles/flash/c flare expand.particle",
+   "cmt/effects/particles/flash/flash energy side.particle",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing.sound_looping",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_in.sound",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_loop.sound",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_out.sound",
+   "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_end.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_start.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/fire-1.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/fx/focus_carbine_beam_firing_3p_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/fx/focus_carbine_beam_impact.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_loop.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_out.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_charge.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_charge_loop.sound",
+   "cmt/sounds/sfx/weapons/covenant/plasma_rifle/fx/plasma_rifle_new_overheat.sound",
+   "cmt/textures/colours/solid_special/nightvision_green_inverse.bitmap",
+   "cmt/textures/detail_maps/detail_new_metal_dirty.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/scopes/focus_carbine_scope_details.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/scopes/focus_carbine_scope_mask.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/evolved_prototypes/focus_beam.weapon_hud_interface",
+   "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_body_diff.bitmap",
+   "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_body_multi.bitmap",
+   "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_scope_mask.bitmap",
+   "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_center.contrail",
+   "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_edge.contrail",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_fire_base.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_fire_loop.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_impact.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_overheated.effect",
+   "cmt/weapons/_shared/focus_beam/focus_beam.gbxmodel",
+   "cmt/weapons/_shared/focus_beam/fp/fp.gbxmodel",
+   "cmt/weapons/_shared/focus_beam/fp/fp.model_animations",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_body_dull.shader_model",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_body_shiny.shader_model",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_a.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_b.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_c.shader_transparent_chicago",
+   "cmt/weapons/_shared/sniper_rifle/bitmaps/sniper_rifle_screen_scan_big.bitmap",
+   "cmt/weapons/_shared/sniper_rifle/bitmaps/sniper_rifle_screen_sweep.bitmap",
+   "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_trigger.damage_effect",
+   "cmt/weapons/evolved_prototypes/focus_beam/damage_effects/focus_beam_beam_impact.damage_effect",
+   "cmt/weapons/evolved_prototypes/focus_beam/focus_beam.weapon",
+   "cmt/weapons/evolved_prototypes/focus_beam/projectiles/focus_beam_beam.projectile"
+  ],
+  "verbatim": [
+   "cmt/effects/contrail/energy beam center.bitmap",
+   "cmt/effects/contrail/energy beam outer.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn scorch.bitmap",
+   "cmt/effects/decals/bullet holes/bitmaps/plasma burn.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn glow inner.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn glow outer.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn scorch.decal",
+   "cmt/effects/decals/bullet holes/covenant/beam rifle/beam rifle burn.decal",
+   "cmt/effects/particles/air/bitmaps/smoke new generic.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/plasma overheat new.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/energy/beam rifle arcs.particle",
+   "cmt/effects/particles/energy/beam rifle discharge.particle",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma_arcs_2.bitmap",
+   "cmt/effects/particles/energy/bitmaps/quarter_plasma.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_noise.bitmap",
+   "cmt/effects/particles/energy/plasma electric quickbolts.particle",
+   "cmt/effects/particles/energy/shield deplete noise.particle",
+   "cmt/effects/particles/flash/bitmaps/c_flare.bitmap",
+   "cmt/effects/particles/flash/bitmaps/energy flash side.bitmap",
+   "cmt/effects/particles/flash/c flare contract.particle",
+   "cmt/effects/particles/flash/c flare expand.particle",
+   "cmt/effects/particles/flash/flash energy side.particle",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing.sound_looping",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_in.sound",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_loop.sound",
+   "cmt/sounds/sfx/characters/forerunner/sentinel/fx/sentinel_beam_firing_out.sound",
+   "cmt/sounds/sfx/effects/impacts/plasma_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/fx/focus_carbine_beam_firing_3p_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/focus_carbine/fx/focus_carbine_beam_impact.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_in.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_loop.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_beam_main_out.sound",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_charge.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/hunter_weapon/fx/hunter_weapon_charge_loop.sound",
+   "cmt/textures/colours/solid_special/nightvision_green_inverse.bitmap",
+   "cmt/textures/detail_maps/detail_new_metal_dirty.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/scopes/focus_carbine_scope_details.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/scopes/focus_carbine_scope_mask.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_body_diff.bitmap",
+   "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_scope_mask.bitmap",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_fire_base.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_fire_loop.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_beam_impact.effect",
+   "cmt/weapons/_shared/focus_beam/effects/focus_beam_overheated.effect",
+   "cmt/weapons/_shared/focus_beam/fp/fp.model_animations",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_body_dull.shader_model",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_body_shiny.shader_model",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_a.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_b.shader_transparent_chicago",
+   "cmt/weapons/_shared/focus_beam/shaders/focus_beam_scope_layer_c.shader_transparent_chicago",
+   "cmt/weapons/_shared/sniper_rifle/bitmaps/sniper_rifle_screen_scan_big.bitmap",
+   "cmt/weapons/_shared/sniper_rifle/bitmaps/sniper_rifle_screen_sweep.bitmap"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-nopanel",
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved_prototypes\\focus_beam\\focus_beam.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap"
+    ]
+   ],
+   "why": "the donor map only: the stock HUD globals naming the source's own pickup icon sheet, so that the donor holds the sheet the pack's message icon is (the pack takes the sheet by its root, never these globals)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the source's pickup icon sheet)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/focus_beam/focus_beam.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/focus_beam/focus_beam.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/focus_beam/fp/fp.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/focus_beam/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/focus_beam/bitmaps/focus_beam_body_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_end.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_end.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_end.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_start.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_start.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/cooldown_start.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/fire-1.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/fire-1.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/fire-1.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/melee.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/melee.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/melee.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/ready.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/ready.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/focus_carbine/animations/ready.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/covenant/plasma_rifle/fx/plasma_rifle_new_overheat.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/covenant/plasma_rifle/fx/plasma_rifle_new_overheat.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/covenant/plasma_rifle/fx/plasma_rifle_new_overheat.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved_prototypes/focus_beam.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/evolved_prototypes/focus_beam.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-nopanel",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved_prototypes/focus_beam.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/ui/hudv4.1/weapons/evolved_prototypes/focus_beam.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master plasma.weapon_hud_interface"
+    ]
+   ],
+   "why": "no panel of the pack's draws under the classic HUD style or any other: CMT's own panel (its static elements, meters and numbers) is out and the map's stock plasma panel is the child HUD, so the classic style shows the stock meter and the AE style draws its own"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved_prototypes/focus_beam/focus_beam.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/focus_beam/focus_beam.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/focus_beam/focus_beam.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/focus_beam/fp/fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ]
+   ],
+   "why": "the Xbox models; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/focus_beam/focus_beam.weapon",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved_prototypes/focus_beam/focus_beam.weapon"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "collision_model",
+       "weapons\\assault rifle\\assault rifle.model_collision_geometry"
+      ],
+      [
+       "player_melee_damage",
+       "weapons\\assault rifle\\melee.damage_effect"
+      ],
+      [
+       "player_melee_response",
+       "weapons\\assault rifle\\melee_response.damage_effect"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "20 30"
+      ],
+      [
+       "triggers[0].acceleration_time",
+       "0.3"
+      ],
+      [
+       "triggers[0].error_angle",
+       "1.5 0"
+      ],
+      [
+       "triggers[0].error_acceleration_time",
+       "0.3"
+      ],
+      [
+       "triggers[0].heat_generated_per_round",
+       "0.034"
+      ],
+      [
+       "triggers[0].age_generated_per_round",
+       "0.003"
+      ],
+      [
+       "triggers[0].firing_effects[0].firing_damage",
+       "ae_pack\\focus_beam\\beam_trigger.damage_effect"
+      ],
+      [
+       "heat_loss_rate",
+       "0.5"
+      ],
+      [
+       "heat_recovery_threshold",
+       "0.2"
+      ],
+      [
+       "zoom_magnification_range",
+       "2 2"
+      ],
+      [
+       "autoaim_angle",
+       "1.5"
+      ],
+      [
+       "autoaim_range",
+       "30"
+      ],
+      [
+       "magnetism_angle",
+       "4"
+      ],
+      [
+       "magnetism_range",
+       "30"
+      ],
+      [
+       "weapon_flags.aim_assists_only_when_zoomed",
+       "0"
+      ]
+     ]
+    ]
+   ],
+   "why": "AE's focus beam (owner: a heat beam and shield stripper that needs a finisher): 20 rounds a second rising to 30 over 0.3 s (CMT's 10 to 30 over 1.25 s), its spread closing from 1.5 degrees to none over 0.3 s of fire (CMT's 5); heat 0.034 a round against 0.5 lost a second: about 2 s of beam (60 rounds) to overheat, then locked until the heat falls to 0.2 (1.6 s); a battery of 333 rounds (0.003 a round, CMT's 500); one 2x zoom (CMT's 5x: the beam reaches 30 units); aim assist 1.5 degrees / 30 units and magnetism 4 / 30 at every zoom (CMT's only when zoomed, 1 / 30 and 2 / 45): a beam is held on a target, which a pad's stick needs help with and a mouse does not (the host's mouse aim assist rule decides the mouse's); a pad rumble with each round; the held weapon's collision and melee the stock assault rifle's (every pack melees alike)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/focus_beam/beam_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "maximum_intensity",
+       "0"
+      ],
+      [
+       "low_frequency_vibrate_frequency",
+       "0.12"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.05"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.3"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.05"
+      ],
+      [
+       "temporary_camera_impulse_duration",
+       "0"
+      ],
+      [
+       "temporary_camera_impulse_pushback",
+       "0"
+      ],
+      [
+       "camera_shaking_duration",
+       "0"
+      ],
+      [
+       "camera_shaking_random_translation",
+       "0"
+      ],
+      [
+       "camera_shaking_random_rotation",
+       "0"
+      ],
+      [
+       "camera_shaking_wobble_weight",
+       "0"
+      ]
+     ]
+    ]
+   ],
+   "why": "the beam's firing damage effect (CMT's beam has none: haptics, the done checklist's point 14): CMT's brute shot trigger made a pad rumble only, a soft buzz on both motors 0.05 s a round (30 a second: a steady hum while the beam is on); its flash, view kick and shake taken out"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/focus_beam/projectiles/focus_beam_beam.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/focus_beam/projectiles/focus_beam_beam.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "maximum_range",
+     "30"
+    ]
+   ],
+   "why": "the beam reaches 30 units (CMT's 100): a mid-range weapon, its finisher's range the rifle's and pistol's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved_prototypes/focus_beam/damage_effects/focus_beam_beam_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved_prototypes/focus_beam/damage_effects/focus_beam_beam_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "cyborg_energy_shield",
+       "1.1"
+      ],
+      [
+       "cyborg_armor",
+       "0.2"
+      ],
+      [
+       "damage_stun",
+       "0.5"
+      ],
+      [
+       "damage_maximum_stun",
+       "0.5"
+      ],
+      [
+       "damage_stun_time",
+       "0.15"
+      ],
+      [
+       "temporary_camera_impulse_rotation",
+       "1"
+      ]
+     ]
+    ]
+   ],
+   "why": "AE's numbers: CMT's 4 a round at x1.1 on a player's shield (4.4) and x0.2 on the body (0.8): 18 rounds strip a full shield (about 0.67 s from the trigger's pull), a full overheat leaves a bare player about 41 of 75, so a melee blow, a burst or a few pistol rounds finish; the beam alone needs a second heat; half the stock plasma bolt's slow for 0.15 s (CMT's full slow for 1 s), the hit's view kick 1 degree (CMT's 2, 30 times a second)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_center.contrail",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_center.contrail"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "point_states[0].width",
+       "0.12"
+      ],
+      [
+       "point_states[1].width",
+       "0.002"
+      ]
+     ]
+    ]
+   ],
+   "why": "the beam's core narrowed (owner's pick from an A/B, 2026-11-04): 0.12 units wide where it starts (CMT's 0.35), its tail as CMT's; thirty overlapping beams a second at CMT's width washed a shot player's view white"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_edge.contrail",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/focus_beam/contrails/focus_beam_beam_edge.contrail"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "point_states[0].width",
+       "0.08"
+      ],
+      [
+       "point_states[1].width",
+       "0.14"
+      ]
+     ]
+    ]
+   ],
+   "why": "the beam's glow narrowed with its core (owner's pick, 2026-11-04): 0.08 to 0.14 units (CMT's 0.25 to 0.4)"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the narrower beam (owner's pick) and its credits line, built twice (a, b) with the same result; re-pinned for the pack's HUD without its own panel (the map's stock panel is the child HUD); a pack built twice from the recipe was the same",
+  "donor_sha256": "6f3fcfe4ab44dec82f143c7052c7d638176bbe19c144c0e936be0167ca8db28d",
+  "donor_size": 23916544,
+  "pack_sha256": "979248e0eca482f4d608e674e0f9734b3a467f9363673b7838f8dec0ce706f3d",
+  "pack_own_sha256": "0c0b9a8b98f540ee75ff6eee398944f666e386f7adce529e3279aac8ad807a27",
+  "pack_size": 19630979,
+  "own_tags": 78,
+  "external_tags": 14
+ }
+}

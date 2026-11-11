@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bugs that OpenCE has too
+    url: https://github.com/OpenCommunityEdition/OpenCE/issues
+    about: A bug that is not only Arena Evolved's (OpenCE, which Arena Evolved is built on, has it too) is best reported to OpenCE.
