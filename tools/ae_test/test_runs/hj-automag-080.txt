@@ -1,0 +1,25 @@
+# The HJ MAGNUM kills with five shots to the head: the first four take the shield down (the pop shows on the 4th) and
+# carry nothing past it, the 5th to the head kills. It fires a shot every 8 ticks (3.75 a second) with no spread and
+# no kick on the view; its 2x zoom, magazine (12) and aim assist are its own. On Octagon 2 with a dummy that stands
+# still. A dummy heals to full 3 s after it was last hurt, so wait that long between tries. The HJ MAGNUM is the weapon
+# cache's weapon 10 (registry key magnum_scoped); a give puts it in hand.
+list hj-automag-080
+revision 1
+title HJ MAGNUM 5 SHOT
+
+group octagon-cache
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 10
+set debug.objective_log full
+
+test hj-5shot
+title HJ MAGNUM: the fifth shot to the head kills
+setup give magnum_scoped
+setup dummy 1 10
+setup ttk on
+check 4 head shots: the pop shows, it lives
+check The 5th head shot kills
+check No spread when firing fast
+expect 1 cmd dummy ok

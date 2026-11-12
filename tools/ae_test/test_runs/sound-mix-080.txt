@@ -1,0 +1,39 @@
+# Weapon sound mix (0.8.0): the starter pistol's new firing sound, the rifles' recorded echo faded, the reverb on pause.
+list sound-mix-080
+revision 1
+title SOUND MIX: PISTOL SHOT, RIFLE ECHO, PAUSE
+
+test sound-pistol
+title Starter pistol: the new shot (Digsite E3 rifle's)
+check The shot sounds like a real gun, fits the pistol
+check About as loud as the CE magnum (swap to it)
+check Shots vary a little, never sound stuck or clipped
+map octagon
+gametype AE BR TS
+set debug.network_test_cache_weapon 25
+setup give weapons\pistol\pistol
+
+test sound-br
+title Battle rifle: short echo, the room does the rest
+check A burst ends cleanly, no long ringing tail
+check Indoors you still hear the room's echo
+check Fire a burst, pause at once: silence, no ring
+map octagon
+gametype AE BR TS
+set debug.network_test_cache_weapon 1
+
+test sound-dmr-evo
+title DMR: the same short echo
+check A shot ends cleanly, no long ringing tail
+check Still sounds big and punchy
+map octagon
+gametype AE BR TS
+set debug.network_test_cache_weapon 6
+
+test sound-carbine
+title Carbine: its 2.7 s tail cut to about 1 s
+check Fast shots no longer smear into one wash
+check Still sounds like the carbine
+map octagon
+gametype AE BR TS
+set debug.network_test_cache_weapon 4

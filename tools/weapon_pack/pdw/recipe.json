@@ -1,0 +1,698 @@
+{
+ "format": 1,
+ "about": "The AE burst PDW pack (folder pdw): ZTeam's compact submachine gun (the ZTeam tag pack's smg/h3 models, worn in ZTeam's smg/h3b texture: its h3b shaders and base map in place of the h3 ones; first-person animations, collision, sounds and HUD) as an Xbox weapon tuned as a burst-fire personal defence weapon; everything the stock assault rifle has is the map's. The burst is the engine's (pack behaviour 4, the BURST PDW profile in port/linux/game/ae_rifle_profiles.c, played by ae_burst_rifle.c as the battle rifle's): a new pull fires at once, 3 rounds a tick apart (30 a second), then a recovery of 12 ticks, so pulls come 16 ticks apart (0.53 s); a pull during the recovery is lost. The tags' trigger is plain (no charge, no second trigger); the engine writes the profile's numbers over the tag's as the map starts (rate, spread, magazine, tracers, aim assist, the bullet's speeds and range, the round's damage and modifiers, the kick a rumble only; no zoom): the recipe sets the same values. Damage: 20 a round up close, 14 when the round has slowed (the damage's bounds and minimum, mixed by the round's speed: 400 units a second slowing to 240 over the tag's air damage range, the SMG round's 2-unit span, which measured full damage inside 5 units and the lower past 6.5); x1.0 on a Spartan's shield and body. A full-shield Spartan (75 shield + 75 body, the shield's excess carried into the body) dies to 8 close rounds (160; 7 = 140 do not): the 3rd burst's 2nd round, one round to spare (2 bursts = 120); at mid range to 11 rounds (154; 10 = 140 do not): the 4th burst's 2nd round, one to spare (3 bursts = 126). Perfect kills from the pull (the first round): close 3 bursts, the killing 8th round 33 ticks on (1.10 s), mid 4 bursts, the 11th 49 ticks on (1.63 s; the battle rifle's 4 bursts take 46: the owner, \"just under the BR\", strictly slower at mid range); the PDW's spread and slower round make its mid range the weaker. Spread: 0.4 degrees growing to 1.2 as a burst's rounds climb it (a third a tick, back as fast); no zoom. Aim assist 4 degrees to 14 units, magnetism 8 degrees to 20 units (between the SMG's and the battle rifle's). 36 a magazine (12 bursts), 144 to start and in reserve, a tracer a burst. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_pdw",
+  "revision": 2,
+  "display": "BURST PDW",
+  "prefix": "ae\\packs\\pdw\\",
+  "weapon": "zteam\\objects\\weapons\\single\\smg\\h3\\smg",
+  "weapon_key": "pdw",
+  "labels": "h_smg,ar",
+  "behaviour": 4,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\pdw\\zteam\\objects\\weapons\\single\\smg\\h3\\bullet": "the stock assault rifle round (projectile and damage effect: impacts, contrail, materials) with our own speed, falloff, damage and range",
+   "ae\\packs\\pdw\\zteam\\objects\\weapons\\single\\smg\\h3\\effects\\fire_bullet": "the stock assault rifle's firing effect (flash, smoke, casing) with ZTeam's shot sound",
+   "ae\\packs\\pdw\\zteam\\objects\\weapons\\single\\smg\\h3\\effects\\trigger": "the stock assault rifle's firing kick (a damage effect) with a light rumble on both motors"
+  },
+  "icon": "ae_pack\\hud\\pdw_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\pdw_icon"
+  ]
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/icons/weapons/smg.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_smg.weapon_hud_interface",
+   "zteam/objects/weapons/single/smg/h2/collisions/smg_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/smg/h2/sounds/fire.sound",
+   "zteam/objects/weapons/single/smg/h2/sounds/posing_1.sound",
+   "zteam/objects/weapons/single/smg/h2/sounds/posing_2.sound",
+   "zteam/objects/weapons/single/smg/h3/animations/smg_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/smg/h3/bitmaps/smg_multipurpose.bitmap",
+   "zteam/objects/weapons/single/smg/h3/models/smg_fp.gbxmodel",
+   "zteam/objects/weapons/single/smg/h3/models/smg_tp.gbxmodel",
+   "zteam/objects/weapons/single/smg/h3/smg.weapon",
+   "zteam/objects/weapons/single/smg/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/smg/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/smg/h3/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/smg/h3b/bitmaps/smg.bitmap",
+   "zteam/objects/weapons/single/smg/h3b/shaders/smg_metal.shader_model",
+   "zteam/objects/weapons/single/smg/h3b/shaders/smg_rubber.shader_model",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ],
+  "verbatim": [
+   "zteam/hud/h3/bitmaps/icons/weapons.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/objects/weapons/single/smg/h2/collisions/smg_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/smg/h2/sounds/fire.sound",
+   "zteam/objects/weapons/single/smg/h2/sounds/posing_1.sound",
+   "zteam/objects/weapons/single/smg/h2/sounds/posing_2.sound",
+   "zteam/objects/weapons/single/smg/h3/animations/smg_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/smg/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/smg/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/smg/h3/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/smg/h3b/bitmaps/smg.bitmap",
+   "zteam/objects/weapons/single/smg/h3b/shaders/smg_metal.shader_model",
+   "zteam/objects/weapons/single/smg/h3b/shaders/smg_rubber.shader_model",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {
+  "pdw_picture.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/hud/h3/bitmaps/icons/weapons/smg.bitmap",
+   "sha256": "b2f3f906d65dea0344bb9a0ec72a0a738cabf162ff0f2cc86f298d0aeaab7314",
+   "scripts": [
+    "source_icon.py"
+   ]
+  },
+  "cmt_smg_hud.weapon_hud_interface": {
+   "kind": "zip",
+   "zip": "tsce",
+   "member": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/weapons/evolved/human/smg.weapon_hud_interface",
+   "root": "tsce",
+   "tag": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/weapons/evolved/human/smg.weapon_hud_interface",
+   "sha256": "470aaba798faa25814ff2f59eac7cf08ded3870e382978bf428afc68c7eee4e7",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "cmt_weapon_reticules.bitmap": {
+   "kind": "zip",
+   "zip": "tsce",
+   "member": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "root": "tsce",
+   "tag": "tsce_1-4_source_release_stock/tags/cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "sha256": "98472547b38d084502b30f01720fa89e5866525204f92949214c5860bc2818d3",
+   "scripts": [
+    "copy_input.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "pdw_icon.png": "source_icon.py"
+ },
+ "art_drawings": {
+  "pdw_icon.png": {
+   "draw": "source_icon",
+   "input": "pdw_picture.bitmap",
+   "width": 100
+  }
+ },
+ "art": {
+  "pdw_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    43
+   ],
+   "pixels_sha256": "46c58fe3b198e240a8c1fe7d32c99a7bf06c522a9e748dcdddce2651b8ae2411"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\smg\\h3\\smg.weapon"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/models/smg_tp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/smg/h3/models/smg_tp.gbxmodel"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[0].shader",
+     "zteam/objects/weapons/single/smg/h3b/shaders/smg_metal.shader_model"
+    ],
+    [
+     "set",
+     "shaders[1].shader",
+     "zteam/objects/weapons/single/smg/h3b/shaders/smg_rubber.shader_model"
+    ]
+   ],
+   "why": "the Xbox model format; its two shaders (metal, rubber) are ZTeam's h3b ones, the owner's pick: the same shaders as h3's but for their base map, ZTeam's h3b texture (the h3b folder holds only that texture and these two shaders; its multipurpose map is h3's)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/models/smg_fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/smg/h3/models/smg_fp.gbxmodel"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[0].shader",
+     "zteam/objects/weapons/single/smg/h3b/shaders/smg_metal.shader_model"
+    ],
+    [
+     "set",
+     "shaders[1].shader",
+     "zteam/objects/weapons/single/smg/h3b/shaders/smg_rubber.shader_model"
+    ]
+   ],
+   "why": "the Xbox model format; its two shaders (metal, rubber) are ZTeam's h3b ones, the owner's pick: the same shaders as h3's but for their base map, ZTeam's h3b texture (the h3b folder holds only that texture and these two shaders; its multipurpose map is h3's)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/bitmaps/smg_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/smg/h3/bitmaps/smg_multipurpose.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/bullet.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/bullet.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "14"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "20 20"
+    ],
+    [
+     "set",
+     "cyborg_armor",
+     "1"
+    ],
+    [
+     "set",
+     "cyborg_energy_shield",
+     "1"
+    ]
+   ],
+   "why": "the PDW's round: the stock assault rifle round's damage effect (impacts, materials) at our numbers: 20 a round at full speed, 14 once slowed (the lower bound is the damage at the final speed), x1.0 on a Spartan's shield and body: a full shield dies to 8 rounds up close (the 3rd burst), 11 at mid range (the 4th); the engine's profile writes the same numbers"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/bullet.projectile",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/bullet.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "impact_damage",
+     "zteam\\objects\\weapons\\single\\smg\\h3\\bullet.damage_effect"
+    ],
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "400"
+      ],
+      [
+       "final_velocity",
+       "240"
+      ],
+      [
+       "air_damage_range",
+       "25.4 27.4"
+      ],
+      [
+       "maximum_range",
+       "40"
+      ]
+     ]
+    ]
+   ],
+   "why": "the PDW's round: the stock assault rifle round (impacts, contrail) carrying our damage effect, 400 units a second slowing to 240 over the air damage range's 2-unit span (the SMG round's span and first speed: its slowing measured on the box, full damage inside 5 units, the lower past 6.5), reaching 40 units; the engine's profile writes the same speeds and range (and no gravity), the slowing span stays the tag's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/effects/fire_bullet.effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/effects/fire bullet.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[1].parts[0].type",
+     "zteam/objects/weapons/single/smg/h2/sounds/fire.sound"
+    ]
+   ],
+   "why": "the firing effect: the stock assault rifle's (its flash, smoke and casing) with ZTeam's submachine gun shot in place of the stock rifle's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/assault rifle/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.3"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.05"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.5"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.05"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): the stock assault rifle's firing kick, made again under the pack's name with a short pulse on both motors; the engine's burst driver makes this own effect the AE rifles' rumble-only kick (both motors, 0.08 s, no view kick) as the map starts"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "op": "derived",
+   "derived": "cmt_weapon_reticules.bitmap",
+   "why": "CMT's own aiming reticle sheet, unchanged"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/cmt_smg_src.weapon_hud_interface",
+   "op": "derived",
+   "derived": "cmt_smg_hud.weapon_hud_interface",
+   "why": "CMT's SMG HUD, as released: the source of the PDW's aiming reticle (not in the pack)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/cmt_smg.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "fix-ae",
+    "ae_pack/hud/cmt_smg_src.weapon_hud_interface"
+   ],
+   "why": "that HUD made the Xbox's (the high-res scale flag cleared and the scale halved, as the engine does); not in the pack"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/hud/temp/weapon_interfaces/test/h3_smg.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_smg.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "static_elements[0].sequence_index",
+     "2"
+    ],
+    [
+     "set",
+     "meter_elements[0].sequence_index",
+     "2"
+    ],
+    [
+     "set",
+     "total_ammo_cutoff",
+     "36"
+    ],
+    [
+     "graft",
+     "fix-ae",
+     "ae_pack/hud/cmt_smg.weapon_hud_interface",
+     "crosshairs[0]",
+     "crosshairs[0]"
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ]
+   ],
+   "why": "the PDW's own HUD: ZTeam's submachine gun HUD (its ammunition meter and the weapon's picture), its rounds panel the map's stock one in place of ZTeam's chain of panels (whose last draws a full-screen visor frame); the meter and its alphas show ZTeam's own 36-round art (sequence 2 of the same sheets, two rows of 18) in place of the 60-round one (sequence 18), the low-ammo flash at a magazine's 36 in all; its aiming reticle (crosshairs 0) is CMT's SMG one, grafted from CMT's SMG HUD in place of ZTeam's test reticle, as the HJ magnum takes CMT's pistol ones; the source's own panel is out (its static elements and meter): no panel of the pack's draws under the classic HUD style"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/pdw_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "pdw_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: ZTeam's own picture of the submachine gun (its HUD's weapon picture), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\pdw_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/smg/h3/smg.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/smg/h3/smg.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/smg/h3/models/smg_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/smg/h3/models/smg_fp.model"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "weapons\\assault rifle\\muzzle flash.light"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "sound\\sfx\\impulse\\weapon_drops\\assault_impact.sound"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "weapons\\assault rifle\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\assault rifle\\melee_response.damage_effect"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam\\hud\\temp\\weapon_interfaces\\test\\h3_smg.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "pickup_sound",
+     "sound\\sfx\\weapons\\weapon_pickup_ammo\\ar_ammo.sound"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "weapon_b_in",
+     "primary_firing"
+    ],
+    [
+     "erase",
+     "magazines[*]"
+    ],
+    [
+     "insert",
+     "magazines",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "36"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "36"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "144"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "144"
+    ],
+    [
+     "set",
+     "autoaim_angle",
+     "4"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "14"
+    ],
+    [
+     "set",
+     "magnetism_angle",
+     "8"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "20"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "30 30"
+    ],
+    [
+     "set",
+     "triggers[0].projectiles_between_contrails",
+     "2"
+    ],
+    [
+     "set",
+     "triggers[0].error",
+     "0 1"
+    ],
+    [
+     "set",
+     "triggers[0].minimum_error",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].error_angle",
+     "0.4 1.2"
+    ],
+    [
+     "set",
+     "triggers[0].projectile_object",
+     "zteam\\objects\\weapons\\single\\smg\\h3\\bullet.projectile"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_effect",
+     "zteam/objects/weapons/single/smg/h3/effects/fire_bullet.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].empty_effect",
+     "weapons\\assault rifle\\effects\\empty.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\smg\\h3\\effects\\trigger.damage_effect"
+    ]
+   ],
+   "why": "the Xbox models; the weapon's B input \"primary firing\" (ZTeam's \"primary firing on\" is a later engine's value, past the Xbox's 17: the validator corrects it to none); everything the map's stock assault rifle has (muzzle flash, materials, drop sound, melee, ammo pickup sound and message indices, empty click) is the map's; ZTeam's 3rd-person reload effect (a magazine particle of its own) left out, as the stock rifle has none (the magazine made again: ZTeam's has no other set field but its numbers, which are ours); a plain trigger: the burst is the engine's (behaviour 4), which writes the BURST PDW profile's numbers over these as the map starts; the recipe sets the same: 36 a magazine, 144 to start and in reserve, 30 rounds a second (a burst's rounds a tick apart), error 0.4 to 1.2 degrees, a tracer every third round (one a burst), aim assist 4 degrees / 14 units and magnetism 8 / 20"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the engine's burst (behaviour 4, revision 2); re-pinned for the pack's HUD without the source's own panel (nothing of the pack's draws under the classic HUD style); a pack built twice from the recipe was the same",
+  "donor_sha256": "42d141daebbfad6292168e91fda9f6384fe0cf52b8d030a0036a5f2a9887f284",
+  "donor_size": 20664320,
+  "pack_sha256": "54be62ecd4e55a951b6c011f72e3b7298008fea16718f452b3c9765e1be70dbe",
+  "pack_own_sha256": "ab69f67d606a5fe929a8d41bccae1a6f83c7cd562aafaf3c5c24389d3df01df5",
+  "pack_size": 6529180,
+  "own_tags": 26,
+  "external_tags": 48
+ },
+ "extra_sources": {
+  "tsce": {
+   "name": "CMT's Silent Cartographer Evolved source release, stock-compatible tags (its SMG HUD's aiming reticle)",
+   "file": "tsce_1-4_source_release_stock.zip",
+   "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833"
+  }
+ },
+ "derived": {
+  "cmt_smg_hud.weapon_hud_interface": {
+   "script": "copy_input.py",
+   "input": "cmt_smg_hud.weapon_hud_interface",
+   "sha256": "470aaba798faa25814ff2f59eac7cf08ded3870e382978bf428afc68c7eee4e7"
+  },
+  "cmt_weapon_reticules.bitmap": {
+   "script": "copy_input.py",
+   "input": "cmt_weapon_reticules.bitmap",
+   "sha256": "98472547b38d084502b30f01720fa89e5866525204f92949214c5860bc2818d3"
+  }
+ }
+}
