@@ -1,0 +1,727 @@
+{
+ "format": 1,
+ "about": "The AE grenade launcher pack: ZTeam's grenade launcher (the ZTeam tag pack's grenade_launcher/hr: its weapon, third-person and first-person models, shaders, bitmaps, animations, collision, grenade, effects and sounds) as an Xbox weapon tuned as a single-shot bouncing grenade launcher; its second trigger (an EMP grenade) left out. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_grenade_launcher",
+  "revision": 1,
+  "display": "GRENADE LAUNCHER",
+  "prefix": "ae\\packs\\grenade_launcher\\",
+  "weapon": "zteam\\objects\\weapons\\single\\grenade_launcher\\hr\\grenade_launcher",
+  "weapon_key": "grenade_launcher",
+  "labels": "gl,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {}
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/effects/contrails/tracer/grenade_trail.contrail",
+   "zteam/effects/contrails/tracer/tracer.bitmap",
+   "zteam/effects/decals/impact/bullet_dirt/impact_bullet_dirt.bitmap",
+   "zteam/effects/decals/scorch/char_explosion/char_explosion.decal",
+   "zteam/effects/lens_flares/generic_flares/generic_flares2.bitmap",
+   "zteam/effects/particle_systems/explosions/flash_explosion/flash_explosion_small.particle_system",
+   "zteam/effects/particles/flash/burst_long/burst_long.bitmap",
+   "zteam/effects/particles/flash/burst_long/burst_long.particle",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.bitmap",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.particle",
+   "zteam/effects/particles/flash/fire_burst_round/fire_burst_round.bitmap",
+   "zteam/effects/particles/flash/fire_burst_round/fire_burst_round_expand.particle",
+   "zteam/effects/particles/flash/flare_soft/flare_soft.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft_flash.particle",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center_fire.bitmap",
+   "zteam/effects/particles/flash/muzzle_flare_side/assault_rifle_flare_side.particle",
+   "zteam/effects/particles/flash/muzzle_flare_side/muzzle_flare_side.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_narrow/muzzle_flash_narrow.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_narrow/muzzle_flash_narrow.particle",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.bitmap",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.particle",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.bitmap",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke/muzzle_smoke.bitmap",
+   "zteam/effects/particles/smoke/muzzle_smoke/muzzle_smoke.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke_faint/impact_smoke.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke_faint/muzzle_smoke_faint.bitmap",
+   "zteam/effects/particles/smoke/smoke_soft/smoke_soft.bitmap",
+   "zteam/effects/point_physics/cold_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/cold_smoke_puff_nowind.point_physics",
+   "zteam/effects/point_physics/fire_explosion.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud_nowind.point_physics",
+   "zteam/effects/point_physics/smoke_explosion.point_physics",
+   "zteam/effects/point_physics/stones.point_physics",
+   "zteam/effects/point_physics/vacuum_particle.point_physics",
+   "zteam/effects/point_physics/warm_smoke_cloud.point_physics",
+   "zteam/hud/h3/bitmaps/icons/weapons_temp.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_brute_shot.weapon_hud_interface",
+   "zteam/objects/weapons/single/assault_rifle/h1/effects/dryfire.effect",
+   "zteam/objects/weapons/single/assault_rifle/h1/muzzle_flash.light",
+   "zteam/objects/weapons/single/assault_rifle/h1/sounds/dryfire.sound",
+   "zteam/objects/weapons/single/assault_rifle/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/assault_rifle/hr/bitmaps/assault_rifle_ammo_counter.bitmap",
+   "zteam/objects/weapons/single/brute_shot/h2/grenade_explosion.light",
+   "zteam/objects/weapons/single/brute_shot/h3/sounds/fire.sound",
+   "zteam/objects/weapons/single/grenade_launcher/hr/animations/grenade_launcher_tp.model_animations",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_empty.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_icons.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_linked.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_ready.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_skull.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_multipurpose.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/collisions/grenade_launcher_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/fire_grenade.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_constant.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_default_explosion.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_deflect.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/linked.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade.light",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade.light_volume",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_explosion.damage_effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_initial.projectile",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_explosion_flash.lens_flare",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_explosion_flash.light",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_launcher.weapon",
+   "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade.gbxmodel",
+   "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_fp.gbxmodel",
+   "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_tp.gbxmodel",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_counter.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_empty.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_icons.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_linked.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_ready.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_skull.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_glass.shader_transparent_glass",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_empty.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_linked.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_ready.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_black.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_grey.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_silver.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_rubber.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/sounds/linked.sound",
+   "zteam/objects/weapons/single/grenade_launcher/hr_cad/animations/grenade_launcher_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/grenade_launcher/hr_cad/sounds/ready.sound",
+   "zteam/objects/weapons/single/plasma_rifle/h1/sounds/drop.sound",
+   "zteam/shared/bitmaps/colors/black.bitmap",
+   "zteam/shared/bitmaps/colors/grey_25percent.bitmap",
+   "zteam/shared/bitmaps/colors/grey_75percent.bitmap",
+   "zteam/shared/bitmaps/colors/magenta.bitmap",
+   "zteam/shared/bitmaps/colors/red.bitmap",
+   "zteam/shared/bitmaps/colors/yellow.bitmap",
+   "zteam/shared/bitmaps/cube_maps/forerunner_interiors.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/metal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap",
+   "zteam/shared/bitmaps/misc/unsc_decals.bitmap",
+   "zteam/shared/damage_effects/misc/grenade_impact.damage_effect",
+   "zteam/shared/damage_effects/screen_effects/darken_medium_medium.damage_effect",
+   "zteam/shared/damage_effects/trigger/trigger_rifle_kickback_strong.damage_effect",
+   "zteam/shared/shaders/invisible.shader_transparent_chicago",
+   "zteam/shared/shaders/unsc_decals.shader_model",
+   "zteam/shared/sounds/sfx/projectile_explosions/brute_shot_grenade_explosion2.sound",
+   "zteam/shared/sounds/sfx/projectile_impacts/brute_shot_grenade_ricochet.sound",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/brute_shot_grenade.sound_looping",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/loop.sound"
+  ],
+  "verbatim": [
+   "zteam/effects/contrails/tracer/grenade_trail.contrail",
+   "zteam/effects/contrails/tracer/tracer.bitmap",
+   "zteam/effects/decals/impact/bullet_dirt/impact_bullet_dirt.bitmap",
+   "zteam/effects/decals/scorch/char_explosion/char_explosion.decal",
+   "zteam/effects/lens_flares/generic_flares/generic_flares2.bitmap",
+   "zteam/effects/particles/flash/burst_long/burst_long.bitmap",
+   "zteam/effects/particles/flash/burst_long/burst_long.particle",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.bitmap",
+   "zteam/effects/particles/flash/explosion_cloud/explosion_cloud.particle",
+   "zteam/effects/particles/flash/fire_burst_round/fire_burst_round.bitmap",
+   "zteam/effects/particles/flash/fire_burst_round/fire_burst_round_expand.particle",
+   "zteam/effects/particles/flash/flare_soft/flare_soft.bitmap",
+   "zteam/effects/particles/flash/flare_soft/flare_soft_flash.particle",
+   "zteam/effects/particles/flash/muzzle_flare_center/muzzle_flare_center_fire.bitmap",
+   "zteam/effects/particles/flash/muzzle_flare_side/assault_rifle_flare_side.particle",
+   "zteam/effects/particles/flash/muzzle_flare_side/muzzle_flare_side.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_narrow/muzzle_flash_narrow.bitmap",
+   "zteam/effects/particles/flash/muzzle_flash_narrow/muzzle_flash_narrow.particle",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.bitmap",
+   "zteam/effects/particles/flash/sparks_cluster/sparks_cluster.particle",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.bitmap",
+   "zteam/effects/particles/flash/sparks_trail/sparks_trail.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke/muzzle_smoke.bitmap",
+   "zteam/effects/particles/smoke/muzzle_smoke/muzzle_smoke.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke_faint/impact_smoke.particle",
+   "zteam/effects/particles/smoke/muzzle_smoke_faint/muzzle_smoke_faint.bitmap",
+   "zteam/effects/particles/smoke/smoke_soft/smoke_soft.bitmap",
+   "zteam/effects/point_physics/cold_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/cold_smoke_puff_nowind.point_physics",
+   "zteam/effects/point_physics/fire_explosion.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud.point_physics",
+   "zteam/effects/point_physics/hot_smoke_cloud_nowind.point_physics",
+   "zteam/effects/point_physics/smoke_explosion.point_physics",
+   "zteam/effects/point_physics/stones.point_physics",
+   "zteam/effects/point_physics/vacuum_particle.point_physics",
+   "zteam/effects/point_physics/warm_smoke_cloud.point_physics",
+   "zteam/hud/h3/bitmaps/icons/weapons_temp.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/objects/weapons/single/assault_rifle/h1/effects/dryfire.effect",
+   "zteam/objects/weapons/single/assault_rifle/h1/muzzle_flash.light",
+   "zteam/objects/weapons/single/assault_rifle/h1/sounds/dryfire.sound",
+   "zteam/objects/weapons/single/assault_rifle/h3/sounds/melee_1.sound",
+   "zteam/objects/weapons/single/assault_rifle/hr/bitmaps/assault_rifle_ammo_counter.bitmap",
+   "zteam/objects/weapons/single/brute_shot/h2/grenade_explosion.light",
+   "zteam/objects/weapons/single/brute_shot/h3/sounds/fire.sound",
+   "zteam/objects/weapons/single/grenade_launcher/hr/animations/grenade_launcher_tp.model_animations",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_empty.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_linked.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_ready.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_skull.bitmap",
+   "zteam/objects/weapons/single/grenade_launcher/hr/collisions/grenade_launcher_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/fire_grenade.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_constant.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_default_explosion.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/effects/linked.effect",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade.light",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade.light_volume",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_explosion_flash.lens_flare",
+   "zteam/objects/weapons/single/grenade_launcher/hr/grenade_explosion_flash.light",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_counter.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_empty.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_icons.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_linked.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_ready.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_display_skull.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_glass.shader_transparent_glass",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_empty.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_linked.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_indicator_ready.shader_transparent_chicago",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_black.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_grey.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_metal_silver.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/shaders/grenade_launcher_rubber.shader_model",
+   "zteam/objects/weapons/single/grenade_launcher/hr/sounds/linked.sound",
+   "zteam/objects/weapons/single/grenade_launcher/hr_cad/animations/grenade_launcher_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/grenade_launcher/hr_cad/sounds/ready.sound",
+   "zteam/objects/weapons/single/plasma_rifle/h1/sounds/drop.sound",
+   "zteam/shared/bitmaps/colors/black.bitmap",
+   "zteam/shared/bitmaps/colors/grey_25percent.bitmap",
+   "zteam/shared/bitmaps/colors/grey_75percent.bitmap",
+   "zteam/shared/bitmaps/colors/magenta.bitmap",
+   "zteam/shared/bitmaps/colors/red.bitmap",
+   "zteam/shared/bitmaps/colors/yellow.bitmap",
+   "zteam/shared/bitmaps/cube_maps/forerunner_interiors.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal.bitmap",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/cube_maps/metal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap",
+   "zteam/shared/bitmaps/detail_maps/rubber.bitmap",
+   "zteam/shared/bitmaps/misc/unsc_decals.bitmap",
+   "zteam/shared/damage_effects/misc/grenade_impact.damage_effect",
+   "zteam/shared/damage_effects/screen_effects/darken_medium_medium.damage_effect",
+   "zteam/shared/shaders/invisible.shader_transparent_chicago",
+   "zteam/shared/shaders/unsc_decals.shader_model",
+   "zteam/shared/sounds/sfx/projectile_explosions/brute_shot_grenade_explosion2.sound",
+   "zteam/shared/sounds/sfx/projectile_impacts/brute_shot_grenade_ricochet.sound",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/brute_shot_grenade.sound_looping",
+   "zteam/shared/sounds/sfx/projectile_loops/brute_shot_grenade/loop.sound"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {
+  "screen_icons.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_icons.bitmap",
+   "sha256": "fed4ca3d288fa7ec3fe0300c222fc6d6ee653bdeeb66d1880c8319c8b2aa73ee",
+   "scripts": [
+    "screen_blank.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "gl_screen.png": "screen_blank.py"
+ },
+ "art_drawings": {
+  "gl_screen.png": {
+   "draw": "screen_blank",
+   "input": "screen_icons.bitmap",
+   "regions": [
+    [
+     40,
+     42,
+     127,
+     56
+    ]
+   ]
+  }
+ },
+ "art": {
+  "gl_screen.png": {
+   "mode": "RGBA",
+   "size": [
+    128,
+    128
+   ],
+   "pixels_sha256": "1b1a93e57c73aade27c1eb99d819520458279aec4ecfa0e5836510b5e24952de"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\grenade_launcher\\hr\\grenade_launcher.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_tp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_tp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade.model",
+   "op": "model",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_multipurpose.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "grenade_launcher/hud/grenade_launcher.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_brute_shot.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "sequence_index",
+     "-1"
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "erase",
+     "overlay_elements[*]"
+    ]
+   ],
+   "why": "the launcher's HUD as ZTeam made it for this weapon (ZTeam's brute shot HUD: its six-grenade meter and its reticle), its rounds panel the map's stock one in place of ZTeam's chain of panels, whose last draws a full-screen visor frame over the game's own HUD; no messaging icon (sequence -1): no licensed picture of a grenade launcher exists, so the weapon's name is written where a picture would be (the prompts, the kill feed, and the HUD's weapon picture, which is ZTeam's brute shot's: ae_pack_names.c); made again under the pack's own name (ZTeam's path is a leftover test path other packs take with other content); its own panel (static elements and meter) is out: no panel of the pack's draws under the classic HUD style, the map's stock rounds panel is the child HUD"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_deflect.effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/effects/grenade_deflect.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[1]"
+    ]
+   ],
+   "why": "the bounce: ZTeam's ricochet sound only; its second event (a 3-unit damage that sets off grenades, this one too) left out, so a bounce never detonates"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_initial.projectile",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_initial.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade.model"
+    ],
+    [
+     "set",
+     "collision_model",
+     ".model_collision_geometry"
+    ],
+    [
+     "set",
+     "timer",
+     "0.8 0.8"
+    ],
+    [
+     "set",
+     "air_gravity_scale",
+     "1.3"
+    ],
+    [
+     "set",
+     "initial_velocity",
+     "20"
+    ],
+    [
+     "set",
+     "final_velocity",
+     "20"
+    ]
+   ],
+   "why": "the grenade: the Xbox model; no collision model (ZTeam's gave it one point of body, so shots and other grenades hit it and it blew up when that was gone; a projectile others can hit is what no stock projectile is, and the 0.7.6 preflight crashed once in a projectile's hit on an object gone that tick): only its own flight collides; our own numbers: 20 world units a second, 1.3 times the world's gravity (a lob that reaches far but drops), bouncing off the ground and walls and bursting 0.8 s after it comes to rest (the game starts an after-the-first-bounce timer only once the grenade is at rest), or at once on a player (ZTeam's responses); while the trigger is held the fuse waits, and letting go sets it off"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_explosion.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/grenade_default_explosion.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "radius",
+     "0.6 1.6"
+    ],
+    [
+     "set",
+     "damage_aoe_core_radius",
+     "0.3"
+    ],
+    [
+     "set",
+     "damage_lower_bound",
+     "85"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "85 85"
+    ]
+   ],
+   "why": "the burst at our own numbers: 85 at full (ZTeam's 55 to 185 killed a full 150-point player in one hit), full within 0.6 units and none past 1.6: two close bursts kill from full (170), one strips the shield (75) and takes 10 of the body"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/effects/particle_systems/explosions/flash_explosion/flash_explosion_small.particle_system",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/effects/particle_systems/explosions/flash_explosion/flash_explosion_small.particle_system"
+   ],
+   "edits": [
+    [
+     "set",
+     "particle_types[0].complex_sprite_render_modes",
+     "simple"
+    ]
+   ],
+   "why": "the burst's fire flash drawn with its own sprites: ZTeam's type is set to rotational sprites, which take each state's next sequence, and its fire state's bitmap has one sequence only (the game's tag check would turn the type off); drawn simple, from the sequence the state names"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/shared/damage_effects/trigger/trigger_rifle_kickback_strong.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.12"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.1"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a thump on both motors with each grenade (the brute shot's numbers); nothing else of ZTeam's kick changed; made under the pack's own name, as ZTeam's file is a kick its other weapons share"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/grenade_launcher.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/grenade_launcher/hr/grenade_launcher.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/grenade_launcher/hr/models/grenade_launcher_fp.model"
+    ],
+    [
+     "erase",
+     "triggers[1]"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "grenade_launcher\\hud\\grenade_launcher.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\grenade_launcher\\hr\\effects\\trigger.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "weapons\\assault rifle\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\assault rifle\\melee_response.damage_effect"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "autoaim_angle",
+     "3"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "13"
+    ],
+    [
+     "set",
+     "magnetism_angle",
+     "7"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "30"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "6"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "6"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "12"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "24"
+    ],
+    [
+     "set",
+     "triggers[0].flags.tracks_fired_projectile",
+     "1"
+    ],
+    [
+     "set",
+     "triggers[0].charging_time",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].charged_time",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "1.1 1.1"
+    ]
+   ],
+   "why": "the Xbox models; ZTeam's second trigger (a charged EMP grenade) left out and the first's half-second charge with it (one trigger: a press fires); materials and melee the map's stock ones; its HUD the pack's own copy of ZTeam's; the pickup and HUD message indices the stock assault rifle's; the trigger tracks its grenade (hold to keep it from bursting, let go to burst it: ae_tracked_grenade.c); the role's numbers: 6 a magazine, 12 to start, 24 at most, 1.1 a second, aim assist 3 degrees to 13 units and magnetism 7 degrees to 30"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/grenade_launcher/hr/bitmaps/grenade_launcher_display_icons.bitmap",
+   "op": "bitmap",
+   "art": [
+    "gl_screen.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt3"
+   ],
+   "why": "the gun screen's icon sheet: ZTeam's own (its arming arrows and lettering), the identifier painted beside the arrows cleared (screen_blank.py: one rectangle made transparent black, every other pixel ZTeam's); DXT3 as ZTeam's"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-05 for the owner's answers: six a magazine, the tracking trigger, no picture (the name instead), the gun screen's identifier cleared, its HUD under the pack's own name; re-pinned 2026-11-05 for the grenade without a collision model and the firing kick under the pack's own name; re-pinned for the pack's HUD without its own panel (the map's stock panel is the child HUD); a pack built twice from the recipe was the same",
+  "donor_sha256": "d38912a20daebf286fc17ebb626ceaa6b68ff53af18c28bb5b6988ceb2422915",
+  "donor_size": 23560192,
+  "pack_sha256": "4d72a6ada134b629077da780700d19fc998191292a3b366dd92d9175cf0e5e27",
+  "pack_own_sha256": "f01454d29c23683edbb4f79cd8d93e133e75302cd76db8e84026b142755893bc",
+  "pack_size": 16318587,
+  "own_tags": 110,
+  "external_tags": 5
+ }
+}

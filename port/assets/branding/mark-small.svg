@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+<defs><clipPath id="far"><rect x="0" y="0" width="256" height="119.0"/></clipPath><clipPath id="near"><rect x="0" y="119.0" width="256" height="256"/></clipPath></defs>
+<g transform="rotate(-22 128 128)"><path fill-rule="evenodd" fill="#C2510E" clip-path="url(#far)" d="M8,128A120,68 0 1 1 248,128A120,68 0 1 1 8,128ZM46,110A82,30 0 1 0 210,110A82,30 0 1 0 46,110Z"/><path fill-rule="evenodd" fill="#FFA51F" clip-path="url(#near)" d="M8,128A120,68 0 1 1 248,128A120,68 0 1 1 8,128ZM46,110A82,30 0 1 0 210,110A82,30 0 1 0 46,110Z"/></g>
+</svg>

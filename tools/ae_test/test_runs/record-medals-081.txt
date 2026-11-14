@@ -1,0 +1,21 @@
+# 0.8.1 SERVICE RECORD: the MEDALS page (ae/record-medals-081). Each test opens SERVICE RECORD on a made-up player
+# (the DEV MODE command record_medals: a record of its own, the record file not touched). Try a pad and the keyboard.
+list record-medals-081
+revision 1
+title 0.8.1 SERVICE RECORD: MEDALS PAGE
+
+test record-medals-36
+title MEDALS page, 36 kinds: in and out
+menus
+setup record_medals 36 7
+check The MEDALS pane is ringed; A opens the MEDALS page
+check B goes back to the record with the pane still ringed
+expect 1 cmd record_medals ok
+
+test record-medals-104
+title MEDALS page, 104 kinds: scroll and sort
+menus
+setup record_medals 104 7
+check A, then RT to the last row: "N more" goes away
+check X switches RAREST FIRST / MOST EARNED and the order
+check The wheel scrolls; a hovered cell fills the strip below

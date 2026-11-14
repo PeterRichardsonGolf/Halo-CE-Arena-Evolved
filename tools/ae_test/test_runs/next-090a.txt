@@ -1,0 +1,43 @@
+# 0.9.0 TEST BUILD, round A (laptop): greyed rows, the crosshair under the pause menu, four players' crosshairs on 0.9.0's
+# split screen. The latency list is next-090-latency; the two-machine network checks are net-090-host / net-090-join.
+list next-090a
+revision 1
+title 0.9.0, ROUND A
+
+test greyed-row
+title SETTINGS: a greyed row still reads greyed
+menus
+set display.resolution_scaling 75%
+check SETTINGS > VIDEO: TARGET 60 FPS is greyed with its reason
+check On the selection bar it still reads greyed, not white
+check A on it goes to RESOLUTION SCALING
+
+test pause-xh-off
+title Pause menu, TARGET 60 FPS off: crosshair stays put
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+set display.resolution_scaling native
+set display.target_60_fps false
+check Open the pause menu: the crosshair stays at the centre
+check Close it: still centred, same size
+
+test pause-xh-on
+title Pause menu, TARGET 60 FPS on: crosshair stays put
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+set display.resolution_scaling native
+set display.target_60_fps true
+check Open the pause menu: the crosshair stays at the centre
+check If it moves: where to (top left?) and how far
+check Close it: still centred, same size
+
+test split-four
+title Four players: crosshairs and split graphics
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+players 4
+check Every view's crosshair at its own centre
+check Four views hold a smooth frame rate

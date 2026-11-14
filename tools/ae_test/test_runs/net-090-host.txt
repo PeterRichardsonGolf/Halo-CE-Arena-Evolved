@@ -1,0 +1,29 @@
+# 0.9.0 two machines, the HOST's list (the Windows PC, with V-SYNC as it is): each test hosts its game and stands the host's
+# player at prisoner's player start 0 (scenario: -2.509 -5.768 -0.407, facing 0.988 rad), unhurt, as the target. The laptop plays net-090-join.txt, whose setup joins this game. The
+# host's lines (head check, hit cover) are this machine's debug.txt and event stream: the expect lines read them.
+list net-090-host
+revision 2
+title 0.9.0 TWO MACHINES: HOST
+
+test host-head-check
+title HEAD CHECK: real headshots stay headshots
+check The laptop's headshots on you count as headshots
+check No "head check" line: none was refused
+map prisoner
+gametype AE SLAYER
+set bots.count 0
+set network.head_check true
+setup goto -2.509 -5.768 -0.407 facing 57
+setup god me
+expect 2 no log head check:
+
+test host-hit-cover
+title HIT COVER: nothing through a wall
+check The laptop's grenade behind your wall: no damage
+check Each one is refused in the log
+map prisoner
+gametype AE SLAYER
+set bots.count 0
+set network.hit_cover true
+setup goto -2.509 -5.768 -0.407 facing 57
+expect 2 log hit cover:

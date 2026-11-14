@@ -1,0 +1,34 @@
+# Death and follow cameras (0.8.1, owner 11-11, after play-testing: "Look at the killer, Start
+# at the helmet, Right stick orbits body", auto follow on long waits, switches as a cut with a quick fade in). Dying, the camera starts at
+# your eyes and eases out over a second to your body, looking past it at your killer while in sight; the right stick
+# orbits it. It stays until you respawn or press A, LB or RB (from 3 s in); a long wait moves on by itself after 5 s.
+# Following: behind the player, turning with their aim; a change of player cuts with a quick fade in (a glide only to a
+# player near and in view). display.follow_camera "always" here so a short respawn still lets you follow someone.
+list camera-smooth-081
+revision 3
+title CAMERAS: DEATH HOLD, AIM FOLLOW, GLIDES
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 3
+set bots.teams even
+set bots.skill normal
+set display.follow_camera always
+set debug.bot_events true
+
+test death-hold
+title Dying: eyes out to your body, your killer in view
+setup bots 3 even normal
+setup goto start 0
+setup kill me
+check Eases out from your eyes; looks at your killer
+check Right stick orbits your body; it stays till respawn
+check Press A after 3 s: a quick fade in on a teammate
+
+test follow-switch
+title Following: LB and RB switch with a quick fade
+setup kill me
+check LB or RB: a quick fade in on the next one
+check It turns with their aim; jumps and crouches don't bob
+check On respawn you are back in your own view

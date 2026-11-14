@@ -1,0 +1,8 @@
+# Halo CE: Arena Evolved: lets the player at the seat write a PS5 DualSense's (054C:0CE6) or DualSense Edge's
+# (054C:0DF2) hidraw node, so the game can set its adaptive triggers, lightbar and player lights while the kernel's
+# hid-playstation driver keeps reading the pad. Steam's udev rules do the same; this is for a machine without them.
+# One rule for USB and Bluetooth: it matches the HID device's own name (bus:vendor:product.instance), the same form
+# on both buses.
+# Install (once, as root), then plug the pad in again:
+#   sudo cp 70-ae-dualsense.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+KERNEL=="hidraw*", KERNELS=="*:054C:0CE6.*|*:054C:0DF2.*", MODE="0660", TAG+="uaccess"
