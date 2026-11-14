@@ -1,0 +1,35 @@
+# The EVO RIFLE kills with five rounds to the head (the fifth); the DMR stays at four (the fourth). On Octagon 2 with a
+# dummy that stands still: the EVO's 4th round breaks the shield (the pop shows) and carries nothing past it, the 5th
+# to the head kills.
+# The DMR's 4th round breaks the shield and a head hit kills. A dummy heals to full 3 s after it was last hurt, so wait
+# that long between tries. The rifles are the weapon cache's weapons (7 the EVO RIFLE, 6 the DMR); a give puts the weapon
+# in hand.
+list evo-5shot-081
+revision 1
+title EVO RIFLE 5 SHOT / DMR 4 SHOT
+
+group octagon-cache
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 7
+set debug.objective_log full
+
+test evo-5shot
+title EVO RIFLE: the fifth round to the head kills
+setup give evo
+setup dummy 1 10
+setup ttk on
+check 3 head rounds: no pop, the dummy lives
+check 4th head round: the pop shows, it lives
+check 5th head round: it dies
+expect 1 cmd dummy ok
+
+test dmr-4shot
+title DMR: the fourth round to the head kills
+setup give dmr
+setup dummy 1 10
+setup ttk on
+check 3 head rounds: the dummy lives, no pop yet
+check The 4th head round: the pop shows and it dies
+expect 1 cmd dummy ok

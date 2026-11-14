@@ -1,0 +1,34 @@
+# Bots in the Scorpion: its driver drives it and fires its cannon and chain gun. Only a map's tanks; it drives on the open maps.
+list bots-tank-1
+revision 1
+title BOTS IN THE TANK, ROUND 1
+
+test tank-board
+title A bot takes the tank
+check A bot gets in the driver's seat of an empty tank
+check It drives towards the fight without getting stuck
+check Other bots may ride on it and get off when it stops
+map deathisland
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill easy
+
+test tank-guns
+title Cannon and chain gun
+check Far target: it fires the cannon, shells hit near it
+check Under 25 units: the chain gun fires too
+check Very close: no cannon; it backs away
+map deathisland
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill easy
+
+test tank-aim
+title Turret and hull
+check The turret tracks a target to its side or behind
+check It stands to shoot, then drives on when clear
+check It does not get out while it is fighting
+map deathisland
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill easy

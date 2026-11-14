@@ -1,0 +1,68 @@
+# 0.9.0 PLANNED DRIVING: bots at the wheel plan their speed ahead of corners (slower the sharper and nearer the turn) and of
+# their goal, and coast or brake to it, instead of full speed until a few units before a sharp turn. Each map: a test on the
+# old rules (debug.bots_drive_classic on), then the same game on the new ones (off); the setup line switches it mid-game.
+# Bots drive the maps' own vehicles (debug.bot_vehicles 2). Log: "bots: ev=drive_stats mode=classic|planned ... bumps= reverses=
+# wedges= stuck_s=" once a minute.
+list bots-drive-090
+revision 1
+title BOTS DRIVING: CLASSIC / PLANNED
+
+group snow
+map cmt_snow_grove@ce
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test snow-classic
+title Snow Grove: bots drive on the old rules
+setup config debug.bots_drive_classic on
+check Watch a bot driver through the trails for a minute
+check Note wall hits, backing up, getting stuck
+
+test snow-planned
+title Snow Grove: bots drive on the new rules
+setup config debug.bots_drive_classic off
+check Drivers slow before corners and take them cleanly
+check Fewer wall hits and backing-up loops than before
+check They still get across the map at a good pace
+
+group gulch
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test gulch-classic
+title Blood Gulch: bots drive on the old rules
+setup config debug.bots_drive_classic on
+check Watch the bot drivers for a minute
+
+test gulch-planned
+title Blood Gulch: bots drive on the new rules
+setup config debug.bots_drive_classic off
+check Open ground: drivers still go fast
+check They slow down before corners
+check Rocks and walls hit less often
+
+group sidewinder
+map sidewinder
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test sidewinder-classic
+title Sidewinder: bots drive on the old rules
+setup config debug.bots_drive_classic on
+check Watch the drivers round the bends and the tunnels
+
+test sidewinder-planned
+title Sidewinder: bots drive on the new rules
+setup config debug.bots_drive_classic off
+check The bends and tunnels taken without hitting the walls
+check No driver stuck backing up in a corner

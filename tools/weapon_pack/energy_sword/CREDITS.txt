@@ -1,0 +1,35 @@
+AE ENERGY SWORD (weapon pack ae_energy_sword) - credits
+
+Two authors' work, two views.
+
+The sword itself, as other players see it and as it lies on the ground, is the work of CMT (the Custom Mapping Team),
+from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (the Evolved team: Teh Lag, Ifafudafi,
+Siliconmaster and the contributors their credits.txt names): CMT's energy sword, energy_sword of the evolved set: its
+model, shaders, textures, light and effects, its weapon and its melee damage. They are used under the release's own
+terms ("Just don't take credit for things you didn't make") and are unchanged but for what an Xbox map needs: the
+model converted, the pickup message index the stock one's, the two glow widgets left out (their sprite is a bitmap of
+the PC kit that no Xbox map has), the detonation's one sound left out (a boom of the PC kit that no Xbox map has), the
+blade shaders' "draw before water" flag cleared (the first-person view draws them), and the weapon's "detonates when
+dropped" flag cleared (the game counts a weapon put away on a weapon switch as dropped, which deleted the sword).
+
+What the holder sees in first person is CMT's sword mesh put on ZTeam's rig: ZTeam's first-person sword supplies the
+node frames ("frame handle", "frame blades") and the animations (its idle, ready, moving, posing, melee, lunge and
+lunge in the air, grenade throws), taken as they are, with ZTeam's melee and posing sounds, its HUD with the sword's
+reticle, and ZTeam's own picture of the sword for the pickup prompts and the kill feed (resampled, nothing drawn). The
+mesh is moved (a uniform scale of 1.0185 and a shift) so that its grip and blade tip sit where ZTeam's sword has them.
+CMT's release holds no first-person sword, so the two views come from different authors: CMT's mesh, ZTeam's rig,
+animations, sounds, reticle and picture. ZTeam's sword sounds are in it too (revision 2): the ready sound on draw, the hum (its looping sound) while the sword is held, the
+drop sound, the hit sound of a blow (sword_impact_flesh), the melee sounds a lunge plays, and the energy impact (melee_impact_energy)
+which the clash of two swords plays a third higher. CMT's dripping sparks off the blade are drawn about half as many and live half as
+long. The swing (the right trigger) and the lunge's carry are Arena Evolved's own
+code, not either author's.
+
+The pack holds no pixel, sound or model of the game's own: what the sword needs of the game (particles' point
+physics, a noise map and the plasma rifle's HUD) it names, and the map the player owns provides.
+
+Kind: community model, both sources. CMT's attribution note in the release says its models, textures and shaders are
+CMT's own and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music
+and sfx files": the sword's model and textures are CMT's. ZTeam's tag pack is a community release; where ZTeam's own
+sources of the pieces named here lie is not stated in what we have, so they are taken as ZTeam's.
+
+Thank you, CMT. Thank you, ZTeam.

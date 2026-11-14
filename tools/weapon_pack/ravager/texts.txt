@@ -1,0 +1,7 @@
+# The ravager's texts in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is the pack's display name. The ravager runs on a battery, not rounds; the ammo line (asked of every
+# firing pack) names the charge picked up once, as a decimal.
+# Its numbers are the latest-generation ravager's setup tuned for CE (recipe.json "about"): three lobbed bolts a pull,
+# hold to charge one big bolt that leaves a burning pool.
+weapon_pickup=Picked up a ravager
+ammo_pickup=Picked up %d charge for ravager

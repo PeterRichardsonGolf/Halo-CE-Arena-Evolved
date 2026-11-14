@@ -1,0 +1,21 @@
+AE SND BOMB (pack ae_bomb) - credits
+
+The bomb's blast (the fireball, the smoke, the sparks, the flash and the explosion sounds) is the work of CMT (the
+Custom Mapping Team), from the source release of The Silent Cartographer: Evolved 1.4.1c (the Evolved team: Teh Lag,
+Ifafudafi, Siliconmaster and the contributors their credits.txt names). Sound design: Beaucephal and Xalener. It is
+used under the release's own terms ("Just don't take credit for things you didn't make") and is unchanged but for
+what an Xbox map and a network game need: Open Sauce's extension blocks removed, the parts that deal damage or name
+campaign tags no multiplayer map has (underwater parts, a thrown wheel, a garbage object) left out. The game deals the
+blast's damage itself.
+
+The timer on the bomb's face is drawn from the Halo Custom Edition Editing Kit's Digsite grenade timer art (Digsite,
+officially sanctioned content for the community). The rest of the bomb's surfaces are baked, when the pack is built,
+from textures of the game itself (the rocket ammo case, the warthog, the a10 tech rack, Blood Gulch's metal and
+ground, the grenades' plastic and the lens flare) and from CMT's textures: the pack's textures and shaders are
+stock-derived, and the pack holds them because Arena Evolved requires the base game. The model's geometry, the
+timer's bars and beacon, the multipurpose maps and the pickup chirp (a high quick chirp-chirp, synthesized) are our
+own.
+
+Made for Arena Evolved: the Search and Destroy bomb's look, timer and blast (port/linux/game/ae_bomb_pack.c).
+
+Thank you, CMT.

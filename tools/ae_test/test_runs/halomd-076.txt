@@ -1,0 +1,30 @@
+# 0.7.6 HaloMD round: the community ports played from maps_md.
+# Before the round: download beaverc_2 from HaloMD's mod list into maps_md/, with Custom Edition's bitmaps.map,
+# sounds.map and loc.map in maps_ce/. Nothing ships with the game. The map-share test needs a second PC joining.
+list halomd-076
+revision 1
+title HALOMD PORTS
+
+test halomd-picker
+title The HALOMD folder in CHANGE MAP
+check CHANGE MAP has a HALOMD folder with beaverc_2 in it
+check The lobby row says the map's name with @md
+menus
+
+test halomd-br
+title Battle rifle on beaverc_2
+check You spawn holding the battle rifle, not a rocket launcher
+check The BR spots on the map hold battle rifles
+check The BR fires its burst and kills as on other maps
+map beaverc_2@md
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+
+test halomd-share
+title A guest without the map gets it from the host
+check The joining PC without beaverc_2 downloads it from the host
+check The guest spawns and plays; no disc error
+map beaverc_2@md
+gametype AE BR TS
+set bots.count 0

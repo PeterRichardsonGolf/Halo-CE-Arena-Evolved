@@ -1,0 +1,7 @@
+/* halo.exe's resources (tools/windows_build.py): its icon, which Explorer and
+the taskbar show and SDL's windows take, as the first icon of the executable.
+Arena Evolved's own logo (tools/ae_logo.py), not OpenCE's opence-icon.ico
+(tools/app_icon.py). Its manifest (halo.manifest): the UTF-8 code page, for
+file and folder names in any language */
+1 ICON "ae-icon.ico"
+1 24 "halo.manifest"

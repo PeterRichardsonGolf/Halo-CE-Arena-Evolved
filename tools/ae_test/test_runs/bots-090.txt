@@ -1,0 +1,40 @@
+# The 0.9.0 bots in one short round. Three set-ups, four checks:
+# planned driving on a vehicle map, NORMAL bots finishing a fight with a blow again, ELITE (the old HEROIC's strength) with
+# sightings shared. Every test sets itself up (bots by the dev command, the bot event stream on). Headless: run_list.py
+# --after 90 --link packs=<the data root's packs> (an AE gametype after the first map needs the weapon packs).
+list bots-090
+revision 3
+title BOTS 0.9.0: DRIVING, NORMAL, ELITE
+
+group gulch
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.teams even
+set bots.skill normal
+set debug.bot_events true
+
+test normal
+title BLOOD GULCH: NORMAL bots, fight them up close with your shields down
+setup bots 7 even normal
+check Now and then a NORMAL bot runs in to finish you with a blow
+
+test elite
+title BLOOD GULCH: ELITE bots, play a few fights
+setup bots 7 even elite
+check ELITE plays like the old HEROIC: fair, not cheap
+check Once one bot sees you, others near it turn to you
+
+group snow
+map cmt_snow_grove@ce
+gametype AE BTB SLY
+set bots.count 11
+set bots.teams even
+set bots.skill heroic
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test drive
+title SNOW GROVE: watch the bots drive (two minutes)
+setup bots 11 even heroic
+check Drivers slow for corners, no ramming or wedging

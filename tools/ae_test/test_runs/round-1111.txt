@@ -1,0 +1,208 @@
+# TEST ROUND 11-11 (AE Latest's combined build: the 0.8.1 line, the MODERN ragdoll pushes, the 0.9.0 bots and the death
+# and follow cameras). Tests with the same map follow each other and share one load.
+# TEMPLE 2v2 (you and one bot against two):
+# - BOT LEVELS: every level from EASY to DEMON evenly spaced; HEROIC easier than 0.8.1, ELITE about the old HEROIC,
+#   LEGENDARY a little harder. Play each a couple of minutes; the steps should feel about equal.
+# - GRENADES: bots now get out of the way of your grenades too (not only their own); better levels more often.
+# - STANDING STILL FIXED: a bot hunting the player who keeps killing it no longer stands under them a floor below;
+#   camo and overshield first appear 2 minutes in.
+# - CAMERAS: dying, the camera eases out from your eyes to your body, your killer in view; the right stick orbits it; it
+#   stays until respawn or A, LB or RB (from 3 s in). The follow camera sits behind the player and turns with their aim;
+#   a change of player cuts with a quick fade in. (display.follow_camera "always" here.)
+# PRISONER and CHILL OUT: the 0.9.0 bot gaps (no spawn grace on HEROIC, high ground, no short cuts mid-fight, weapon by
+# range). OCTAGON: the four ragdoll styles on the same BR kill (the AI row NONE, so a wrong pick shows stock).
+list round-1111
+revision 4
+title TEST ROUND 11-11: BOTS, CAMERAS, RAGDOLLS
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 3
+set bots.teams even
+set bots.skill heroic
+set display.follow_camera always
+set debug.bot_events true
+
+test temple-easy
+title TEMPLE 2V2: EASY bots
+setup bots 3 even easy
+setup goto start 0
+check EASY: beatable, but it fights back
+expect 1 log skill=easy
+check How soon a bot hits you; do you win 1v1s
+check Bots move and dodge like players, not robots
+
+test temple-heroic
+title TEMPLE 2V2: HEROIC bots
+setup bots 3 even heroic
+setup goto start 0
+check HEROIC: a fair fight, a step up from EASY
+expect 1 log skill=heroic
+check How soon a bot hits you; do you win 1v1s
+check Step from EASY: about the same as the others
+
+test temple-elite
+title TEMPLE 2V2: ELITE bots
+setup bots 3 even elite
+setup goto start 0
+check ELITE: about like 0.8.1's HEROIC, better aim
+expect 1 log skill=elite
+check How soon a bot hits you; do you win 1v1s
+check Step from HEROIC: about the same as the others
+
+test temple-legendary
+title TEMPLE 2V2: LEGENDARY bots
+setup bots 3 even legendary
+setup goto start 0
+check LEGENDARY: you have to sweat
+expect 1 log skill=legendary
+check How soon a bot hits you; do you win 1v1s
+check Step from ELITE: about the same as the others
+
+test temple-grenades
+title TEMPLE: bots get out of the way of your grenades
+setup bots 3 even heroic
+setup goto start 0
+check Frag at a bot's feet: it often steps out of it
+check No bot walks into a live grenade
+check A bot still runs from its own grenade
+
+test temple-still
+title TEMPLE: no bot stands still for long
+setup bots 3 even heroic
+setup goto start 0
+check Kill one bot a few times, stand on the platform
+check It doesn't stand under you; it moves on
+check Camo and overshield (2 min in): bots go for them
+
+test camera-death-hold
+title CAMERA: dying, eyes out to your body, killer in view
+setup bots 3 even normal
+setup goto start 0
+setup kill me
+check Eases out from your eyes; looks at your killer
+check Right stick orbits your body; it stays till respawn
+check Press A after 3 s: a quick fade in on a teammate
+
+test camera-follow-switch
+title CAMERA: LB and RB switch with a quick fade
+setup kill me
+check LB or RB: a quick fade in on the next one
+check It turns with their aim; jumps and crouches don't bob
+check On respawn you are back in your own view
+
+group prisoner
+map prisoner
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 2,3
+set debug.bot_events true
+
+test spawn-no-grace
+title PRISONER: HEROIC bots don't wait after you spawn
+setup kill me
+check Just respawned: a bot that sees you shoots at once
+check Shoot a bot right after you spawn: it fights back
+check Spawn next to a bot: it fights you at once
+
+test high-ground
+title PRISONER: bots hold the high spots a while
+setup goto start 0
+check Bots with rifles or pistols hold the upper walkways
+check Up close, a bot up there fights, it strafes
+check Never more than about half the bots up there at once
+
+group chillout
+map chillout
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 2,3
+set debug.bot_events true
+
+test teleporter-fight
+title CHILL OUT: a bot fighting you stays in the fight
+setup goto start 0
+check Near a teleporter, a bot fighting you stays and fights
+check Out of a fight they still use the teleporters
+
+group chillout-sniper
+map chillout
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 5,3
+set debug.bot_events true
+
+test weapon-range
+title CHILL OUT: bots pick sniper or pistol by distance
+setup goto start 0
+check Up close, a bot puts its sniper rifle away
+check From across the map they snipe you
+check No bot keeps switching weapons back and forth
+
+group ragdoll-modern
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players modern
+set game.ragdoll_ai none
+
+test ragdoll-modern
+title RAGDOLL MODERN: tips back high, swept low
+setup give br
+setup dummy 3 10
+check Head or chest kill: it tips back, no spin
+check A kill to the legs: they are swept out under it
+check Limp at once, no stock death animation
+expect 1 cmd dummy ok
+
+group ragdoll-mixed
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players mixed
+set game.ragdoll_ai none
+
+test ragdoll-mixed
+title RAGDOLL MIXED: the stock fall, then loose
+setup give br
+setup dummy 3 10
+check One BR kill: the stock fall plays first
+check Then it goes loose near the fall's end
+check It settles like a ragdoll, no limb flung
+expect 1 cmd dummy ok
+
+group ragdoll-exaggerated
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players exaggerated
+set game.ragdoll_ai none
+
+test ragdoll-exaggerated
+title RAGDOLL EXAGGERATED: loose and wild
+setup give br
+setup dummy 3 10
+check One BR kill: loose from the first frame
+check The fall looks heavy and wild, limbs swinging
+check No limb flies off a second after the fall
+expect 1 cmd dummy ok
+
+group ragdoll-spaghetti
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players spaghetti_western
+set game.ragdoll_ai none
+
+test ragdoll-spaghetti
+title RAGDOLL SPAGHETTI WESTERN: a stiff woody fall
+setup give br
+setup dummy 3 10
+check One BR kill: a stiff woody fall from frame one
+check No stock death animation plays
+check Every body falls the same way for the same shot
+expect 1 cmd dummy ok

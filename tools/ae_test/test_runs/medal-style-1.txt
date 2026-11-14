@@ -1,0 +1,106 @@
+# MEDAL STYLE and the kill feed beside it, on testbox. UNIVERSAL is the default: a stack by your reticle, your points above it, a Killed
+# row for each kill. MCC (Settings > HUD > MEDAL STYLE, each player's own, TEST RUN cannot set it) keeps the medals on the left and
+# lifts the feed above them. HUD STYLE is each player's own too. The tests of one view, then of two, three and four views, share a map load each. The gaps under 8 px
+# are what to note: nothing is hidden for them. Host and client, and an older build, are by hand: TEST RUN cannot join.
+list medal-style-1
+revision 1
+title MEDAL STYLE, ROUND 1
+
+test modern-one
+title UNIVERSAL: one medal and a Killed row
+check Kill a bot: Killed row, its name in red, white text
+check A medal: name ends left of the reticle, picture right
+check Points over the rows; the name pops big and settles
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test modern-busy
+title UNIVERSAL: many medals and kills
+check Kill fast: three picture rows at most, none past the limit
+check The oldest goes before a new row would pass it
+check A row goes after 3 s and the rest close up
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test modern-gaps
+title UNIVERSAL: gaps to the rest of the HUD
+check Stack to reticle: a clear gap; note any under 8 px
+check Feed's widest rows and the stack: note any touching
+check Pickup lines and the stack: note any under 8 px
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pause-long
+title A long pause
+check Pause, then Settings, for over 20 s; change a row
+check Resume: the game goes on with no network error
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test mcc-style
+title MCC: the medals on the left, the feed above
+check MEDAL STYLE MCC: medals left with names under them
+check The feed moves up: its bottom edge above the medals
+check Five medals or more: pictures 56, names stay, one block
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test mcc-sensor
+title MCC: captions clear of the sensor
+check Eight medals: two rows, the lower one clear of the sensor
+check Names read; none touches the sensor or the feed
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test classic-hud
+title The Classic HUD
+check Set HUD STYLE CLASSIC: ticks left of the sensor
+check UNIVERSAL stack clear of the shield panel and message list
+check Feed and stack in HUD blue and white; no amber
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test split-2
+title Two views
+check Each view has a stack by its reticle where it clears
+check Kills are word lines; the stack clears them
+check A medal without room is a line in its colour
+map testbox@ce
+gametype AE TEAM SLY
+players 2
+set bots.count 6
+set bots.skill easy
+
+test split-3
+title Three views
+check Medals are lines of their colour in each list
+check Kills are word lines, not wrapped
+map testbox@ce
+gametype AE TEAM SLY
+players 3
+set bots.count 6
+set bots.skill easy
+
+test split-4
+title Four views
+check Medals are lines of their colour; kills are word lines
+check Lines clear the ammo and the reticle in every view
+map testbox@ce
+gametype AE TEAM SLY
+players 4
+set bots.count 6
+set bots.skill easy

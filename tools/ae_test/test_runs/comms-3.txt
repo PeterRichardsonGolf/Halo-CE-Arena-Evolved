@@ -1,0 +1,33 @@
+# NEED A RIDE fetches a driver. Blood Gulch, bots driving; the wheel's NEED A RIDE. Host only: a client's call is by hand.
+list comms-3
+revision 1
+title NEED A RIDE
+
+test ride-driver
+title On foot, a teammate driving near
+check NEED A RIDE: the nearest bot driver says coming
+check It drives to you and stops beside you
+check Get in a seat: it drives on
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test ride-passenger
+title In a seat with no one driving
+check Sit in a passenger or gun seat of an empty Warthog
+check NEED A RIDE: the nearest bot says coming
+check It takes the wheel and drives
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test ride-empty
+title On foot, no one driving
+check NEED A RIDE: a bot takes an empty vehicle
+check It comes to you, stops, and waits
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
