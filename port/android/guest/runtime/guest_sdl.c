@@ -57,6 +57,13 @@ Uint64 SDL_GetTicks(void)
 	return (Uint64)host_sdl_ticks();
 }
 
+/* (the TARGET 60 FPS resolution control's frame times, ae_dynamic_resolution_gl.c:
+the host's milliseconds) */
+Uint64 SDL_GetTicksNS(void)
+{
+	return (Uint64)host_sdl_ticks() * 1000000u;
+}
+
 SDL_ThreadID SDL_GetCurrentThreadID(void)
 {
 	return (SDL_ThreadID)host_sdl_thread_id();
