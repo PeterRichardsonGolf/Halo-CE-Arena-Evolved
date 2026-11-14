@@ -1,0 +1,799 @@
+/* ae_settings_rows_test.c: the SETTINGS model (ae_settings_rows.h): the groups, rows by rows.md, what shows when, the
+sections, values by text, the KEEP / UNDO and RESTORE DEFAULTS texts. */
+
+#include <stdio.h>
+#include <string.h>
+
+#include "ae_settings_rows.h"
+
+static int failures;
+#define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+/* a player's settings as a test has them */
+static const char *mouse_style = "classic", *zoom_mode = "toggle", *mouse_zoom = "toggle", *clock = "down",
+	*glow = "false", *panel = "true", *callouts = "off";
+enum { SETS = 32 };
+static struct { const char *key, *value; } sets[SETS];
+
+static const char *value(void *context, const char *key)
+{
+	(void)context;
+	if (!strcmp(key, "input.mouse_style"))
+		return mouse_style;
+	if (!strcmp(key, "input.zoom_mode"))
+		return zoom_mode;
+	if (!strcmp(key, "input.mouse_zoom_mode"))
+		return mouse_zoom;
+	if (!strcmp(key, "display.match_clock"))
+		return clock;
+	if (!strcmp(key, "display.shield_glow"))
+		return glow;
+	if (!strcmp(key, "display.scoreboard_background"))
+		return panel;
+	if (!strcmp(key, "game.callouts"))
+		return callouts;
+	{
+		int index;
+
+		for (index = 0; index < SETS && sets[index].key; index++)
+		{
+			if (!strcmp(key, sets[index].key))
+				return sets[index].value;
+		}
+	}
+	return "";
+}
+
+/* (phase B) any other setting a test sets */
+static void set(const char *key, const char *now)
+{
+	int index;
+
+	for (index = 0; index < SETS; index++)
+	{
+		if (!sets[index].key || !strcmp(sets[index].key, key))
+		{
+			sets[index].key = key;
+			sets[index].value = now;
+			return;
+		}
+	}
+}
+
+static short rows_of(short group, struct ae_settings_facts const *facts)
+{
+	short entries[AE_SETTINGS_ENTRIES], count = ae_settings_entries(group, facts, entries, AE_SETTINGS_ENTRIES), index,
+		rows = 0;
+
+	for (index = 0; index < count; index++)
+		rows += !ae_settings_entry_is_header(entries[index]);
+	return rows;
+}
+
+static int has_label(short group, struct ae_settings_facts const *facts, const char *label)
+{
+	short entries[AE_SETTINGS_ENTRIES], count = ae_settings_entries(group, facts, entries, AE_SETTINGS_ENTRIES), index;
+
+	for (index = 0; index < count; index++)
+	{
+		if (!ae_settings_entry_is_header(entries[index]) && !strcmp(ae_settings_row(entries[index])->label, label))
+			return 1;
+	}
+	return 0;
+}
+
+int main(void)
+{
+	struct ae_settings_facts pad = { 0, 0, value, NULL, 0, 0, 0, 0, 0 }, keyboard = { 1, 0, value, NULL, 0, 0, 0, 0, 0 },
+		both = { 1, 1, value, NULL, 0, 0, 0, 0, 0 };
+	struct ae_settings_section sections[AE_SETTINGS_SECTIONS];
+	short entries[AE_SETTINGS_ENTRIES], count, found, index;
+	char text[400];
+
+	/* the nine groups, in the top level's order; phase A built CONTROLS, VIEW, HUD and SYSTEM's MENUS, phase B the
+	rest */
+	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_CONTROLS)->name, "CONTROLS"));
+	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_SYSTEM)->name, "SYSTEM"));
+	CHECK(ae_settings_group(AE_SETTINGS_CROSSHAIR) && ae_settings_group(AE_SETTINGS_CROSSHAIR_WEAPONS) && !ae_settings_group(AE_SETTINGS_PAGES) &&
+		!ae_settings_group(-1));
+	CHECK(ae_settings_group(AE_SETTINGS_CONTROLS)->built && ae_settings_group(AE_SETTINGS_VIEW)->built &&
+		ae_settings_group(AE_SETTINGS_HUD)->built && ae_settings_group(AE_SETTINGS_VIDEO)->built);
+	/* (0.3.7: SYSTEM holds MENUS alone, the way back to the classic menus; it needs a restart) */
+	CHECK(ae_settings_group(AE_SETTINGS_SYSTEM)->built && ae_settings_row_of("display.arena_menus") >= 0 &&
+		ae_settings_row(ae_settings_row_of("display.arena_menus"))->group == AE_SETTINGS_SYSTEM &&
+		(ae_settings_row(ae_settings_row_of("display.arena_menus"))->flags & AE_SETTINGS_RESTART));
+	/* (0.3.9: and OPEN GAMETYPES FOLDER, an action: A opens the folder, no value) */
+	CHECK(ae_settings_row_of("action.gametypes_folder") >= 0 &&
+		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->group == AE_SETTINGS_SYSTEM &&
+		ae_settings_row(ae_settings_row_of("action.gametypes_folder"))->kind == AE_SETTINGS_SUBSCREEN &&
+		ae_settings_value_count(ae_settings_row(ae_settings_row_of("action.gametypes_folder"))) == 0);
+	/* (TEST RUN: SYSTEM's DEV section: the DEV MODE switch always, the TEST RUN screen's row only with DEV MODE on) */
+	{
+		struct ae_settings_row const *dev = ae_settings_row(ae_settings_row_of("system.dev_mode"));
+		struct ae_settings_row const *run = ae_settings_row(ae_settings_row_of("action.test_run"));
+		short before;
+
+		CHECK(dev && run && dev->group == AE_SETTINGS_SYSTEM && run->group == AE_SETTINGS_SYSTEM);
+		CHECK(dev->kind == AE_SETTINGS_TOGGLE && (dev->flags & AE_SETTINGS_THIS_PC) != 0 && dev->when == AE_SETTINGS_WHEN_DEV_SWITCH);
+		/* (its pill shows with one player; no other SYSTEM row's does) */
+		CHECK(dev->flags & AE_SETTINGS_PILL_ALWAYS);
+		{
+			short which;
+
+			for (which = 0; which < ae_settings_row_count(); which++)
+				CHECK(ae_settings_row(which) == dev || !(ae_settings_row(which)->flags & AE_SETTINGS_PILL_ALWAYS));
+		}
+		CHECK(strstr(dev->help, "THIS PC"));
+		CHECK(run->kind == AE_SETTINGS_SUBSCREEN && run->when == AE_SETTINGS_DEV_MODE &&
+			ae_settings_value_count(run) == 0);
+		CHECK(!strcmp(dev->section, "DEV") && !strcmp(run->section, "DEV"));
+		set("system.dev_mode", "false");
+		before = rows_of(AE_SETTINGS_SYSTEM, &pad);
+		CHECK(has_label(AE_SETTINGS_SYSTEM, &pad, "DEV MODE") && !has_label(AE_SETTINGS_SYSTEM, &pad, "TEST RUN"));
+		/* (0.8.1: DEV MODE's INFINITE AMMO and BOTTOMLESS CLIP show with it, as TEST RUN does) */
+		CHECK(!has_label(AE_SETTINGS_SYSTEM, &pad, "INFINITE AMMO") && !has_label(AE_SETTINGS_SYSTEM, &pad, "BOTTOMLESS CLIP"));
+		set("system.dev_mode", "true");
+		CHECK(has_label(AE_SETTINGS_SYSTEM, &pad, "DEV MODE") && has_label(AE_SETTINGS_SYSTEM, &pad, "TEST RUN"));
+		CHECK(has_label(AE_SETTINGS_SYSTEM, &pad, "INFINITE AMMO") && has_label(AE_SETTINGS_SYSTEM, &pad, "BOTTOMLESS CLIP"));
+		CHECK(rows_of(AE_SETTINGS_SYSTEM, &pad) == before + 3);
+		set("system.dev_mode", "false");
+		/* (a release build hides the switch, unless DEV MODE is already on: it can be turned off again) */
+		{
+			struct ae_settings_facts release = pad;
+
+			release.release_build = 1;
+			CHECK(!has_label(AE_SETTINGS_SYSTEM, &release, "DEV MODE") && !has_label(AE_SETTINGS_SYSTEM, &release, "TEST RUN"));
+			set("system.dev_mode", "true");
+			CHECK(has_label(AE_SETTINGS_SYSTEM, &release, "DEV MODE") && has_label(AE_SETTINGS_SYSTEM, &release, "TEST RUN"));
+			set("system.dev_mode", "false");
+			CHECK(has_label(AE_SETTINGS_SYSTEM, &pad, "DEV MODE"));
+		}
+	}
+	/* (0.3.9: the seven settings only the classic menus had) */
+	{
+		struct ae_settings_row const *sound = ae_settings_row(ae_settings_row_of("audio.enabled"));
+		struct ae_settings_row const *disc = ae_settings_row(ae_settings_row_of("game.disc"));
+		struct ae_settings_row const *mcc = ae_settings_row(ae_settings_row_of("game.mcc_use"));
+		struct ae_settings_row const *health = ae_settings_row(ae_settings_row_of("game.health"));
+		const char *keys[] = { "audio.enabled", "network.map_share_internet", "game.weapon_packs", "game.disc",
+			"game.mcc_use", "game.fall_damage", "game.health" };
+		short which;
+
+		for (which = 0; which < 7; which++)
+			CHECK(ae_settings_row_of(keys[which]) >= 0);
+		CHECK(sound->group == AE_SETTINGS_AUDIO && (sound->flags & AE_SETTINGS_RESTART) &&
+			!strcmp(ae_settings_value_of(sound, 0), "true"));
+		CHECK(ae_settings_row(ae_settings_row_of("network.map_share_internet"))->group == AE_SETTINGS_ONLINE);
+		CHECK(disc->group == AE_SETTINGS_SYSTEM && (disc->flags & AE_SETTINGS_RESTART));
+		/* (its values are read when SYSTEM opens: STOCK is the empty text) */
+		{
+			const char *texts[] = { "STOCK", "NHE" }, *values[] = { "", "nhe" };
+
+			CHECK(ae_settings_set_values("game.disc", texts, values, 2) && ae_settings_row_takes_empty(disc) &&
+				ae_settings_value_index(disc, "nhe") == 1 && ae_settings_value_index(disc, "") == 0);
+		}
+		CHECK(ae_settings_value_count(mcc) == 3 && !strcmp(ae_settings_value_of(mcc, 1), "yes") &&
+			!strcmp(ae_settings_value_text(mcc, 1), "ON"));
+		CHECK(ae_settings_value_count(health) == 4 && !strcmp(ae_settings_value_of(health, 2), "halo2") &&
+			!strcmp(ae_settings_value_text(health, 3), "HALO 3"));
+		CHECK(!strcmp(ae_settings_row(ae_settings_row_of("game.health"))->section, "CAMPAIGN") &&
+			!strcmp(ae_settings_row(ae_settings_row_of("game.fall_damage"))->section, "CAMPAIGN"));
+	}
+	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
+
+	/* rows.md's counts: CONTROLS 30 with everything shown (a pad-only player sees fewer; GYRO's other four only with
+	GYRO AIMING on), VIEW 11, HUD 26 */
+	zoom_mode = "both";
+	mouse_zoom = "both";
+	callouts = "items";
+	glow = "true";
+	/* (CONTROLS: MOUSE STYLE picks CLASSIC's two or MCC's three: 30 counts the classic ones and MCC's three) */
+	/* (0.4.0: WHEEL ZOOM, the mouse's) */
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &both) == 31);
+	mouse_style = "mcc";
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &both) == 32);
+	CHECK(has_label(AE_SETTINGS_CONTROLS, &both, "MOUSE SENSITIVITY") &&
+		!has_label(AE_SETTINGS_CONTROLS, &both, "HORIZONTAL SENSITIVITY"));
+	/* (0.3.9: GYRO AIMING for every player, this PC's; its sensitivity and invert rows only with it on) */
+	CHECK(has_label(AE_SETTINGS_CONTROLS, &pad, "GYRO AIMING") && !has_label(AE_SETTINGS_CONTROLS, &pad, "TURN SENSITIVITY"));
+	CHECK(ae_settings_row(ae_settings_row_of("input.gyro_aim"))->flags & AE_SETTINGS_THIS_PC);
+	mouse_style = "classic";
+	/* (0.7.6) A/B SWAP only with a Nintendo pad; BUTTON PROMPTS for every pad; OVERLAYS (PERFORMANCE, POSITION, PING,
+	RECORDING DOT) in the HUD group: PING one row (OFF / NUMBER / NUMBER AND BARS), the latency meter's own row gone */
+	{
+		struct ae_settings_facts nintendo = { 0, 0, value, NULL, 0, 0, 1, 0, 0 };
+		struct ae_settings_row const *ping = ae_settings_row(ae_settings_row_of("display.ping"));
+
+		CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "A/B SWAP") && has_label(AE_SETTINGS_CONTROLS, &nintendo, "A/B SWAP"));
+		CHECK(has_label(AE_SETTINGS_CONTROLS, &pad, "BUTTON PROMPTS"));
+		CHECK(ping && ping->group == AE_SETTINGS_HUD && !strcmp(ping->section, "OVERLAYS") && ae_settings_value_count(ping) == 3 &&
+			!strcmp(ae_settings_value_of(ping, 2), "number_and_bars") && (ping->flags & AE_SETTINGS_THIS_PC));
+		CHECK(ae_settings_row_of("display.latency_meter") < 0 && !has_label(AE_SETTINGS_HUD, &pad, "LATENCY METER"));
+		CHECK(has_label(AE_SETTINGS_HUD, &pad, "PERFORMANCE") && has_label(AE_SETTINGS_HUD, &pad, "RECORDING DOT"));
+		CHECK(!has_label(AE_SETTINGS_VIDEO, &pad, "PERFORMANCE") && !has_label(AE_SETTINGS_SYSTEM, &pad, "INDICATOR"));
+		/* POSITION: with PERFORMANCE on, or the ping alone on the line */
+		set("display.performance", "off");
+		set("display.ping", "off");
+		CHECK(!has_label(AE_SETTINGS_HUD, &pad, "POSITION"));
+		set("display.ping", "number");
+		CHECK(has_label(AE_SETTINGS_HUD, &pad, "POSITION"));
+		set("display.ping", "off");
+		set("display.performance", "fps");
+		CHECK(has_label(AE_SETTINGS_HUD, &pad, "POSITION"));
+		set("display.performance", "");
+		set("display.ping", "");
+	}
+	/* (0.4.0: WEAPON COSMETICS, PISTOL COLOR and PISTOL TRIM; BACKPACK WEAPONS; 0.7.8: VIEWMODEL SWAY) */
+	CHECK(rows_of(AE_SETTINGS_VIEW, &pad) == 17); /* (0.7.8: RAGDOLLS: PLAYERS and AI) */
+	/* (0.4.0: ALLY RETICLE, DEAD ALLY MARKERS; MARK PROMPT; MEDALS; MEDAL STYLE; KILL FEED; 0.7.7: CROSSHAIR, EDIT CROSSHAIR, WEAPONS, RETICLE SIZE / SCALING / COLOR; FOV BASE, RETICLE MOTION; 0.7.8: ENEMY COLOR, ALLY COLOR) */
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 43);
+	/* a pad-only player: no MOUSE, no KEYBOARD, no DUALSENSE (no DualSense); ZOOM HOLD TIME only with BOTH */
+	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "MOUSE STYLE") && !has_label(AE_SETTINGS_CONTROLS, &pad, "KEY BINDINGS"));
+	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "ADAPTIVE TRIGGERS"));
+	CHECK(has_label(AE_SETTINGS_CONTROLS, &pad, "ZOOM HOLD TIME"));
+	zoom_mode = "toggle";
+	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "ZOOM HOLD TIME"));
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &pad) == 16);
+	/* AIM CONTROL: MODERN adds its three rows after AIM CONTROL, in their menu order */
+	set("input.aim_control", "modern");
+	CHECK(rows_of(AE_SETTINGS_CONTROLS, &pad) == 19);
+	{
+		short acceleration = ae_settings_row_of("input.look_acceleration");
+		short vertical = ae_settings_row_of("input.look_sensitivity_vertical");
+		short radial = ae_settings_row_of("input.look_radial_deadzone");
+
+		CHECK(acceleration >= 0 && vertical == acceleration + 1 && radial == vertical + 1);
+		CHECK(ae_settings_value_count(ae_settings_row(acceleration)) == 11 &&
+			!strcmp(ae_settings_value_text(ae_settings_row(acceleration), 0), "OFF") &&
+			!strcmp(ae_settings_value_of(ae_settings_row(acceleration), 1), "1"));
+		CHECK(ae_settings_value_count(ae_settings_row(vertical)) == 11 &&
+			!strcmp(ae_settings_value_text(ae_settings_row(vertical), 0), "SAME") &&
+			!strcmp(ae_settings_value_of(ae_settings_row(vertical), 10), "10"));
+		CHECK(ae_settings_value_count(ae_settings_row(radial)) == 6 &&
+			!strcmp(ae_settings_value_text(ae_settings_row(radial), 0), "SAME") &&
+			!strcmp(ae_settings_value_text(ae_settings_row(radial), 1), "0 %") &&
+			!strcmp(ae_settings_value_of(ae_settings_row(radial), 5), "20"));
+	}
+	set("input.aim_control", "classic");
+	/* the rows that hang on another: GLOW INTENSITY, CLOCK LABELS, PANEL COLOR, CALLOUT DETAIL / VOICE */
+	glow = "false";
+	clock = "off";
+	panel = "false";
+	callouts = "off";
+	CHECK(!has_label(AE_SETTINGS_VIEW, &pad, "GLOW INTENSITY") && !has_label(AE_SETTINGS_HUD, &pad, "CLOCK LABELS"));
+	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "PANEL COLOR") && !has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUT VOICE"));
+	/* (CALLOUTS on AUDIO since 0.3.9) */
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 41 && !has_label(AE_SETTINGS_HUD, &pad, "CALLOUTS") &&
+		has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUTS"));
+	/* MEDAL STYLE: under MEDALS, spinning MODERN and MCC, and shown only while MEDALS is on */
+	CHECK(has_label(AE_SETTINGS_HUD, &pad, "MEDAL STYLE"));
+	set("display.medals", "false");
+	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "MEDAL STYLE") && has_label(AE_SETTINGS_HUD, &pad, "MEDALS"));
+	set("display.medals", "true");
+	CHECK(has_label(AE_SETTINGS_HUD, &pad, "MEDAL STYLE"));
+	/* BUTTON STYLE: HUD STYLE AE's pad buttons are Kenney's glyphs (ae_key_prompts.c), so the row hides on AE; CLASSIC keeps upstream's
+	button pictures, which it chooses, and shows it again */
+	set("display.hud_style", "classic");
+	CHECK(has_label(AE_SETTINGS_HUD, &pad, "BUTTON STYLE"));
+	set("display.hud_style", "ae");
+	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "BUTTON STYLE") && has_label(AE_SETTINGS_HUD, &pad, "HUD STYLE"));
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 40);
+	set("display.hud_style", "classic");
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 41);
+	clock = "down";
+	panel = "true";
+
+	/* the list: a header before each section's rows, the sections and their rows, steps past headers */
+	count = ae_settings_entries(AE_SETTINGS_CONTROLS, &keyboard, entries, AE_SETTINGS_ENTRIES);
+	CHECK(ae_settings_entry_is_header(entries[0]) && !strcmp(ae_settings_entry_section(entries[0]), "CONTROLLER"));
+	CHECK(!strcmp(ae_settings_row(entries[1])->label, "BUTTON LAYOUT"));
+	found = ae_settings_sections(entries, count, sections, AE_SETTINGS_SECTIONS);
+	CHECK(found == 4 && !strcmp(sections[1].name, "GYRO") && !strcmp(sections[2].name, "MOUSE") &&
+		!strcmp(sections[3].name, "KEYBOARD"));
+	CHECK(sections[0].rows == 15 && sections[1].rows == 1 && sections[3].rows == 2);
+	CHECK(ae_settings_section_at(sections, found, (short)(sections[1].header + 1)) == 1);
+	CHECK(ae_settings_row_step(entries, count, (short)(sections[1].header - 1), 1) == sections[1].header + 1);
+	CHECK(ae_settings_row_step(entries, count, 1, -1) == 1);
+	CHECK(ae_settings_row_step(entries, count, (short)(count - 1), 1) == count - 1);
+	/* a short array: never past its end */
+	CHECK(ae_settings_entries(AE_SETTINGS_CONTROLS, &keyboard, entries, 3) <= 3);
+
+	/* values: by text, a number written another way, the nearest step; none */
+	index = ae_settings_row_of("display.fov");
+	CHECK(index >= 0);
+	CHECK(ae_settings_value_index(ae_settings_row(index), "0") == 0);
+	CHECK(ae_settings_value_index(ae_settings_row(index), "90.0") == 3);
+	CHECK(!strcmp(ae_settings_value_text(ae_settings_row(index), 3), "90"));
+	CHECK(ae_settings_value_index(ae_settings_row(index), "92") == 3);
+	CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("input.zoom_mode")), "nonsense") == -1);
+	CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("input.zoom_hold_time")), "0.25") == 3);
+	CHECK(!strcmp(ae_settings_value_text(ae_settings_row(ae_settings_row_of("input.zoom_hold_time")), 3), "0.25 S"));
+	CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("input.mouse_mcc_sensitivity")), "5.6723") == 56);
+	CHECK(ae_settings_slider(ae_settings_row(index), 0) == 0.0f && ae_settings_slider(ae_settings_row(index), 14) == 1.0f);
+	/* the voices, set at run time */
+	{
+		static const char *const voices[] = { "cori", "nhe", "" };
+		struct ae_settings_row const *voice = ae_settings_row(ae_settings_row_of("game.callout_voice"));
+
+		ae_settings_set_voices(voices, 3);
+		CHECK(ae_settings_value_count(voice) == 2);
+		CHECK(!strcmp(ae_settings_value_text(voice, 1), "NHE") && !strcmp(ae_settings_value_of(voice, 1), "nhe"));
+		CHECK(ae_settings_value_index(voice, "cori") == 0);
+	}
+
+	/* VIDEO (rows.md: 32 with everything shown since 0.9.0 (LOW LATENCY), 31 since 0.7.5 (PARTICLE LIMIT, DYNAMIC LIGHT LIMIT, REVERSED DEPTH, SHADER CACHE, STRUCTURE CULLING), the two LOADING SCREEN rows with them since 0.7.0): WINDOW SIZE in RESOLUTION's place when WINDOWED, POSITION with
+	PERFORMANCE on, the HDR rows with HDR on, HDR DISPLAY on an HDR display only */
+	{
+		struct ae_settings_facts hdr = { 0, 0, value, NULL, 1, 0, 0, 0, 0 };
+		struct ae_settings_row const *resolution = ae_settings_row(ae_settings_row_of("display.resolution"));
+		static const char *const texts[] = { "NATIVE", "1920 X 1080" }, *const values[] = { "native", "1920x1080" };
+
+		/* (0.7.5: the limits' steps; 0 is the port's own 8192 for particles, no limit for lights; INTRO MOVIES and
+		RECORDING are SYSTEM's) */
+		{
+			struct ae_settings_row const *particles = ae_settings_row(ae_settings_row_of("display.particle_limit"));
+			struct ae_settings_row const *lights = ae_settings_row(ae_settings_row_of("display.dynamic_light_limit"));
+			struct ae_settings_row const *intro = ae_settings_row(ae_settings_row_of("game.intro_movies"));
+
+			CHECK(particles && ae_settings_value_count(particles) == 4 && ae_settings_value_index(particles, "0") == 3 &&
+				ae_settings_value_index(particles, "4096") == 2);
+			CHECK(lights && ae_settings_value_count(lights) == 4 && ae_settings_value_index(lights, "0") == 3 &&
+				!strcmp(ae_settings_value_text(lights, 3), "NO LIMIT"));
+			CHECK(intro && intro->group == AE_SETTINGS_SYSTEM && !strcmp(intro->section, "STARTUP"));
+			CHECK(ae_settings_row_of("capture.record_quality") >= 0 && ae_settings_row_of("capture.record_fps") >= 0 &&
+				ae_settings_row_of("capture.record_indicator") >= 0);
+		}
+		set("display.performance", "off");
+		CHECK(rows_of(AE_SETTINGS_VIDEO, &pad) == 28);
+		CHECK(has_label(AE_SETTINGS_VIDEO, &pad, "RESOLUTION") && !has_label(AE_SETTINGS_VIDEO, &pad, "WINDOW SIZE"));
+		set("display.mode", "windowed");
+		set("display.performance", "fps");
+		set("display.hdr", "true");
+		CHECK(!has_label(AE_SETTINGS_VIDEO, &pad, "RESOLUTION") && has_label(AE_SETTINGS_VIDEO, &pad, "WINDOW SIZE"));
+		CHECK(rows_of(AE_SETTINGS_VIDEO, &pad) == 30 && rows_of(AE_SETTINGS_VIDEO, &hdr) == 31);
+		set("display.mode", "fullscreen");
+		CHECK(ae_settings_value_count(resolution) == 0);
+		CHECK(ae_settings_set_values("display.resolution", texts, values, 2) && ae_settings_value_count(resolution) == 2);
+		CHECK(!strcmp(ae_settings_value_text(resolution, 1), "1920 X 1080") && ae_settings_value_index(resolution,
+			"1920x1080") == 1);
+		CHECK(!ae_settings_set_values("display.fov", texts, values, 2));
+		CHECK(!ae_settings_row_takes_empty(resolution));
+	}
+
+	/* (0.9.0) VIDEO's GRAPHICS PRESET and TARGET 60 FPS; SPLIT SCREEN after VIDEO; the greyed rows */
+	{
+		struct ae_settings_facts wide = pad;
+		struct ae_settings_row const *preset = ae_settings_row(ae_settings_row_of(AE_SETTINGS_PRESET_KEY));
+		struct ae_settings_row const *target = ae_settings_row(ae_settings_row_of("display.target_60_fps"));
+		struct ae_settings_row const *bars = ae_settings_row(ae_settings_row_of("display.split_side_bars"));
+		struct ae_settings_row const *two = ae_settings_row(ae_settings_row_of("display.split_two_players"));
+		struct ae_settings_grey grey;
+		short entries[AE_SETTINGS_ENTRIES], count;
+
+		CHECK(!strcmp(ae_settings_group(AE_SETTINGS_SPLIT)->name, "SPLIT SCREEN") &&
+			ae_settings_group(AE_SETTINGS_SPLIT)->whose == AE_SETTINGS_PC && AE_SETTINGS_SPLIT == AE_SETTINGS_VIDEO + 1);
+		/* (GRAPHICS PRESET heads GRAPHICS, the four rows it sets under it, SHADOW RESOLUTION after them) */
+		count = ae_settings_entries(AE_SETTINGS_VIDEO, &pad, entries, AE_SETTINGS_ENTRIES);
+		for (index = 0; index < count && (ae_settings_entry_is_header(entries[index]) ||
+			strcmp(ae_settings_row(entries[index])->section, "GRAPHICS")); index++)
+			;
+		CHECK(index + 5 < count && ae_settings_row(entries[index]) == preset &&
+			!strcmp(ae_settings_row(entries[index + 1])->key, "display.anti_aliasing") &&
+			!strcmp(ae_settings_row(entries[index + 4])->key, "display.model_detail") &&
+			!strcmp(ae_settings_row(entries[index + 5])->key, "display.shadow_resolution"));
+		CHECK(preset && preset->group == AE_SETTINGS_VIDEO && ae_settings_value_count(preset) == 3 &&
+			ae_settings_value_index(preset, "custom") == 2 && !strcmp(ae_settings_value_text(preset, 2), "CUSTOM"));
+		/* (TARGET 60 FPS heads PERFORMANCE; SPLIT SCREEN's own is a second row of that label) */
+		count = ae_settings_entries(AE_SETTINGS_VIDEO, &pad, entries, AE_SETTINGS_ENTRIES);
+		for (index = 0; index < count && (ae_settings_entry_is_header(entries[index]) ||
+			strcmp(ae_settings_row(entries[index])->section, "PERFORMANCE")); index++)
+			;
+		CHECK(index < count && ae_settings_row(entries[index]) == target);
+		CHECK(rows_of(AE_SETTINGS_SPLIT, &pad) == 4 && has_label(AE_SETTINGS_SPLIT, &pad, "TARGET 60 FPS") &&
+			ae_settings_row(ae_settings_row_of("display.split_target_60_fps"))->group == AE_SETTINGS_SPLIT);
+		count = ae_settings_entries(AE_SETTINGS_SPLIT, &pad, entries, AE_SETTINGS_ENTRIES);
+		CHECK(count == 6 && ae_settings_sections(entries, count, sections, AE_SETTINGS_SECTIONS) == 2 &&
+			!strcmp(sections[0].name, "GRAPHICS") && !strcmp(sections[1].name, "LAYOUT") && sections[1].rows == 2);
+		CHECK(two && ae_settings_value_count(two) == 3 && !strcmp(ae_settings_value_text(two, 2), "SIDE BY SIDE"));
+		/* (TARGET 60 FPS greyed off NATIVE; an empty value is the default, NATIVE) */
+		set("display.resolution_scaling", "native");
+		CHECK(!ae_settings_row_greyed(target, &pad, &grey));
+		set("display.resolution_scaling", "");
+		CHECK(!ae_settings_row_greyed(target, &pad, NULL));
+		set("display.resolution_scaling", "original");
+		CHECK(ae_settings_row_greyed(target, &pad, &grey) && !strcmp(grey.reason, "Needs RESOLUTION SCALING: NATIVE") &&
+			!strcmp(grey.needs, "display.resolution_scaling") && strstr(grey.help, "{A} goes to RESOLUTION SCALING."));
+		CHECK(has_label(AE_SETTINGS_VIDEO, &pad, "TARGET 60 FPS"));
+		set("display.resolution_scaling", "native");
+		/* (0.9.0) LOW LATENCY: OFF, ON, BOOST; greyed with the reason while V-SYNC or SMOOTH MOTION is off (an unset value is
+		the default, on) */
+		{
+			struct ae_settings_row const *latency = ae_settings_row(ae_settings_row_of("display.low_latency"));
+
+			CHECK(latency && latency->group == AE_SETTINGS_VIDEO && latency->kind == AE_SETTINGS_SPINNER &&
+				ae_settings_value_count(latency) == 3 && !strcmp(ae_settings_value_text(latency, 2), "BOOST") &&
+				!strcmp(ae_settings_value_of(latency, 2), "boost") && strstr(latency->help, "BOOST") &&
+				strstr(latency->help, "lower the frame rate on a weak GPU"));
+			CHECK(has_label(AE_SETTINGS_VIDEO, &pad, "LOW LATENCY"));
+			set("display.vsync", "true");
+			set("display.interpolation", "true");
+			CHECK(!ae_settings_row_greyed(latency, &pad, NULL));
+			set("display.vsync", "false");
+			CHECK(ae_settings_row_greyed(latency, &pad, &grey) && !strcmp(grey.reason, "Needs V-SYNC: ON") &&
+				!strcmp(grey.needs, "display.vsync") && strstr(grey.help, "{A} goes to V-SYNC."));
+			set("display.interpolation", "false");
+			CHECK(ae_settings_row_greyed(latency, &pad, &grey) && !strcmp(grey.reason, "Needs V-SYNC: ON"));
+			set("display.vsync", "true");
+			CHECK(ae_settings_row_greyed(latency, &pad, &grey) && !strcmp(grey.reason, "Needs SMOOTH MOTION: ON") &&
+				!strcmp(grey.needs, "display.interpolation") && strstr(grey.help, "{A} goes to SMOOTH MOTION."));
+			set("display.interpolation", "true");
+			CHECK(!ae_settings_row_greyed(latency, &pad, NULL));
+			CHECK(has_label(AE_SETTINGS_VIDEO, &pad, "LOW LATENCY"));
+		}
+		/* (SIDE BARS greyed while two players play side by side: chosen, or AUTO on 21:9) */
+		set("display.split_two_players", "auto");
+		CHECK(!ae_settings_row_greyed(bars, &pad, NULL));
+		wide.screen_width = 2560;
+		wide.screen_height = 1080;
+		CHECK(ae_settings_row_greyed(bars, &wide, &grey) && !strcmp(grey.reason, "Needs TWO PLAYERS: TOP AND BOTTOM") &&
+			!strcmp(grey.needs, "display.split_two_players"));
+		set("display.split_two_players", "top_and_bottom");
+		CHECK(!ae_settings_row_greyed(bars, &wide, NULL));
+		set("display.split_two_players", "side_by_side");
+		CHECK(ae_settings_row_greyed(bars, &pad, NULL) && rows_of(AE_SETTINGS_SPLIT, &pad) == 4);
+		set("display.split_two_players", "auto");
+		/* (a reason fits the row: at most about 40 characters; rows that never grey) */
+		CHECK(strlen("Needs TWO PLAYERS: TOP AND BOTTOM") <= 40 && !ae_settings_row_greyed(two, &wide, NULL) &&
+			!ae_settings_row_greyed(preset, &pad, NULL) && !ae_settings_row_greyed(NULL, &pad, NULL));
+	}
+
+	/* AUDIO (15, MENU MUSIC and ANNOUNCER since 0.7.8): INPUT DEVICE unless VOICE CHAT is OFF, PUSH TO TALK (a key row, no values) with PUSH TO TALK only;
+	the volumes 0 to 10 as shown, 0 to 1 as written */
+	{
+		struct ae_settings_row const *master = ae_settings_row(ae_settings_row_of("audio.volume"));
+
+		set("audio.voice_chat", "push_to_talk");
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 17); /* (CALLOUTS off above: its row alone) */
+		set("audio.voice_chat", "off");
+		CHECK(rows_of(AE_SETTINGS_AUDIO, &pad) == 15 && !has_label(AE_SETTINGS_AUDIO, &pad, "INPUT DEVICE"));
+		CHECK(has_label(AE_SETTINGS_AUDIO, &pad, "MENU MUSIC") &&
+			ae_settings_value_count(ae_settings_row(ae_settings_row_of("audio.menu_music"))) == 4);
+		CHECK(has_label(AE_SETTINGS_AUDIO, &pad, "ANNOUNCER"));
+		CHECK(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))->kind == AE_SETTINGS_KEY &&
+			!ae_settings_value_count(ae_settings_row(ae_settings_row_of("controls.push_to_talk"))));
+		CHECK(ae_settings_value_count(master) == 11 && !strcmp(ae_settings_value_of(master, 10), "1") &&
+			!strcmp(ae_settings_value_of(master, 4), "0.4") && !strcmp(ae_settings_value_text(master, 4), "4"));
+		CHECK(ae_settings_value_index(master, "1.0") == 10 && ae_settings_value_index(master, "0.4") == 4);
+		CHECK(ae_settings_row(ae_settings_row_of("audio.channels"))->flags & AE_SETTINGS_RESTART);
+	}
+
+	/* ONLINE (19 of rows.md's 22, 0.7.6 BANNED PLAYERS one more: GAME PORT, LAN ADDRESS and BROADCAST ADDRESSES wait for their own lists; and
+	OpenCE's host SHIELD EFFECTS, HOSTING's; and INTERNET SHARING, MAPS's): INTERNET
+	DOWNLOADS with DOWNLOAD MAPS on, UPLOAD LIMIT with HELP SEND MAPS on, the Discord rows unless DISCORD STATUS is OFF;
+	COMMUNITY SERVICES ON / OFF writes yes / no */
+	{
+		struct ae_settings_row const *community = ae_settings_row(ae_settings_row_of("network.community_services"));
+
+		set("network.map_download", "true");
+		set("network.map_seed", "true");
+		set("discord.presence", "full");
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 23);
+		set("network.map_download", "false");
+		set("network.map_seed", "false");
+		set("discord.presence", "off");
+		CHECK(rows_of(AE_SETTINGS_ONLINE, &pad) == 19);
+		CHECK(!has_label(AE_SETTINGS_ONLINE, &pad, "INTERNET DOWNLOADS") && !has_label(AE_SETTINGS_ONLINE, &pad,
+			"DISCORD JOIN BUTTON"));
+		CHECK(!strcmp(ae_settings_value_of(community, 0), "yes") && !strcmp(ae_settings_value_text(community, 1), "OFF"));
+		CHECK(ae_settings_value_index(ae_settings_row(ae_settings_row_of("network.map_seed_upload")), "300") == 2);
+	}
+
+	/* ACCESSIBILITY (6; LOADING SCREEN went to VIDEO): the menus' rows this PC's (LANGUAGE needs a restart; English is the empty value), the links
+	the HUD rows' own settings (row_of finds HUD's: where A goes) */
+	{
+		struct ae_settings_row const *language = ae_settings_row(ae_settings_row_of("game.language"));
+		short entries_here[AE_SETTINGS_ENTRIES], here = ae_settings_entries(AE_SETTINGS_ACCESSIBILITY, &pad, entries_here,
+			AE_SETTINGS_ENTRIES);
+
+		CHECK(rows_of(AE_SETTINGS_ACCESSIBILITY, &pad) == 6 && here == 8);
+		CHECK((language->flags & AE_SETTINGS_RESTART) && (language->flags & AE_SETTINGS_THIS_PC));
+		CHECK(ae_settings_row_takes_empty(language) && ae_settings_value_index(language, "") == 0 &&
+			ae_settings_value_index(language, "ja") == 5);
+		CHECK(ae_settings_row(ae_settings_row_of("display.waypoint_size"))->group == AE_SETTINGS_HUD);
+		CHECK(ae_settings_row(entries_here[6])->kind == AE_SETTINGS_LINK &&
+			!strcmp(ae_settings_row(entries_here[6])->key, "display.player_name_scale"));
+	}
+
+	/* CHAT AND STREAMING (6, this PC's: the text chat is config.toml's for every player): the CENSOR rows with
+	STREAMER MODE on */
+	set("streamer.enabled", "true");
+	CHECK(ae_settings_group(AE_SETTINGS_CHAT)->whose == AE_SETTINGS_PC && rows_of(AE_SETTINGS_CHAT, &pad) == 6);
+	set("streamer.enabled", "false");
+	CHECK(rows_of(AE_SETTINGS_CHAT, &pad) == 3 && !has_label(AE_SETTINGS_CHAT, &pad, "CENSOR SLURS"));
+	CHECK(!strcmp(ae_settings_value_text(ae_settings_row(ae_settings_row_of("streamer.swearing")), 2),
+		"STRONG AND WORSE"));
+	/* every group built (phase B) */
+	for (index = 0; index < AE_SETTINGS_GROUPS; index++)
+		CHECK(ae_settings_group(index)->built);
+
+	/* the dialogs */
+	{
+		static const char *const labels[] = { "LOOK SENSITIVITY", "ZOOM", "VIBRATION", "LEGS", "FOV" };
+
+		ae_settings_keep_body("CONTROLS", "Chief", labels, 3, text, sizeof(text));
+		CHECK(!strcmp(text, "3 CONTROLS settings changed for Chief: LOOK SENSITIVITY, ZOOM and VIBRATION. They are in "
+			"use already."));
+		ae_settings_keep_body("CONTROLS", "Chief", labels, 1, text, sizeof(text));
+		CHECK(!strcmp(text, "1 CONTROLS setting changed for Chief: LOOK SENSITIVITY. They are in use already."));
+		ae_settings_keep_body("VIEW", "Chief", labels, 5, text, sizeof(text));
+		CHECK(!strcmp(text, "5 VIEW settings changed for Chief: LOOK SENSITIVITY, ZOOM, VIBRATION and 2 more. They are in "
+			"use already."));
+		ae_settings_keep_body("VIDEO", NULL, labels, 2, text, sizeof(text));
+		CHECK(!strcmp(text, "2 VIDEO settings changed on this PC: LOOK SENSITIVITY and ZOOM. They are in use already."));
+		CHECK(ae_settings_restore_body("HUD", "Chief", 4, text, sizeof(text)) == 4);
+		CHECK(!strcmp(text, "Every HUD setting for Chief goes back to its default: 4 settings change. Other players and "
+			"this PC's settings stay as they are. You can still undo it as you leave."));
+		CHECK(ae_settings_restore_body("HUD", "Chief", 0, text, sizeof(text)) == 0);
+		CHECK(!strcmp(text, "HUD is already at its defaults."));
+		ae_settings_restore_body("VIDEO", NULL, 1, text, sizeof(text));
+		CHECK(!strcmp(text, "Every VIDEO setting on this PC goes back to its default: 1 setting changes. Players' own "
+			"settings stay as they are."));
+	}
+
+	/* (0.3.9) the MOUSE sensitivities are number rows: 0.01 steps (Shift, Ctrl + wheel) and typed values */
+	{
+		struct ae_settings_row const *mcc = ae_settings_row(ae_settings_row_of("input.mouse_mcc_sensitivity"));
+		struct ae_settings_row const *horizontal = ae_settings_row(ae_settings_row_of("input.mouse_sensitivity"));
+		struct ae_settings_row const *vertical = ae_settings_row(ae_settings_row_of("input.mouse_vertical_sensitivity"));
+		struct ae_settings_row const *zoom = ae_settings_row(ae_settings_row_of("input.mouse_zoom_scale"));
+		struct ae_settings_row const *vehicle = ae_settings_row(ae_settings_row_of("input.mouse_vehicle_scale"));
+		struct ae_settings_row const *hold = ae_settings_row(ae_settings_row_of("input.mouse_zoom_hold_time"));
+		struct ae_settings_row const *fov = ae_settings_row(ae_settings_row_of("display.fov"));
+		struct ae_settings_number range;
+		char out[32];
+
+		CHECK(ae_settings_row_number(mcc, &range) && range.minimum == 0.1 && range.maximum == 10.0 && !range.has_special);
+		CHECK(ae_settings_row_number(horizontal, NULL) && ae_settings_row_number(zoom, NULL) &&
+			ae_settings_row_number(vehicle, NULL));
+		CHECK(ae_settings_row_number(vertical, &range) && range.has_special && range.special == 0.0);
+		/* (not the others, nor the hold time: a time, not a sensitivity) */
+		CHECK(!ae_settings_row_number(hold, NULL) && !ae_settings_row_number(fov, NULL) && !ae_settings_row_number(NULL,
+			NULL));
+		/* the text: two decimals only when the hundredths aren't 0 */
+		ae_settings_number_text(1.37, out, sizeof(out));
+		CHECK(!strcmp(out, "1.37"));
+		ae_settings_number_text(1.4, out, sizeof(out));
+		CHECK(!strcmp(out, "1.4"));
+		ae_settings_number_text(10.0, out, sizeof(out));
+		CHECK(!strcmp(out, "10.0"));
+		ae_settings_number_text(0.05, out, sizeof(out));
+		CHECK(!strcmp(out, "0.05"));
+		ae_settings_number_text(2.999, out, sizeof(out));
+		CHECK(!strcmp(out, "3.0"));
+		/* shown: a step's own text, else the number; SAME stays SAME */
+		ae_settings_number_shown(mcc, "1.37", out, sizeof(out));
+		CHECK(!strcmp(out, "1.37"));
+		ae_settings_number_shown(mcc, "1.4", out, sizeof(out));
+		CHECK(!strcmp(out, "1.4"));
+		ae_settings_number_shown(horizontal, "1", out, sizeof(out));
+		CHECK(!strcmp(out, "1.0"));
+		ae_settings_number_shown(horizontal, "1.33", out, sizeof(out));
+		CHECK(!strcmp(out, "1.33"));
+		ae_settings_number_shown(vertical, "0", out, sizeof(out));
+		CHECK(!strcmp(out, "SAME"));
+		ae_settings_number_shown(vertical, "0.0", out, sizeof(out));
+		CHECK(!strcmp(out, "SAME"));
+		/* (MCC's unset 0.0, outside the range: its nearest step as before) */
+		ae_settings_number_shown(mcc, "0.0", out, sizeof(out));
+		CHECK(!strcmp(out, "0.1"));
+		/* typing: digits and one '.', two decimals, five characters */
+		CHECK(ae_settings_number_typing_ok("") && ae_settings_number_typing_ok("1") && ae_settings_number_typing_ok("1.") &&
+			ae_settings_number_typing_ok(".37") && ae_settings_number_typing_ok("10.00"));
+		CHECK(!ae_settings_number_typing_ok("1.375") && !ae_settings_number_typing_ok("1..3") &&
+			!ae_settings_number_typing_ok("1a") && !ae_settings_number_typing_ok("-1") &&
+			!ae_settings_number_typing_ok("100.00") && !ae_settings_number_typing_ok(NULL));
+		/* typed: kept to 0.01, clamped, a step's own text */
+		CHECK(ae_settings_number_typed(mcc, "1.37", out, sizeof(out)) && !strcmp(out, "1.37"));
+		CHECK(ae_settings_number_typed(mcc, "25", out, sizeof(out)) && !strcmp(out, "10.0"));
+		CHECK(ae_settings_number_typed(mcc, "0.01", out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(ae_settings_number_typed(mcc, "5.", out, sizeof(out)) && !strcmp(out, "5.0"));
+		CHECK(ae_settings_number_typed(mcc, ".5", out, sizeof(out)) && !strcmp(out, "0.5"));
+		CHECK(ae_settings_number_typed(horizontal, "1", out, sizeof(out)) && !strcmp(out, "1"));
+		CHECK(ae_settings_number_typed(horizontal, "9", out, sizeof(out)) && !strcmp(out, "4"));
+		CHECK(ae_settings_number_typed(zoom, "0.85", out, sizeof(out)) && !strcmp(out, "0.85"));
+		CHECK(ae_settings_number_typed(vertical, "0", out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(ae_settings_number_typed(vertical, "0.04", out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(!ae_settings_number_typed(mcc, "", out, sizeof(out)) && !ae_settings_number_typed(mcc, ".", out,
+			sizeof(out)) && !ae_settings_number_typed(fov, "90", out, sizeof(out)));
+		/* fine steps: 0.01, held at the ends */
+		CHECK(ae_settings_number_step(mcc, "1.4", 1, 1, 1, out, sizeof(out)) && !strcmp(out, "1.41"));
+		CHECK(ae_settings_number_step(mcc, "1.4", -1, 1, 1, out, sizeof(out)) && !strcmp(out, "1.39"));
+		CHECK(ae_settings_number_step(mcc, "1.39", 1, 1, 1, out, sizeof(out)) && !strcmp(out, "1.4"));
+		/* (a fresh press goes round to the other end; a held repeat stops: wrap 0) */
+		CHECK(ae_settings_number_step(mcc, "10.0", 1, 1, 1, out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(ae_settings_number_step(mcc, "0.1", -1, 1, 1, out, sizeof(out)) && !strcmp(out, "10.0"));
+		CHECK(!ae_settings_number_step(mcc, "10.0", 1, 1, 0, out, sizeof(out)));
+		CHECK(!ae_settings_number_step(mcc, "0.1", -1, 1, 0, out, sizeof(out)));
+		CHECK(!ae_settings_number_step(mcc, "10.0", 1, 0, 0, out, sizeof(out)));
+		CHECK(!ae_settings_number_step(mcc, "0.1", -1, 0, 0, out, sizeof(out)));
+		CHECK(ae_settings_number_step(mcc, "1.37", 1, 0, 0, out, sizeof(out)) && !strcmp(out, "1.4"));
+		CHECK(ae_settings_number_step(horizontal, "1", 1, 1, 1, out, sizeof(out)) && !strcmp(out, "1.01"));
+		CHECK(ae_settings_number_step(horizontal, "1.01", -1, 1, 1, out, sizeof(out)) && !strcmp(out, "1"));
+		/* (from SAME: right the range's first, left held) */
+		CHECK(ae_settings_number_step(vertical, "0", 1, 1, 1, out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(!ae_settings_number_step(vertical, "0", -1, 1, 1, out, sizeof(out)));
+		/* coarse steps: the next step past the value, round past the ends */
+		CHECK(ae_settings_number_step(mcc, "1.37", 1, 0, 1, out, sizeof(out)) && !strcmp(out, "1.4"));
+		CHECK(ae_settings_number_step(mcc, "1.37", -1, 0, 1, out, sizeof(out)) && !strcmp(out, "1.3"));
+		CHECK(ae_settings_number_step(mcc, "1.4", 1, 0, 1, out, sizeof(out)) && !strcmp(out, "1.5"));
+		CHECK(ae_settings_number_step(mcc, "10.0", 1, 0, 1, out, sizeof(out)) && !strcmp(out, "0.1"));
+		CHECK(ae_settings_number_step(mcc, "0.1", -1, 0, 1, out, sizeof(out)) && !strcmp(out, "10.0"));
+		CHECK(ae_settings_number_step(horizontal, "1.37", 1, 0, 1, out, sizeof(out)) && !strcmp(out, "1.5"));
+		CHECK(ae_settings_number_step(horizontal, "1.37", -1, 0, 1, out, sizeof(out)) && !strcmp(out, "1.25"));
+		CHECK(ae_settings_number_step(vertical, "0.1", -1, 0, 1, out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(ae_settings_number_step(vertical, "4", 1, 0, 1, out, sizeof(out)) && !strcmp(out, "0"));
+		/* the slider: between the steps' places */
+		CHECK(ae_settings_slider_at(mcc, "0.1") == 0.0f && ae_settings_slider_at(mcc, "10.0") == 1.0f);
+		CHECK(ae_settings_slider_at(mcc, "1.35") > ae_settings_slider(mcc, 12) &&
+			ae_settings_slider_at(mcc, "1.35") < ae_settings_slider(mcc, 13));
+		CHECK(ae_settings_slider_at(horizontal, "1") == ae_settings_slider(horizontal, 6));
+		CHECK(ae_settings_slider_at(vertical, "0") == 0.0f);
+	}
+
+	/* (0.7.0) FRAME RATE LIMIT: a whole-number row, typed 30 to 1000 besides its list */
+	{
+		struct ae_settings_row const *fps = ae_settings_row(ae_settings_row_of("display.max_fps"));
+		struct ae_settings_whole range;
+		struct ae_settings_whole_value values[32];
+		char out[32];
+		short count, index, typed_at = -1;
+
+		CHECK(fps && ae_settings_row_whole(fps, &range) && range.minimum == 30 && range.maximum == 1000);
+		CHECK(!ae_settings_row_whole(ae_settings_row(ae_settings_row_of("display.vsync")), NULL));
+		/* shown: a list value's text, a typed value as itself */
+		ae_settings_whole_shown(fps, "60", out, sizeof(out));
+		CHECK(!strcmp(out, "60"));
+		ae_settings_whole_shown(fps, "0", out, sizeof(out));
+		CHECK(!strcmp(out, "AUTO"));
+		ae_settings_whole_shown(fps, "-1", out, sizeof(out));
+		CHECK(!strcmp(out, "NONE"));
+		ae_settings_whole_shown(fps, "237", out, sizeof(out));
+		CHECK(!strcmp(out, "237"));
+		ae_settings_whole_shown(fps, "1000", out, sizeof(out));
+		CHECK(!strcmp(out, "1000"));
+		/* typing: digits, four at most; held to the range */
+		CHECK(ae_settings_whole_typing_ok("") && ae_settings_whole_typing_ok("237") && ae_settings_whole_typing_ok("1000"));
+		CHECK(!ae_settings_whole_typing_ok("12345") && !ae_settings_whole_typing_ok("1.5") &&
+			!ae_settings_whole_typing_ok("-3") && !ae_settings_whole_typing_ok("2a") && !ae_settings_whole_typing_ok(NULL));
+		CHECK(ae_settings_whole_typed(fps, "237", out, sizeof(out)) && !strcmp(out, "237"));
+		CHECK(ae_settings_whole_typed(fps, "20", out, sizeof(out)) && !strcmp(out, "30"));
+		CHECK(ae_settings_whole_typed(fps, "5000", out, sizeof(out)) && !strcmp(out, "1000"));
+		CHECK(ae_settings_whole_typed(fps, "0", out, sizeof(out)) && !strcmp(out, "30"));
+		CHECK(!ae_settings_whole_typed(fps, "", out, sizeof(out)) && !ae_settings_whole_typed(fps, "12a", out, sizeof(out)));
+		/* steps go to the list's neighbours: 237 between 200 and 240, 500 between 360 and NONE */
+		CHECK(ae_settings_whole_step(fps, "237", -1, 1, out, sizeof(out)) && !strcmp(out, "200"));
+		CHECK(ae_settings_whole_step(fps, "237", 1, 1, out, sizeof(out)) && !strcmp(out, "240"));
+		CHECK(ae_settings_whole_step(fps, "500", 1, 1, out, sizeof(out)) && !strcmp(out, "-1"));
+		CHECK(ae_settings_whole_step(fps, "500", -1, 1, out, sizeof(out)) && !strcmp(out, "360"));
+		CHECK(ae_settings_whole_step(fps, "60", 1, 1, out, sizeof(out)) && !strcmp(out, "72"));
+		CHECK(ae_settings_whole_step(fps, "30", -1, 1, out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(ae_settings_whole_step(fps, "0", 1, 1, out, sizeof(out)) && !strcmp(out, "30"));
+		/* (AUTO and NONE are the ends: a fresh press goes round, a held repeat stops) */
+		CHECK(ae_settings_whole_step(fps, "0", -1, 1, out, sizeof(out)) && !strcmp(out, "-1"));
+		CHECK(ae_settings_whole_step(fps, "-1", 1, 1, out, sizeof(out)) && !strcmp(out, "0"));
+		CHECK(!ae_settings_whole_step(fps, "0", -1, 0, out, sizeof(out)) && !ae_settings_whole_step(fps, "-1", 1, 0, out,
+			sizeof(out)));
+		CHECK(ae_settings_whole_step(fps, "60", 1, 0, out, sizeof(out)) && !strcmp(out, "72"));
+		CHECK(ae_settings_whole_step(fps, "-1", -1, 1, out, sizeof(out)) && !strcmp(out, "360"));
+		/* ALL VALUES: the typed value in order, TYPE A NUMBER... last */
+		count = ae_settings_whole_values(fps, "237", values, 32);
+		CHECK(count >= 3 && values[count - 1].typed == 2 && !strcmp(values[count - 1].text, "TYPE A NUMBER..."));
+		for (index = 0; index < count; index++)
+			if (values[index].typed == 1)
+				typed_at = index;
+		CHECK(typed_at > 0 && !strcmp(values[typed_at].text, "237") && !strcmp(values[typed_at - 1].text, "200") &&
+			!strcmp(values[typed_at + 1].text, "240"));
+		count = ae_settings_whole_values(fps, "60", values, 32);
+		for (index = 0, typed_at = -1; index < count; index++)
+			if (values[index].typed == 1)
+				typed_at = index;
+		CHECK(typed_at < 0 && !strcmp(values[0].text, "AUTO") && !strcmp(values[count - 2].text, "NONE"));
+		count = ae_settings_whole_values(fps, "700", values, 32);
+		CHECK(!strcmp(values[count - 4].text, "360") && !strcmp(values[count - 3].text, "700") && values[count - 3].typed == 1 &&
+			!strcmp(values[count - 2].text, "NONE") && !strcmp(values[count - 1].text, "TYPE A NUMBER..."));
+	}
+	/* (0.7.6) the table's other rows: FOV and the stick dead zones are sliders with a DEFAULT first; a real's ".0" is
+	the number; a typed value shows with the row's unit */
+	{
+		struct ae_settings_row const *fov = ae_settings_row(ae_settings_row_of("display.fov"));
+		struct ae_settings_row const *dead = ae_settings_row(ae_settings_row_of("input.left_stick_deadzone"));
+		struct ae_settings_row const *link = NULL;
+		struct ae_settings_whole range;
+		struct ae_settings_whole_value values[32];
+		char out[32];
+		short count;
+
+		CHECK(fov && ae_settings_row_whole(fov, &range) && range.minimum == 60 && range.maximum == 150 && !range.suffix);
+		CHECK(dead && ae_settings_row_whole(dead, &range) && range.minimum == 1 && range.maximum == 50 &&
+			!strcmp(range.suffix, " %"));
+		CHECK(ae_settings_row_whole(ae_settings_row(ae_settings_row_of("display.viewmodel_fov")), NULL));
+		(void)link;
+		ae_settings_whole_shown(fov, "97.0", out, sizeof(out));
+		CHECK(!strcmp(out, "97"));
+		ae_settings_whole_shown(fov, "0.0", out, sizeof(out));
+		CHECK(!strcmp(out, "STOCK (DEFAULT)"));
+		ae_settings_whole_shown(fov, "85.0", out, sizeof(out));
+		CHECK(!strcmp(out, "85")); /* (0.8.1: STOCK is the default again) */
+		ae_settings_whole_shown(dead, "12", out, sizeof(out));
+		CHECK(!strcmp(out, "12 %"));
+		ae_settings_whole_shown(dead, "10", out, sizeof(out));
+		CHECK(!strcmp(out, "10 %"));
+		CHECK(ae_settings_whole_typed(fov, "20", out, sizeof(out)) && !strcmp(out, "60"));
+		CHECK(ae_settings_whole_typed(fov, "97", out, sizeof(out)) && !strcmp(out, "97"));
+		CHECK(ae_settings_whole_typed(fov, "999", out, sizeof(out)) && !strcmp(out, "150"));
+		CHECK(ae_settings_whole_typed(dead, "0", out, sizeof(out)) && !strcmp(out, "1"));
+		/* the step from DEFAULT, and from a typed 97.0 to the list's neighbours */
+		CHECK(ae_settings_whole_step(fov, "0.0", 1, 1, out, sizeof(out)) && !strcmp(out, "80"));
+		CHECK(ae_settings_whole_step(fov, "97.0", 1, 1, out, sizeof(out)) && !strcmp(out, "100"));
+		CHECK(ae_settings_whole_step(fov, "97.0", -1, 1, out, sizeof(out)) && !strcmp(out, "95"));
+		/* the list: a typed 97 in its place, "100.0" is the list's 100 (no twin), TYPE A NUMBER... last */
+		count = ae_settings_whole_values(fov, "97.0", values, 32);
+		CHECK(count >= 3 && values[count - 1].typed == 2);
+		{
+			short index, typed = 0, hundreds = 0;
+
+			for (index = 0; index < count; index++)
+			{
+				typed += values[index].typed == 1;
+				hundreds += !strcmp(values[index].text, "100");
+			}
+			CHECK(typed == 1 && hundreds == 1);
+			count = ae_settings_whole_values(fov, "100.0", values, 32);
+			for (index = 0, typed = 0; index < count; index++)
+				typed += values[index].typed == 1;
+			CHECK(typed == 0);
+		}
+		/* the mouse numbers and the volumes keep to their lists */
+		CHECK(!ae_settings_row_whole(ae_settings_row(ae_settings_row_of("audio.volume")), NULL));
+	}
+
+	/* (0.7.7) the CROSSHAIR pages: the editor's sections and rows, the weapons' list, every row's values reachable */
+	{
+		short entries[AE_SETTINGS_ENTRIES], count, index, rows = 0, headers = 0;
+		struct ae_settings_facts facts;
+
+		memset(&facts, 0, sizeof(facts));
+		facts.value = value;
+		count = ae_settings_entries(AE_SETTINGS_CROSSHAIR, &facts, entries, AE_SETTINGS_ENTRIES);
+		for (index = 0; index < count; index++)
+		{
+			if (ae_settings_entry_is_header(entries[index]))
+				headers++;
+			else
+				rows++;
+		}
+		CHECK(headers == 7 && rows == 24);
+		count = ae_settings_entries(AE_SETTINGS_CROSSHAIR_WEAPONS, &facts, entries, AE_SETTINGS_ENTRIES);
+		CHECK(count > 20 && count < AE_SETTINGS_ENTRIES);
+		CHECK(ae_settings_row_of("xh.inner_length") >= 0 && ae_settings_row_of("xw.battle_rifle") >= 0 &&
+			ae_settings_row_of("xw.warthog_gun") >= 0 && ae_settings_row_of("xw.banshee_gun") >= 0 &&
+			ae_settings_row_of("xw.gun_turret_gun") >= 0 && ae_settings_row_of("xw.rwarthog_gun") >= 0 &&
+			ae_settings_row_of("action.crosshair_hex") >= 0 && ae_settings_row_of("display.reticle_fov_base") >= 0);
+		/* (a weapon row's choices are the shared run-time list's) */
+		{
+			static const char *const texts[] = { "USE MAIN", "STOCK", "TWO" };
+			static const char *const values[] = { "main", "own", "2" };
+
+			CHECK(ae_settings_set_values("xw.list", texts, values, 3) &&
+				ae_settings_value_count(ae_settings_row(ae_settings_row_of("xw.pistol"))) == 3);
+		}
+	}
+
+	if (failures)
+	{
+		printf("%d failure(s)\n", failures);
+		return 1;
+	}
+	printf("ae_settings_rows: ok\n");
+	return 0;
+}

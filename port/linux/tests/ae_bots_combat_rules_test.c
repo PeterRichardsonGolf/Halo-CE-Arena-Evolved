@@ -1,0 +1,748 @@
+#include <stdio.h>
+#include <math.h>
+#include "ae_bots_combat_rules.h"
+
+static int failures;
+static int checks;
+#define CHECK(c) do { checks++; if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+static void test_hash(void)
+{
+	unsigned long a;
+	int low = 0, high = 0;
+
+	for (a = 0; a < 2000; a++)
+	{
+		float h = ae_bots_combat_hash01(a, 77);
+
+		CHECK(h >= 0.0f && h < 1.0f);
+		low += h < 0.5f;
+		high += h >= 0.5f;
+		/* (the same pair, the same number) */
+		CHECK(h == ae_bots_combat_hash01(a, 77));
+	}
+	/* (spread: about half each side) */
+	CHECK(low > 800 && high > 800);
+	CHECK(ae_bots_combat_hash01(1, 2) != ae_bots_combat_hash01(2, 1));
+}
+
+/* a reaction is never quicker than 0.85 of the skill's, at most 1.35 of it; RECRUIT's never quicker than its own */
+static void test_reaction_and_look(void)
+{
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 0.0f) == 36);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 0.999f) == 57);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, -3.0f) == 36);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_NORMAL, 42, 5.0f) == 57);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, 0.0f) == 42);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, -3.0f) == 42);
+	CHECK(ae_bots_combat_reaction_ticks(AE_BOTS_LEVEL_RECRUIT, 42, 0.999f) == 63);
+	CHECK(ae_bots_combat_look_jitter(0.0f) == 0);
+	CHECK(ae_bots_combat_look_jitter(0.5f) == 1);
+	CHECK(ae_bots_combat_look_jitter(0.99f) == 2);
+	CHECK(ae_bots_combat_look_jitter(1.0f) == 2);
+}
+
+static void test_confidence(void)
+{
+	float even = ae_bots_combat_confidence(1, 1, 1, 1, 5, 9, 1, 0);
+
+	CHECK(even > 0.49f && even < 0.51f);
+	CHECK(ae_bots_combat_confidence(1, 1, 0, 0.2f, 5, 9, 1, 0) > 0.9f);
+	CHECK(ae_bots_combat_confidence(0, 0.3f, 1, 1, 5, 9, 1, 0) < 0.2f);
+	/* (an empty magazine, a target out of reach: less sure; from above: more) */
+	CHECK(ae_bots_combat_confidence(1, 1, 1, 1, 5, 9, 0.1f, 0) < even - 0.1f);
+	CHECK(ae_bots_combat_confidence(1, 1, 1, 1, 20, 9, 1, 0) < even);
+	CHECK(ae_bots_combat_confidence(1, 1, 1, 1, 5, 9, 1, 3) > even);
+	CHECK(ae_bots_combat_confidence(1, 1, 1, 1, 5, 9, 1, 100) < even + 0.11f);
+	/* (always 0..1, an overshield too) */
+	CHECK(ae_bots_combat_confidence(3, 1, 0, 0, 1, 9, 1, 9) <= 1.0f);
+	CHECK(ae_bots_combat_confidence(0, 0, 3, 1, 50, 9, 0, -9) >= 0.0f);
+}
+
+static void test_melee(void)
+{
+	int level;
+
+	/* waiting, or out of reach: never */
+	for (level = 0; level < AE_BOTS_LEVELS; level++)
+	{
+		CHECK(ae_bots_combat_melee(level, 0.3f, 0, 1, 0, 1, 0.0f) == 0);
+		CHECK(ae_bots_combat_melee(level, 1.2f, 1, 1, 0, 1, 0.0f) == 0);
+	}
+	/* RECRUIT: point blank only, and only now and then */
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_RECRUIT, 0.9f, 1, 1, 0, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_RECRUIT, 0.5f, 1, 0, 1, 0, 0.1f) == 1);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_RECRUIT, 0.5f, 1, 0, 1, 0, 0.5f) == 2);
+	/* EASY and NORMAL: within reach */
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_EASY, 1.0f, 1, 0, 1, 0, 0.5f) == 1);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_EASY, 1.0f, 1, 0, 1, 0, 0.9f) == 2);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_NORMAL, 1.0f, 1, 0, 1, 0, 0.99f) == 1);
+	/* HEROIC and up: the back turned, shields low or closing in; else point blank */
+	for (level = AE_BOTS_LEVEL_HEROIC; level <= AE_BOTS_LEVEL_LEGENDARY; level++)
+	{
+		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 1, 0, 0.0f) == 0);
+		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 1, 1, 0, 0.0f) == 1);
+		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 0.05f, 0, 0.0f) == 1);
+		CHECK(ae_bots_combat_melee(level, 1.0f, 1, 0, 1, 1, 0.0f) == 1);
+		CHECK(ae_bots_combat_melee(level, 0.5f, 1, 0, 1, 0, 0.99f) == 1);
+	}
+	/* (low shields: under 0.1 for HEROIC, 0.25 for ELITE, 0.4 for LEGENDARY) */
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_HEROIC, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_ELITE, 1.0f, 1, 0, 0.2f, 0, 0.0f) == 1);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_ELITE, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 1, 0, 0.3f, 0, 0.0f) == 1);
+	/* the wait in reach before a blow: RECRUIT 1-3 s, EASY 0.6-1.5, NORMAL 0.35-0.7, HEROIC 0.25-0.5, LEGENDARY
+	0.18-0.35, DEMON 0.1-0.3: each level's quickest and slowest quicker than the level below's */
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 0) == 30);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_RECRUIT, 1) == 90);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_EASY, 0) == 18);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 0) >= 10 && ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 0) <= 11);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_NORMAL, 1) == 21);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_DEMON, 0) == 3);
+	CHECK(ae_bots_combat_melee_delay(AE_BOTS_LEVEL_DEMON, 1) == 9);
+	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)
+	{
+		CHECK(ae_bots_combat_melee_delay(level, 0) < ae_bots_combat_melee_delay(level - 1, 0));
+		CHECK(ae_bots_combat_melee_delay(level, 1) < ae_bots_combat_melee_delay(level - 1, 1));
+	}
+	/* cooldowns: RECRUIT waits longest, each a range */
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) == 90);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 1) == 135);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_EASY, 0) == 60);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 36);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_HEROIC, 0) == 30);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_ELITE, 0) == 29);
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) == 27);
+	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)
+		CHECK(ae_bots_combat_melee_cooldown(level, 0) < ae_bots_combat_melee_cooldown(level - 1, 0));
+	for (level = 1; level < AE_BOTS_LEVELS; level++)
+		CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) >= ae_bots_combat_melee_cooldown(level, 1));
+}
+
+/* the chance a second of a throw, from many ticks' randoms */
+static float grenade_rate(int level, float distance, int first_contact, int about_to_die, float skill_chance)
+{
+	int tick, throws = 0;
+
+	for (tick = 0; tick < 30000; tick++)
+		throws += ae_bots_combat_grenade(level, distance, 1, 1, first_contact, about_to_die, skill_chance,
+			(float)tick / 30000.0f);
+	return (float)throws / 1000.0f;
+}
+
+static void test_grenades(void)
+{
+	int level;
+
+	for (level = 0; level < AE_BOTS_LEVELS; level++)
+	{
+		/* no grenade, not reacted, too near or too far: never */
+		CHECK(!ae_bots_combat_grenade(level, 12, 0, 1, 1, 1, 1, 0.0f));
+		CHECK(!ae_bots_combat_grenade(level, 12, 1, 0, 1, 1, 1, 0.0f));
+		CHECK(!ae_bots_combat_grenade(level, 4, 1, 1, 1, 1, 1, 0.0f));
+		CHECK(!ae_bots_combat_grenade(level, 25, 1, 1, 1, 1, 1, 0.0f));
+	}
+	/* RECRUIT: never, whatever its state */
+	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 8, 1, 1, 0) == 0.0f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_RECRUIT, 15, 1, 1, 0) == 0.0f);
+	/* EASY: about to die, else rarely */
+	CHECK(grenade_rate(AE_BOTS_LEVEL_EASY, 12, 0, 0, 0.04f) < 0.03f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_EASY, 12, 0, 1, 0.04f) > 0.5f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_EASY, 12, 1, 0, 0.04f) < 0.03f);
+	/* NORMAL: bots.c's rate (its chance three times a second's) */
+	CHECK(grenade_rate(AE_BOTS_LEVEL_NORMAL, 12, 0, 0, 0.10f) > 0.29f &&
+		grenade_rate(AE_BOTS_LEVEL_NORMAL, 12, 0, 0, 0.10f) < 0.31f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_NORMAL, 12, 1, 1, 0.10f) < 0.31f);
+	/* HEROIC and up: first contact and about to die add */
+	CHECK(grenade_rate(AE_BOTS_LEVEL_HEROIC, 12, 1, 0, 0.16f) > grenade_rate(AE_BOTS_LEVEL_HEROIC, 12, 0, 0, 0.16f) + 0.4f);
+	CHECK(grenade_rate(AE_BOTS_LEVEL_LEGENDARY, 12, 0, 1, 0.22f) > grenade_rate(AE_BOTS_LEVEL_LEGENDARY, 12, 0, 0, 0.22f) + 0.5f);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_RECRUIT, 0) == 600);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_EASY, 1) == 315);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_NORMAL, 0) == 30);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0) == 3);
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 1) == 153);
+	CHECK(!ae_bots_combat_grenade(AE_BOTS_LEVEL_LEGENDARY, 19, 1, 1, 1, 1, 1, 0.0f));
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_RECRUIT) == 0.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_EASY) == 0.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_NORMAL) == 0.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_HEROIC) == 1.0f);
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_LEGENDARY) == 1.0f);
+	CHECK(ae_bots_combat_about_to_die(0, 0.5f));
+	CHECK(!ae_bots_combat_about_to_die(0.1f, 0.5f));
+	CHECK(!ae_bots_combat_about_to_die(0, 0.7f));
+}
+
+static void test_aim_head(void)
+{
+	CHECK(!ae_bots_combat_aim_head(AE_BOTS_LEVEL_RECRUIT, 0, 1));
+	CHECK(!ae_bots_combat_aim_head(AE_BOTS_LEVEL_EASY, 0, 1));
+	CHECK(ae_bots_combat_aim_head(AE_BOTS_LEVEL_NORMAL, 0, 1));
+	CHECK(ae_bots_combat_aim_head(AE_BOTS_LEVEL_LEGENDARY, 0, 1));
+	CHECK(!ae_bots_combat_aim_head(AE_BOTS_LEVEL_LEGENDARY, 0.1f, 1));
+	CHECK(!ae_bots_combat_aim_head(AE_BOTS_LEVEL_LEGENDARY, 0, 0));
+}
+
+static void test_retreat(void)
+{
+	struct ae_bots_combat_retreat state;
+	int started, ended, level;
+	long now;
+
+	/* RECRUIT and EASY never */
+	for (level = AE_BOTS_LEVEL_RECRUIT; level <= AE_BOTS_LEVEL_EASY; level++)
+	{
+		ae_bots_combat_retreat_reset(&state);
+		for (now = 0; now < 300; now++)
+			CHECK(!ae_bots_combat_retreat_step(&state, level, 0.0f, 0.0f, now, 0.5f, &started, &ended));
+		CHECK(ae_bots_combat_retreat_threshold(level) == 0.0f);
+	}
+	/* NORMAL: low (under 0.1), after its hesitation (6 + 12 x 0.5 = 12 ticks) */
+	ae_bots_combat_retreat_reset(&state);
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.1f, 0.1f, 99, 0.5f, &started, &ended));
+	for (now = 100; now < 112; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.05f, 0.1f, now, 0.5f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.05f, 0.1f, 112, 0.5f, &started, &ended));
+	CHECK(started && !ended);
+	/* (at least 2 s, though its shields are back) */
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.9f, 1.0f, 171, 0.5f, &started, &ended));
+	CHECK(!started && !ended);
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.3f, 1.0f, 172, 0.5f, &started, &ended));
+	CHECK(ended);
+	/* (then not again for 6 s) */
+	for (now = 173; now < 172 + 180; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, now, 0.0f, &started, &ended));
+	for (now = 352; now < 358; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, now, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358, 0.0f, &started, &ended));
+	/* (at most 7 s) */
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358 + 209, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_NORMAL, 0.0f, 0.0f, 358 + 210, 0.0f, &started, &ended));
+	CHECK(ended);
+	/* shields up, or sure enough: no retreat; a confidence that comes back starts the hesitation over */
+	ae_bots_combat_retreat_reset(&state);
+	for (now = 0; now < 100; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.0f, 0.5f, now, 0.0f, &started, &ended));
+	for (now = 0; now < 100; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.2f, 0.0f, now, 0.0f, &started, &ended));
+	for (now = 100; now < 105; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, now, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 0.0f, 105, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 106, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 111, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.05f, 0.0f, 112, 0.0f, &started, &ended));
+	/* (HEROIC and up: at least 3 s) */
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 1.0f, 112 + 89, 0.0f, &started, &ended));
+	CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.9f, 1.0f, 112 + 90, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_NORMAL) == 0.1f);
+}
+
+static void test_charge_jump_share(void)
+{
+	/* charges: RECRUIT/EASY never; NORMAL in the fights drawn under half; HEROIC and up in every fight */
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_RECRUIT, 0.9f, 0, 0.3f, 3, 0.0f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_EASY, 0.9f, 0, 0.3f, 3, 0.0f));
+	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_NORMAL, 0.9f, 0, 0.3f, 3, 0.2f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_NORMAL, 0.9f, 0, 0.3f, 3, 0.7f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_NORMAL, 0.9f, 0, 0.3f, 3, AE_BOTS_COMBAT_CHARGE_NORMAL_SHARE));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_NORMAL, 0.5f, 0, 0.3f, 3, 0.2f));
+	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.9f, 0, 0.3f, 3, 0.7f));
+	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.9f, 0, 0.3f, 3, 0.99f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.5f, 0, 0.3f, 3, 0.0f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.9f, 0.2f, 0.3f, 3, 0.0f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_HEROIC, 0.9f, 0, 0.8f, 3, 0.0f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0, 0.3f, 7, 0.0f));
+	CHECK(!ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0, 0.3f, 0.5f, 0.0f));
+	/* jumps in a fight: NORMAL up (3-5 s, HEROIC 1-4, LEGENDARY 1-3) */
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_RECRUIT, 0.5f) == 0);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_EASY, 0.5f) == 0);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_NORMAL, 0) == 90);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_NORMAL, 1) == 150);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_HEROIC, 1) == 120);
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0) == 30);
+	/* strafe segments and halts: RECRUIT mostly stands, LEGENDARY jiggles */
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 0) == 30 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 120);
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 0) == 60 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 120);
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0) == 6 && ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 1) == 24);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 0.0f, 0) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_EASY, 0.0f, 1) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.1f, 1) == 60);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_NORMAL, 0.3f, 1) == 0);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.04f, 1) == 3);
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.06f, 1) == 0);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_RECRUIT, 1) == 0);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_EASY, 1) == 0);
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_NORMAL, 1) == 6);
+	/* shared sightings: none below HEROIC, 10 units at HEROIC, 20 at LEGENDARY, anywhere at DEMON */
+	/* (0.9.0: every level shares, the lower ones nearer) */
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_RECRUIT) == 4.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_EASY) == 5.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_NORMAL) == 7.0f);
+	CHECK(ae_bots_combat_share_distance(-1) == 0.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_HEROIC) == 10.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_ELITE) == 15.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_LEGENDARY) == 20.0f);
+	CHECK(ae_bots_combat_share_distance(AE_BOTS_LEVEL_DEMON) > 1000.0f);
+	/* LONG RANGE (owner 10-20: "a bit too good with their distance shots"): no floor within 10 units, a floor that
+	grows past it, larger for lower levels, none at DEMON (the old LEGENDARY, kept as it was) */
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_NORMAL, 9.0f) == 0.0f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 15.0f) > 0.5f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 15.0f) < 0.7f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_LEGENDARY, 20.0f) == 0.0f);
+	CHECK(ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_DEMON, 30.0f) == 0.0f);
+	/* SIDEARM AT RANGE: the starter pistol only; none within 8 units, HEROIC 3.2 degrees every 10 past them, none past 15
+	(the far chance, 0.6 of it, takes over), none for DEMON */
+	CHECK(ae_bots_combat_sidearm_weapon("ae\\packs\\starter_pistol\\digsite\\weapons\\pistol\\00_e3\\pistol_00_e3"));
+	CHECK(!ae_bots_combat_sidearm_weapon("weapons\\pistol\\pistol"));
+	CHECK(!ae_bots_combat_sidearm_weapon(NULL));
+	CHECK(ae_bots_combat_sidearm_range_floor(AE_BOTS_LEVEL_HEROIC, 8.0f) == 0.0f);
+	CHECK(fabsf(ae_bots_combat_sidearm_range_floor(AE_BOTS_LEVEL_HEROIC, 13.0f) - 1.6f) < 0.001f);
+	CHECK(ae_bots_combat_sidearm_range_floor(AE_BOTS_LEVEL_HEROIC, 13.0f) > ae_bots_combat_range_error_floor(AE_BOTS_LEVEL_HEROIC, 13.0f));
+	CHECK(ae_bots_combat_sidearm_range_floor(AE_BOTS_LEVEL_HEROIC, 16.0f) == 0.0f);
+	CHECK(ae_bots_combat_sidearm_range_floor(AE_BOTS_LEVEL_DEMON, 12.0f) == 0.0f);
+	CHECK(fabsf(ae_bots_combat_sidearm_far_chance(0.18f) - 0.108f) < 0.0001f);
+	CHECK(ae_bots_combat_sidearm_far_chance(-1.0f) == -1.0f);
+	for (int level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVEL_DEMON; level++)
+	{
+		CHECK(ae_bots_combat_range_error_floor(level, 12.0f) < ae_bots_combat_range_error_floor(level, 15.0f));
+		CHECK(level == AE_BOTS_LEVEL_EASY ||
+			ae_bots_combat_range_error_floor(level, 15.0f) < ae_bots_combat_range_error_floor(level - 1, 15.0f));
+	}
+	/* FAR SHOTS (owner 10-30): from 15 units; falling with distance, rising with level, under 25%; DEMON aims as it is */
+	CHECK(ae_bots_combat_long_range_hit_chance(AE_BOTS_LEVEL_HEROIC, 15.0f) < 0.0f);
+	CHECK(ae_bots_combat_long_range_hit_chance(AE_BOTS_LEVEL_HEROIC, 18.0f) == 0.18f);
+	CHECK(ae_bots_combat_long_range_hit_chance(AE_BOTS_LEVEL_HEROIC, 28.0f) == 0.09f);
+	CHECK(ae_bots_combat_long_range_hit_chance(AE_BOTS_LEVEL_DEMON, 25.0f) < 0.0f);
+	for (int level = AE_BOTS_LEVEL_RECRUIT; level < AE_BOTS_LEVEL_DEMON; level++)
+	{
+		CHECK(ae_bots_combat_long_range_hit_chance(level, 18.0f) < 0.25f);
+		CHECK(ae_bots_combat_long_range_hit_chance(level, 40.0f) < ae_bots_combat_long_range_hit_chance(level, 18.0f));
+		CHECK(level == AE_BOTS_LEVEL_RECRUIT ||
+			ae_bots_combat_long_range_hit_chance(level, 22.0f) > ae_bots_combat_long_range_hit_chance(level - 1, 22.0f));
+	}
+	/* SQUADS THAT SPLIT (owner 10-30): small squads as ever; about a third of a wide squad flanks, at most 6 */
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_NORMAL, 3) == 1);
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_HEROIC, 3) == 1);
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_LEGENDARY, 3) == 2);
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_NORMAL, 8) == 3);
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_HEROIC, 16) == 5);
+	CHECK(ae_bots_combat_squad_flankers(AE_BOTS_LEVEL_HEROIC, 32) == 6);
+	CHECK(ae_bots_combat_flank_seconds(3, 40.0f) == 10.0f);
+	CHECK(ae_bots_combat_flank_seconds(8, 2.0f) == 10.0f);
+	CHECK(ae_bots_combat_flank_seconds(8, 22.0f) == 15.0f);
+	CHECK(ae_bots_combat_flank_seconds(8, 200.0f) == 25.0f);
+	CHECK(ae_bots_combat_flank_unseen_seconds(3) == 2.0f);
+	CHECK(ae_bots_combat_flank_unseen_seconds(4) == 8.0f);
+	/* CLOSE RANGE (owner 10-29): NORMAL only, between 2 and 10 units */
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_NORMAL, 5.0f) == AE_BOTS_COMBAT_NEAR_FLOOR);
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_NORMAL, 1.0f) == 0.0f);
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_NORMAL, 12.0f) == 0.0f);
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_EASY, 5.0f) == 0.0f);
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_HEROIC, 5.0f) == 0.0f);
+	CHECK(ae_bots_combat_near_error_floor(AE_BOTS_LEVEL_LEGENDARY, 5.0f) == 0.0f);
+	/* ONE-SHOT WEAPONS: RECRUIT and EASY only */
+	CHECK(ae_bots_combat_one_shot_weapon("weapons\\sniper rifle\\sniper rifle"));
+	CHECK(ae_bots_combat_one_shot_weapon("weapons\\rocket launcher\\rocket launcher"));
+	CHECK(ae_bots_combat_one_shot_weapon("ae_pack\\gravity_hammer\\hammer"));
+	CHECK(!ae_bots_combat_one_shot_weapon("weapons\\pistol\\pistol") && !ae_bots_combat_one_shot_weapon(NULL));
+	CHECK(ae_bots_combat_one_shot_error_floor(AE_BOTS_LEVEL_RECRUIT, 1) == 3.0f);
+	CHECK(ae_bots_combat_one_shot_error_floor(AE_BOTS_LEVEL_EASY, 1) == 2.0f);
+	CHECK(ae_bots_combat_one_shot_error_floor(AE_BOTS_LEVEL_EASY, 0) == 0.0f);
+	CHECK(ae_bots_combat_one_shot_error_floor(AE_BOTS_LEVEL_NORMAL, 1) == 0.0f);
+	CHECK(ae_bots_combat_one_shot_error_floor(AE_BOTS_LEVEL_DEMON, 1) == 0.0f);
+	CHECK(ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_EASY, 1, 0.0f) == 8 && ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_EASY, 1, 1.0f) == 14);
+	CHECK(ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_RECRUIT, 1, 0.0f) == 12 && ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_RECRUIT, 1, 1.0f) == 22);
+	CHECK(ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_NORMAL, 1, 0.5f) == 0 && ae_bots_combat_one_shot_delay(AE_BOTS_LEVEL_EASY, 0, 0.5f) == 0);
+	CHECK(ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_EASY, 1, 0.05f) && !ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_EASY, 1, 0.5f));
+	CHECK(ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_RECRUIT, 1, 0.03f) && !ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_RECRUIT, 1, 0.06f));
+	CHECK(ae_bots_combat_one_shot_pitch(0.5f) == -0.5f && ae_bots_combat_one_shot_pitch(-0.5f) == -0.5f && ae_bots_combat_one_shot_pitch(0.0f) == 0.0f);
+	CHECK(ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_NORMAL, 1, 0.99f) && ae_bots_combat_one_shot_keeps_middle(AE_BOTS_LEVEL_EASY, 0, 0.99f));
+	/* WEAPON RANGE (corpus: shotgun shots from 5-10 units): a shotgun holds fire past 5 units, a flamethrower past 4;
+	others have no limit */
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\shotgun\\shotgun") == 5.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\flamethrower\\flamethrower") == 4.0f);
+	CHECK(ae_bots_combat_max_fire_distance("weapons\\pistol\\pistol") > 1000.0f);
+	CHECK(ae_bots_combat_max_fire_distance(0) > 1000.0f);
+	/* CAMO (owner 10-20: "bots notice you instantly when you are using camo"): seen at 0.4 of bots.c's camo reach,
+	twice the reaction and the first aim error */
+	CHECK(ae_bots_combat_camo_reach_scale(1) == 0.4f && ae_bots_combat_camo_reach_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_error_scale(1) == 2.0f && ae_bots_combat_camo_error_scale(0) == 1.0f);
+	CHECK(ae_bots_combat_camo_reaction_scale(1) == 2.0f && ae_bots_combat_camo_reaction_scale(0) == 1.0f);
+	/* DEMON (owner 10-20: the old LEGENDARY) fights as LEGENDARY does in every other rule */
+	CHECK(ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_DEMON) == ae_bots_combat_retreat_threshold(AE_BOTS_LEVEL_LEGENDARY));
+	CHECK(ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_vertical_delay(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
+	CHECK(ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_DEMON, 1) == ae_bots_combat_initial_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 1));
+	CHECK(ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_DEMON, 0.0f, 1) == ae_bots_combat_halt_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.0f, 1));
+	CHECK(ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_DEMON, 0.5f) == ae_bots_combat_strafe_ticks(AE_BOTS_LEVEL_LEGENDARY, 0.5f));
+	CHECK(ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_DEMON, 0) < ae_bots_combat_melee_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0)); /* (melee ladder, 2026-10-20) */
+	CHECK(ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_DEMON, 0) == ae_bots_combat_grenade_cooldown(AE_BOTS_LEVEL_LEGENDARY, 0));
+	CHECK(ae_bots_combat_grenade_lead(AE_BOTS_LEVEL_DEMON) == 1.0f);
+	CHECK(ae_bots_combat_charge(AE_BOTS_LEVEL_DEMON, 0.9f, 0.0f, 0.2f, 2.0f, 0.9f) ==
+		ae_bots_combat_charge(AE_BOTS_LEVEL_LEGENDARY, 0.9f, 0.0f, 0.2f, 2.0f, 0.9f));
+}
+
+/* SPENT WEAPONS: a weapon of rounds is left to bots.c; the stock plasma pistol (a magazine, every maximum 0) and a
+weapon with no magazine are spent only with their battery out */
+static void test_weapon_spent(void)
+{
+	/* (weapons of rounds: loaded or in reserve; then the plasma pistol's magazine of no rounds; no magazine) */
+	CHECK(ae_bots_combat_weapon_spent(1, 12, 120, 0.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 4, 0, 1.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 24, 0.0f) == -1);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 0.96f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(1, 0, 0, 1.0f) == 1);
+	CHECK(ae_bots_combat_weapon_spent(0, 0, 0, 0.5f) == 0);
+	CHECK(ae_bots_combat_weapon_spent(0, 0, 0, 1.0f) == 1);
+}
+
+/* PRO TRAITS: pacing, the descope reflex, high ground, the grenade at the last-seen spot, retreat as shields pop */
+static void test_vertical_view(void)
+{
+	int level;
+
+	for (level = AE_BOTS_LEVEL_RECRUIT; level < AE_BOTS_LEVEL_DEMON; level++)
+		CHECK(ae_bots_combat_vertical_half_view(level) < ae_bots_combat_vertical_half_view(level + 1));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 30.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, 45.0f, 20.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_HEROIC, -40.0f, 0.0f));
+	CHECK(ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_DEMON, 39.0f, 0.0f));
+	CHECK(!ae_bots_combat_in_vertical_view(AE_BOTS_LEVEL_RECRUIT, 23.0f, 0.0f));
+}
+
+static void test_step_in(void)
+{
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_RECRUIT, 1.0f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.4f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 2.6f, 0.4f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_EASY, 1.0f, 0.6f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.7f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_NORMAL, 3.4f, 0.9f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_HEROIC, 3.9f, 1.0f));
+	CHECK(!ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 4.1f, 0.0f));
+	CHECK(ae_bots_combat_step_in(AE_BOTS_LEVEL_DEMON, 1.0f, 1.2f));
+}
+
+static void test_pro_traits(void)
+{
+	struct ae_bots_combat_retreat state;
+	int started, ended, level;
+	long now;
+
+	/* (pacing: NORMAL and up past 8 units, under the level's limit or after its wait) */
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_EASY, 20.0f, 1.0f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 8.0f, 1.0f, 0));
+	CHECK(ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.7f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.5f, 0));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_NORMAL, 12.0f, 0.7f, 6));
+	CHECK(ae_bots_combat_pace_holds(AE_BOTS_LEVEL_DEMON, 12.0f, 0.3f, 11));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_DEMON, 12.0f, 0.3f, 12));
+	CHECK(!ae_bots_combat_pace_holds(AE_BOTS_LEVEL_LEGENDARY, 12.0f, 0.3f, 0));
+
+	/* (zoom: NORMAL and up past 6 units; the moment again after a hit, quicker by level) */
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_RECRUIT, 30.0f));
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_EASY, 30.0f));
+	CHECK(!ae_bots_combat_zooms(AE_BOTS_LEVEL_NORMAL, 6.0f));
+	CHECK(ae_bots_combat_zooms(AE_BOTS_LEVEL_NORMAL, 6.5f));
+	CHECK(ae_bots_combat_zooms(AE_BOTS_LEVEL_DEMON, 30.0f));
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_EASY, 0.5f) == 0);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_NORMAL, 0.0f) == 18);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_NORMAL, 1.0f) == 24);
+	CHECK(ae_bots_combat_rescope_ticks(AE_BOTS_LEVEL_DEMON, 0.0f) == 5);
+	/* (each level's moment is quicker than the one below's: the ranges of HEROIC .4-.5 s, ELITE .32-.42 and LEGENDARY
+	.25-.35 overlap a little, as the gap between HEROIC's quickest and LEGENDARY's slowest is 0.05 s) */
+	for (level = AE_BOTS_LEVEL_NORMAL; level < AE_BOTS_LEVEL_DEMON; level++)
+	{
+		CHECK(ae_bots_combat_rescope_ticks(level + 1, 0.5f) < ae_bots_combat_rescope_ticks(level, 0.5f));
+		CHECK(ae_bots_combat_rescope_ticks(level + 1, 0.0f) < ae_bots_combat_rescope_ticks(level, 0.0f));
+		CHECK(ae_bots_combat_rescope_ticks(level + 1, 1.0f) < ae_bots_combat_rescope_ticks(level, 1.0f));
+	}
+	CHECK(!ae_bots_combat_descoped_holds_fire(10.0f));
+	CHECK(ae_bots_combat_descoped_holds_fire(10.5f));
+
+	/* (a scoped rifle: NORMAL and up past half its aim assist's reach, the carbine's 17 units) */
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_EASY, 14.0f, 17.0f));
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 8.5f, 17.0f));
+	CHECK(ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 9.0f, 17.0f));
+	CHECK(ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_DEMON, 30.0f, 17.0f));
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_HEROIC, 30.0f, 0.0f));
+	/* (the battle rifle's 20 units: past 10) */
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 10.0f, 20.0f));
+	CHECK(ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_NORMAL, 10.5f, 20.0f));
+	CHECK(!ae_bots_combat_rifle_zooms(AE_BOTS_LEVEL_RECRUIT, 16.0f, 20.0f));
+
+	/* (high ground: LEGENDARY and up, capped; nothing below) */
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_HEROIC, 3.0f) == 0.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_ELITE, -2.0f) == 0.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_ELITE, 2.0f) == 1.5f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_ELITE, 10.0f) == 2.25f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, -2.0f) == 0.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, 2.0f) == 3.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_LEGENDARY, 10.0f) == 4.5f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_DEMON, 2.0f) == 4.0f);
+	CHECK(ae_bots_combat_high_ground(AE_BOTS_LEVEL_DEMON, 10.0f) == 6.0f);
+
+	/* (the grenade at the last-seen spot: LEGENDARY and up, in its window and distance) */
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_HEROIC, 1.0f, 10.0f, 1, 0.0f));
+	CHECK(ae_bots_combat_prenade(AE_BOTS_LEVEL_ELITE, 1.0f, 10.0f, 1, 0.2f) && !ae_bots_combat_prenade(AE_BOTS_LEVEL_ELITE, 1.0f, 10.0f, 1, 0.3f));
+	CHECK(ae_bots_combat_prenade(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 10.0f, 1, 0.4f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_LEGENDARY, 1.0f, 10.0f, 1, 0.6f));
+	CHECK(ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 10.0f, 1, 0.6f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 0.5f, 10.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 3.5f, 10.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 4.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 21.0f, 1, 0.0f));
+	CHECK(!ae_bots_combat_prenade(AE_BOTS_LEVEL_DEMON, 1.0f, 10.0f, 0, 0.0f));
+
+	/* (retreat as shields pop: LEGENDARY and up, losing, after 3 to 9 ticks; HEROIC still waits for 0.1) */
+	ae_bots_combat_retreat_reset(&state);
+	for (now = 100; now < 103; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.3f, 0.0f, now, 0.0f, &started, &ended));
+	CHECK(ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_LEGENDARY, 0.3f, 0.0f, 103, 0.0f, &started, &ended));
+	CHECK(started);
+	ae_bots_combat_retreat_reset(&state);
+	for (now = 100; now < 140; now++)
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_HEROIC, 0.3f, 0.0f, now, 0.0f, &started, &ended));
+	ae_bots_combat_retreat_reset(&state);
+	/* (shields still up, or winning: no) */
+	for (now = 100; now < 140; now++)
+	{
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_DEMON, 0.3f, 0.2f, now, 0.0f, &started, &ended));
+		CHECK(!ae_bots_combat_retreat_step(&state, AE_BOTS_LEVEL_DEMON, 0.4f, 0.0f, now, 0.0f, &started, &ended));
+	}
+}
+
+/* THE ENERGY SWORD: a swing within the lunge's reach (2.5) once its lunge is ready, at point blank whatever; each
+level's share of the reach, HEROIC and up nearly all of it; RECRUIT now and then */
+static void test_sword_melee(void)
+{
+	int level;
+
+	for (level = 0; level < AE_BOTS_LEVELS; level++)
+	{
+		CHECK(ae_bots_combat_sword_melee(level, 0.5f, 2.5f, 1, 0, 0.0f) == 0);
+		CHECK(ae_bots_combat_sword_melee(level, 2.6f, 2.5f, 1, 1, 0.0f) == 0);
+		CHECK(ae_bots_combat_sword_melee(level, 0.5f, 2.5f, 0, 1, 0.0f) == 1);
+		CHECK(ae_bots_combat_sword_melee(level, 1.2f, 2.5f, 0, 1, 0.0f) == 0);
+	}
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_HEROIC, 2.3f, 2.5f, 1, 1, 0.99f) == 1);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_DEMON, 2.3f, 2.5f, 1, 1, 0.99f) == 1);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_NORMAL, 2.3f, 2.5f, 1, 1, 0.0f) == 0);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_NORMAL, 2.0f, 2.5f, 1, 1, 0.0f) == 1);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_EASY, 1.6f, 2.5f, 1, 1, 0.0f) == 1);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_EASY, 1.8f, 2.5f, 1, 1, 0.0f) == 0);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_RECRUIT, 1.3f, 2.5f, 1, 1, 0.0f) == 0);
+	CHECK(ae_bots_combat_sword_melee(AE_BOTS_LEVEL_RECRUIT, 1.0f, 2.5f, 1, 1, 0.9f) == 2);
+}
+
+/* INFECTION ZOMBIES: every level strikes within reach, shields up or not; RECRUIT closer and now and then; quicker */
+static void test_zombie_melee(void)
+{
+	int level;
+
+	for (level = 0; level < AE_BOTS_LEVELS; level++)
+	{
+		CHECK(ae_bots_combat_zombie_melee(level, 0.3f, 0, 0.0f) == 0);
+		CHECK(ae_bots_combat_zombie_melee(level, 1.2f, 1, 0.0f) == 0);
+		CHECK(ae_bots_combat_zombie_melee(level, 0.5f, 1, 0.0f) == 1);
+		CHECK(ae_bots_combat_zombie_melee_delay(level, 1.0f) <= ae_bots_combat_melee_delay(level, 1.0f));
+		CHECK(ae_bots_combat_zombie_melee_cooldown(level, 1.0f) < ae_bots_combat_melee_cooldown(level, 1.0f));
+		CHECK(ae_bots_combat_zombie_melee_cooldown(level, 0.0f) > 0);
+	}
+	for (level = AE_BOTS_LEVEL_EASY; level < AE_BOTS_LEVELS; level++)
+		CHECK(ae_bots_combat_zombie_melee(level, 1.0f, 1, 0.99f) == 1);
+	CHECK(ae_bots_combat_zombie_melee(AE_BOTS_LEVEL_RECRUIT, 1.0f, 1, 0.0f) == 0);
+	CHECK(ae_bots_combat_zombie_melee(AE_BOTS_LEVEL_RECRUIT, 0.5f, 1, 0.9f) == 2);
+	/* (HEROIC strikes a shielded zombie's target from 1 unit, where its ordinary blow waits for point blank) */
+	CHECK(ae_bots_combat_melee(AE_BOTS_LEVEL_HEROIC, 1.0f, 1, 0, 1, 0, 0.0f) == 0);
+	CHECK(ae_bots_combat_zombie_melee(AE_BOTS_LEVEL_HEROIC, 1.0f, 1, 0.0f) == 1);
+}
+
+static void test_friendly_fire(void)
+{
+	/* The owner's Sali case: Jenkins, the owner, then the enemy along the same shot line. */
+	CHECK(ae_bots_combat_teammate_blocks(-6.3f, -4.2f, 0.0f, 2.0f, -0.4f, 0.0f,
+		5.9f, 1.1f, 0.0f));
+	CHECK(!ae_bots_combat_teammate_blocks(-6.3f, -4.2f, 0.0f, 2.0f, 2.0f, 0.0f,
+		5.9f, 1.1f, 0.0f));
+	CHECK(!ae_bots_combat_teammate_blocks(-6.3f, -4.2f, 0.0f, 8.0f, 2.0f, 0.0f,
+		5.9f, 1.1f, 0.0f));
+	CHECK(!ae_bots_combat_teammate_blocks(0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f,
+		10.0f, 0.0f, 0.0f));
+	CHECK(ae_bots_combat_grenade_near_teammate(10.0f, 3.0f, 0.0f, 12.0f, 4.0f, 0.0f));
+	CHECK(!ae_bots_combat_grenade_near_teammate(10.0f, 3.0f, 0.0f, 14.0f, 4.0f, 0.0f));
+}
+
+static void test_crouch_jump(void)
+{
+	/* the top of the jump: in the air, past the press, no longer rising; not on the ground or on the way up */
+	CHECK(ae_bots_combat_crouch_jump(1, 10, 0.0f));
+	CHECK(ae_bots_combat_crouch_jump(1, 10, -0.05f));
+	CHECK(!ae_bots_combat_crouch_jump(1, 10, 0.05f));
+	CHECK(!ae_bots_combat_crouch_jump(0, 10, 0.0f));
+	CHECK(!ae_bots_combat_crouch_jump(1, 1, 0.0f));
+	CHECK(!ae_bots_combat_crouch_jump(1, 90, 0.0f));
+}
+
+static void test_purpose_ready(void)
+{
+	/* running: not ready; over: ready; a stored tick far past any rest (the clock started over): ready */
+	CHECK(!ae_bots_combat_purpose_ready(100, 130, 120));
+	CHECK(ae_bots_combat_purpose_ready(130, 130, 120));
+	CHECK(ae_bots_combat_purpose_ready(5, 100000, 120));
+	CHECK(!ae_bots_combat_purpose_ready(5, 125, 120));
+	CHECK(ae_bots_combat_purpose_ready(0, 0, 120));
+}
+
+static void test_spawn_grace(void)
+{
+	/* a fresh enemy afar: unseen for 1.5 s, on RECRUIT and EASY only, and only without MODERN spawns */
+	CHECK(ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 0, 20.0f, 0));
+	CHECK(ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 44, 20.0f, 0));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 45, 20.0f, 0));
+	CHECK(ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_RECRUIT, 0, 44, 20.0f, 0));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_NORMAL, 0, 10, 20.0f, 0));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_HEROIC, 0, 10, 20.0f, 0));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_DEMON, 0, 10, 20.0f, 0));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 1, 10, 20.0f, 0));
+	/* it hurt the bot, or it stands close: seen */
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 10, 20.0f, 1));
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 10, 3.0f, 0));
+	CHECK(ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, 10, 3.1f, 0));
+	/* unknown: seen */
+	CHECK(!ae_bots_combat_spawn_grace(AE_BOTS_LEVEL_EASY, 0, -1, 20.0f, 0));
+}
+
+static void test_weapon_by_range(void)
+{
+	/* the band: 0.4 to 2 times the kept range */
+	CHECK(ae_bots_combat_weapon_fit(7.0f, 0, 0, 2.8f) == 1.0f && ae_bots_combat_weapon_fit(7.0f, 0, 0, 14.0f) == 1.0f);
+	/* close: a rifle keeps half, a sniper rifle falls, a rocket is nothing inside its blast */
+	CHECK(ae_bots_combat_weapon_fit(7.0f, 0, 0, 0.0f) == 0.5f);
+	CHECK(ae_bots_combat_weapon_fit(18.0f, 0, 1, 2.0f) < 0.3f);
+	CHECK(ae_bots_combat_weapon_fit(18.0f, 0, 1, 0.0f) == 0.1f);
+	CHECK(ae_bots_combat_weapon_fit(12.0f, 1, 0, 4.0f) == 0.0f && ae_bots_combat_weapon_fit(12.0f, 1, 0, 3.0f) == 0.0f);
+	CHECK(ae_bots_combat_weapon_fit(12.0f, 1, 0, 4.5f) > 0.0f && ae_bots_combat_weapon_fit(12.0f, 1, 0, 4.5f) < 1.0f);
+	/* far: down to 0.1 at twice the far end */
+	CHECK(ae_bots_combat_weapon_fit(2.0f, 0, 0, 6.0f) < 1.0f && ae_bots_combat_weapon_fit(2.0f, 0, 0, 6.0f) > 0.1f);
+	CHECK(ae_bots_combat_weapon_fit(2.0f, 0, 0, 8.0f) == 0.1f && ae_bots_combat_weapon_fit(2.0f, 0, 0, 80.0f) == 0.1f);
+	/* the stock pairs: sniper (8, kept 18) up close loses to the assault rifle (6, kept 7); the pistol (7, kept 9) beats
+	the assault rifle at 20; the shotgun (8, kept 2) loses to it at 6 */
+	CHECK(6.0f * ae_bots_combat_weapon_fit(7.0f, 0, 0, 2.0f) > 1.2f * 8.0f * ae_bots_combat_weapon_fit(18.0f, 0, 1, 2.0f));
+	CHECK(7.0f * ae_bots_combat_weapon_fit(9.0f, 0, 0, 20.0f) > 1.2f * 6.0f * ae_bots_combat_weapon_fit(7.0f, 0, 0, 20.0f));
+	CHECK(6.0f * ae_bots_combat_weapon_fit(7.0f, 0, 0, 6.0f) > 1.2f * 8.0f * ae_bots_combat_weapon_fit(2.0f, 0, 0, 6.0f));
+	/* and keeps the sniper rifle at range against the assault rifle */
+	CHECK(!(6.0f * ae_bots_combat_weapon_fit(7.0f, 0, 0, 20.0f) > 1.2f * 8.0f * ae_bots_combat_weapon_fit(18.0f, 0, 1, 20.0f)));
+	/* the switch: 1.2 times better, 1.5 times within 3 s, never within 1 s; nothing worth 0 */
+	CHECK(ae_bots_combat_weapon_switch(5.0f, 6.1f, -1) && !ae_bots_combat_weapon_switch(5.0f, 6.0f, -1));
+	CHECK(ae_bots_combat_weapon_switch(5.0f, 6.1f, 90) && !ae_bots_combat_weapon_switch(5.0f, 7.0f, 89));
+	CHECK(ae_bots_combat_weapon_switch(5.0f, 7.6f, 30) && !ae_bots_combat_weapon_switch(5.0f, 50.0f, 29));
+	CHECK(ae_bots_combat_weapon_switch(0.0f, 0.1f, -1) && !ae_bots_combat_weapon_switch(0.0f, 0.0f, -1));
+	/* the assault rifle (6, kept 7, held down) against the pistol (7, kept 9, pressed), NORMAL and up: judged at half its
+	range, so at 9 the pistol is clearly better and it switches; at 5 not; up close the rifle wins. EASY keeps 7 */
+	CHECK(ae_bots_combat_judged_range(AE_BOTS_LEVEL_HEROIC, 7.0f, 1, 0) == 3.5f);
+	CHECK(ae_bots_combat_judged_range(AE_BOTS_LEVEL_EASY, 7.0f, 1, 0) == 7.0f);
+	CHECK(ae_bots_combat_judged_range(AE_BOTS_LEVEL_HEROIC, 9.0f, 0, 0) == 9.0f);
+	CHECK(ae_bots_combat_judged_range(AE_BOTS_LEVEL_HEROIC, 12.0f, 1, 1) == 12.0f);
+	CHECK(ae_bots_combat_judged_range(AE_BOTS_LEVEL_HEROIC, 2.0f, 1, 0) == 2.0f);
+	CHECK(ae_bots_combat_weapon_switch(6.0f * ae_bots_combat_weapon_fit(3.5f, 0, 0, 9.0f),
+		7.0f * ae_bots_combat_weapon_fit(9.0f, 0, 0, 9.0f), -1));
+	CHECK(!ae_bots_combat_weapon_switch(6.0f * ae_bots_combat_weapon_fit(7.0f, 0, 0, 9.0f),
+		7.0f * ae_bots_combat_weapon_fit(9.0f, 0, 0, 9.0f), -1));
+	CHECK(!ae_bots_combat_weapon_switch(6.0f * ae_bots_combat_weapon_fit(3.5f, 0, 0, 5.0f),
+		7.0f * ae_bots_combat_weapon_fit(9.0f, 0, 0, 5.0f), -1));
+	CHECK(6.0f * ae_bots_combat_weapon_fit(3.5f, 0, 0, 2.0f) > 7.0f * ae_bots_combat_weapon_fit(9.0f, 0, 0, 2.0f));
+	/* teleporters: evade only to a pad within 12 not towards the enemy whose exit is clearly further out; bait within 8,
+	any way, not out next to them; the nearer pad of two good ones wins */
+	CHECK(ae_bots_combat_pad_score(6.0f, -0.5f, 30.0f, 10.0f, 0) > 0.0f);
+	CHECK(ae_bots_combat_pad_score(13.0f, -0.5f, 30.0f, 10.0f, 0) < 0.0f);
+	CHECK(ae_bots_combat_pad_score(6.0f, 0.8f, 30.0f, 10.0f, 0) < 0.0f);
+	CHECK(ae_bots_combat_pad_score(6.0f, -0.5f, 12.0f, 10.0f, 0) < 0.0f);
+	CHECK(ae_bots_combat_pad_score(6.0f, 0.8f, 20.0f, 10.0f, 1) > 0.0f && ae_bots_combat_pad_score(9.0f, 0.0f, 20.0f, 10.0f, 1) < 0.0f);
+	CHECK(ae_bots_combat_pad_score(6.0f, 0.0f, 5.0f, 10.0f, 1) < 0.0f);
+	CHECK(ae_bots_combat_pad_score(3.0f, -0.5f, 30.0f, 10.0f, 0) > ae_bots_combat_pad_score(10.0f, -0.5f, 30.0f, 10.0f, 0));
+	/* bait: HEROIC and up, an even fight, a pad near, the enemy at a chasing distance, under the level's roll */
+	CHECK(ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.5f, 5.0f, 10.0f, 0.1f));
+	CHECK(!ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.5f, 5.0f, 10.0f, 0.25f) && ae_bots_combat_bait(AE_BOTS_LEVEL_DEMON, 0.5f, 5.0f, 10.0f, 0.3f));
+	CHECK(!ae_bots_combat_bait(AE_BOTS_LEVEL_NORMAL, 0.5f, 5.0f, 10.0f, 0.0f));
+	CHECK(!ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.9f, 5.0f, 10.0f, 0.0f) && !ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.2f, 5.0f, 10.0f, 0.0f));
+	CHECK(!ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.5f, 9.0f, 10.0f, 0.0f) && !ae_bots_combat_bait(AE_BOTS_LEVEL_HEROIC, 0.5f, 5.0f, 3.0f, 0.0f));
+	/* the ambush: HEROIC 3 s up to DEMON 4.5; none below */
+	CHECK(ae_bots_combat_ambush_seconds(AE_BOTS_LEVEL_NORMAL) == 0.0f && ae_bots_combat_ambush_seconds(AE_BOTS_LEVEL_HEROIC) == 3.0f);
+	CHECK(ae_bots_combat_ambush_seconds(AE_BOTS_LEVEL_DEMON) == 4.5f);
+}
+
+/* ELITE (2026-11-10) sits between HEROIC and LEGENDARY in every table, from the level order up */
+#define BETWEEN(heroic, elite, legendary) \
+	CHECK(((heroic) <= (elite) && (elite) <= (legendary)) || ((heroic) >= (elite) && (elite) >= (legendary)))
+static void test_elite(void)
+{
+	int h = AE_BOTS_LEVEL_HEROIC, e = AE_BOTS_LEVEL_ELITE, l = AE_BOTS_LEVEL_LEGENDARY;
+	float r;
+
+	CHECK(e == h + 1 && l == e + 1 && AE_BOTS_LEVEL_DEMON == l + 1 && AE_BOTS_LEVELS == AE_BOTS_LEVEL_DEMON + 1);
+	for (r = 0.0f; r <= 1.0f; r += 0.5f)
+	{
+		BETWEEN(ae_bots_combat_melee_delay(h, r), ae_bots_combat_melee_delay(e, r), ae_bots_combat_melee_delay(l, r));
+		BETWEEN(ae_bots_combat_melee_cooldown(h, r), ae_bots_combat_melee_cooldown(e, r), ae_bots_combat_melee_cooldown(l, r));
+		BETWEEN(ae_bots_combat_grenade_cooldown(h, r), ae_bots_combat_grenade_cooldown(e, r), ae_bots_combat_grenade_cooldown(l, r));
+		BETWEEN(ae_bots_combat_vertical_delay(h, r), ae_bots_combat_vertical_delay(e, r), ae_bots_combat_vertical_delay(l, r));
+		BETWEEN(ae_bots_combat_strafe_ticks(h, r), ae_bots_combat_strafe_ticks(e, r), ae_bots_combat_strafe_ticks(l, r));
+		BETWEEN(ae_bots_combat_initial_halt_ticks(h, r), ae_bots_combat_initial_halt_ticks(e, r), ae_bots_combat_initial_halt_ticks(l, r));
+		BETWEEN(ae_bots_combat_rescope_ticks(h, r), ae_bots_combat_rescope_ticks(e, r), ae_bots_combat_rescope_ticks(l, r));
+		BETWEEN(ae_bots_combat_halt_ticks(h, 0.0f, r), ae_bots_combat_halt_ticks(e, 0.0f, r), ae_bots_combat_halt_ticks(l, 0.0f, r));
+	}
+	BETWEEN(ae_bots_combat_vertical_half_view(h), ae_bots_combat_vertical_half_view(e), ae_bots_combat_vertical_half_view(l));
+	BETWEEN(ae_bots_combat_share_distance(h), ae_bots_combat_share_distance(e), ae_bots_combat_share_distance(l));
+	BETWEEN(ae_bots_combat_range_error_floor(h, 15.0f), ae_bots_combat_range_error_floor(e, 15.0f), ae_bots_combat_range_error_floor(l, 15.0f));
+	BETWEEN(ae_bots_combat_sidearm_range_floor(h, 13.0f), ae_bots_combat_sidearm_range_floor(e, 13.0f), ae_bots_combat_sidearm_range_floor(l, 13.0f));
+	BETWEEN(ae_bots_combat_long_range_hit_chance(h, 18.0f), ae_bots_combat_long_range_hit_chance(e, 18.0f), ae_bots_combat_long_range_hit_chance(l, 18.0f));
+	BETWEEN(ae_bots_combat_long_range_hit_chance(h, 40.0f), ae_bots_combat_long_range_hit_chance(e, 40.0f), ae_bots_combat_long_range_hit_chance(l, 40.0f));
+	BETWEEN(ae_bots_combat_high_ground(h, 2.0f), ae_bots_combat_high_ground(e, 2.0f), ae_bots_combat_high_ground(l, 2.0f));
+	CHECK(ae_bots_combat_pace_holds(e, 12.0f, 0.5f, 8) && !ae_bots_combat_pace_holds(e, 12.0f, 0.5f, 9));
+	CHECK(ae_bots_combat_pace_holds(e, 12.0f, 0.41f, 0) && !ae_bots_combat_pace_holds(e, 12.0f, 0.39f, 0));
+	CHECK(ae_bots_combat_retreat_threshold(e) == ae_bots_combat_retreat_threshold(h));
+	CHECK(ae_bots_combat_step_in(e, 3.9f, 0.0f) && !ae_bots_combat_step_in(e, 4.1f, 0.0f));
+	CHECK(ae_bots_combat_grenade_lead(e) == 1.0f);
+	CHECK(ae_bots_combat_squad_flankers(e, 3) == 1);
+	CHECK(ae_bots_combat_halt_ticks(e, 0.06f, 1) == 4 && ae_bots_combat_halt_ticks(e, 0.08f, 1) == 0);
+}
+
+int main(void)
+{
+	test_elite();
+	test_purpose_ready();
+	test_crouch_jump();
+	test_hash();
+	test_reaction_and_look();
+	test_confidence();
+	test_melee();
+	test_zombie_melee();
+	test_sword_melee();
+	test_grenades();
+	test_aim_head();
+	test_retreat();
+	test_charge_jump_share();
+	test_weapon_spent();
+	test_pro_traits();
+	test_step_in();
+	test_vertical_view();
+	test_friendly_fire();
+	test_spawn_grace();
+	test_weapon_by_range();
+	printf("%d checks, %d failures\n", checks, failures);
+	/* THREATS: gun on gun first, then the carrier; nothing for RECRUIT */
+	{
+		struct ae_bots_threat_view threat = { AE_BOTS_LEVEL_HEROIC, 1, 1, 0, 0, 0, 0 };
+		struct ae_bots_threat_view carrier = { AE_BOTS_LEVEL_HEROIC, 0, 1, 1, 0, 0, 0 };
+		struct ae_bots_threat_view plain = { AE_BOTS_LEVEL_HEROIC, 0, 0, 0, 0, 0, 0 };
+
+		CHECK(ae_bots_combat_threat_score(&threat) > ae_bots_combat_threat_score(&carrier));
+		CHECK(ae_bots_combat_threat_score(&plain) == 0.0f);
+		threat.self_on_gun = 0;
+		CHECK(ae_bots_combat_threat_score(&threat) > ae_bots_combat_threat_score(&carrier));
+		threat.level = AE_BOTS_LEVEL_RECRUIT;
+		CHECK(ae_bots_combat_threat_score(&threat) == 0.0f);
+	}
+	return failures ? 1 : 0;
+}

@@ -1,0 +1,56 @@
+# 0.9.0: bots shoot down hung items (powerups, a better weapon, a health pack while hurt). Digsite's workshop maps (Steam item 3477809506) hang some powerups in the air;
+# one bullet brings one down. A bot that sees no enemy and took no hit for 2 s shoots at a hung powerup in its reach
+# and sight: it stands, aims, taps once, waits half a second; after 4 s at one item it leaves it 20 s. Then the bots
+# go for the fallen item. Revision 2 (owner 11-09): any wanted item, not only the power items: Chill Out's
+# hung sword (chillout_dig) is the weapon test. With debug.bot_events the log has "ev=hung_shoot" and "ev=hung_left" lines.
+# Before the round: the Digsite Multiplayer pack subscribed in Steam (MCC), so its maps are in AE's map list.
+list bots-powerup-090
+revision 2
+title BOTS: SHOOTING DOWN HUNG ITEMS
+
+group hotbox
+map hotbox_dig@ws3477809506
+gametype AE FFA SLAY
+set bots.count 3
+set bots.skill heroic
+set debug.bot_events true
+
+test hotbox-camo
+title A bot shoots down Hotbox's hung camouflage
+setup goto start 0
+check Hidden from bots: one shoots the hung camouflage
+check It falls and a bot goes and takes it
+check No bot stands firing at it more than a few seconds
+
+test hotbox-fight
+title A bot in a fight leaves the powerup alone
+setup goto start 0
+check Shoot a bot aiming at it: it turns and fights you
+check It goes back to the powerup only after the fight
+
+group gothra
+map gothra_dig@ws3477809506
+gametype AE FFA SLAY
+set bots.count 3
+set bots.skill heroic
+set debug.bot_events true
+
+test gothra-both
+title Gothra's hung camouflage and overshield come down
+setup goto start 0
+check A bot shoots down the camouflage or the overshield
+check A bot goes and takes what fell
+check Bots leave items beyond their weapon's reach alone
+
+group chillout
+map chillout_dig@ws3477809506
+gametype AE FFA SLAY
+set bots.count 3
+set bots.skill heroic
+set debug.bot_events true
+
+test chillout-sword
+title A bot shoots down Chill Out's hung sword
+setup goto start 0
+check Hidden from bots: one shoots the hung sword down
+check A bot goes and takes the sword

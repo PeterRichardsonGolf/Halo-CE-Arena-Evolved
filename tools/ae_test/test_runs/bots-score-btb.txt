@@ -1,0 +1,41 @@
+# Bot scorecard, big team: Blood Gulch, AE BTB SLY, 15 bots. Headless only (the box), not an owner list:
+# run_list.py --after 90, then tools/ae_test/bot_scorecard.py on the game's log against the last good build's baseline.
+# Three plays, then two NEED A RIDE calls (a warthog spawned ahead, `call ride`; the second from its gunner's seat, where a bot
+# comes to drive): the scorecard counts the rides answered.
+list bots-score-btb
+revision 1
+title BOT SCORECARD: BIG TEAM
+
+group gulch
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_events true
+
+test play-1
+title The bots play
+check Bots fight
+
+test play-2
+title The bots play on
+check Bots keep fighting
+
+test play-3
+title The bots play on
+check Bots keep fighting
+
+test ride-1
+title NEED A RIDE
+setup spawn warthog ahead
+setup call ride
+check The call is taken
+expect 1 cmd call ride ok
+
+test ride-2
+title NEED A RIDE from the gunner's seat (a bot comes to drive)
+setup spawn warthog ahead
+setup seat gunner
+setup call ride
+check The call is taken
+expect 1 cmd call ride ok

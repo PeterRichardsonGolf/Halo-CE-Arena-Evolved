@@ -1,0 +1,37 @@
+# Bot scorecard, arena 4v4 (owner 11-07: arena tests never on Blood Gulch): Temple and Sali Creek, AE TEAM SLY, 7 bots.
+# Headless only: run_list.py --after 90, then tools/ae_test/bot_scorecard.py against the baseline.
+list bots-score-arena
+revision 1
+title BOT SCORECARD: ARENA
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test temple-1
+title The bots play
+check Bots fight
+
+test temple-2
+title The bots play on
+check Bots keep fighting
+
+group sali
+map h2d_salicreek
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test sali-1
+title The bots play
+check Bots fight
+
+test sali-2
+title The bots play on
+check Bots keep fighting

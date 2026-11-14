@@ -1,0 +1,56 @@
+# The GRAVITY HAMMER pack (the hammer of Grifball Beta, its art as the map has it; AE's classic-era numbers: one swing every
+# 1.43 s, a blast that kills a full shield and health within 1.8 units of the hammer's head, strips the shield to 2.2 and falls
+# to nothing at 2.6, a reach of 2.8 units where the reticle turns red, the melee button a blow of the hammer): spawns with the hammer on every life, as the other pack tests do.
+# Written for the weapon cache's id 24 (mask 8388608, START 24: the cache's aliases read bit n-1 and START n as id n);
+# until the cache registers id 24 it runs only with a stand-in pack on the box.
+list pack-gravity-hammer
+revision 2
+title GRAVITY HAMMER PACK
+
+test gh-look
+title Gravity hammer: how it looks
+check In hand: the hammer, both hands on it, no grey blocks
+check HUD: the hammer reticle and its HUD; no stray frames
+check A bot's or dropped: the same hammer, held as a heavy weapon
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 8388608
+set debug.network_test_pack_start 24
+
+test gh-prompts
+title Gravity hammer: picture, texts, kill feed
+check Swap prompt over a dropped hammer shows its picture
+check Picking one up reads: Picked up a gravity hammer
+check Kill feed names GRAVITY HAMMER for a hammer kill
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 8388608
+set debug.network_test_pack_start 24
+
+test gh-swing
+title Gravity hammer: the swing kills up close
+check A full bot right in front: one swing kills it
+check A bot two steps off: shield gone and pushed back, alive
+check One swing every 1.4 s; holding the trigger waits for it
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 8388608
+set debug.network_test_pack_start 24
+
+test gh-safe
+title Gravity hammer: reach, and no harm to you
+check The reticle turns red just past arm's length, not farther
+check Swing at a wall right in front: your shield is untouched
+check Melee is a hammer blow: a full bot in front dies to one
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 8388608
+set debug.network_test_pack_start 24

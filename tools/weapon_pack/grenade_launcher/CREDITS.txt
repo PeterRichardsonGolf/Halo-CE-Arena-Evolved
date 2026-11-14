@@ -1,0 +1,35 @@
+AE GRENADE LAUNCHER (weapon pack ae_grenade_launcher) - credits
+
+The grenade launcher's models (third-person and first-person), its grenade's model, shaders, textures (the gun's
+screen too), first-person and third-person animations, collision, sounds, the grenade's effects and its HUD (the
+grenade meter and the reticle) are ZTeam's, from the ZTeam tag pack (released on halomaps.org):
+the pack's grenade_launcher/hr weapon, with the first-person animations and ready sound of its hr_cad folder, and
+the HUD ZTeam gave it (ZTeam's brute shot HUD). The pack names no individual authors, so none are named here. They
+are used as released, but for what an Xbox map needs: the models converted to the Xbox model format, the
+multipurpose map's channels reordered, and the explosion's fire flash drawn with its own sprites (ZTeam's set it
+to take sprites its bitmap does not have). The identifier painted beside the arming arrows of the gun's screen is
+cleared (one rectangle made transparent; every other pixel ZTeam's).
+
+Made for Arena Evolved:
+- the weapon's and the grenade's numbers (6 a magazine, 12 to start and 24 at most, rate of fire, aim assist,
+  the grenade's speed, drop and fuse, the burst's damage and radius), set to our own values;
+- hold the trigger to keep the grenade from bursting, let go to burst it (the trigger tracks its grenade);
+- ZTeam's second trigger (a charged EMP grenade) left out, and the first trigger's charge with it;
+- the grenade bursts on its fuse, on a player or when the trigger is let go: the damage ZTeam's bounce made (which
+  set the grenade off at its first bounce) left out, and the grenade has no collision model (nothing can hit it or
+  shoot it down);
+- the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a full-screen visor frame);
+- a rumble added to ZTeam's firing kick;
+- materials and melee are the map's stock assault rifle's.
+
+No picture of a grenade launcher is used: none of the releases we draw on has one, so the weapon's name is
+written where a picture would be (the swap and pickup prompts, the kill feed and the HUD).
+
+The pack holds no pixel, sound or model of the game's own: what the launcher needs of the game (materials, melee,
+the stock rounds panel, a noise map) it names, and the map the player owns provides.
+
+Kind: unknown. ZTeam's models are made for Custom Edition and recreate a later game's grenade launcher; nothing in
+the release says whether they and the sounds were modelled and recorded by ZTeam or taken from that game, so this
+pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.

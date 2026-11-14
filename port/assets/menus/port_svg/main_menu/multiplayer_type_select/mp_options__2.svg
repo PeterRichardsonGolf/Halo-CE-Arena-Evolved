@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+<style>
+.b { fill:#000; stroke:#2896FF; stroke-width:1.805; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:1.805; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:2.708; stroke-linecap:round; stroke-linejoin:round }
+.e { fill:none; stroke:#2896FF; stroke-width:1.805; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:4.513 }
+.f { fill:#2896FF; stroke:none }
+.red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
+</style>
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.35"/></filter><mask id="direct_link_under" maskUnits="userSpaceOnUse" x="-20" y="-20" width="140" height="140"><rect x="-20" y="-20" width="140" height="140" fill="#fff"/><clipPath id="direct_link_low"><rect x="-20" y="50" width="140" height="70"/></clipPath><path d="M15.0,35.0 H45.0 A15.0,15.0 0 0 1 60.0,50.0 V50.0 A15.0,15.0 0 0 1 45.0,65.0 H15.0 A15.0,15.0 0 0 1 0.0,50.0 V50.0 A15.0,15.0 0 0 1 15.0,35.0 Z M15.0,42.0 H45.0 A8.0,8.0 0 0 1 53.0,50.0 V50.0 A8.0,8.0 0 0 1 45.0,58.0 H15.0 A8.0,8.0 0 0 1 7.0,50.0 V50.0 A8.0,8.0 0 0 1 15.0,42.0 Z" fill-rule="evenodd" fill="#000" stroke="#000" stroke-width="5" clip-path="url(#direct_link_low)"/></mask></defs>
+<g transform="translate(57.36 31.36) scale(1.7728)">
+<g filter="url(#glow)" opacity="0.9"><g transform="rotate(-30 50 50)">
+<path d="M15.0,35.0 H45.0 A15.0,15.0 0 0 1 60.0,50.0 V50.0 A15.0,15.0 0 0 1 45.0,65.0 H15.0 A15.0,15.0 0 0 1 0.0,50.0 V50.0 A15.0,15.0 0 0 1 15.0,35.0 Z M15.0,42.0 H45.0 A8.0,8.0 0 0 1 53.0,50.0 V50.0 A8.0,8.0 0 0 1 45.0,58.0 H15.0 A8.0,8.0 0 0 1 7.0,50.0 V50.0 A8.0,8.0 0 0 1 15.0,42.0 Z" fill-rule="evenodd" class="b"/>
+<g mask="url(#direct_link_under)">
+<path d="M55.0,35.0 H85.0 A15.0,15.0 0 0 1 100.0,50.0 V50.0 A15.0,15.0 0 0 1 85.0,65.0 H55.0 A15.0,15.0 0 0 1 40.0,50.0 V50.0 A15.0,15.0 0 0 1 55.0,35.0 Z M55.0,42.0 H85.0 A8.0,8.0 0 0 1 93.0,50.0 V50.0 A8.0,8.0 0 0 1 85.0,58.0 H55.0 A8.0,8.0 0 0 1 47.0,50.0 V50.0 A8.0,8.0 0 0 1 55.0,42.0 Z" fill-rule="evenodd" class="b"/>
+</g>
+</g></g>
+<g transform="rotate(-30 50 50)">
+<path d="M15.0,35.0 H45.0 A15.0,15.0 0 0 1 60.0,50.0 V50.0 A15.0,15.0 0 0 1 45.0,65.0 H15.0 A15.0,15.0 0 0 1 0.0,50.0 V50.0 A15.0,15.0 0 0 1 15.0,35.0 Z M15.0,42.0 H45.0 A8.0,8.0 0 0 1 53.0,50.0 V50.0 A8.0,8.0 0 0 1 45.0,58.0 H15.0 A8.0,8.0 0 0 1 7.0,50.0 V50.0 A8.0,8.0 0 0 1 15.0,42.0 Z" fill-rule="evenodd" class="b"/>
+<g mask="url(#direct_link_under)">
+<path d="M55.0,35.0 H85.0 A15.0,15.0 0 0 1 100.0,50.0 V50.0 A15.0,15.0 0 0 1 85.0,65.0 H55.0 A15.0,15.0 0 0 1 40.0,50.0 V50.0 A15.0,15.0 0 0 1 55.0,35.0 Z M55.0,42.0 H85.0 A8.0,8.0 0 0 1 93.0,50.0 V50.0 A8.0,8.0 0 0 1 85.0,58.0 H55.0 A8.0,8.0 0 0 1 47.0,50.0 V50.0 A8.0,8.0 0 0 1 55.0,42.0 Z" fill-rule="evenodd" class="b"/>
+</g>
+</g>
+</g>
+</svg>
