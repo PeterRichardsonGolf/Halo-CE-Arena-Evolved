@@ -1,0 +1,63 @@
+# Bot vantage spots and side lanes (0.7.8): bots with the sniper rifle or a rocket
+# launcher hold the map's best overlooks, found once a map; mini squads' LEFT and RIGHT routes walk the side lanes through the map's
+# walkable surfaces. Settings: bots.vantage (true), bots.routes (auto). Every test sets itself up; the bot event stream is on, so the
+# game logs ev=vantage_go, ev=vantage_hold and ev=vantage_end (why= time, enemy, hurt, flanked, ammo, weapon, order, objective) and
+# ev=lane_wp, and one "bots: map plan" line a map with the spots and lanes found.
+# Headless: run_list.py with --after 150 (each test stays that long).
+list bots-vantage-078
+revision 1
+title BOTS: VANTAGE SPOTS AND SIDE LANES
+
+group gulch
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_events true
+
+test gulch-plan
+title The map's spots and lanes are found
+check The log has one plan line with the spots and lanes
+expect 1 log bots: map plan
+check The spots are listed, each with the places it sees
+expect 2 log bots: vantage spot
+check Both side lanes are found
+expect 3 log bots: lanes: lane 2
+
+test gulch-holds
+title Bots hold the overlooks
+check A bot with a precision rifle goes to a spot
+expect 1 log ev=vantage_go
+check It gets there and holds it, looking about
+expect 2 log ev=vantage_hold
+check A hold ends, with its reason in the log
+expect 3 log ev=vantage_end
+
+test gulch-lanes
+title Squads walk the side lanes
+check A LEFT or RIGHT squad walks a lane's waypoints
+expect 1 log ev=lane_wp
+check A squad's route line names its lane
+expect 2 log lane=1
+
+test follow-me
+title FOLLOW ME pulls a holder off its spot
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check A bot on a spot leaves it at once and follows
+check No bot of your squad stays on a spot
+
+group prisoner
+map prisoner
+gametype AE FFA SLAY
+set bots.count 8
+set bots.skill heroic
+set debug.bot_events true
+
+test prisoner-none
+title Indoors: no holds, no stalls
+check Prisoner has no good spot, and the log says so
+expect 1 log bots: map plan
+check No bot holds a spot
+expect 2 no log ev=vantage_hold

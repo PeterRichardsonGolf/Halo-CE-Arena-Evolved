@@ -1,0 +1,30 @@
+# Bot scorecard, driving: Snow Grove (a Custom Edition map with vehicles), AE BTB SLY, 15 bots, bots drive (debug.bot_vehicles 2).
+# Headless only (the box), not an owner list: run_list.py --after 90, then tools/ae_test/bot_scorecard.py on the game's
+# log against the baseline. Six minutes. Counts: drive_stats lines (when the build logs them), vehicle tick, stuck.
+list bots-score-drive
+revision 1
+title BOT SCORECARD: DRIVING
+
+group snow
+map cmt_snow_grove@ce
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test drive-1
+title The bots play
+check Bots fight and drive
+
+test drive-2
+title The bots play on
+check Bots keep driving
+
+test drive-3
+title The bots play on
+check Bots keep driving
+
+test drive-4
+title The bots play on
+check Bots keep driving

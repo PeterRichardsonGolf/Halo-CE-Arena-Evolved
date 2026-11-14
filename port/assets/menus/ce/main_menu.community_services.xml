@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The community services' first-run opt-in, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/community_services/community_services_screen" width="640" height="480" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/gradient">
+		<data input="ae community update"/>
+		<on event="b" run="ae community not now"/>
+		<on event="back" run="ae community not now"/>
+		<on event="start" run="ae community not now"/>
+		<child widget="main_menu/community_services/header_community_services"/>
+		<child widget="main_menu/community_services/options_menu"/>
+	</widget>
+	<widget name="main_menu/community_services/header_community_services" controller="1" left="35" top="11" width="605" height="59" bitmap="main_menu/community_services/header_community_services">
+	</widget>
+	<widget name="main_menu/community_services/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children">
+		<on event="created" run="ae community focus"/>
+		<child widget="main_menu/community_services/op_list_hosted_games" x="54" y="187"/>
+		<child widget="main_menu/community_services/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/community_services/op_list_hosted_games" width="328" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/ae_option_bkds_optin" color="#FF2896FF">
+		<on event="a" run="ae community row"/>
+		<child widget="main_menu/community_services/list_hosted_games_label"/>
+		<child widget="main_menu/community_services/list_hosted_games_spinner" x="237" y="1"/>
+	</widget>
+	<widget name="main_menu/community_services/list_hosted_games_label" type="text" controller="1" width="230" height="22" text="LIST HOSTED GAMES:" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/community_services/list_hosted_games_spinner" type="spinner" left="3" top="2" width="63" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ON" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 66 19 72">
+	</widget>
+	<widget name="main_menu/community_services/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/community_services/button_use" x="292" y="1"/>
+		<child widget="main_menu/community_services/button_not_now" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/community_services/button_use" type="text" width="216" height="24" bitmap="bitmaps/ae_optin_button_use" text="USE COMMUNITY SERVICES" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="ae community use"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/community_services/button_not_now" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" text="NOT NOW" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="ae community not now"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+</menus>

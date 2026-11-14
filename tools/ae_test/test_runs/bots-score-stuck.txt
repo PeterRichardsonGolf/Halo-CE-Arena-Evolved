@@ -1,0 +1,30 @@
+# Bot scorecard, a map's stuck spots: Blamite Mines, AE TEAM SLY 4v4, 7 bots (the 11-11 Comp trap: blue bots stuck low).
+# Headless only (the box), not an owner list: run_list.py --after 90, then tools/ae_test/bot_scorecard.py on the game's
+# log against the baseline. Six minutes. Counts: stuck, goals given up, kills/deaths.
+list bots-score-stuck
+revision 1
+title BOT SCORECARD: STUCK SPOTS
+
+group mines
+map blamitemines@smp
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test mines-1
+title The bots play
+check Bots fight
+
+test mines-2
+title The bots play on
+check Bots keep fighting
+
+test mines-3
+title The bots play on
+check Bots keep fighting
+
+test mines-4
+title The bots play on
+check Bots keep fighting
