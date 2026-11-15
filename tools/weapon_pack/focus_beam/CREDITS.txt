@@ -1,0 +1,27 @@
+AE FOCUS BEAM (weapon pack ae_focus_beam) - credits
+
+The focus beam's model, first-person model and animations, textures, shaders, HUD, effects and sounds, and its
+weapon, beam and damage, are the work of CMT (the Custom Mapping Team), from the stock-compatible source release of
+The Silent Cartographer: Evolved 1.4 (the Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their
+credits.txt names): CMT's prototype focus beam (evolved_prototypes/focus_beam). They are used under the release's own
+terms ("Just don't take credit for things you didn't make") and are unchanged but for what an Xbox map needs: the
+models converted, the multipurpose map's channels reordered and the high-resolution HUD made the Xbox's, and
+the beam's two contrails made narrower (its core 0.12 units wide, its glow 0.08 to 0.14).
+
+The weapon's numbers are AE's own, not CMT's: a heat beam that strips a full shield in about two thirds of a second
+and is weak on bare health (x1.1 on shields, x0.2 on the body), 20 rising to 30 rounds a second, about 2 s of beam to
+overheat, a battery of 333 rounds, a 30-unit reach and one 2x zoom. Its firing rumble is CMT's brute shot trigger
+made a pad rumble only. The held weapon's collision and melee are the stock assault rifle's, left to the map.
+
+The pack holds no pixel, sound or model of the game's own: what the focus beam needs of the game (impact materials,
+decals, particles, sounds and a reflection map) it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1).
+
+Kind: community model. CMT's attribution note in the release says its models, textures and shaders are CMT's own
+and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music and sfx
+files": the focus beam's models, animations and textures are CMT's. Which sounds those are the note does not say;
+the beam's looping firing and charge sounds sit in folders named for other weapons and creatures and may be some of
+them.
+
+Thank you, CMT.

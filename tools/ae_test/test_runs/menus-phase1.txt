@@ -1,0 +1,67 @@
+# Menus phase 1 (0.9.0 line, owner 2026-11-10 decisions): the main menu's new rows and COMING SOON group, MULTIPLAYER with
+# its descriptions in the rows, the MATCHMAKING lobby, the PARTY manager, MESSAGE OF THE DAY and WHAT'S NEW, the TAB /
+# START menu and B asking before QUIT. Menus tests: each test's setup puts its screen in front of you (lobby_fill seats
+# test guests, motd_reset opens MESSAGE OF THE DAY at once, motd_offline asks no master); the checks say where to look.
+list menus-phase1
+revision 1
+title MENUS PHASE 1
+
+test main-rows
+title MAIN MENU: the rows and COMING SOON
+check Six rows, then COMING SOON over four dim rows
+check A on FORGE: error sound, a nudge, nothing opens
+check Prompts: Select, Party, Network, Quit, Menu
+menus
+
+test main-keys
+title MAIN MENU: B, START, Y
+check B asks Quit Arena Evolved?; B again cancels
+check START or Tab: TAB menu PLAYER .. QUIT
+check Y: SETTINGS opens on ONLINE (the network)
+menus
+
+test multiplayer-rows
+title MULTIPLAYER: rows with their descriptions
+check SERVER BROWSER first, MATCHMAKING second, 6 rows
+check Each row shows its description inside it
+check JOIN BY ADDRESS opens its field; B comes back
+menus
+
+test matchmaking-lobby
+title MATCHMAKING: the playlist lobby
+check One row a playlist: CASUAL, BTB, COMP; CASUAL focused
+check Down to BTB: its card shows; reopened, BTB stays
+check START: Joining CASUAL, blue edge pulses; B cancels
+menus
+
+test party-two
+title PARTY: two players, hold B to remove
+setup lobby_fill 2
+check X: MY PARTY 2/4 with your card and Guest 2's
+check On Guest 2 hold B: REMOVE fills red, Guest 2 leaves
+check A tap of B closes it
+menus
+
+test party-full
+title PARTY: full at 4/4
+setup lobby_fill 4
+check X: 4/4 ON THIS PC, no open card
+check THE PARTY IS FULL row; A on it: error sound
+check B closes; MY PARTY on the main menu reads 4/4
+menus
+
+test motd-first
+title MESSAGE OF THE DAY: at launch
+setup motd_offline
+setup motd_reset
+check It opens at once: this release's notes
+check YOUR VERSION reads NEW; Up / Down scroll
+check B closes; its row reopens it (no once-a-day line)
+menus
+
+test whats-new
+title WHAT'S NEW: releases and the badge
+check WHAT'S NEW's row shows 1 NEW
+check A: releases left, notes right; Up / Down
+check B: the 1 NEW badge is gone
+menus

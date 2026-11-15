@@ -1,0 +1,61 @@
+# The AE STARTER PISTOL pack (the Digsite mod's 00_e3 pistol from the official mod tools, AE's numbers: one precise
+# round a pull, 3.4 a second, 26 a round: three hits pop a shield, the fourth to the head kills, five to the body;
+# 12 a magazine, 48 to start, 72 at most; a small 1.5x zoom; error 0.1 to 2.5 degrees for a held trigger): the pack's weapon in hand on every
+# life on Octagon 2, a dummy that stands still, ttk on where a kill's time matters.
+# Needs the cache with the pack's row (weapon id 25, key starter_pistol; a built cache holds it: the row is held).
+list pack-starter-pistol
+revision 1
+title STARTER PISTOL PACK
+
+test pistol-look
+title Starter pistol: how it looks and reads
+setup dummy 1 20
+check In hand: Digsite pistol, dark body, scope on top
+check HUD: blue ring, classic rounds panel, no big blue bar
+check Look at the dummy: the reticle turns red
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25
+
+test pistol-zoom
+title Starter pistol: the small zoom
+setup dummy 1 45
+check Zoom in: a small 1.5x, no "2x" label, no scope
+check Zoomed on the dummy: the reticle turns red
+check Zoom out, fire from the hip: shots land in the ring
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25
+
+test pistol-ttk
+title Starter pistol: hits to kill
+setup dummy 1 15
+setup ttk on
+check Head only: 3 hits leave a sliver, the 4th kills, ~0.9 s
+check Body only: 5 hits kill, ~1.2 s
+check Paced taps land dead on; holding fire sprays wide
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25
+
+test pistol-range
+title Starter pistol: red reticle and range
+setup dummy 1 55
+check Dummy at 55 units: the reticle is red and shots hurt
+check Step back past 60 units: blue, and the round falls short
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25
+
+test pistol-ammo
+title Starter pistol: magazine and reload
+check Fire the magazine: 12 rounds, the low warning at 3
+check Reload: about 1.5 s with its own sound, back to 12
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25

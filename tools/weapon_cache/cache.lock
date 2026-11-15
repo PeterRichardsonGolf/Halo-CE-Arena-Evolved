@@ -1,0 +1,8 @@
+{
+ "cache_id": "08c83a06237f963c",
+ "cache_sha256": "08c83a06237f963c2ee343964e139ed07fbc19d1f4a12b89b7c543f053ab3e8c",
+ "file_sha256": "40d8e8e2638dcff3d585b41e3c119d5607111e44e5059b15cd18bad6dff34979",
+ "lock_schema": "cache_sha256 = the digest the cache stores in its own header (offset 0x38; the SHA-256 of the file with those 32 bytes zeroed), which the game compares; file_sha256 = plain SHA-256 of the file, for the kit",
+ "serial": 3,
+ "size": 90312880
+}

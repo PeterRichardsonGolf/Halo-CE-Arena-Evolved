@@ -1,0 +1,821 @@
+{
+ "format": 1,
+ "about": "The AE heavy revolver pack (folder revolver): ZTeam's heavy revolver as its h3b model (world and first-person; ZTeam left it untextured) dressed with ZTeam's h3 version of the gun: its base and multipurpose maps (re-dressed for the h3b model by revolver_art.py, in a dark red and metal palette, its lights an energy red), its black metal shader, weapon tag, animations, collision, sounds and HUD; an Xbox weapon tuned as a heavy close-to-mid sidearm that fires one slow, heavy slug (ZTeam's fires 16 pellets). The role's numbers re-expressed for AE's 75 + 75 player: a slug is 31 % of a full player (46.4 of 150), so two strip a shield, three kill with the last to the head, four to the body, a slug and a blow kill; the rest as the role has them: 8 a drum, 24 to start, 40 at most, 1.67 slugs a second, a slow, dropping slug, aim assist 3 degrees to 15 units, magnetism 10 degrees to 25. Under SWAT rules (no shields, headshots kill) one slug to the head kills and two to the body. Everything the stock pistol has is the map's. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line (--zip).",
+ "pack": {
+  "id": "ae_revolver",
+  "revision": 1,
+  "display": "HEAVY REVOLVER",
+  "prefix": "ae\\packs\\revolver\\",
+  "weapon": "zteam\\objects\\weapons\\single\\mauler\\h3\\mauler",
+  "weapon_key": "revolver",
+  "labels": "hp,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\revolver\\zteam\\objects\\weapons\\single\\mauler\\h3b\\slug": "the stock pistol round (projectile and damage effect: impacts, contrail, headshot flags) with our own damage, speed, drop and range",
+   "ae\\packs\\revolver\\zteam\\objects\\weapons\\single\\mauler\\h3b\\effects\\fire_slug": "the stock pistol's firing effect (flash, smoke, casing) with ZTeam's shot sound",
+   "ae\\packs\\revolver\\zteam\\objects\\weapons\\single\\mauler\\h3b\\effects\\trigger": "the stock pistol's firing kick (a damage effect) with a heavy rumble on both motors",
+   "ae\\packs\\revolver\\zteam\\objects\\weapons\\single\\mauler\\h3b\\effects\\melee": "the stock pistol's melee damage with our own damage"
+  },
+  "icon": "ae_pack\\hud\\revolver_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\revolver_icon"
+  ]
+ },
+ "source": {
+  "name": "ZTeam tag pack (halomaps.org release, zteam_Tag_Pack.zip)",
+  "file": "zteam_Tag_Pack.zip",
+  "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3",
+  "root": "",
+  "allowlist": [
+   "zteam/hud/h3/bitmaps/icons/weapons_temp.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/hud/temp/weapon_interfaces/test/h3_mauler.weapon_hud_interface",
+   "zteam/objects/weapons/single/mauler/h3/animations/mauler_fp_spartan.model_animations",
+   "zteam/objects/weapons/single/mauler/h3/animations/mauler_tp.model_animations",
+   "zteam/objects/weapons/single/mauler/h3/bitmaps/mauler.bitmap",
+   "zteam/objects/weapons/single/mauler/h3/bitmaps/mauler_multipurpose.bitmap",
+   "zteam/objects/weapons/single/mauler/h3/collisions/mauler_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/mauler/h3/mauler.weapon",
+   "zteam/objects/weapons/single/mauler/h3/shaders/mauler_metal_black.shader_model",
+   "zteam/objects/weapons/single/mauler/h3/sounds/fire.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/posing.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/reload_full.sound",
+   "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.gbxmodel",
+   "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.gbxmodel",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap"
+  ],
+  "verbatim": [
+   "zteam/hud/h3/bitmaps/icons/weapons_temp.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/alphas.bitmap",
+   "zteam/hud/h3/bitmaps/meters/weapon/meters.bitmap",
+   "zteam/hud/shared/bitmaps/reticles/reticles.bitmap",
+   "zteam/objects/weapons/single/mauler/h3/animations/mauler_tp.model_animations",
+   "zteam/objects/weapons/single/mauler/h3/collisions/mauler_tp.model_collision_geometry",
+   "zteam/objects/weapons/single/mauler/h3/sounds/fire.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/melee.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/posing.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/ready.sound",
+   "zteam/objects/weapons/single/mauler/h3/sounds/reload_full.sound",
+   "zteam/shared/bitmaps/cube_maps/gunmetal_diffuse.bitmap",
+   "zteam/shared/bitmaps/detail_maps/gun_detail.bitmap"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae"
+ ],
+ "art_inputs": {
+  "h3_base.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/mauler/h3/bitmaps/mauler.bitmap",
+   "sha256": "bbfcbe89b9166cc2a48eb5a29b93bea68717e5832f30b3beea4f8c45dec25202",
+   "scripts": [
+    "revolver_art.py"
+   ]
+  },
+  "h3_multi.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/mauler/h3/bitmaps/mauler_multipurpose.bitmap",
+   "sha256": "93df2d89b324b385b75e90db429a2fec849e49667c080a6b4611691e1386b16d",
+   "scripts": [
+    "revolver_art.py"
+   ]
+  },
+  "h3b_tp.gbxmodel": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.gbxmodel",
+   "sha256": "08be58916fb30547cbf95b73c5417432bbbea05a1cb4ee05895d5be3480315c1",
+   "scripts": [
+    "revolver_texels.py"
+   ]
+  },
+  "fp_spartan_source.model_animations": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/objects/weapons/single/mauler/h3/animations/mauler_fp_spartan.model_animations",
+   "sha256": "1d29f43d8f95a833d35681f213a16995f32fab576d4b3c9fe6f849037664b27d",
+   "scripts": [
+    "revolver_fp.py"
+   ]
+  },
+  "hud_pictures.bitmap": {
+   "kind": "tag",
+   "root": "cmt",
+   "tag": "zteam/hud/h3/bitmaps/icons/weapons_temp.bitmap",
+   "sha256": "2d99bd448ea5474a0e67f03393a121216015327e9d4f5522add75cb594f2342f",
+   "scripts": [
+    "source_icon.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "revolver_icon.png": "source_icon.py",
+  "revolver_body.png": "revolver_art.py",
+  "revolver_multi.png": "revolver_art.py"
+ },
+ "art_drawings": {
+  "revolver_icon.png": {
+   "draw": "source_icon",
+   "input": "hud_pictures.bitmap",
+   "bitmap": 5,
+   "width": 100
+  },
+  "revolver_body.png": {
+   "draw": "revolver_diffuse",
+   "input": "h3_base.bitmap",
+   "multi": "h3_multi.bitmap",
+   "derived_input": "h3b_texels.npy"
+  },
+  "revolver_multi.png": {
+   "draw": "revolver_multi",
+   "input": "h3_base.bitmap",
+   "multi": "h3_multi.bitmap",
+   "derived_input": "h3b_texels.npy"
+  }
+ },
+ "art": {
+  "revolver_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    74
+   ],
+   "pixels_sha256": "aff9223ffec065051d8a3d1b3ce553bed2dfe33bb24624288989fd034d179b09"
+  },
+  "revolver_body.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "d75f967913ea309a9fa507ad531c7014a060163c7dd1f802ca2b1abbc98d22ff"
+  },
+  "revolver_multi.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "e0980fe2861234e8e7e5ed69f4e3ed7ed048a6033776787e8ff0b262a900c37c"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "zteam\\objects\\weapons\\single\\mauler\\h3\\mauler.weapon"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/bitmaps/revolver.bitmap",
+   "op": "bitmap",
+   "art": [
+    "revolver_body.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ],
+   "why": "the body picture (revolver_art.py): ZTeam's own h3 base map re-dressed for the h3b model's side-projected texture: its lights carried to their places on the gun and the strays cleared; the drum and the receiver's side panel a dark red, the rest a dark metal, each a ramp of ZTeam's own brightness (its panel lines and wear kept); ZTeam's lights in an energy red"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/bitmaps/revolver_multipurpose_pc.bitmap",
+   "op": "bitmap",
+   "art": [
+    "revolver_multi.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ],
+   "why": "the multipurpose picture in Halo PC's channel order (revolver_art.py): ZTeam's lights (self-illumination) where the body picture has them, the specular mask's contrast lifted; converted to the Xbox's order by the next step"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/bitmaps/revolver_multipurpose.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "fix-ae",
+    "zteam/objects/weapons/single/mauler/h3b/bitmaps/revolver_multipurpose_pc.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/shaders/revolver_metal.shader_model",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/mauler/h3/shaders/mauler_metal_black.shader_model"
+   ],
+   "edits": [
+    [
+     "set",
+     "base_map",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\bitmaps\\revolver.bitmap"
+    ],
+    [
+     "set",
+     "multipurpose_map",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\bitmaps\\revolver_multipurpose.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "parallel_brightness",
+       "1"
+      ],
+      [
+       "perpendicular_tint_color",
+       "0.63 0.29 0.22"
+      ],
+      [
+       "parallel_tint_color",
+       "0.72 0.43 0.38"
+      ]
+     ]
+    ]
+   ],
+   "why": "the revolver's one shader: ZTeam's black metal (its gunmetal cube map and gun detail map) on our two pictures; brighter at grazing angles (parallel brightness 1 from 0.75) and its reflection tinted half toward the palette's red sheen (perpendicular 0.63 0.29 0.22, parallel 0.72 0.43 0.38, from ZTeam's 0.39 0.35 0.33 and 0.44 0.53 0.60)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.gbxmodel",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.gbxmodel"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[0].shader",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\shaders\\revolver_metal.shader_model"
+    ]
+   ],
+   "why": "ZTeam's h3b model (untextured: its one shader ZTeam's grey placeholder) bound to the revolver's shader"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.model",
+   "op": "model",
+   "from": [
+    "fix-ae",
+    "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.gbxmodel",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.gbxmodel"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[0].shader",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\shaders\\revolver_metal.shader_model"
+    ]
+   ],
+   "why": "ZTeam's h3b model (untextured: its one shader ZTeam's grey placeholder) bound to the revolver's shader"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.model",
+   "op": "model",
+   "from": [
+    "fix-ae",
+    "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.gbxmodel"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3/animations/mauler_fp_spartan.model_animations",
+   "op": "derived",
+   "derived": "fp_spartan.model_animations",
+   "why": "ZTeam's first-person animations with the view model set back (revolver_fp.py): the root node the arms and the gun hang from moved 0.045 forward, 0.025 right and 0.035 down (world units) in every base animation, so the gun sits further off and lower right at AE's default field of view, where the HJ magnum sits; the hands hold it as before"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/slug.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/bullet.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "29"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "29 29"
+    ],
+    [
+     "set",
+     "cyborg_armor",
+     "1.6"
+    ],
+    [
+     "set",
+     "cyborg_energy_shield",
+     "1.6"
+    ]
+   ],
+   "why": "the slug: the stock pistol round's damage effect (its impacts, materials and headshot flags) at our numbers: 29 a slug, x1.6 on a player's shields and body alike (46.4 a hit): two strip a full 75 shield, the third to the head kills, four to the body; with no shields (the SWAT rules) one to the head kills, two to the body"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/slug.projectile",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/bullet.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "impact_damage",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\slug.damage_effect"
+    ],
+    [
+     "set",
+     "maximum_range",
+     "150"
+    ],
+    [
+     "set",
+     "initial_velocity",
+     "75"
+    ],
+    [
+     "set",
+     "final_velocity",
+     "45"
+    ],
+    [
+     "set",
+     "air_gravity_scale",
+     "2.1"
+    ]
+   ],
+   "why": "the slug's flight: the stock pistol round (its impacts and contrail) carrying our damage effect, slow and heavy: 75 world units a second falling to 45, twice-and-a-bit the stock gravity, gone at 150 units (a close-to-mid weapon you lead at range)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/effects/fire_slug.effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/effects/fire bullet.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].parts[0].type",
+     "zteam/objects/weapons/single/mauler/h3/sounds/fire.sound"
+    ]
+   ],
+   "why": "the firing effect: the stock pistol's (its flash, smoke and casing) with ZTeam's revolver shot in place of the stock pistol's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/effects/trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.12"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.1"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): the stock pistol's firing kick made again under the pack's name with a heavy thump on both motors with each slug (the brute shot's numbers)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3b/effects/melee.damage_effect",
+   "op": "edit",
+   "from": [
+    "stock",
+    "weapons/pistol/melee.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "76"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "76 76"
+    ]
+   ],
+   "why": "the revolver's blade: the stock pistol's melee at 76 a blow (x1.4 on a player, as the stock's: 106.4), so a slug and a blow kill from full (46.4 + 106.4 = 152.8 >= 150) and a blow alone leaves a full player alive; two blows kill as any melee does"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/revolver_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "revolver_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: ZTeam's own picture of the revolver (its HUD's weapon picture, the sixth on ZTeam's sheet), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\revolver_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/hud/temp/weapon_interfaces/test/h3_mauler.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/hud/temp/weapon_interfaces/test/h3_mauler.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_overlays[0].height_scale",
+     "0.4125"
+    ],
+    [
+     "sets",
+     [
+      [
+       "meter_elements[0].sequence_index",
+       "7"
+      ],
+      [
+       "meter_elements[0].alpha_multiplier",
+       "20"
+      ],
+      [
+       "meter_elements[0].alpha_bias",
+       "0"
+      ],
+      [
+       "static_elements[0].sequence_index",
+       "7"
+      ],
+      [
+       "total_ammo_cutoff",
+       "13"
+      ],
+      [
+       "loaded_ammo_cutoff",
+       "4"
+      ]
+     ]
+    ],
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ]
+   ],
+   "why": "the revolver's own HUD: ZTeam's (its round reticle with four ticks and its picture of the revolver), its rounds panel the map's stock one in place of ZTeam's chain of panels, whose last draws a full-screen visor frame over the game's own HUD; the reticle's height scale its width's (0.4125 from 0.55: ZTeam's drew the ring as a tall oval); its ammunition meter ZTeam's eight-shell one from the same sheets (sequence 7 of its meter and alpha sheets, with that meter's fill numbers and low-ammo cutoffs as ZTeam's h3 magnum HUD has them) in place of its five-shell one, for the eight-round drum; the source's own panel is out (its static elements and meter): no panel of the pack's draws under the classic HUD style"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/mauler/h3/mauler.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "zteam/objects/weapons/single/mauler/h3/mauler.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "zteam/objects/weapons/single/mauler/h3b/models/mauler_tp.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "zteam/objects/weapons/single/mauler/h3b/models/mauler_fp.model"
+    ],
+    [
+     "set",
+     "attachments[0].type",
+     "weapons\\assault rifle\\muzzle flash.light"
+    ],
+    [
+     "set",
+     "material_effects",
+     "sound\\sfx\\impulse\\material_effects\\weapon.material_effects"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "sound\\sfx\\impulse\\weapon_drops\\pistol_impact.sound"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\effects\\melee.damage_effect"
+    ],
+    [
+     "set",
+     "player_melee_response",
+     "weapons\\pistol\\melee_response.damage_effect"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam\\hud\\temp\\weapon_interfaces\\test\\h3_mauler.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "pickup_sound",
+     "sound\\sfx\\weapons\\weapon_pickup_ammo\\pistol_ammo.sound"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "20"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "autoaim_angle",
+     "3"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "15"
+    ],
+    [
+     "set",
+     "magnetism_angle",
+     "10"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "25"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_loaded_maximum",
+     "8"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reloaded",
+     "8"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_total_initial",
+     "24"
+    ],
+    [
+     "set",
+     "magazines[0].rounds_reserved_maximum",
+     "32"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "1.67 1.67"
+    ],
+    [
+     "set",
+     "triggers[0].projectiles_per_shot",
+     "1"
+    ],
+    [
+     "set",
+     "triggers[0].error",
+     "0 1"
+    ],
+    [
+     "set",
+     "triggers[0].minimum_error",
+     "0"
+    ],
+    [
+     "set",
+     "triggers[0].error_angle",
+     "0.15 2"
+    ],
+    [
+     "set",
+     "triggers[0].error_acceleration_time",
+     "0.3"
+    ],
+    [
+     "set",
+     "triggers[0].error_deceleration_time",
+     "0.2"
+    ],
+    [
+     "set",
+     "triggers[0].projectile_object",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\slug.projectile"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_effect",
+     "zteam/objects/weapons/single/mauler/h3b/effects/fire_slug.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].empty_effect",
+     "weapons\\pistol\\effects\\empty.effect"
+    ],
+    [
+     "set",
+     "triggers[0].firing_effects[0].firing_damage",
+     "zteam\\objects\\weapons\\single\\mauler\\h3b\\effects\\trigger.damage_effect"
+    ]
+   ],
+   "why": "the h3b models (ZTeam's h3 weapon, its animations, collision and sounds, borrowed: both models have the same four nodes); ZTeam's light and HUD chain left out; what the map's stock pistol has (muzzle flash, materials, drop sound, ammo pickup sound, melee response, message indices, empty click) is the map's; our own numbers: the role's own, as the latest-generation heavy revolver has them: one slug a shot (ZTeam's fires 16 pellets), 8 a drum, 24 to start (8 loaded and 16), 40 at most (32 in reserve), 1.67 slugs a second, the first slug 0.15 degrees off at most, the error growing to 2 degrees over 0.3 s of fire and gone in 0.2 s (a paced trigger stays exact), aim assist 3 degrees to 15 units and magnetism 10 degrees to 25 units"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the round reticle; re-pinned 2026-11-05 for the owner's notes: no glowing lines, the role's drum (8, 24, 40), aim assist and magnetism in degrees (3, 10), the eight-shell meter, the first-person view set back; re-pinned for the pack's HUD without the source's own panel (nothing of the pack's draws under the classic HUD style); a pack built twice from the recipe was the same",
+  "donor_sha256": "118d33991906516cfcd35e644bcda250b79c4b1d80b0642fc97024f19d037cc4",
+  "donor_size": 20852736,
+  "pack_sha256": "cb28823ba1c023c3610f2869f24aebcee3edf195eeda607063e514fe51783c9f",
+  "pack_own_sha256": "2975f47fbb54fc14c344397baf3212fb5a11c3991581a961be615b260534e981",
+  "pack_size": 8586453,
+  "own_tags": 25,
+  "external_tags": 46
+ },
+ "derived": {
+  "h3b_texels.npy": {
+   "script": "revolver_texels.py",
+   "input": "h3b_tp.gbxmodel",
+   "sha256": "e707f74dcd9473871afefd1a318dd559a58022c627013b324b5a1f97de9ece4f"
+  },
+  "fp_spartan.model_animations": {
+   "script": "revolver_fp.py",
+   "input": "fp_spartan_source.model_animations",
+   "sha256": "281209fc2e3ff5a65220fb09dd172407a3f093ff52e5c46da919da4f9a4dac5b"
+  }
+ }
+}

@@ -1,0 +1,70 @@
+# The bot fix round of 0.7.8 (owner run 2 of bots-vantage-078): NEED A RIDE from a damaged vehicle's seat, fireteams split by
+# scale and free with no order, tanks in Slayer, vantage holds for any squad member, and DEV MODE's "why" lines (a bot that
+# drops or refuses what it was asked says why on the HUD; the log has "bots: why:"). `call ride` is the wheel's NEED A RIDE.
+# Headless: run_list.py with --after 90; the bot scorecard (tools/ae_test/bot_scorecard.py) judges the counts.
+# Revision 2 (owner run 3: regroup and ride-damaged FAIL): REGROUP is held in a big team game until the next order, the
+# leader's death or REGROUP again once formed; the reset before each test ends the squad's orders; its setup lines now run
+# once the bots the reset put back are up (`call ride` had found none).
+list bots-fix-078
+revision 2
+title BOTS: THE FIX ROUND
+
+group gulch
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 15
+set bots.skill heroic
+set debug.bot_events true
+
+test free-team
+title With no order your squad plays on its own
+check Your squad has 3 or 4 bots, the rest form squads
+check With no order they play on their own, not trailing you
+check The status line names your squad's size
+setup fireteam status
+
+test regroup
+title REGROUP brings them and they keep firing
+setup fireteam regroup
+check The dev command is taken
+expect 1 cmd fireteam regroup ok
+check Your squad comes to you, shooting as they come
+check They stay close by you until your next order
+
+test regroup-again
+title REGROUP again lets them play free
+setup fireteam regroup
+check Once they came the HUD says: with you until next order
+check REGROUP on the wheel with them by you: they play free
+check The HUD says: squad: playing free
+
+test ride-damaged
+title NEED A RIDE from a damaged warthog
+setup goto start 0
+setup spawn warthog ahead
+setup seat gunner
+setup call ride
+check The call is taken
+expect 1 cmd call ride ok
+check A bot comes to drive, even with the hull damaged
+check If no one can come, the HUD says why
+
+test tanks-holds
+title Tanks and high ground in Slayer
+setup goto start 0
+check A bot takes a tank on its own and drives it
+check A bot with a sniper or rockets holds a high spot
+check A bot that drops a ping says why on the HUD
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test arena-near
+title Arena: your squad stays loosely near
+check With no order your squad stays within about 25 units
+check They do not trail you step by step
