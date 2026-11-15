@@ -327,6 +327,7 @@ float ae_dynamic_resolution_refresh_interval_ms(void)
 	static float mode_ms;
 	Uint64 now = SDL_GetTicks();
 
+#if !defined(HALO_ANDROID)
 	if (!read_at || now - read_at >= 1000)
 	{
 		SDL_Window *window = SDL_GL_GetCurrentWindow();
@@ -338,6 +339,11 @@ float ae_dynamic_resolution_refresh_interval_ms(void)
 			0.0f;
 		read_at = now ? now : 1;
 	}
+#else
+	/* (the Android guest's SDL has no display mode calls: the learnt period below stands in) */
+	(void)read_at;
+	(void)now;
+#endif
 	if (!(mode_ms > 0.0f))
 	{
 		float learnt = ae_frame_pacer_learned_period_ms();
