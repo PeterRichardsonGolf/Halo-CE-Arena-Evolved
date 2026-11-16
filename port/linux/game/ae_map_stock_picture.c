@@ -18,6 +18,7 @@ A stock map's picture for AE's own screens (ae_map_stock_picture.h).
 #include "ae_map_auto_picture_rules.h"
 #include "ae_map_stock_picture.h"
 
+#ifdef HALO_MAP_LIST
 /* Unmodified iOrange/bcdec, MIT option (see third_party/bcdec/LICENSE). */
 #define BCDEC_STATIC
 #define BCDEC_IMPLEMENTATION
@@ -195,3 +196,15 @@ int ae_map_stock_picture_rgba(char const *list_name, unsigned char **rgba, int *
 	*height = h;
 	return 1;
 }
+#else
+/* (a build without the port's map list, the web build, has no rows: no stock picture there) */
+int ae_map_stock_picture_rgba(char const *list_name, unsigned char **rgba, int *width, int *height, int *retry)
+{
+	(void)list_name;
+	(void)rgba;
+	(void)width;
+	(void)height;
+	*retry = 0;
+	return 0;
+}
+#endif
