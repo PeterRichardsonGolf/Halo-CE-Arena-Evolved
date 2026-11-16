@@ -1,0 +1,416 @@
+{
+ "voice": "Helljumper: Qwen3-TTS 1.7B VoiceDesign voice, Base clone",
+ "licence": "Apache-2.0 (Qwen3-TTS); designed voice, no real person",
+ "clips": {
+  "one": {
+   "text": "one.",
+   "rate": 24000,
+   "seconds": 0.495
+  },
+  "two": {
+   "text": "two.",
+   "rate": 24000,
+   "seconds": 0.52
+  },
+  "three": {
+   "text": "three.",
+   "rate": 24000,
+   "seconds": 0.5
+  },
+  "four": {
+   "text": "four.",
+   "rate": 24000,
+   "seconds": 0.53
+  },
+  "five": {
+   "text": "five.",
+   "rate": 24000,
+   "seconds": 0.6
+  },
+  "six": {
+   "text": "six.",
+   "rate": 24000,
+   "seconds": 0.62
+  },
+  "seven": {
+   "text": "seven.",
+   "rate": 24000,
+   "seconds": 0.63
+  },
+  "eight": {
+   "text": "eight.",
+   "rate": 24000,
+   "seconds": 0.45
+  },
+  "nine": {
+   "text": "nine.",
+   "rate": 24000,
+   "seconds": 0.63
+  },
+  "ten": {
+   "text": "ten.",
+   "rate": 24000,
+   "seconds": 0.49
+  },
+  "twenty_seconds": {
+   "text": "twenty seconds",
+   "rate": 24000,
+   "seconds": 0.974
+  },
+  "thirty_seconds_left": {
+   "text": "thirty seconds left",
+   "rate": 24000,
+   "seconds": 1.225
+  },
+  "one_minute": {
+   "text": "one minute.",
+   "rate": 24000,
+   "seconds": 0.733
+  },
+  "two_minutes": {
+   "text": "two minutes.",
+   "rate": 24000,
+   "seconds": 0.735
+  },
+  "three_minutes": {
+   "text": "three minutes.",
+   "rate": 24000,
+   "seconds": 0.846
+  },
+  "four_minutes": {
+   "text": "four minutes.",
+   "rate": 24000,
+   "seconds": 0.899
+  },
+  "five_minutes": {
+   "text": "five minutes.",
+   "rate": 24000,
+   "seconds": 0.971
+  },
+  "six_minutes": {
+   "text": "six minutes.",
+   "rate": 24000,
+   "seconds": 0.954
+  },
+  "seven_minutes": {
+   "text": "seven minutes.",
+   "rate": 24000,
+   "seconds": 0.947
+  },
+  "eight_minutes": {
+   "text": "eight minutes.",
+   "rate": 24000,
+   "seconds": 0.824
+  },
+  "nine_minutes": {
+   "text": "nine minutes.",
+   "rate": 24000,
+   "seconds": 0.94
+  },
+  "ten_minutes": {
+   "text": "ten minutes.",
+   "rate": 24000,
+   "seconds": 0.838
+  },
+  "eleven_minutes": {
+   "text": "eleven minutes.",
+   "rate": 24000,
+   "seconds": 0.917
+  },
+  "twelve_minutes": {
+   "text": "twelve minutes.",
+   "rate": 24000,
+   "seconds": 0.928
+  },
+  "thirteen_minutes": {
+   "text": "thirteen minutes.",
+   "rate": 24000,
+   "seconds": 1.08
+  },
+  "fourteen_minutes": {
+   "text": "fourteen minutes.",
+   "rate": 24000,
+   "seconds": 1.092
+  },
+  "fifteen_minutes": {
+   "text": "fifteen minutes.",
+   "rate": 24000,
+   "seconds": 1.086
+  },
+  "sixteen_minutes": {
+   "text": "sixteen minutes.",
+   "rate": 24000,
+   "seconds": 1.173
+  },
+  "seventeen_minutes": {
+   "text": "seventeen minutes.",
+   "rate": 24000,
+   "seconds": 1.149
+  },
+  "eighteen_minutes": {
+   "text": "eighteen minutes.",
+   "rate": 24000,
+   "seconds": 1.052
+  },
+  "nineteen_minutes": {
+   "text": "nineteen minutes.",
+   "rate": 24000,
+   "seconds": 1.083
+  },
+  "twenty_minutes": {
+   "text": "twenty minutes.",
+   "rate": 24000,
+   "seconds": 0.89
+  },
+  "twenty_one_minutes": {
+   "text": "twenty one minutes.",
+   "rate": 24000,
+   "seconds": 1.077
+  },
+  "twenty_two_minutes": {
+   "text": "twenty two minutes.",
+   "rate": 24000,
+   "seconds": 1.077
+  },
+  "twenty_three_minutes": {
+   "text": "twenty three minutes.",
+   "rate": 24000,
+   "seconds": 1.152
+  },
+  "twenty_four_minutes": {
+   "text": "twenty four minutes.",
+   "rate": 24000,
+   "seconds": 1.125
+  },
+  "twenty_five_minutes": {
+   "text": "twenty five minutes.",
+   "rate": 24000,
+   "seconds": 1.197
+  },
+  "twenty_six_minutes": {
+   "text": "twenty six minutes.",
+   "rate": 24000,
+   "seconds": 1.18
+  },
+  "twenty_seven_minutes": {
+   "text": "twenty seven minutes.",
+   "rate": 24000,
+   "seconds": 1.215
+  },
+  "twenty_eight_minutes": {
+   "text": "twenty eight minutes.",
+   "rate": 24000,
+   "seconds": 1.081
+  },
+  "twenty_nine_minutes": {
+   "text": "twenty nine minutes.",
+   "rate": 24000,
+   "seconds": 1.105
+  },
+  "thirty_minutes": {
+   "text": "thirty minutes.",
+   "rate": 24000,
+   "seconds": 0.902
+  },
+  "rockets": {
+   "text": "rockets",
+   "rate": 24000,
+   "seconds": 0.737
+  },
+  "red_rockets": {
+   "text": "red rockets",
+   "rate": 24000,
+   "seconds": 1.052
+  },
+  "blue_rockets": {
+   "text": "blue rockets",
+   "rate": 24000,
+   "seconds": 1.062
+  },
+  "sniper": {
+   "text": "sniper",
+   "rate": 24000,
+   "seconds": 0.789
+  },
+  "camo": {
+   "text": "camo",
+   "rate": 24000,
+   "seconds": 0.596
+  },
+  "overshield": {
+   "text": "overshield",
+   "rate": 24000,
+   "seconds": 0.852
+  },
+  "shotgun": {
+   "text": "shotgun",
+   "rate": 24000,
+   "seconds": 1.029
+  },
+  "rockets_in_ten": {
+   "text": "rockets in ten",
+   "rate": 24000,
+   "seconds": 1.029
+  },
+  "sniper_in_ten": {
+   "text": "sniper in ten",
+   "rate": 24000,
+   "seconds": 1.081
+  },
+  "camo_in_ten": {
+   "text": "camo in ten",
+   "rate": 24000,
+   "seconds": 1.048
+  },
+  "overshield_in_ten": {
+   "text": "overshield in ten",
+   "rate": 24000,
+   "seconds": 1.22
+  },
+  "shotgun_in_ten": {
+   "text": "shotgun in ten",
+   "rate": 24000,
+   "seconds": 1.343
+  },
+  "rockets_up": {
+   "text": "rockets are up",
+   "rate": 24000,
+   "seconds": 0.783
+  },
+  "sniper_up": {
+   "text": "sniper is up",
+   "rate": 24000,
+   "seconds": 1.001
+  },
+  "camo_up": {
+   "text": "active camo is up",
+   "rate": 24000,
+   "seconds": 1.181
+  },
+  "overshield_up": {
+   "text": "overshield is up",
+   "rate": 24000,
+   "seconds": 0.992
+  },
+  "shotgun_up": {
+   "text": "shotgun is up",
+   "rate": 24000,
+   "seconds": 1.028
+  },
+  "red_sniper": {
+   "text": "red sniper",
+   "rate": 24000,
+   "seconds": 1.001
+  },
+  "red_camo": {
+   "text": "red camo",
+   "rate": 24000,
+   "seconds": 0.876
+  },
+  "red_overshield": {
+   "text": "red overshield",
+   "rate": 24000,
+   "seconds": 1.435
+  },
+  "red_shotgun": {
+   "text": "red shotgun",
+   "rate": 24000,
+   "seconds": 1.16
+  },
+  "blue_sniper": {
+   "text": "blue sniper",
+   "rate": 24000,
+   "seconds": 0.882
+  },
+  "blue_camo": {
+   "text": "blue camo",
+   "rate": 24000,
+   "seconds": 0.931
+  },
+  "blue_overshield": {
+   "text": "blue overshield",
+   "rate": 24000,
+   "seconds": 1.064
+  },
+  "blue_shotgun": {
+   "text": "blue shotgun",
+   "rate": 24000,
+   "seconds": 1.001
+  },
+  "overshield_or_camo_in_ten": {
+   "text": "overshield or camo in ten",
+   "rate": 24000,
+   "seconds": 1.938
+  },
+  "overshield_camo_in_ten": {
+   "text": "overshield and camo in ten seconds",
+   "rate": 24000,
+   "seconds": 2.11
+  },
+  "overshield_camo_up": {
+   "text": "overshield and camo are up",
+   "rate": 24000,
+   "seconds": 1.762
+  },
+  "powerups_in_ten": {
+   "text": "powerups in ten",
+   "rate": 24000,
+   "seconds": 1.13
+  },
+  "and": {
+   "text": "and,",
+   "rate": 24000,
+   "seconds": 0.761
+  },
+  "in_ten": {
+   "text": "in ten",
+   "rate": 24000,
+   "seconds": 0.71
+  },
+  "powerup_up": {
+   "text": "powerup is up",
+   "rate": 24000,
+   "seconds": 1.012
+  },
+  "weapons_and_power_items_in_ten": {
+   "text": "weapons and power items in ten",
+   "rate": 24000,
+   "seconds": 2.018
+  },
+  "weapons_and_power_items_up": {
+   "text": "weapons and power items are up.",
+   "rate": 24000,
+   "seconds": 1.711
+  },
+  "weapons_and_powerups_in_ten": {
+   "text": "weapons and powerups in ten",
+   "rate": 24000,
+   "seconds": 1.699
+  },
+  "weapons_and_powerups_up": {
+   "text": "weapons and powerups are up",
+   "rate": 24000,
+   "seconds": 1.566
+  },
+  "power_weapons_in_ten": {
+   "text": "power weapons in ten",
+   "rate": 24000,
+   "seconds": 1.453
+  },
+  "power_weapons_up": {
+   "text": "power weapons are up",
+   "rate": 24000,
+   "seconds": 1.161
+  },
+  "power_items_in_ten": {
+   "text": "power items in ten",
+   "rate": 24000,
+   "seconds": 1.293
+  },
+  "power_items_up": {
+   "text": "power items are up",
+   "rate": 24000,
+   "seconds": 1.071
+  }
+ }
+}

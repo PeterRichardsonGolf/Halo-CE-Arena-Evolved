@@ -1,0 +1,94 @@
+# The EMP grenade (AE grenade types, catalogue id 0): the vehicle checks on Blood Gulch (helper A, engine) and the
+# infantry checks on Octagon 2 (helper B, HUD and switching; B's group follows A's). Every test is set up by its own
+# lines: game.grenade_types 1 turns the EMP on whatever the gametype says (the GRENADES chips come with B's menus),
+# DEV MODE's give emp hands you the most you carry (2), and debug.grenade_test_me sets an EMP off at your feet,
+# thrown by nobody, for what only someone else's EMP does to you.
+list grenades-emp
+revision 2
+title EMP GRENADE
+
+group gulch-emp
+map bloodgulch
+gametype AE BTB CTF
+set game.grenade_types 1
+set bots.count 0
+set debug.network_test_time_limit 10
+setup goto start 0
+
+test emp-stall-warthog
+title An EMP stalls a Warthog, then it is immune for 2 s
+setup give emp
+setup spawn warthog ahead
+check You carry 2 EMPs: SWITCH GRENADE or N picks them
+expect 1 cmd give ok
+check EMP the Warthog, get in: no throttle for about 4 s
+check EMP it as it drives again: no stall for 2 s (immune)
+
+test emp-ghost-gun
+title A stalled Ghost's guns are locked
+setup give emp
+setup spawn ghost ahead
+check EMP the Ghost, get in: it neither moves nor fires
+expect 1 object vehicle ghost
+check After about 4 s it moves and fires again
+
+test emp-banshee-sink
+title A stalled Banshee sinks
+setup spawn banshee ahead
+setup config debug.grenade_test_me 12
+check Hover low in the Banshee: an EMP goes off at 12 s
+expect 1 object vehicle banshee
+check It sinks and cannot climb for about 4 s, then flies
+check It takes no damage from the EMP
+
+test emp-powerup-short
+title An EMP shorts a powerup lying on the floor
+setup give emp
+setup goto 104 -108.3 2.6
+check EMP the overshield ahead: it vanishes, nobody has it
+check It is back at its next respawn, as if picked up
+check Your own EMP takes no shield or health
+
+test emp-scramble-in-vehicle
+title A player in a vehicle is scrambled too, and nobody's EMP hurts
+setup spawn warthog ahead
+setup config debug.grenade_test_me 10
+check Drive the Warthog: an EMP goes off at you at 10 s
+check It stalls 4 s; your tracker is scrambled about 5 s
+check Your shield and health stay full
+
+test emp-refusal-68
+title A copy without the EMP cannot join an EMP game
+check Host it; join from 0.7.5 or a copy without its grenade pack
+check The joiner is refused: UPDATE TO JOIN, update Arena Evolved
+check The same copy joins once the game has no grenade types
+
+# An MCC map plays its own grenade slots as before; the EMP comes after them (needs MCC's install).
+group mcc-stock
+map bloodgulch@mcc
+gametype AE BTB CTF
+set bots.count 0
+setup goto start 0
+
+test mcc-grenades-as-before
+title MCC map, no grenade types: frag and plasma as before
+check SWITCH GRENADE goes frag, plasma, frag
+check Pick up a frag and a plasma: each count goes up by one
+check The grenade HUD shows the map's own pair, as in 0.7.5
+
+group mcc-emp
+map bloodgulch@mcc
+gametype AE BTB CTF
+set game.grenade_types 1
+set bots.count 0
+setup goto start 0
+
+test mcc-emp-after-own
+title MCC map with the EMP: it follows the map's own types
+setup give emp
+check SWITCH GRENADE: frag, plasma, then EMP after MCC's own
+expect 1 cmd give ok
+check An EMP thrown at a vehicle stalls it, as on Blood Gulch
+check Frag and plasma still throw and count as before
+
+# (B: the octagon_b group here, after cherry-picking this file's commit)

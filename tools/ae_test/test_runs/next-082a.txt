@@ -1,0 +1,38 @@
+# 0.8.2 TEST BUILD, round A: the PARTY popover, the server browser's hidden-servers count, the menus' speed. Each test
+# sets itself up in the menus, except split-crosshair (a game). Best on the slow laptop (Windows build) for menu-time.
+list next-082a
+revision 2
+title 0.8.2, ROUND A
+
+test party-popover
+title PARTY: one panel, one row of buttons
+menus
+setup lobby_fill 4
+check Press X: nothing of MY PARTY shows through the PARTY panel
+check Along the bottom only: A Change profile, B Back
+check B closes it: MY PARTY and LAST GAME are back as before
+
+test browser-hidden
+title SERVER BROWSER: hidden AE servers named
+menus
+check SERVER BROWSER, LT (EMPTY off): "AE HIDDEN: EMPTY IS OFF"
+check LT again (EMPTY on): the AE servers show, the reason goes
+
+test menu-time
+title Menus on this PC: MENU and DRAW times
+menus
+set display.performance full
+check The top line ends MENU x.x MS  DRAW x.x MS
+check Main menu, WHAT'S NEW (scroll it), PARTY: no stutter
+check Tell me the MENU and DRAW numbers on WHAT'S NEW
+
+test split-crosshair
+title Four players: every view draws its own crosshair
+players 4
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+# (your profile on a drawn crosshair, not STOCK; the guests copy it)
+check Every view shows a crosshair at its own centre
+check Players 2-4 (guests) show the same crosshair as player 1
+check Player 1's crosshair is single, not doubled or thicker

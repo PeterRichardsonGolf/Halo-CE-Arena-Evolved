@@ -1,0 +1,31 @@
+AE HJ MAGNUM (weapon pack ae_magnum_scoped) - credits
+
+The HJ magnum's models (the black slide magnum with its rail attachments, third-person and first-person),
+shaders, textures, first-person and third-person animations, collision, sounds and HUD (its ammunition meter,
+scope and picture of the magnum) are ZTeam's, from the ZTeam tag
+pack (released on halomaps.org). The pack names no individual authors, so none are named here. They are used as
+released, but for what an Xbox map needs: the models converted to the Xbox model format, the multipurpose maps'
+channels reordered.
+
+Made for Arena Evolved:
+- the weapon's numbers (magazine, rate of fire, error, zoom) and the damage of a round, set to our own values;
+- the round and the firing effect are the stock pistol's with our damage and range and ZTeam's shot sound;
+- ZTeam's flashlight left out; the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a
+  full-screen visor frame);
+- the swap and pickup prompts' picture is ZTeam's own picture of the magnum, resampled onto a sprite sheet (nothing
+  drawn);
+- the firing kick is the stock pistol's with a rumble.
+
+The unzoomed aiming reticle is CMT's, from the pistol HUD of the stock-compatible release of The Silent Cartographer:
+Evolved's source (the reticle sheet unchanged; the Xbox-map scale CMT's HUD needs applied). ZTeam's reticles are not used.
+Thank you, CMT.
+
+The pack's round and firing effect are built from the stock pistol's tags (no pixel, sound or model of the game's):
+what else the magnum needs of the game (the stock rounds panel, ammunition pickup, melee, impacts, materials,
+muzzle flash) it names, and the map the player owns provides.
+
+Kind: unknown. ZTeam's models are made for Custom Edition (their own nodes, a Custom Edition polygon budget) and
+recreate a later game's sidearm; nothing in the release says whether they and the sounds were modelled and
+recorded by ZTeam or taken from that game, so this pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.

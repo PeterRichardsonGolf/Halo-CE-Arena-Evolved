@@ -1,0 +1,62 @@
+# 0.7.7.1 fix wave (ae/fixwave-078): EXTERMINATION's fixes (a time-out is a tie, the dead respawn armed; the quiet round
+# reset was reverted after it crashed revision 1), the custom crosshair's red over an enemy in range, ENEMY COLOR / ALLY COLOR, the on-screen keyboard's
+# typing (SAY / chat) and Enter, a click outside a dialog, NAME SIZE in percent. "round live" ends the countdown at once;
+# "dummy" puts bots that stand still and never shoot 10 units ahead (DEV MODE).
+list fixwave-0771
+revision 2
+title 0.7.7.1 fix wave
+
+group exterm
+map pat_prisoner@pro
+gametype AE EXTERM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test exterm-armed
+title EXTERMINATION: dead at the round's end, armed after
+setup round live
+check Be dead (or die) as a round ends
+check Next round you spawn with your weapons, not empty hands
+
+test exterm-timeout
+title EXTERMINATION: a time-out is a tied round
+setup round live
+check Hide; let the 2:00 run out with both teams standing
+check The round is TIED: no team gets a round win
+expect 1 log no team wiped: a tied round
+
+group reticle
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test xh-red
+title Custom crosshair turns red over an enemy in range
+setup dummy 1
+check With your custom crosshair, aim at the dummy: it turns red
+check Same with a weapon's own reticle (crosshair STOCK): red
+expect 1 log crosshair: drawn
+
+test xh-colors
+title ENEMY COLOR and ALLY COLOR
+setup dummy 1
+check HUD > RETICLE > ENEMY COLOR BLUE; aim at the dummy: blue
+check The preview's ENEMY tile shows the same colour
+check Set it back to RED
+
+group menus
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 1
+
+test say-keyboard
+title Typing in SAY / chat with a keyboard
+check Open SAY or lobby chat, type a whole line: it stays open
+check Enter sends the whole line, not one letter
+
+test outside-click
+title A click outside a dialog closes it
+check A CANCEL / OK dialog (e.g. quit): click outside: closes
+check A destructive one (DELETE, KICK) stays on outside click
+check NAME SIZE (HUD > NAMES) reads 50 % .. 200 %

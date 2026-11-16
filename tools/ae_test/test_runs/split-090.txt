@@ -1,0 +1,129 @@
+# 0.9.0 split screen (perf step C): two and four players on one screen, the two-player layouts (top and bottom, side by
+# side, side bars), SPLIT GRAPHICS and the SPLIT SCREEN page. Played on a 16:9 screen,
+# where AUTO is top and bottom. The performance line is on so each test shows its frame rate. TARGET 60 FPS (perf
+# step D, dynamic resolution): held at 50 % by debug.dynamic_resolution_force, then on its own.
+list split-090
+revision 2
+title 0.9.0 SPLIT SCREEN, TARGET 60 FPS
+
+test split-auto
+title AUTO on a 16:9 screen: top and bottom
+check Two views, one above the other, each with its own HUD
+check Each view's weapon is the size it is with one player
+check The frame rate at the top holds steady as you both move
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+players 2
+
+test split-side-by-side
+title SIDE BY SIDE: two tall views
+check Two views side by side, each the screen's full height
+check The world is not stretched; the weapon sits whole below
+check Fire: the muzzle flash shows at the barrel
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+set display.split_two_players side_by_side
+players 2
+
+test split-side-bars-ae
+title SIDE BARS, HUD STYLE AE (the default)
+check Black bars beside each view; the views are not stretched
+check The ammo sits over the motion sensor
+check Nothing of the HUD is drawn on the bars
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+set display.split_side_bars true
+players 2
+
+test split-side-bars-classic
+title SIDE BARS, HUD STYLE CLASSIC
+check Black bars beside each view, as with HUD STYLE AE
+check The top view's classic HUD is whole, none on the bars
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+set display.split_side_bars true
+setup config display.hud_style classic
+players 2
+
+test split-four
+title Four players, SPLIT GRAPHICS AUTO
+check Four views, each with its own HUD and weapon
+check Edges and far ground softer than with one player
+check The frame rate holds steady with all four moving
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+players 4
+
+test split-four-same
+title Four players, SPLIT GRAPHICS SAME
+check The views look as sharp as one player's
+check Note the frame rate against the AUTO test
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance fps
+set display.split_graphics same
+players 4
+
+test split-page
+title The SPLIT SCREEN settings page
+check SETTINGS, SPLIT SCREEN: a grey row says why it is grey
+check TWO PLAYERS and SIDE BARS change the PREVIEW
+check The PREVIEW panel sits centred under the rows
+menus
+
+test target60-held-one
+title TARGET 60 FPS held at 50 %, one player
+check The 3D view is softer; the HUD and text stay sharp
+check The top line shows RES 50%
+check Look around: no line or gap at the view's edges
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance minimal
+set debug.dynamic_resolution_force 50
+players 1
+
+test target60-camo
+title Camo at 50 %: your weapon's shimmer
+setup powerup active_camouflage now
+check Your weapon shimmers with camo
+check The world seen through it sits in place, not doubled
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance minimal
+set debug.dynamic_resolution_force 50
+players 1
+
+test target60-held-split
+title TARGET 60 FPS held at 50 %, two players
+check Both views softer; both HUDs sharp
+check Nothing of one view bleeds over the line between them
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance minimal
+set debug.dynamic_resolution_force 50
+players 2
+
+test target60-four
+title TARGET 60 FPS on its own, four players
+check Below 60 FPS, RES in the top line drops under 100%
+check The frame rate then holds near 60
+check Look at the sky a few seconds: RES climbs back
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance minimal
+players 4

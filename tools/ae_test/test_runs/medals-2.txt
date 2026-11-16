@@ -1,0 +1,245 @@
+# MEDALS, round 2, on testbox: 36 more medals. A medal with no picture in MCC's folder shows as its name; note any that look wrong.
+# Tests with the same setup follow each other and share one map load. Host and client are by hand: TEST RUN cannot host or join.
+# Perfect: a head kill with exactly the hits it takes and no round missed. Sniper rifles never give it.
+list medals-2
+revision 1
+title MEDALS, ROUND 2
+
+test perfect-pistol
+title Perfect with the pistol
+check 3 pistol hits, last to the head, no miss: Perfect
+check The same with one miss between: Headshot, no Perfect
+check A sniper head shot: Sniper Kill, never Perfect
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 3,5
+
+test no-scope
+title No Scope and Quick Draw
+check Sniper kill without zooming: No Scope; zoomed: none
+check Sniper hits, then pistol kills within 1.5 s: Quick Draw
+check Pistol kill alone, or sniper then pistol over 2 s: none
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 3,5
+
+test last-shot
+title Last Shot and Yard Sale
+check Kill with the pistol's last round: Last Shot
+check Kill a bot who holds a power weapon and another: Yard Sale
+check Same kill with a round still loaded: no Last Shot
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 3,5
+
+test off-the-rack
+title Off the Rack
+check Spawner weapon, kill within 2.7 s: Off The Rack
+check Kill 3 s after taking it: none
+check A dropped weapon picked up: none
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 3,5
+
+test proficiency
+title Five kills of a kind
+check 5 pistol kills in a game: Gunslinger, once
+check 5 assault rifle kills: Rifleman, once; dying keeps the count
+check 5 melee kills: Boxer
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 2,3
+
+test grenade-medals
+title Grenade medals
+check A grenade kill from over 36 m away: Hail Mary
+check Two grenade kills within 0.1 s: Cluster Luck
+check 5 grenade kills in a game: Grenadier
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 2,3
+
+test turn-and-shot
+title 360 and Nade Shot
+check Turn right round, kill within 2.5 s: 360; half a turn: none
+check Grenade then a pistol head shot within 2 s: Nade Shot
+check A melee or grenade kill after a turn: no 360
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 2,3
+
+test assists-reversal
+title Wingman, Reversal, Bodyguard
+check 10 assists in a game: Wingman, once
+check A bot hits you first, you win with 95%: Reversal
+check 5 kills of bots that hurt a teammate: Bodyguard
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 2,3
+
+test guardian-angel
+title Guardian Angel
+check Kill from 32 m or more a bot who hurt a teammate
+check The same from closer: Protector, no Guardian Angel
+check Note the caption does not touch the motion sensor
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 2,3
+
+test melee-styles
+title Sneak King, Achilles Spine, Ninja
+check Melee from behind a camouflaged bot: Sneak King
+check Melee from behind a bot with overshield: Achilles Spine
+check Jump over a bot, land, melee from behind: Ninja
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test perfect-br
+title Perfect with the battle rifle
+check 4 bursts, the 12th round on the head: Perfect
+check A burst with a round that misses: Headshot, no Perfect
+check Trigger held on after the kill: still Perfect
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_weapon_packs 1
+set debug.network_test_pack_loadout primary
+
+test perfect-evo
+title Perfect with the Evo rifle
+check 4 hits then the head (5th round): Perfect
+check One miss between the rounds: Headshot, no Perfect
+check Slow shots, over 1.5 times the fastest: Headshot
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_weapon_packs 64
+set debug.network_test_pack_loadout primary
+
+test perfect-dmr
+title Perfect with the DMR
+check 4 hits then the head (5th round): Perfect
+check One miss between the rounds: Headshot, no Perfect
+check 3 hits and a head shot: Headshot
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_weapon_packs 32
+set debug.network_test_pack_loadout primary
+
+test perfect-carbine
+title Perfect with the carbine
+check Head kill, no miss: Perfect; note the hits in debug.txt
+check Line "perfect check": hits needed and found, rounds fired
+check Report the hit count that gave Perfect
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_weapon_packs 8
+set debug.network_test_pack_loadout primary
+
+test vehicle-kills
+title Driver, Gunner, Driveby, Pineapple
+check 5 kills driving a warthog or ghost: Driver
+check 5 kills from the gunner's seat: Gunner
+check Passenger: double kill Driveby; grenade kill Pineapple
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test banshee-sniper
+title Pilot and Autopilot Engaged
+check 5 kills flying a banshee: Pilot
+check Sniper kill of a moving vehicle's driver: Autopilot Engaged
+check Same on a parked vehicle: none
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+set debug.network_test_loadout 3,5
+
+test sniper-pair
+title Quigley
+check 2 sniper kills within 0.1 s: Quigley
+check 2 sniper kills 0.2 s apart: none
+check Note any row touching the motion sensor
+map testbox@ce
+gametype AE FFA SLAY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 5,3
+
+test flag-medals
+title Flag Joust, Stopped Short, Goal Line Stand
+check Carrier kills carrier: Flag Joust
+check Kill a carrier within 2 units of its stand: Stopped Short
+check Return your flag lying by their stand: Goal Line Stand
+map testbox@ce
+gametype AE CTF
+set bots.count 7
+set bots.skill easy
+
+test ball-medals
+title Fumble and Straight Balling
+check Kill the carrier near the score to win: Fumble
+check Hold the ball 60 s without a drop: Straight Balling
+check Drop it before 60 s and take it: starts again
+map testbox@ce
+gametype AE FFA BALL
+set bots.count 7
+set bots.skill easy
+
+test hill-medals
+title Hill Guardian
+check 30 s on the hill, nobody else on it: Hill Guardian
+check An enemy on the hill: the time waits, does not reset
+check Leave or die: starts again from zero
+map testbox@ce
+gametype AE KING
+set bots.count 7
+set bots.skill easy
+
+test captions-sensor
+title Captions and the motion sensor
+check Names in their medal's colour, centred under each picture
+check Rows keep clear of the motion sensor
+check A medal with no picture shows as its name
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test split-2
+title Split screen colours
+check A medal is a line in that player's messages
+check It shows only in the view of who earned it
+map testbox@ce
+gametype AE TEAM SLY
+players 2
+set bots.count 8
+set bots.skill easy

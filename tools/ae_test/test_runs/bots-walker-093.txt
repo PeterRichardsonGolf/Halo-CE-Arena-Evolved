@@ -1,0 +1,37 @@
+# 0.9.3 BOTS: the walking dummy (dummy walk), DEV MODE's staged spot check. One bot on your team is put at a spot where bots
+# got stuck in your games and walks to a far goal by the bots' own routes, never shooting. Its log says when it left the spot
+# ("dev walker: left its start"), reached the goal, or was still near the spot 10 s on. The two Temple spots are the ones
+# from your 11-14 games: the flank loop by the wall (-4.7 10.7) and the wall (7.7 8.7). Watch the bot, not the numbers.
+list bots-walker-093
+revision 1
+title BOTS: THE WALKING DUMMY
+
+group temple
+map temple
+gametype AE BR TS
+set bots.count 0
+set debug.bot_events true
+
+test loop-spot
+title TEMPLE: the walker leaves the flank-loop spot
+setup dummy clear
+setup dummy walk -4.7 10.7 -2.8 to -2.0 -10.0 -4.4
+check A bot appears at the wall spot, walks off within 10 s
+check It gets to the far side of the map without circling back
+expect 1 log dev walker: left its start
+
+test wall-spot
+title TEMPLE: the walker leaves the wall spot
+setup dummy clear
+setup dummy walk 7.7 8.7 -2.8 to -2.0 -10.0 -4.4
+check It walks off within 10 s, no hopping at the wall
+check It gets to the far side of the map
+expect 1 log dev walker: left its start
+
+test roam-here
+title TEMPLE: a walker at your feet that roams
+setup dummy clear
+setup dummy walk here
+check A bot on your team appears and walks about the map
+check It never shoots
+expect 1 log dev walker: put at

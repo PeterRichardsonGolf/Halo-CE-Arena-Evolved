@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="same-origin">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#040914">
+<title>Arena Evolved server</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="app.css">
+<script src="app.js" defer></script>
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <form id="login-form" class="panel login-panel">
+    <div class="login-head"><img src="icon.svg" alt="" width="52" height="52"><h1>Arena Evolved server</h1></div>
+    <label for="login-password">Password</label>
+    <input id="login-password" type="password" autocomplete="current-password" required placeholder="The web page's password">
+    <p id="login-error" class="error" role="alert"></p>
+    <button type="submit" class="primary" id="login-button">Sign in</button>
+    <p class="note">The password of <code>server.web_password</code> (admin) or
+      <code>server.web_moderator_password</code> (moderator). The page keeps no password: the session is a cookie for
+      12 hours, or 30 minutes unused.</p>
+  </form>
+</div>
+
+<div id="app" hidden>
+  <header class="top">
+    <img src="icon.svg" alt="" width="34" height="34">
+    <h1 id="server-name">Arena Evolved server</h1>
+    <span id="server-state" class="badge"></span>
+    <span id="stop-badge" class="badge stop-badge" hidden></span>
+    <span class="top-end">
+      <span id="link-state" class="badge" title="How the page hears from the server"></span>
+      <span id="role" class="badge"></span>
+      <button id="logout" class="small">Sign out</button>
+    </span>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Sections">
+    <button role="tab" data-tab="status">Status</button>
+    <button role="tab" data-tab="players">Players</button>
+    <button role="tab" data-tab="rotation">Rotation</button>
+    <button role="tab" data-tab="gametypes">Gametypes</button>
+    <button role="tab" data-tab="bans" data-needs="admin">Bans</button>
+    <button role="tab" data-tab="access" data-needs="admin">Access</button>
+    <button role="tab" data-tab="keys" data-needs="admin">API keys</button>
+    <button role="tab" data-tab="console">Console</button>
+    <button role="tab" data-tab="settings" data-needs="admin">Settings</button>
+    <button role="tab" data-tab="about">About</button>
+  </nav>
+
+  <p id="conn-banner" class="conn-banner" role="status" hidden></p>
+  <main>
+    <section id="tab-status" class="tab" role="tabpanel" hidden>
+      <div class="status-grid">
+        <div class="status-col">
+        <div class="panel">
+          <h2>Game</h2>
+          <dl id="status-facts" class="facts"></dl>
+        </div>
+        <div class="panel">
+          <h2>Server</h2>
+          <dl id="status-server" class="facts"></dl>
+        </div>
+        </div>
+        <div class="status-col">
+        <div class="panel">
+          <h2>Players</h2>
+          <p class="count"><span id="status-count">0</span><span class="of"> of <span id="status-max">0</span></span></p>
+          <svg id="spark" class="spark" viewBox="0 0 300 64" preserveAspectRatio="none" role="img"
+            aria-label="Players over the last 10 minutes"><polyline id="spark-fill" class="spark-fill" points=""/><polyline id="spark-line" class="spark-line" points=""/></svg>
+          <p class="note" id="spark-note">No one has played since this page opened.</p>
+          <div id="status-actions" data-needs-block="moderator">
+          <h3>Actions</h3>
+          <div class="bar">
+            <button id="next-map" data-needs="moderator">Next map</button>
+            <button id="end-game" data-needs="moderator">End game</button>
+          </div>
+          <form id="say-form" class="inline">
+            <input id="say-text" maxlength="127" placeholder="A notice on every screen" aria-label="Notice"
+              data-needs="moderator">
+            <button data-needs="moderator">Say</button>
+          </form>
+          </div>
+          <p class="note" data-below="moderator">Moderators and up change the map, end the game and send notices from here.</p>
+        </div>
+        <div class="panel" id="stop-panel">
+          <h2>Stop or restart</h2>
+          <div id="stop-live" class="stop-live" hidden>
+            <p class="stop-clock"><span id="stop-what"></span><span id="stop-clock" class="stop-time"></span></p>
+            <p id="stop-reason" class="note"></p>
+            <button type="button" id="stop-cancel" class="primary" data-needs="owner">Cancel</button>
+          </div>
+          <form id="stop-form" class="stop-form">
+            <fieldset class="choices">
+              <legend>When</legend>
+              <label class="chip"><input type="radio" name="stop-when" value="now"> Now</label>
+              <label class="chip"><input type="radio" name="stop-when" value="60" checked> In 60 s</label>
+              <label class="chip chip-field"><input type="radio" name="stop-when" value="seconds"> In
+                <input id="stop-seconds" type="number" min="1" max="3600" step="1" value="300" aria-label="Seconds"
+                  inputmode="numeric"> s</label>
+              <label class="chip chip-row"><input type="radio" name="stop-when" value="game"> When this game ends</label>
+              <label class="chip chip-row"><input type="radio" name="stop-when" value="empty"> Once nobody plays</label>
+            </fieldset>
+            <label class="field" for="stop-notice">Notice for the players</label>
+            <input id="stop-notice" maxlength="96" placeholder="e.g. Updating the server">
+            <p class="note">A countdown tells the players at 60, 30, 10 and 5 seconds. Cancel stops it.</p>
+            <div class="bar">
+              <button type="submit" id="stop-restart" class="primary" value="restart" data-needs="owner">Restart</button>
+              <button type="submit" id="stop-stop" class="danger" value="stop" data-needs="owner">Stop</button>
+            </div>
+          </form>
+          <p id="stop-owner" class="note">Only the owner stops or restarts the server: sign in on this machine with
+            <code>server.web_owner_password</code>. A daily restart is the setting <code>server.restart_daily</code>.</p>
+        </div>
+        </div>
+        <div class="status-col status-side">
+        <div class="panel">
+          <h2>Invite</h2>
+          <div class="inline" id="invite-row">
+            <input id="invite" readonly aria-label="The invite link">
+            <button id="invite-copy" data-needs="admin">Copy</button>
+          </div>
+          <p id="invite-none" class="empty-state" hidden></p>
+          <p class="note" id="invite-note">Anyone with the link can join: paste it into the game's Join Game, or open a join page
+            with <code class="nowrap">?join=</code> and the link.</p>
+          <h3>Master servers</h3>
+          <ul id="masters" class="masters"></ul>
+          <p id="masters-empty" class="empty-state">No master servers.</p>
+        </div>
+          <div class="panel status-events">
+          <h2>Recent events</h2>
+          <ol id="feed" class="feed"></ol>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-players" class="tab" role="tabpanel" hidden>
+      <div class="panel">
+        <h2>Players</h2>
+        <table id="players" class="cards">
+          <thead><tr><th class="num">Slot</th><th>Name</th><th>Team</th><th class="num">Score</th><th class="num">K/D/A</th>
+            <th class="num">Ping</th><th class="num">Played</th><th class="row-actions">Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="players-empty" class="empty-state">No one is playing right now. Players show here as they join, with their team, score and ping.</p>
+        <p class="note" data-needs-block="moderator">Every action names the slot and the player: the server checks the slot is still theirs.</p>
+      </div>
+    </section>
+
+    <section id="tab-rotation" class="tab" role="tabpanel" hidden>
+      <div class="panel">
+        <h2>Rotation</h2>
+        <ol id="rotation" class="rotation"></ol>
+        <form id="rotation-add" class="fields grid-form" data-needs-form="admin">
+          <label class="wide-on-phone">Map <select id="add-map" data-needs="admin"></select></label>
+          <label class="wide-on-phone">Gametype <select id="add-gametype" data-needs="admin"></select></label>
+          <label class="wide-on-phone">Rules <input id="add-rules" placeholder="None (e.g. score=50+time=15)" data-needs="admin"></label>
+          <button data-needs="admin">Add</button>
+        </form>
+        <p id="rotation-note" class="note"></p>
+        <p class="note" data-below="admin">Only admins change the rotation.</p>
+        <div class="bar" data-needs-block="admin">
+          <button id="rotation-save" class="primary" data-needs="admin">Save</button>
+          <button id="rotation-revert">Revert</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-gametypes" class="tab" role="tabpanel" hidden>
+      <div class="grid">
+        <div class="panel wide">
+          <h2>Gametypes</h2>
+          <div class="gt-cols">
+          <div>
+          <h3>Files</h3>
+          <ul id="gametype-files" class="list"></ul>
+          <p id="gametype-files-empty" class="empty-state" hidden>No gametype files yet. Make one below from a built-in one, or play a built-in one as it is.</p>
+          <p class="note" data-below="admin">Only admins make or change gametypes.</p>
+          <h3 data-needs-block="admin">New gametype</h3>
+          <form id="gametype-new" class="fields grid-form" data-needs-form="admin">
+            <label>Name <input id="new-name" pattern="[a-z0-9_\-]{1,32}" placeholder="e.g. btb_ctf" required
+              data-needs="admin"></label>
+            <label>Base <select id="new-base" data-needs="admin"></select></label>
+            <button data-needs="admin">New</button>
+          </form>
+          </div>
+          <div>
+          <div id="gametype-ae-block" hidden>
+            <h3>Arena Evolved</h3>
+            <div id="gametype-ae" class="ae-folders"></div>
+          </div>
+          <h3 id="gametype-builtins-head">Stock built-in</h3>
+          <ul id="gametype-builtins" class="ae-names builtins"></ul>
+          </div>
+          </div>
+        </div>
+        <div class="panel wide" id="gametype-editor" hidden>
+          <h2 id="editor-title"></h2>
+          <div class="editor">
+            <div id="gametype-form" class="schema-form"></div>
+            <label class="raw"><span>gametypes/<span id="editor-file"></span>.toml</span>
+              <textarea id="gametype-text" spellcheck="false" autocapitalize="off" rows="22"></textarea></label>
+          </div>
+          <p id="gametype-error" class="error" role="alert"></p>
+          <div class="bar">
+            <button id="gametype-save" class="primary" data-needs="admin">Save</button>
+            <button id="gametype-delete" class="danger" data-needs="admin">Delete</button>
+            <button id="gametype-close">Close</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-bans" class="tab" role="tabpanel" hidden>
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Bans</h2>
+          <div class="head-bar">
+            <button type="button" id="bans-export" class="small" data-needs="admin">Download as JSON</button>
+            <button type="button" id="bans-import" class="small" data-needs="admin">Import JSON</button>
+            <input type="file" id="bans-file" accept=".json,application/json" hidden>
+          </div>
+        </div>
+        <table id="bans" class="cards">
+          <thead><tr><th>#</th><th>When</th><th>Players</th><th>Address</th><th>Hardware id</th><th>Reason</th>
+            <th>Until</th><th></th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="bans-empty" class="empty-state">No bans. A ban from the Players tab, or an import from another server, shows here.</p>
+        <p class="note">The download moves bans to another server: import it there. Bans by network and by name
+          (<code>sv_ban_range</code>, <code>sv_ban_name</code>) travel with it.</p>
+      </div>
+    </section>
+
+    <section id="tab-access" class="tab" role="tabpanel" hidden>
+      <div class="access-grid">
+        <div class="panel">
+          <h2>Admins</h2>
+          <p class="note">A login signs a person or a tool in with a name and a secret. A network gives the players who
+            join from it a role and an immunity: no one below them can kick, ban or mute them.</p>
+          <ul id="admins" class="list rows"></ul>
+          <p id="admins-empty" class="empty-state">No admins yet: only the web passwords sign in. Add a login for a person or a tool, or a network for the players who join from it.</p>
+          <div id="admin-add-block">
+            <h3>Add an admin</h3>
+            <form id="admin-add" class="fields grid-form">
+              <label>Kind <select id="admin-kind" data-needs="owner">
+                <option value="login">A login</option><option value="network">A network</option></select></label>
+              <label class="wide-on-phone"><span id="admin-name-label">Login</span> <input id="admin-name" required data-needs="owner"
+                autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="e.g. ops"></label>
+              <label>Role <select id="admin-role" data-needs="owner">
+                <option value="viewer">Viewer</option><option value="moderator" selected>Moderator</option>
+                <option value="admin">Admin</option></select></label>
+              <label class="narrow">Immunity <input id="admin-immunity" type="number" min="0" max="99" value="0"
+                data-needs="owner"></label>
+              <label class="narrow">Days <input id="admin-days" type="number" min="0" max="3650" value="0"
+                data-needs="owner"></label>
+              <label id="admin-allow-label" class="wide-on-phone">Only from <input id="admin-allow" placeholder="Anywhere" data-needs="owner"
+                autocomplete="off" spellcheck="false"></label>
+              <button data-needs="owner">Add</button>
+            </form>
+            <p class="note">Days 0 never ends. Only from: addresses or ranges (192.168.1.0/24), comma separated.</p>
+          </div>
+          <p id="admin-owner-note" class="note">Only the owner adds or removes admins.</p>
+        </div>
+        <div class="status-col">
+          <div class="panel">
+            <h2>Who may join</h2>
+            <div class="switch-row">
+              <label for="whitelist-on" class="switch-label">Whitelist</label>
+              <input type="checkbox" id="whitelist-on" class="toggle" role="switch" data-needs="admin">
+            </div>
+            <p id="whitelist-state" class="note"></p>
+            <ul id="whitelist" class="list rows"></ul>
+            <form id="whitelist-add" class="fields grid-form" data-needs-form="admin">
+              <label>Kind <select id="whitelist-kind" data-needs="admin">
+                <option value="ip">Address</option><option value="hwid">Hardware id</option>
+                <option value="discord">Discord account</option><option value="name">Player name</option></select></label>
+              <label>Entry <input id="whitelist-value" required data-needs="admin" autocomplete="off" spellcheck="false"
+                placeholder="e.g. 192.168.1.0/24"></label>
+              <button data-needs="admin">Add</button>
+            </form>
+            <p class="note">A name is no proof: anyone can take one. Admins of a moderator or above always join.</p>
+            <h3>Reserved slots</h3>
+            <form id="reserved-form" class="inline">
+              <input id="reserved-slots" type="number" min="0" max="128" value="0" aria-label="Reserved slots"
+                data-needs="admin">
+              <button data-needs="admin">Save</button>
+            </form>
+            <p class="note">The last slots kept for admins. When only they are left, others are told the game is full.</p>
+          </div>
+          <div class="panel">
+            <h2>Command roles</h2>
+            <ul id="access" class="list rows"></ul>
+            <p id="access-empty" class="empty-state">No changes: every command needs its own role.</p>
+            <p class="note"><code>command_access.txt</code> in the data folder changes them, a line each
+              (<code>kick admin</code>). The server reads it every 15 seconds.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="tab-keys" class="tab" role="tabpanel" hidden>
+      <div class="panel">
+        <h2>API keys</h2>
+        <p class="note">A key lets a script, a bot or a panel use this server's API and RCON as one role, with no
+          password: send it as <code class="nowrap">Authorization: Bearer &lt;key&gt;</code>. The server keeps only a
+          hash of it.</p>
+        <table id="keys" class="cards">
+          <thead><tr><th>Name</th><th>Role</th><th>Ends</th><th>Only from</th><th>Last used</th>
+            <th class="row-actions">Actions</th></tr></thead>
+          <tbody></tbody>
+        </table>
+        <p id="keys-empty" class="empty-state">No keys yet. Make one below for a bot, a script or a panel; it signs in as the role you give it.</p>
+        <h3>New key</h3>
+        <form id="key-add" class="fields grid-form">
+          <label class="wide-on-phone">Name <input id="key-name" required pattern="[a-z0-9_\-]{1,32}" placeholder="e.g. discord-bot"
+            data-needs="admin" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+          <label>Role <select id="key-role" data-needs="admin"></select></label>
+          <label>Ends <select id="key-days" data-needs="admin">
+            <option value="0">Never</option><option value="7">In 7 days</option><option value="30" selected>In 30 days</option>
+            <option value="90">In 90 days</option><option value="365">In a year</option></select></label>
+          <label class="wide-on-phone">Only from <input id="key-allow" placeholder="Anywhere" data-needs="admin" autocomplete="off"
+            spellcheck="false"></label>
+          <button data-needs="admin" class="primary">Make key</button>
+        </form>
+        <p class="note">A name is 1 to 32 of a-z, 0-9, _ and -. A key's role is at most yours. Only from: addresses or
+          ranges (192.168.1.0/24), comma separated.</p>
+      </div>
+    </section>
+
+    <section id="tab-console" class="tab" role="tabpanel" hidden>
+      <div class="panel console">
+        <div class="console-bar">
+          <label class="check"><input type="checkbox" id="follow" checked> Follow</label>
+          <span id="categories" class="chips"></span>
+          <button id="log-clear" class="small">Clear</button>
+        </div>
+        <div id="log" class="log" role="log" tabindex="0"></div>
+        <form id="command-form" class="command">
+          <input id="command" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="send"
+            placeholder="A command: help lists them" aria-label="Command">
+          <button>Run</button>
+        </form>
+        <p id="command-hint" class="note">Tab completes, Up and Down go through what was run.</p>
+      </div>
+    </section>
+
+    <section id="tab-settings" class="tab" role="tabpanel" hidden>
+      <form id="settings-form" class="settings">
+        <nav id="settings-nav" class="settings-nav" aria-label="Setting sections"></nav>
+        <div class="panel settings-main">
+          <p class="note settings-intro">Saved to config.toml and applied at once where they can be. A setting that its
+            environment variable sets is locked here.</p>
+          <div id="settings-fields"></div>
+          <div class="settings-bar">
+            <p id="settings-note" class="note" role="status"></p>
+            <button type="button" id="settings-revert">Revert</button>
+            <button class="primary" data-needs="admin">Save</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <section id="tab-about" class="tab" role="tabpanel" hidden>
+      <div class="about-grid">
+        <div class="status-col">
+        <div class="panel">
+          <h2>This server</h2>
+          <dl class="facts" id="about-facts"></dl>
+          <p class="note"><code>docs/dedicated_server.md</code> is the reference of the commands, the API and the RCON.</p>
+        </div>
+        <div class="panel">
+          <h2>Ports to open</h2>
+          <dl class="facts prose" id="about-ports"></dl>
+          <p class="note">Only the tunnel's port needs to reach the internet. Keep the web port on loopback, or
+            behind a proxy that adds TLS (Caddy: <code class="nowrap">reverse_proxy 127.0.0.1:8080</code>), or reach it with
+            <code class="nowrap">ssh -L 8080:127.0.0.1:8080</code>.</p>
+        </div>
+        </div>
+        <div class="status-col">
+        <div class="panel">
+          <h2>Where files are</h2>
+          <dl class="facts prose files">
+            <div><dt>config.toml</dt><dd>Every setting: beside the executable, or --config</dd></div>
+            <div><dt>init.txt</dt><dd>Commands run at the start (server.init_file), in the data root</dd></div>
+            <div><dt>gametypes/</dt><dd>The operator's gametypes (.toml) and saved ones (.gametype), in the data
+              root</dd></div>
+            <div><dt>bans.txt, debug.txt</dt><dd>In paths.logs, else the data root</dd></div>
+            <div><dt>masters.txt</dt><dd>The master servers, beside the executable</dd></div>
+            <div><dt>publisher.key</dt><dd>The publisher key for the master servers, beside config.toml</dd></div>
+            <div><dt>status.json</dt><dd>The status every 2 seconds (server.status_file)</dd></div>
+            <div><dt>backups/</dt><dd>The server's copies of the files it writes, in the data root</dd></div>
+          </dl>
+        </div>
+        <div class="panel" id="backups-panel" hidden>
+          <h2>Backups</h2>
+          <p id="backups-keep" class="note"></p>
+          <div id="backups" class="backups"></div>
+          <p id="backups-empty" class="empty-state">No backups yet: the server makes one as it starts and before each write.</p>
+          <p class="note">To go back to a backup: stop the server, copy the backup over its file in the data folder,
+            then start the server. This page does not restore.</p>
+        </div>
+        </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="dialog" class="sheet" hidden>
+  <form id="dialog-form" class="sheet-body" role="dialog" aria-modal="true" aria-labelledby="dialog-title">
+    <h2 id="dialog-title"></h2>
+    <div id="dialog-body"></div>
+    <p id="dialog-error" class="error" role="alert"></p>
+    <div class="actions">
+      <button type="button" id="dialog-cancel">Cancel</button>
+      <button type="submit" id="dialog-ok" class="primary">OK</button>
+    </div>
+  </form>
+</div>
+<div id="toast" class="toast" role="status" hidden></div>
+</body>
+</html>
