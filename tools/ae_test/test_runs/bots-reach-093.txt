@@ -1,0 +1,35 @@
+# 0.9.3 BOTS: the can't-reach report (dummy reach). Four walking dummies on your team walk from every spawn of the map to
+# every flag stand, ball spawn, hill, race checkpoint and power item, by the bots' own routes, never shooting. Each walk's
+# line is in the log ("dev reach: ... reached in 23 s", or stuck, lost, slow, died and where). At the end the report is
+# written to the config folder's reach/<map>.txt. A full run takes about 10-20 minutes: you can watch, fly or leave it.
+# Send the report file back; the walks that fail are the map spots to fix.
+list bots-reach-093
+revision 1
+title BOTS: THE CAN'T-REACH REPORT
+
+group bloodgulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 0
+set debug.bot_events true
+
+test reach-run
+title BLOOD GULCH: four walkers try every walk
+setup dummy clear
+setup dummy reach
+check Four bots on your team appear and walk off
+check None shoots, none turns to fight another
+expect 1 log dev reach: 1/
+
+test reach-report
+title BLOOD GULCH: the report at the end
+check The log says "dev reach: done" with its counts
+check reach/bloodgulch.txt is in the config folder
+expect 1 log dev reach: done
+
+test reach-stop
+title BLOOD GULCH: dummy clear stops a run
+setup dummy clear
+setup dummy reach 2
+setup dummy clear
+check The walkers leave; the log says "dev reach: stopped"

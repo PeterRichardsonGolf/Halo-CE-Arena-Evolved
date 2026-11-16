@@ -1,0 +1,27 @@
+# 0.9.3 main menu order: CAMPAIGN, AE TOURNAMENT, MULTIPLAYER, SETTINGS, then the rest. HOST GAME is a MULTIPLAYER row now
+# (just before HOST A SERVER) and opens the CREATE GAME screen as before. AE TOURNAMENT's "get the rest" lines name how to get the
+# maps of the playlist on the card: CLASSIC COMP says to join AE #5 once. The menu opens on MULTIPLAYER (a saved row from an older
+# version is not read: the setting has a new name).
+list menu-order-093
+revision 1
+title MENU ORDER
+
+test main-order
+title MAIN MENU: the row order
+check From the top: CAMPAIGN, AE TOURNAMENT, MULTIPLAYER, SETTINGS
+check No HOST GAME row; focus starts on MULTIPLAYER
+menus
+
+test host-game-in-multiplayer
+title MULTIPLAYER: HOST GAME
+check A: MULTIPLAYER; HOST GAME is just before HOST A SERVER
+check A on HOST GAME: CREATE GAME; B returns to MULTIPLAYER
+menus
+
+test classic-card-text
+title CLASSIC COMP: the card's get-the-rest lines
+check The card says to join AE #5 once for the classic maps
+check Up to TEAM SLAYER: Social Map Pack text, joining downloads
+menus
+setup social maps hide dread
+setup menu tournament focus classic-comp

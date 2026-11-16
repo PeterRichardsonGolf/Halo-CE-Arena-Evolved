@@ -1,0 +1,29 @@
+# 0.9.3 map pictures: the stock maps' pictures show on AE's own screens. They live in the game's menu data, not in a file, and
+# AE's screens read only a picture file beside the map, so Chill Out, Damnation and Hang 'Em High showed none (the log said
+# "ae change map: picture 'chillout' none"). The screens now take the picture the PC menus show for a stock map; a
+# community map's own picture file is as before. The log says "(the loaded ui.map's)" for a stock one. The TEST RUN card covers
+# the lobby's picture: END hides it.
+list map-pictures-093
+revision 1
+title MAP PICTURES: stock maps
+
+test tournament-stock
+title TOURNAMENT: a stock map shows its picture
+check Press END; the lobby's map card shows Chill Out's picture
+expect 1 log picture 'chillout' 140x114
+menus
+setup social maps hide none
+setup social start team-slayer map chillout
+
+test change-map-stock
+title CHANGE MAP: a stock map's card
+check Y, type chill: the card shows Chill Out's picture
+check Clear it, then Damnation (D) shows its picture too
+screen 31
+
+test community-map
+title TOURNAMENT: a community map keeps its picture
+check Press END; the lobby's card shows Hektik's picture
+menus
+setup social maps hide none
+setup social start team-slayer map hektik@smp

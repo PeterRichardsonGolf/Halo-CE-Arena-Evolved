@@ -1,0 +1,1826 @@
+{
+ "format": 1,
+ "about": "The AE needler pack: CMT's TSC:E 1.4.1 multiplayer needler (model, textures, effects and sounds, credited) made into a donor map and the pack, with a latest-generation needler's numbers and pink needles. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_needler",
+  "revision": 30,
+  "display": "NEEDLER",
+  "prefix": "ae\\packs\\needler\\",
+  "weapon": "cmt\\weapons\\evolved\\needler\\_needler_mp\\needler_mp",
+  "weapon_key": "needler",
+  "labels": "c_ne,ne,ar",
+  "behaviour": 0,
+  "replaces": 9,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:5",
+  "smooth": [
+   "ae_pack\\hud\\needler_meter_smooth:coverage",
+   "ae_pack\\hud\\needler_alphas_smooth"
+  ],
+  "stock_derived": {
+   "ae\\packs\\needler\\hud\\needler_ammo": "layout numbers set by AE, from the stock assault rifle HUD's structure: positions, sizes and references (hud_tag.py), no art"
+  }
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4.1c source release",
+  "file": "tsce_1-4-1c_source_release.zip",
+  "sha256": "311518659c4551342c867da2bb83c4f9c3b8c798604169a4301422970fede8a9",
+  "root": "tsce_1-4-1c_source_release/tags/",
+  "verbatim": [
+   "cmt/characters/_shared/jackal/bitmaps/jackal_shield_noise.bitmap",
+   "cmt/effects/contrail/generic energy trail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/bullet holes/bitmaps/liquid_splat.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/needler/needler splat blue.decal",
+   "cmt/effects/decals/bullet holes/covenant/needler/needler splat pink.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particles/air/bitmaps/explosion.bitmap",
+   "cmt/effects/particles/air/bitmaps/light_animated_smoke_1.bitmap",
+   "cmt/effects/particles/air/bitmaps/small_flames.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/fireball_white.bitmap",
+   "cmt/effects/particles/energy/bitmaps/noisy_glow.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma fire.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/flash/bitmaps/energy flash side.bitmap",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/needle_shards.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/bubble mist.point_physics",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/point physics/smoke explosion.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/effects/shared effects/damage_effects/small explosion shockwave.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glass.bitmap",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glow_color.bitmap",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glow_offset.bitmap",
+   "cmt/powerups/needler_crystal/needler_crystal.model_collision_geometry",
+   "cmt/powerups/needler_crystal/shaders/needler_crystal_glass.shader_transparent_glass",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person posing.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person reload.sound",
+   "cmt/textures/colours/pattern/misc/3d_perlin_noise_64_8.bitmap",
+   "cmt/textures/cubemaps/cube_specular_carapace_shell.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_front.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_gradient.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_side.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_cube_combined.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_mask.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_offset.bitmap",
+   "cmt/weapons/_shared/needler/contrails/needler_needle.contrail",
+   "cmt/weapons/_shared/needler/effects/impact human armored.effect",
+   "cmt/weapons/_shared/needler/effects/impact metal.effect",
+   "cmt/weapons/_shared/needler/effects/impact stone.effect",
+   "cmt/weapons/_shared/needler/effects/needler_needle_fire.effect",
+   "cmt/weapons/_shared/needler/effects/needler_needle_reflect.effect",
+   "cmt/weapons/_shared/needler/effects/needler_ready.effect",
+   "cmt/weapons/_shared/needler/effects/needler_reload.effect",
+   "cmt/weapons/_shared/needler/fp/fp.model_animations",
+   "cmt/weapons/_shared/needler/lights/needler_illumination.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_explosion.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_flare.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle_flare.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle_muzzle_flash.light",
+   "cmt/weapons/_shared/needler/needler.model_animations",
+   "cmt/weapons/_shared/needler/needler.model_collision_geometry",
+   "cmt/weapons/_shared/needler/shaders/needler_needle_glow_front.shader_transparent_chicago",
+   "cmt/weapons/_shared/needler/shaders/needler_needle_glow_side.shader_transparent_chicago",
+   "cmt/weapons/evolved/needler/damage_effects/needler_needle_explosion.damage_effect",
+   "cmt/weapons/evolved/needler/effects/needler_needle_detonate.effect"
+  ],
+  "allowlist": [
+   "cmt/characters/_shared/jackal/bitmaps/jackal_shield_noise.bitmap",
+   "cmt/effects/contrail/generic energy trail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/bullet holes/bitmaps/liquid_splat.bitmap",
+   "cmt/effects/decals/bullet holes/covenant/needler/needler splat blue.decal",
+   "cmt/effects/decals/bullet holes/covenant/needler/needler splat pink.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particle systems/underwater_explosion_bubbles.particle_system",
+   "cmt/effects/particle systems/underwater_explosion_smoke.particle_system",
+   "cmt/effects/particles/air/bitmaps/explosion.bitmap",
+   "cmt/effects/particles/air/bitmaps/light_animated_smoke_1.bitmap",
+   "cmt/effects/particles/air/bitmaps/small_flames.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/fireball_white.bitmap",
+   "cmt/effects/particles/energy/bitmaps/noisy_glow.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma fire.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/energy cloud.particle",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/energy/energy shockwave.particle",
+   "cmt/effects/particles/energy/energy shockwave2.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/energy/sparkly sparkles.particle",
+   "cmt/effects/particles/flash/bitmaps/energy flash side.bitmap",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/bubble flare.particle",
+   "cmt/effects/particles/flash/flash energy side.particle",
+   "cmt/effects/particles/flash/flash needle detonate.particle",
+   "cmt/effects/particles/flash/flash small fire.particle",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/plasma fire flash.particle",
+   "cmt/effects/particles/flash/quick fire flash.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/needle_shards.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/needle chunks.particle",
+   "cmt/effects/particles/solid/needle shards.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/bubble mist.point_physics",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/point physics/smoke explosion.point_physics",
+   "cmt/effects/shared effects/covenant_ammunition_empty.effect",
+   "cmt/effects/shared effects/damage_effects/small explosion shockwave.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glass.bitmap",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glow_color.bitmap",
+   "cmt/powerups/needler_crystal/bitmaps/needler_crystal_glow_offset.bitmap",
+   "cmt/powerups/needler_crystal/needler_crystal.equipment",
+   "cmt/powerups/needler_crystal/needler_crystal.gbxmodel",
+   "cmt/powerups/needler_crystal/needler_crystal.model_collision_geometry",
+   "cmt/powerups/needler_crystal/shaders/needler_crystal_glass.shader_transparent_glass",
+   "cmt/powerups/needler_crystal/shaders/needler_crystal_glow.shader_transparent_chicago_extended",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person posing.sound",
+   "cmt/sounds/sfx/weapons/covenant/needler/animations/first-person reload.sound",
+   "cmt/textures/colours/pattern/misc/3d_perlin_noise_64_8.bitmap",
+   "cmt/textures/cubemaps/cube_specular_carapace_shell.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/covenant/needler.weapon_hud_interface",
+   "cmt/weapons/_shared/needler/bitmaps/needler_body_diff.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_body_multi.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_front.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_gradient.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needle_glow_side.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_cube_combined.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_mask.bitmap",
+   "cmt/weapons/_shared/needler/bitmaps/needler_needles_offset.bitmap",
+   "cmt/weapons/_shared/needler/contrails/needler_needle.contrail",
+   "cmt/weapons/_shared/needler/effects/impact human armored.effect",
+   "cmt/weapons/_shared/needler/effects/impact metal.effect",
+   "cmt/weapons/_shared/needler/effects/impact stone.effect",
+   "cmt/weapons/_shared/needler/effects/needler_needle_explosion_fire.particle_system",
+   "cmt/weapons/_shared/needler/effects/needler_needle_explosion_smoke.particle_system",
+   "cmt/weapons/_shared/needler/effects/needler_needle_fire.effect",
+   "cmt/weapons/_shared/needler/effects/needler_needle_reflect.effect",
+   "cmt/weapons/_shared/needler/effects/needler_ready.effect",
+   "cmt/weapons/_shared/needler/effects/needler_reload.effect",
+   "cmt/weapons/_shared/needler/fp/fp.gbxmodel",
+   "cmt/weapons/_shared/needler/fp/fp.model_animations",
+   "cmt/weapons/_shared/needler/lights/needler_illumination.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_explosion.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_flare.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle_flare.light",
+   "cmt/weapons/_shared/needler/lights/needler_needle_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/needler/lights/needler_needle_muzzle_flash.light",
+   "cmt/weapons/_shared/needler/needler.gbxmodel",
+   "cmt/weapons/_shared/needler/needler.model_animations",
+   "cmt/weapons/_shared/needler/needler.model_collision_geometry",
+   "cmt/weapons/_shared/needler/projectiles/needler_needle/needler_needle.gbxmodel",
+   "cmt/weapons/_shared/needler/shaders/needler_body_colored.shader_model",
+   "cmt/weapons/_shared/needler/shaders/needler_body_grey.shader_model",
+   "cmt/weapons/_shared/needler/shaders/needler_needle_glow_front.shader_transparent_chicago",
+   "cmt/weapons/_shared/needler/shaders/needler_needle_glow_side.shader_transparent_chicago",
+   "cmt/weapons/_shared/needler/shaders/needler_needles.shader_transparent_glass",
+   "cmt/weapons/_shared/needler/shaders/needler_needles_core.shader_transparent_chicago_extended",
+   "cmt/weapons/_shared/needler/shaders/needler_needles_plasma.shader_transparent_plasma",
+   "cmt/weapons/evolved/needler/_needler_mp/effects/needler_mp_needle_explosion.effect",
+   "cmt/weapons/evolved/needler/_needler_mp/needler_mp.weapon",
+   "cmt/weapons/evolved/needler/_needler_mp/projectiles/needler_mp_needle/needler_mp_needle.projectile",
+   "cmt/weapons/evolved/needler/damage_effects/needler_needle_detonation.damage_effect",
+   "cmt/weapons/evolved/needler/damage_effects/needler_needle_explosion.damage_effect",
+   "cmt/weapons/evolved/needler/damage_effects/needler_needle_impact.damage_effect",
+   "cmt/weapons/evolved/needler/damage_effects/needler_needle_trigger.damage_effect",
+   "cmt/weapons/evolved/needler/effects/needler_needle_detonate.effect"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {
+  "needler_meter_smooth.png": "counter_art.py",
+  "needler_alphas_smooth.png": "counter_art.py",
+  "needler_reticle.png": "reticle_art.py"
+ },
+ "art_drawings": {
+  "needler_meter_smooth.png": {
+   "draw": "counter_meter",
+   "layout": {
+    "columns": 13,
+    "rows": 2,
+    "group": 13
+   }
+  },
+  "needler_alphas_smooth.png": {
+   "draw": "counter_alphas",
+   "layout": {
+    "columns": 13,
+    "rows": 2,
+    "group": 13
+   }
+  },
+  "needler_reticle.png": {
+   "draw": "reticle",
+   "form": "needler"
+  }
+ },
+ "art": {
+  "needler_meter_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "82ff9399b2d300405167ac91f0ab7c1def68aee5c8a21a9914c919b6072a14ca"
+  },
+  "needler_alphas_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "3463d12bee9cd36f7ae496171888ec58142434b16dc77c6c7f8a66887d6204dd"
+  },
+  "needler_reticle.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "c747b612d7e766afc1edffe828469cbbbb9479ff3aa74088332e20aad977e930"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved\\needler\\_needler_mp\\needler_mp.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/underwater_explosion_bubbles.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/underwater_explosion_bubbles.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particle systems/underwater_explosion_smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/effects/particle systems/underwater_explosion_smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/dark/smoke h fp.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke cloud dusty.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke impact dusty.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke impact dusty.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/air/smoke needler fp.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/air/smoke needler fp.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/cosiney cosines quick.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/energy cloud.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/energy cloud.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/energy line.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/energy line.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/energy shockwave.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/energy shockwave.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/energy shockwave2.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/energy shockwave2.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/plasma electric arcs animated.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/plasma electric arcs.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/plasma rifle discharge.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/shield impact fragment.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/shield impact fragment.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/shield impact ring.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/shield impact ring.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/shield jackal quickbolt.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/shield jackal quicksparks.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/sparkly sparkles quick.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/energy/sparkly sparkles.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/sparkly sparkles.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/bubble flare.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/bubble flare.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/flash energy side.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/flash energy side.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/flash needle detonate.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/flash needle detonate.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/flash small fire.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/flash small fire.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/impact flash.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/impact flash.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/plasma fire flash.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/plasma fire flash.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/quick fire flash.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/quick fire flash.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/sparks impact.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/sparks impact.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/flash/sparks trail.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/flash/sparks trail.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood generic impact.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood grunt thick.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood grunt thin.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood hunter thick.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood hunter thin.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood impact burst grunt.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood impact burst hunter.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood impact burst.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood mist large.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood mist residual small.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood mist small.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood trails large.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/blood/blood trails small.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/dirt bits.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/dirt bits.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/fluid burst 2.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/fluid burst 2.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/fluid burst long.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/fluid burst long.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/fluid burst.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/fluid burst.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/granular impact burst.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/granular impact burst.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/melting chunks.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/melting chunks.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/needle chunks.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/needle chunks.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/needle shards.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/needle shards.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/effects/particles/solid/worms.particle",
+   "op": "os_strip",
+   "group": "particle",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/solid/worms.particle"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/effects/needler_needle_explosion_fire.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/effects/needler_needle_explosion_fire.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/effects/needler_needle_explosion_smoke.particle_system",
+   "op": "os_strip",
+   "group": "particle_system",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/effects/needler_needle_explosion_smoke.particle_system"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/shaders/needler_body_colored.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/shaders/needler_body_colored.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/shaders/needler_body_grey.shader_model",
+   "op": "os_strip",
+   "group": "shader_model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/shaders/needler_body_grey.shader_model"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/needler_crystal/needler_crystal.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/powerups/needler_crystal/needler_crystal.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model); its parts had no compressed vertices, which the Xbox's build needs",
+   "bludgeon": [
+    "missing-vertices"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/fp/fp.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/needler.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/needler.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/projectiles/needler_needle/needler_needle.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/projectiles/needler_needle/needler_needle.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/needler_crystal/shaders/needler_crystal_glow.shader_transparent_chicago",
+   "op": "chicago",
+   "from": [
+    "cmt",
+    "cmt/powerups/needler_crystal/shaders/needler_crystal_glow.shader_transparent_chicago_extended"
+   ],
+   "why": "the Xbox has no extended chicago shader: Invader's conversion to a chicago shader (the model's reference is set below)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/shaders/needler_needles_core.shader_transparent_chicago",
+   "op": "chicago",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/shaders/needler_needles_core.shader_transparent_chicago_extended"
+   ],
+   "why": "the Xbox has no extended chicago shader: Invader's conversion to a chicago shader (the model's reference is set below)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/needler/bitmaps/needler_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/bitmaps/needler_body_multi.bitmap"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/effects/impacts/flesh_impact.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/covenant/needler.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/covenant/needler.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/needler_crystal/needler_crystal.equipment",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/powerups/needler_crystal/needler_crystal.equipment"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/powerups/needler_crystal/needler_crystal.model"
+    ]
+   ],
+   "why": "the Xbox model of the ammunition crystal"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/needler/_needler_mp/needler_mp.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/_needler_mp/needler_mp.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/needler/needler.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/needler/fp/fp.model"
+    ]
+   ],
+   "why": "the Xbox models (the pickup text 18 and the HUD message 0 are the stock needler's own)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/powerups/needler_crystal/needler_crystal.model",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/powerups/needler_crystal/needler_crystal.model"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[1].shader",
+     "cmt/powerups/needler_crystal/shaders/needler_crystal_glow.shader_transparent_chicago"
+    ]
+   ],
+   "why": "the model's reference to the converted chicago shader (the Xbox has no extended one)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/needler/fp/fp.model",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/_shared/needler/fp/fp.model"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[1].shader",
+     "cmt/powerups/needler_crystal/shaders/needler_crystal_glow.shader_transparent_chicago"
+    ],
+    [
+     "set",
+     "shaders[4].shader",
+     "cmt/weapons/_shared/needler/shaders/needler_needles_core.shader_transparent_chicago"
+    ]
+   ],
+   "why": "the model's reference to the converted chicago shader (the Xbox has no extended one)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/needler/needler.model",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/_shared/needler/needler.model"
+   ],
+   "edits": [
+    [
+     "set",
+     "shaders[0].shader",
+     "cmt/weapons/_shared/needler/shaders/needler_needles_core.shader_transparent_chicago"
+    ]
+   ],
+   "why": "the model's reference to the converted chicago shader (the Xbox has no extended one)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/needler/bitmaps/needler_body_diff.bitmap",
+   "op": "dxt_lift",
+   "lift": 1.5,
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/bitmaps/needler_body_diff.bitmap"
+   ],
+   "why": "CMT's art is dark in stock CE's lighting: the base map brightened (between the carbine's 1.4 and the battle rifle's 1.8)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/needler/shaders/needler_needles.shader_transparent_glass",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/shaders/needler_needles.shader_transparent_glass"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "color_of_emitted_light",
+       "1 0.35 0.75"
+      ],
+      [
+       "tint_color",
+       "1 0.35 0.75"
+      ],
+      [
+       "background_tint_color",
+       "1 0.62 0.9"
+      ],
+      [
+       "perpendicular_tint_color",
+       "1 0.75 0.95"
+      ],
+      [
+       "parallel_tint_color",
+       "1 0.4 0.85"
+      ]
+     ]
+    ]
+   ],
+   "why": "PINK needles (owner 2026-11-02): CMT's needle glass is blue; its tints made pink"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/needler/shaders/needler_needles_plasma.shader_transparent_plasma",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/needler/shaders/needler_needles_plasma.shader_transparent_plasma"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "color_of_emitted_light",
+       "1 0.4 0.85"
+      ],
+      [
+       "tint_color",
+       "1 0.4 0.85"
+      ],
+      [
+       "perpendicular_tint_color",
+       "1 0.4 0.85"
+      ],
+      [
+       "parallel_tint_color",
+       "1 0.4 0.85"
+      ]
+     ]
+    ]
+   ],
+   "why": "PINK needles: the plasma over the needles deepened from CMT's pale pink"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/_needler_mp/needler_mp.weapon",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved/needler/_needler_mp/needler_mp.weapon"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "collision_model",
+       "weapons\\needler\\needler.model_collision_geometry"
+      ],
+      [
+       "magazines[0].rounds_total_initial",
+       "78"
+      ],
+      [
+       "magazines[0].rounds_reserved_maximum",
+       "78"
+      ],
+      [
+       "magazines[0].rounds_loaded_maximum",
+       "26"
+      ],
+      [
+       "magazines[0].rounds_reloaded",
+       "26"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "12 12"
+      ],
+      [
+       "triggers[0].acceleration_time",
+       "0"
+      ],
+      [
+       "triggers[0].deceleration_time",
+       "0"
+      ],
+      [
+       "triggers[0].error_angle",
+       "0.25 3"
+      ],
+      [
+       "triggers[0].minimum_error",
+       "0.25"
+      ],
+      [
+       "triggers[0].error_acceleration_time",
+       "0.5"
+      ],
+      [
+       "triggers[0].error_deceleration_time",
+       "0.2"
+      ],
+      [
+       "triggers[0].firing_noise",
+       "loud"
+      ],
+      [
+       "autoaim_angle",
+       "4.25"
+      ],
+      [
+       "autoaim_range",
+       "10"
+      ],
+      [
+       "magnetism_angle",
+       "12.7"
+      ],
+      [
+       "magnetism_range",
+       "30"
+      ],
+      [
+       "player_melee_damage",
+       "weapons\\assault rifle\\melee.damage_effect"
+      ],
+      [
+       "player_melee_response",
+       "weapons\\assault rifle\\melee_response.damage_effect"
+      ]
+     ]
+    ]
+   ],
+   "why": "The needler pack's numbers (report section 1): 26 loaded, 78 at first (26 + 52), 104 at most (reserve 78), 12 shots a second from the first, no spin-up, error 0.25 to 3 degrees, aim assist 4.25 degrees to 10 wu, magnetism 12.7 degrees to 30 wu; the held weapon's collision the stock needler's; the melee the stock assault rifle's (every pack weapon melees alike)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/_needler_mp/projectiles/needler_mp_needle/needler_mp_needle.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/_needler_mp/projectiles/needler_mp_needle/needler_mp_needle.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/needler/projectiles/needler_needle/needler_needle.model"
+    ],
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "9.5"
+      ],
+      [
+       "final_velocity",
+       "9.5"
+      ],
+      [
+       "maximum_range",
+       "25"
+      ],
+      [
+       "guided_angular_velocity",
+       "60"
+      ]
+     ]
+    ]
+   ],
+   "why": "the needle: the Xbox model, speed 9.5, range 25, homing 60 degrees a second (report section 1; the supercombine count is the engine's, 7 needles)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/damage_effects/needler_needle_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/damage_effects/needler_needle_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "2"
+      ],
+      [
+       "damage_upper_bound",
+       "2 2"
+      ]
+     ]
+    ]
+   ],
+   "why": "a needle landing: 2.0 here and 1.57 stuck (3.57, a latest-generation needler's 7 at the BR's 0.51 scale): 20 needles empty a shield"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/damage_effects/needler_needle_detonation.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/damage_effects/needler_needle_detonation.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "1.57"
+      ],
+      [
+       "damage_upper_bound",
+       "1.57 1.57"
+      ]
+     ]
+    ]
+   ],
+   "why": "the stuck needle's detonation: 1.57 (CMT's 3)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/_needler_mp/effects/needler_mp_needle_explosion.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/_needler_mp/effects/needler_mp_needle_explosion.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].parts[8]"
+    ],
+    [
+     "erase",
+     "events[0].parts[7]"
+    ],
+    [
+     "erase",
+     "events[0].particles[8]"
+    ],
+    [
+     "erase",
+     "events[0].particles[7]"
+    ],
+    [
+     "erase",
+     "events[0].particles[1]"
+    ],
+    [
+     "erase",
+     "events[0].particles[0]"
+    ]
+   ],
+   "why": "the supercombine explosion without its underwater systems and the shockwave ring: they name stock particles and bitmaps (monitor glow rings, bubbles) that the stock multiplayer maps do not all carry, which a donor map cannot have"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/needler/damage_effects/needler_needle_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/needler/damage_effects/needler_needle_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.2"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.08"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.35"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.08"
+      ],
+      [
+       "temporary_camera_impulse_duration",
+       "0"
+      ],
+      [
+       "temporary_camera_impulse_pushback",
+       "0"
+      ],
+      [
+       "camera_shaking_duration",
+       "0"
+      ],
+      [
+       "camera_shaking_random_translation",
+       "0"
+      ],
+      [
+       "camera_shaking_random_rotation",
+       "0"
+      ],
+      [
+       "camera_shaking_wobble_weight",
+       "0"
+      ]
+     ]
+    ]
+   ],
+   "why": "a needle's kick on the pad (haptics, 2026-11-03): a light pulse on both motors for 0.08 s a needle (12 a second: a buzz), as the battle rifle's rumble-only kick but lighter; CMT's view kick and shake taken out (the view holds still)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/hud/needler_ammo.weapon_hud_interface",
+   "op": "ammo_hud",
+   "icon_sheet": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap",
+   "from": [
+    "stock",
+    "weapons/assault rifle/assault rifle.weapon_hud_interface"
+   ],
+   "why": "The prompts' picture is CMT's own: its pickup icon sheet, sequence 5."
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/needler_meter_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "needler_meter_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/needler_alphas_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "needler_alphas_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/needler_reticle.bitmap",
+   "op": "bitmap",
+   "art": [
+    "needler_reticle.png"
+   ],
+   "arguments": [
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt5"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/needler_ammo.weapon_hud_interface",
+   "op": "counter_hud",
+   "alphas": "ae_pack\\hud\\needler_alphas_smooth.bitmap",
+   "meter": "ae_pack\\hud\\needler_meter_smooth.bitmap",
+   "scale": 0.25,
+   "anchor": [
+    -1,
+    20
+   ],
+   "off_screen": [
+    -3000,
+    -3000
+   ],
+   "icon_sequence": 5,
+   "from": [
+    "fix-xbox",
+    "ae_pack/hud/needler_ammo.weapon_hud_interface"
+   ],
+   "why": "the ammunition panel: the counter of 26 rounds (counter_art.py), the low-ammo flash on it, the prompts' picture off the screen"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/covenant/needler.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/ui/hudv4.1/weapons/_shared/covenant/needler.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ae_pack/hud/needler_ammo.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_bitmap",
+     "ae_pack\\hud\\needler_reticle.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "crosshairs[0].crosshair_overlays[0].flags.not_a_sprite",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].sequence_index",
+       "0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].width_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].height_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].default_color",
+       "0 40 150 255"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flashing_color",
+       "0 255 0 0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_period",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_delay",
+       "0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].number_of_flashes",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_length",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].disabled_color",
+       "0 0 0 0"
+      ]
+     ]
+    ],
+    [
+     "set",
+     "crosshairs[1].crosshair_bitmap",
+     "ae_pack\\hud\\needler_reticle.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "crosshairs[1].crosshair_overlays[0].flags.not_a_sprite",
+       "1"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].sequence_index",
+       "0"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].width_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].height_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].default_color",
+       "0 40 150 255"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].flashing_color",
+       "0 255 0 0"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].flash_period",
+       "1"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].flash_delay",
+       "0"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].number_of_flashes",
+       "1"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].flash_length",
+       "1"
+      ],
+      [
+       "crosshairs[1].crosshair_overlays[0].disabled_color",
+       "0 0 0 0"
+      ]
+     ]
+    ]
+   ],
+   "why": "CMT's interface keeps its crosshairs, now our reticle (reticle_art.py, the needler form: two brackets and two triangles) in CE's colour, red on target, as the battle rifle's; the ammunition panel is the child HUD"
+  }
+ ],
+ "expected": {
+  "about": "recorded from a build of revision 3 (2026-11-03: CMT's multiplayer needler, pink needles, the latest-generation numbers of NEEDLER-REPORT, our needler reticle: two brackets and two triangles, a light rumble a needle); a pack built twice from the recipe was the same; re-pinned for CMT's own pickup icon (the message icon is CMT's pickup icon sheet's sequence)",
+  "donor_sha256": "e63956c6bd7f4975acc9a976b15a73e6e51a86be995ca252f14e87bdab245c37",
+  "donor_size": 22532096,
+  "pack_sha256": "a2db15116726b0243e103ebcc93db150c2c39d4b313fac152bfdbe71566b80f3",
+  "pack_own_sha256": "9a6fe642609fca7757920011a4c85e60801bb183c560e2d2812bc3bbded591b7",
+  "pack_size": 13336255,
+  "own_tags": 191,
+  "external_tags": 56
+ }
+}

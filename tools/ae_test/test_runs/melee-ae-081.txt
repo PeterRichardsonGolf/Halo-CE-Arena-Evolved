@@ -1,0 +1,121 @@
+# The MELEE rule (GAME OPTIONS, SPARTAN: MELEE, CLASSIC / MODERN) on Octagon 2 with a dummy that stands still: MODERN's
+# melee is a finisher. A melee blow is worth at least a third more than a player's full health (100 at the stock 75, and
+# it follows the gametype's health and resistance); it kills a player whose shield is down or nearly down outright (a
+# leftover goes on to health), always from behind, and COMBAT FEEDBACK's shield pop shows when a melee can finish. Reach
+# is the same for every weapon. CLASSIC is Halo CE's melee as before.
+# Two groups share one map load each (the stock weapons; the weapon cache's, for the battle rifle). Every test sets the
+# rule itself (option melee modern|classic) and puts the weapon its checks name in hand (a give puts the new weapon in
+# hand and, with two held, drops the one that was in hand, so a test gives one weapon, its last); no menu work. The
+# record of each hit is the ev=ps hp and shield lines (set debug.objective_log full); a dummy heals to full 3 s after it
+# was last hurt, so wait that long between tries. The magnum is the stock pistol; the battle rifle is the weapon cache's
+# weapon 1.
+# Revision 3 (0.9.4, 11-16: MELEE ships in 0.9.4; the same tests on the 0.9.4 build).
+# Revision 4 (owner 11-16: melee-mate SKIP, "team mate did not spawn could not test"): the mate dummy joined the other team
+# (bots.teams even puts a lone bot opposite you); "dummy ... mate" now puts it on your team.
+list melee-ae-081
+revision 4
+title MELEE RULE: CLASSIC / MODERN
+
+group octagon-stock
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.objective_log full
+
+test melee-pistol
+title MELEE MODERN with the magnum: shots, then the blow
+setup option melee modern
+setup give weapons\pistol\pistol
+setup dummy 1 1.0
+check 2 magnum shots, then melee: the dummy dies
+expect 1 cmd option melee modern ok
+check Melee at full shield: it does not kill
+check Melee again, shield now down: the second blow kills
+
+test pop-magnum
+title MELEE MODERN: the shield pop with the magnum
+setup option melee modern
+setup give weapons\pistol\pistol
+setup dummy 1 8
+check Magnum: pop shows when a melee can finish
+expect 1 cmd option melee modern ok
+
+test pop-rifle
+title MELEE MODERN: the shield pop with the assault rifle
+setup option melee modern
+setup give assault_rifle
+setup dummy 1 8
+check Assault rifle: pop shows when a melee can finish
+expect 1 cmd option melee modern ok
+
+test pop-smg
+title MELEE MODERN: the shield pop with the SMG
+setup option melee modern
+setup give smg
+setup dummy 1 8
+check SMG: pop shows when a melee can finish
+expect 1 cmd option melee modern ok
+
+test pop-plasma
+title MELEE MODERN: the shield pop with the plasma rifle
+setup option melee modern
+setup give plasma_rifle
+setup dummy 1 8
+check Plasma rifle: pop shows when a melee can finish
+expect 1 cmd option melee modern ok
+
+test melee-reach-magnum
+title MELEE MODERN: the reach with the magnum
+setup option melee modern
+setup give weapons\pistol\pistol
+setup dummy 1 1.5
+check Magnum: step in until a melee lands, note the distance
+expect 1 cmd option melee modern ok
+
+test melee-reach-rifle
+title MELEE MODERN: the reach with the assault rifle
+setup option melee modern
+setup give assault_rifle
+setup dummy 1 1.5
+check Assault rifle: step in, same distance as magnum
+expect 1 cmd option melee modern ok
+
+test melee-classic
+title MELEE CLASSIC: Halo CE's melee as before
+setup option melee classic
+setup give weapons\pistol\pistol
+setup dummy 1 1.0
+check 2 magnum shots, then melee: the dummy does not die
+expect 1 cmd option melee classic ok
+check The shield pop shows as in MELEE MODERN
+
+group octagon-cache
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.objective_log full
+
+test melee-br
+title MELEE MODERN with the battle rifle: bursts, then the blow
+setup option melee modern
+setup dummy 1 1.0
+check 3 bursts, then melee: the dummy dies
+expect 1 cmd option melee modern ok
+check 2 bursts, then melee: it does not die
+
+test melee-behind
+title MELEE MODERN from behind
+setup option melee modern
+setup dummy 1 1.0 away
+check Dummy's back to you: one melee at full shield kills
+check From its side: one melee at full shield doesn't kill
+expect 1 cmd option melee modern ok
+
+test melee-mate
+title MELEE MODERN on a teammate
+retest 4
+setup option melee modern
+setup dummy 1 1.0 away mate
+check Teammate's back to you: a melee does not kill it outright
+expect 1 cmd option melee modern ok

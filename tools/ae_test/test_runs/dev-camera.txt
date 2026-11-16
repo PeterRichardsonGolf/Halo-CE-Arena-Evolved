@@ -1,0 +1,69 @@
+# DEV MODE's cameras: F2 shoulder camera, F3 other shoulder, F6 free camera.
+# Pad: hold BACK and press the d-pad's down (shoulder), right (other shoulder), left (free).
+list dev-camera
+revision 1
+title DEV MODE CAMERAS
+
+test shoulder-toggle
+title F2 turns the shoulder camera on and off
+check F2: the camera moves behind your shoulder, body drawn
+check The reticle sits where your shots land
+check F2 again: back to first person with no jump
+map bloodgulch
+gametype slayer
+set bots.count 0
+video
+
+test other-shoulder
+title F3 swaps the shoulder
+check F2, then F3: the camera swaps to your other shoulder
+check The reticle stays where your shots land
+check Walk and turn: the camera follows with no jitter
+map bloodgulch
+gametype slayer
+set bots.count 0
+video
+
+test wall-pull-in
+title The camera pulls in at a wall
+check F2, then back into a wall: the camera moves closer
+check It never shows the far side of the wall
+map chillout
+gametype slayer
+set bots.count 0
+
+test distance-300
+title system.dev_camera_distance 300 is farther
+check F2: the camera sits about three times farther back
+check You still see your body and the reticle
+map bloodgulch
+gametype slayer
+set bots.count 0
+set system.dev_camera_distance 300
+
+test free-camera
+title F6 free camera
+check F6: the camera moves and looks as you do
+check Jump goes up and crouch goes down
+check F6 again: back to first person at your body
+map hangemhigh
+gametype slayer
+set bots.count 0
+video
+
+test zoom-gives-back
+title A zoom gives the game's camera back
+check F2, then zoom the sniper rifle: the scope shows
+check Un-zoom: the shoulder camera comes back
+map bloodgulch
+gametype slayer
+set debug.network_test_loadout 5,3
+
+test death-gives-back
+title A death gives the game's camera back
+check F2, then let a bot kill you: the death camera runs
+check After the respawn the game's camera is back
+map bloodgulch
+gametype slayer
+set bots.count 3
+set bots.skill heroic

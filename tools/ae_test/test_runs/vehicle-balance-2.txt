@@ -1,0 +1,59 @@
+# Vehicle balance, round 2 (0.7.6): small arms now really hurt a vehicle (0.7.5 shipped it as a known issue: only
+# explosives did). VEHICLES DESTRUCTIBLE ON (AE TEAM SLY), no bots. Each test makes an empty vehicle just ahead of you
+# and hands you the weapon. Counts are for shots that all land near its middle; two or three either way is fine.
+# Smoke: light from 70% health, heavy smoke and fire from 44% (warthog). Same-setup tests share one Blood Gulch load.
+list vehicle-balance-2
+revision 1
+title VEHICLE BALANCE, ROUND 2
+
+test pistol-warthog
+title Pistol on an empty Warthog
+check About 125 rounds destroy it
+check Light smoke near 70%, smoke and fire near 44%
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn warthog ahead
+setup give pistol
+
+test rifle-warthog
+title Assault rifle on an empty Warthog
+check About 210 rounds destroy it
+check The wreck burns, then a Warthog respawns
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn warthog ahead
+setup give assault_rifle
+
+test sniper-ghost
+title Sniper rifle on an empty Ghost
+check About 8 hits destroy it
+check Light smoke first, then smoke and fire
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn ghost ahead
+setup give sniper_rifle
+
+test small-arms-scorpion
+title Small arms on the Scorpion
+check Pistol rounds do nothing to it
+check Rockets still destroy it (2 to 3)
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn scorpion ahead
+setup give pistol
+setup give rocket_launcher
+
+test rockets-as-before
+title Rockets, as before
+check An empty Warthog: 2 rockets destroy it
+check Hood and glass come off; the wreck burns
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn warthog ahead
+setup give rocket_launcher
+

@@ -1,0 +1,51 @@
+# 0.9.4 FRACTURED PEAK KING (owner 11-15: "lots of bot issues on that map", "they also would not take the hill unless i
+# told them to a few times. they also could not take the hill on top mid"). The top-middle hill's point sits over a gap
+# in its floor: the bots took the floor 2.3 below for its goal, walked under it and never got up (0 of 4 turns); now the
+# goal is the floor beside the point at its height, up the ramp. The map's script kills anyone in a trigger volume under
+# its cracks (43 bot deaths there): two deaths in it (a second apart) mark it deadly, the bots keep out of it, the learnt
+# file keeps it for the next games. In a hill game, your squad's bots on the hill are no longer walked back to you.
+# Revision 2 (after 11-16's TEAM KING game: "the bots just stood outside of the hill and waited and didnt take it on my
+# team": your teammates went in and out of the hill 13-14 times each): a bot holding the hill that fights keeps its
+# moves inside (along the edge, or back to the middle), and its hold lasts a moment past a step out.
+# Revision 3 (owner 11-16 round on rev 2: top-hill FAIL): the squads sent to the hill took the floor under the top-middle
+# hill's centre for its place and stood there; they take the hill's own level now (beside its point, else its markers).
+# Revision 4 (0.9.4 freeze review): a trigger volume is learnt deadly after 3 map kills of different players (was 2), none
+# while a round's countdown runs, so a reset or a spawn's telefrag no longer marks it; the cracks are learnt a little later.
+list bots-fractured-094
+revision 4
+title FRACTURED PEAK: THE TOP HILL, THE CRACKS, YOUR SQUAD
+
+group fractured-king
+map fractured_peak@smp
+gametype AE KING
+set bots.count 7
+set bots.teams even
+set bots.skill normal
+set debug.bot_events true
+
+test top-hill
+title FRACTURED PEAK: bots take the top-middle hill
+retest 3
+check When the hill is on top in the middle, stay off it
+check Bots of both teams get up onto it and hold it
+check They go up the ramp, not under it
+
+test cracks
+title FRACTURED PEAK: no bots dying in the cracks
+retest 4
+check Play a whole game
+check Bots stop walking into the cracks by the middle
+expect 1 log is deadly
+
+test squad-hill
+title FRACTURED PEAK: your squad takes the hill unasked
+retest 2
+check Give your squad no orders; play away from the hill
+check Your squad's bots still go and take each hill
+
+test team-hill
+title FRACTURED PEAK: your team's bots stay in the hill
+check TEAM KING: let your teammates take a hill
+check In a fight they stay inside, never at its edge
+check The hill counts them: your team holds it
+

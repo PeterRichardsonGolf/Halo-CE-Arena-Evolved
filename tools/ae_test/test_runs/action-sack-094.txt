@@ -1,0 +1,34 @@
+# 0.9.4 ACTION SACK: the casual SWAT & SNIPERS playlist became ACTION SACK (same slot, same id so the same rank): four against
+# four, a different weapon set each game (SWAT, SNIPERS, SHOTGUNS, ROCKETS, SHOTTY SNIPERS). `social maps hide smp` leaves the
+# stock fallback maps, each on one set: prisoner SWAT, hangemhigh SHOTGUNS, damnation ROCKETS, chillout SHOTTY SNIPERS,
+# bloodgulch SNIPERS. `social start <id> map <map> now` opens each check on its game. Nothing waits for a game to happen.
+list action-sack-094
+revision 1
+title ACTION SACK
+
+test row-and-rank
+title The row and the old rank
+check ACTION SACK sits where the old row was, rank kept
+check About: Four against four. A different weapon set...
+check CAREER shows the same rank under ACTION SACK
+menus
+setup social exp swat-snipers 300
+setup menu tournament focus swat-snipers
+
+test shotty-snipers
+title SHOTTY SNIPERS start
+check Shotgun and sniper rifle in hand; no map weapons
+check The lobby reads 4 V 4 on chillout
+menus
+setup social maps hide smp
+setup social start swat-snipers map chillout now
+expect 1 log ae social: start swat-snipers
+
+test team-rockets
+title Team ROCKETS
+check The rocket launcher is in hand; 4 V 4 on damnation
+check Your team has 3 teammates, theirs 4
+menus
+setup social maps hide smp
+setup social start swat-snipers map damnation now
+expect 1 log ae social: start swat-snipers

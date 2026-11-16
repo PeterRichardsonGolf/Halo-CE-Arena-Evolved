@@ -1,0 +1,55 @@
+# COMBAT FEEDBACK's early shield pop shows when one more headshot of the weapon in use finishes: the least of 25 points
+# and one of its hits against the shield. On Octagon 2 with a dummy that stands still (75 shield, 75 health): the
+# magnum pops after 2 hits (25 left), the sidekick after 5 (4.8 left, not after 4), the DMR after 3 rounds (18.2 left),
+# the EVO RIFLE (nothing past a breaking shield) only as its 4th round breaks it. Shoot the head each time. A dummy
+# heals to full 3 s after it was last hurt, so wait that long between tries. A give puts the weapon in hand.
+list pop-weapon-080
+revision 1
+title SHIELD POP BY WEAPON
+
+group octagon-cache
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.objective_log full
+
+test pop-magnum
+title Magnum: the pop after the 2nd hit, the 3rd kills
+setup give weapons\pistol\pistol
+setup dummy 1 10
+setup ttk on
+check 1st head hit: no pop
+check 2nd head hit: the pop shows, it lives
+check 3rd head hit: it dies
+expect 1 cmd dummy ok
+
+test pop-sidekick
+title Sidekick: the pop after the 5th hit, not the 4th
+setup give sidearm
+setup dummy 1 10
+setup ttk on
+check 4 head hits: no pop yet, the dummy lives
+check 5th head hit: the pop shows, it lives
+check 6th head hit: it dies
+expect 1 cmd dummy ok
+
+test pop-dmr
+title DMR: the pop after the 3rd round, the 4th kills
+setup give dmr
+setup dummy 1 10
+setup ttk on
+check 2 head rounds: no pop yet
+check 3rd head round: the pop shows, it lives
+check 4th head round: it dies
+expect 1 cmd dummy ok
+
+test pop-evo
+title EVO RIFLE: the pop as the 4th round breaks it
+setup give evo
+setup dummy 1 10
+setup ttk on
+check 3 head rounds: no pop, the dummy lives
+check 4th head round: the pop shows, it lives
+check 5th head round: it dies
+expect 1 cmd dummy ok

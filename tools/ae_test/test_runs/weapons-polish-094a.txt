@@ -1,0 +1,77 @@
+# 0.9.4 weapons polish, round 1 (the quick fixes): TACTICAL SMG (15), BURST PDW (16), SPIKER (19), GRENADE
+# LAUNCHER (22), CONCUSSION RIFLE (23), one test each on Octagon 2. Each pack's weapon is the START weapon on every
+# life (debug.network_test_cache_weapon <slot>), two bots wander the arena, and a dummy stands in front of you (a
+# dummy heals to full 3 s after it was last hurt: wait that long between tries). `ttk on` prints the time to kill
+# after each kill. The packs are held: this list runs only on a test build whose weapon cache holds them. The view
+# model numbers are first guesses: DEV MODE's `viewmodel place <right> <up> <forward> 0 0 0 1` moves the arms and gun
+# live, `viewmodel save` keeps them (view_models.txt). Staged only: nothing here waits for something to happen.
+list weapons-polish-094a
+revision 1
+title WEAPONS POLISH 1
+
+test tac-smg-view
+title Tactical SMG: view and zoom
+setup dummy 1 8
+check The stock is out of view; it sits like the SMG
+check Zoomed, the reticle stays in the middle
+check Fire, reload, melee: nothing looks unfinished
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 15
+set debug.objective_log full
+
+test pdw-retune
+title Burst PDW: view and strength
+setup dummy 1 4
+setup ttk on
+check It sits low right, as the SMG does
+check 3 bursts leave the dummy alive; the 4th kills it
+check No longer stronger than the BR
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 16
+set debug.objective_log full
+
+test spiker-bounce
+title Spiker: view and bounces
+setup dummy 1 6
+check It sits a little closer than before
+check Spikes at a wall: fewer glance off
+check A glancing spike drops soon after
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 19
+set debug.objective_log full
+
+test launcher-hold
+title Grenade launcher: hold cap
+setup dummy 1 8
+check No shoulder stock in view
+check Hold the trigger: it bursts by itself in about 3 s
+check Let go sooner: it bursts where it is
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 22
+set debug.objective_log full
+
+test concussion-buff
+title Concussion rifle: slight buff
+setup dummy 1 8
+setup ttk on
+check 5 direct bolts kill the dummy in about 1.6 s
+check A near miss still hurts the dummy
+check Would you pick it up now?
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 23
+set debug.objective_log full

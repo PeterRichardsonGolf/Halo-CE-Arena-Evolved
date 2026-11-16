@@ -1,0 +1,30 @@
+# 0.9.3 BOTS: drivers who wait for crew. In your 11-14 Blood Gulch game a bot who got into the blue base's Warthog sat
+# 7-8 s before it drove off: the wait for a gunner bot (4 s) then the wait for riders (5 s), for teammates who were only
+# walking past. Now one stop for crew is 5 s at most in all, a teammate bot counts only when it is going for that Warthog,
+# and a person when at its door or walking at it. A teammate shooting at it (a call) still stops it as before.
+# The setup puts you by the blue Warthog's spawn; bots take it as the game goes.
+list bots-crew-093
+revision 1
+title BOTS: DRIVERS AND CREW
+
+group gulch
+map bloodgulch
+gametype AE BR TS
+set bots.count 7
+set bots.teams even
+set bots.skill elite
+set debug.bot_vehicles 2
+set debug.bot_events true
+
+test drive-off
+title BLOOD GULCH: a driver with no crew coming drives off
+setup goto 33.0 -87.0 2.0
+check Stand back: a bot that gets in drives off within 5 s
+check No driver sits there for teammates walking past
+expect 1 log reason=
+
+test wait-for-you
+title BLOOD GULCH: a driver waits while you walk to it
+setup goto 33.0 -87.0 2.0
+check Walk at the Warthog as a bot gets in: it waits for you
+check Get in the gunner seat: it drives off with you

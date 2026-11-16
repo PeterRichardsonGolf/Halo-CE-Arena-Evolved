@@ -1,0 +1,101 @@
+# MARKS, solo (gate 1): aim, reading and the shared button. Keyboard B marks; a controller taps the flashlight button.
+list mark-spike
+revision 1
+title MARKS, SOLO
+
+test place-far-near
+title A mark on the ground lands where you aimed
+check Mark nearby ground: pin on the spot, HERE and distance
+check Mark far across the map: lands where the reticle was
+check Fades after about 5 s, one short sound when it appears
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test enemy
+title A mark on an enemy
+check Mark a bot: red triangle on it, ENEMY, a falling sound
+check It stays where the bot was: it does not follow
+check Near and far: note misses, or bots grabbed by mistake
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test enemy-behind-wall
+title An enemy out of sight is not marked
+check Bot behind a wall or hill: marks the wall, not the bot
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test item
+title A mark on an item
+check Mark a weapon: box over it, its name above, distance
+check Pick the weapon up: the mark goes at once
+check Aim at a vehicle and press B: the same box, VEHICLE above it
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test from-vehicle
+title Marking from inside a vehicle
+check Drive, mark near a weapon: box on it, shows its name
+check Drive, mark a parked vehicle: marks it, shows its name
+check Drive, mark open ground: pin lands where you looked
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test own-mark
+title One mark a player
+check Mark a spot, then another: the first goes at once
+check Mark a spot and press B on it again: it clears
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test off-screen
+title A mark out of view
+check Turn away: pin at the screen's edge, distance only
+check Turn around: it follows the edge, returns to the spot
+check It keeps clear of the HUD. Say in a note what it touches
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test controller
+title The controller's flashlight button
+check Tap it: a mark, and the flashlight does not change
+check Hold 1/4 second: flashlight toggles, no mark
+check Note if tap or hold misfired, or the mark felt late
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test controller-zoom
+title The button while zoomed
+check HOLD zoom on: a zoomed press steps zoom, makes no mark
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+
+test looks
+title Reading the marks
+check WAYPOINTS TEXT, ICONS, BOTH: rows follow as on a cross
+check HUD STYLE CLASSIC: pin, box plain white, triangle outlined
+check Mid-fight: can you read what and where? Say in a note
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test split-screen
+title A teammate on the same screen
+check Mark with one player: both views show it, one sound
+check The second view's marks look right at the smaller size
+map bloodgulch
+gametype AE TEAM SLY
+players 2
+set bots.count 0

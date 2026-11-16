@@ -1,0 +1,613 @@
+{
+ "format": 1,
+ "about": "The AE brute shot pack: CMT's multiplayer brute shot (brute_shot_mp) from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (tags for the stock tool kit, no Open Sauce), taken as CMT made it into the donor map and the pack, with only what an Xbox map needs: the models converted, the multipurpose map's channels reordered, the high-resolution HUD made the Xbox's, and the explosion's underwater flash left out (its bitmap is on no stock multiplayer map). make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_brute_shot",
+  "revision": 32,
+  "display": "BRUTE SHOT",
+  "prefix": "ae\\packs\\brute_shot\\",
+  "weapon": "cmt\\weapons\\evolved\\brute_shot\\_brute_shot_mp\\brute_shot_mp",
+  "weapon_key": "brute_shot",
+  "labels": "c_bs,ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "roots": [
+   "bitm:cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons"
+  ],
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:2"
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/effects/contrail/generic trail.bitmap",
+   "cmt/effects/impacts/explosions/dirt explosion small.effect",
+   "cmt/effects/impacts/explosions/glass explosion small.effect",
+   "cmt/effects/impacts/explosions/metal explosion small.effect",
+   "cmt/effects/impacts/explosions/sand explosion small.effect",
+   "cmt/effects/impacts/explosions/stone explosion small.effect",
+   "cmt/effects/impacts/explosions/water explosion small.effect",
+   "cmt/effects/impacts/explosions/wood explosion small.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/lights/human muzzle flash default.light",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particle systems/underwater_explosion_bubbles.particle_system",
+   "cmt/effects/particle systems/underwater_explosion_smoke.particle_system",
+   "cmt/effects/particles/air/bitmaps/explosion.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric rings.bitmap",
+   "cmt/effects/particles/energy/bitmaps/emp_cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy orbs white.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma twirl.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/electric ring explosion.particle",
+   "cmt/effects/particles/energy/embers small.particle",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/energy/plasma electric quickishbolts.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/shield twirl.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/spiker fire.bitmap",
+   "cmt/effects/particles/flash/explosion flare.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle.particle",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flare_center_fire.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_center_fire_expand.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst mud.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/bubble mist.point_physics",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/damage_effects/small explosion shockwave.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_blade.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person posing.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person reload.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_ammo_pickup.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade_explosion.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade_fire_h3.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_melee_impact.sound",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/covenant/brute_shot.weapon_hud_interface",
+   "cmt/weapons/_shared/brute_shot/bitmaps/brute_shot_body_diff.bitmap",
+   "cmt/weapons/_shared/brute_shot/bitmaps/brute_shot_body_multi.bitmap",
+   "cmt/weapons/_shared/brute_shot/brute_shot.gbxmodel",
+   "cmt/weapons/_shared/brute_shot/brute_shot.model_collision_geometry",
+   "cmt/weapons/_shared/brute_shot/contrails/brute_shot_grenade.contrail",
+   "cmt/weapons/_shared/brute_shot/effects/brute_shot_grenade_explosion.particle_system",
+   "cmt/weapons/_shared/brute_shot/effects/brute_shot_grenade_fire.effect",
+   "cmt/weapons/_shared/brute_shot/fp/fp.gbxmodel",
+   "cmt/weapons/_shared/brute_shot/fp/fp.model_animations",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_explosion.light",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_muzzle_flash.light",
+   "cmt/weapons/_shared/brute_shot/projectiles/brute_shot_grenade/brute_shot_grenade.gbxmodel",
+   "cmt/weapons/_shared/brute_shot/shaders/brute_shot_body.shader_model",
+   "cmt/weapons/_shared/brute_shot/widgets/brute_shot_grenade.light_volume",
+   "cmt/weapons/evolved/brute_shot/_brute_shot_mp/brute_shot_mp.weapon",
+   "cmt/weapons/evolved/brute_shot/_brute_shot_mp/effects/brute_shot_mp_grenade_explosion.effect",
+   "cmt/weapons/evolved/brute_shot/_brute_shot_mp/projectiles/brute_shot_mp_grenade/brute_shot_mp_grenade.projectile",
+   "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_explosion.damage_effect",
+   "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_trigger.damage_effect"
+  ],
+  "verbatim": [
+   "cmt/effects/contrail/generic trail.bitmap",
+   "cmt/effects/impacts/explosions/dirt explosion small.effect",
+   "cmt/effects/impacts/explosions/glass explosion small.effect",
+   "cmt/effects/impacts/explosions/metal explosion small.effect",
+   "cmt/effects/impacts/explosions/sand explosion small.effect",
+   "cmt/effects/impacts/explosions/stone explosion small.effect",
+   "cmt/effects/impacts/explosions/water explosion small.effect",
+   "cmt/effects/impacts/explosions/wood explosion small.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/lights/human muzzle flash default.light",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particle systems/underwater_explosion_bubbles.particle_system",
+   "cmt/effects/particle systems/underwater_explosion_smoke.particle_system",
+   "cmt/effects/particles/air/bitmaps/explosion.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/air/smoke needler fp.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric bolts.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric rings.bitmap",
+   "cmt/effects/particles/energy/bitmaps/emp_cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy orbs white.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma twirl.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/electric ring explosion.particle",
+   "cmt/effects/particles/energy/embers small.particle",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/energy/plasma electric quickishbolts.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/shield twirl.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/bitmaps/spiker fire.bitmap",
+   "cmt/effects/particles/flash/explosion flare.particle",
+   "cmt/effects/particles/flash/flash spiker muzzle.particle",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flare_center_fire.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_center_fire_expand.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst mud.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/bubble mist.point_physics",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/damage_effects/small explosion shockwave.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person posing.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/animations/first-person reload.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_ammo_pickup.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade.sound_looping",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade_explosion.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_grenade_fire_h3.sound",
+   "cmt/sounds/sfx/weapons/covenant/brute_shot/fx/brute_shot_melee_impact.sound",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/weapons/_shared/brute_shot/bitmaps/brute_shot_body_diff.bitmap",
+   "cmt/weapons/_shared/brute_shot/brute_shot.model_collision_geometry",
+   "cmt/weapons/_shared/brute_shot/contrails/brute_shot_grenade.contrail",
+   "cmt/weapons/_shared/brute_shot/effects/brute_shot_grenade_explosion.particle_system",
+   "cmt/weapons/_shared/brute_shot/effects/brute_shot_grenade_fire.effect",
+   "cmt/weapons/_shared/brute_shot/fp/fp.model_animations",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_explosion.light",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_muzzle_flash.lens_flare",
+   "cmt/weapons/_shared/brute_shot/lights/brute_shot_grenade_muzzle_flash.light",
+   "cmt/weapons/_shared/brute_shot/shaders/brute_shot_body.shader_model",
+   "cmt/weapons/_shared/brute_shot/widgets/brute_shot_grenade.light_volume"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {},
+ "art_drawings": {},
+ "art": {},
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved\\brute_shot\\_brute_shot_mp\\brute_shot_mp.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap"
+    ]
+   ],
+   "why": "the donor map only: the stock HUD globals naming the source's own pickup icon sheet, so that the donor holds the sheet the pack's message icon is (the pack takes the sheet by its root, never these globals)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the source's pickup icon sheet)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/brute_shot/brute_shot.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/brute_shot/brute_shot.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/brute_shot/fp/fp.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/brute_shot/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/brute_shot/projectiles/brute_shot_grenade/brute_shot_grenade.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/brute_shot/projectiles/brute_shot_grenade/brute_shot_grenade.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model); its markers, which CMT's file holds at the model's level, put in its permutations, where the Xbox's model keeps them",
+   "bludgeon": [
+    "invalid-model-markers"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/brute_shot/bitmaps/brute_shot_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/brute_shot/bitmaps/brute_shot_body_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/covenant/brute_shot.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/covenant/brute_shot.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ui\\hud\\master rounds.weapon_hud_interface"
+    ]
+   ],
+   "why": "CMT's own panel is out (its static elements and meter): no panel of the pack's draws under the classic HUD style; the rounds are the map's own panel, the child HUD (the icon is the HUD globals', not this tag's)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/brute_shot/_brute_shot_mp/brute_shot_mp.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/_brute_shot_mp/brute_shot_mp.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/brute_shot/brute_shot.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/brute_shot/fp/fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ]
+   ],
+   "why": "the Xbox models; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/brute_shot/_brute_shot_mp/projectiles/brute_shot_mp_grenade/brute_shot_mp_grenade.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/_brute_shot_mp/projectiles/brute_shot_mp_grenade/brute_shot_mp_grenade.projectile"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/brute_shot/projectiles/brute_shot_grenade/brute_shot_grenade.model"
+    ]
+   ],
+   "why": "the Xbox models"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/brute_shot/_brute_shot_mp/effects/brute_shot_mp_grenade_explosion.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/_brute_shot_mp/effects/brute_shot_mp_grenade_explosion.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].particles[8]"
+    ]
+   ],
+   "why": "the explosion's underwater flash (CMT's bubble flare, made in water only) names the stock bitmap effects\\particles\\air\\bitmaps\\bigbubble, which no stock multiplayer map has: left out; the stock bubbles under water stay"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.12"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.6"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.1"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a thump on both motors with each grenade, the carbine's pattern made heavier for a launcher; nothing else of CMT's trigger is changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_explosion.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/brute_shot/damage_effects/brute_shot_grenade_explosion.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "radius",
+     "0.4 0.8"
+    ],
+    [
+     "set",
+     "damage_aoe_core_radius",
+     "0.3"
+    ],
+    [
+     "set",
+     "damage_lower_bound",
+     "12"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "50 50"
+    ]
+   ],
+   "why": "AE retune toward the 2nd-gen role (owner, rc-075b: CMT's 60 a hit killed a full player in 3 hits in about a second; 0.7.5's 38 a hit, 4 hits, felt too weak): 50 a direct hit, so 3 direct hits kill from full (150 = 75 body + 75 shield: 2 x 50 = 100, 3 x 50 = 150), with the smaller blast kept (radius 0.4 to 0.8 from 0.6 to 1.2, full-damage core 0.3 from 0.5, edge damage 12 from 20) so a near miss does far less"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/globals/evolved/damage_effects/melee_blade.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/globals/evolved/damage_effects/melee_blade.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "74"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "74 74"
+    ]
+   ],
+   "why": "the brute shot's bayonet, so that a melee blow and 2 hits kill from full (74 + 2 x 50 = 174; 74 + 50 = 124 leaves a player alive for the second hit); only this pack's copy of the melee damage"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the haptics; re-pinned 2026-11-04 for CMT's own pickup icon; re-pinned 2026-11-04 for the pack-flaws fixes (revision 31); revision 32 (0.7.6): 50 a direct hit, re-pinned 2026-11-04 on the box (built twice, byte-identical); re-pinned 2026-11-05 on the box after the pack-panel strip merged (built twice, byte-identical)",
+  "donor_sha256": "5262be6a98ce73be266964d1524a4623a39513947a60f4f62351229545c1dedf",
+  "donor_size": 21831680,
+  "pack_sha256": "3533f4da310e1a6e6feae0695e5feffa56239e8f2d3ffdfc0bc9e68927176a9f",
+  "pack_own_sha256": "4b4f387862630f9d11156abbcdcc8a700dc5db56e2f7960ca583d12527f98bad",
+  "pack_size": 9968001,
+  "own_tags": 109,
+  "external_tags": 30
+ }
+}

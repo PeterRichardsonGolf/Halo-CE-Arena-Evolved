@@ -1,0 +1,30 @@
+# 0.9.0 TEST BUILD (the Windows PC, a real monitor): LOW LATENCY OFF / ON / BOOST. Same map: one load; each test sets its mode.
+list next-090-latency
+revision 1
+title 0.9.0, LOW LATENCY
+
+test latency-off
+title LOW LATENCY OFF: the feel you know
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+set display.low_latency off
+check Look and shoot for 20 s: note how aiming feels
+
+test latency-on
+title LOW LATENCY ON: aim feels quicker, no stutter
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+set display.low_latency on
+check Aim feels quicker than OFF
+check No stutter or torn frames
+
+test latency-boost
+title LOW LATENCY BOOST: quickest, still smooth
+map bloodgulch
+gametype AE SLAYER
+set bots.count 0
+set display.low_latency boost
+check Aim feels at least as quick as ON
+check No stutter; tell me if the fans spin up
