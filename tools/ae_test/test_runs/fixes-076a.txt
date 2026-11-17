@@ -1,0 +1,63 @@
+# 0.7.6 FIXES, round A: the HJ magnum's scope, the brute shot at 50 a hit, the sword lunge up close, small arms on
+# vehicles, light smoke.
+# Pack tests run on Octagon 2 with the pack's weapon in hand on every life, a few bots. The scope wants a look at the
+# screen you play on (21:9 on the gaming PC, 16:9 on the laptop). The full vehicle counts are vehicle-balance-2.
+list fixes-076a
+revision 2
+title 0.7.6 FIXES, ROUND A
+
+test hj-scope
+title HJ magnum: the 2x scope
+check Zoomed: a round circle, centred on the reticle
+check All black outside it, sides too; no strip
+check Unzoomed: CMT's pistol reticle as in 0.7.5
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 512
+set debug.network_test_pack_start 10
+
+test brute-shot
+title Brute shot: 50 a direct hit
+check 3 direct hits kill a full-shield bot, 2 do not
+check A near miss hurts far less than a direct hit
+check Melee then 2 hits kills
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 1024
+set debug.network_test_pack_start 11
+
+test warthog-small-arms
+title Pistol on an empty Warthog
+check About 125 rounds destroy it
+check Light smoke near 70%, then smoke and fire
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn warthog ahead
+setup give pistol
+
+test ghost-sniper
+title Sniper rifle on an empty Ghost
+check About 8 hits destroy it
+check Light smoke first, then smoke and fire
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+setup spawn ghost ahead
+setup give weapons\sniper_rifle\sniper_rifle
+
+test sword-lunge
+title Sword: lunges up close and after a lunge
+check A bot at arm's length, off to one side: it lunges
+check Swing again right after a kill: it swings
+check Red reticle at range still means a lunge
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_weapon_packs 8192
+set debug.network_test_pack_start 14

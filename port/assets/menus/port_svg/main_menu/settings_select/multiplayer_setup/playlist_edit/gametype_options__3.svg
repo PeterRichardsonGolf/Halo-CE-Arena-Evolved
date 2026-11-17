@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+<style>
+.b { fill:#000; stroke:#2896FF; stroke-width:2.010; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2.010; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.015; stroke-linecap:round; stroke-linejoin:round }
+.e { fill:none; stroke:#2896FF; stroke-width:2.010; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:5.024 }
+.f { fill:#2896FF; stroke:none }
+.red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
+</style>
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.51"/></filter></defs>
+<g transform="translate(63.59 6.65) scale(1.5922)">
+<g filter="url(#glow)" opacity="0.9"><path d="M6,86 V46 Q6,35 12.0,30 Q18,35 18,46 V86 Z" class="b"/>
+<line x1="8.5" y1="50" x2="15.5" y2="50" class="l"/>
+<path d="M22,86 V46 Q22,35 28.0,30 Q34,35 34,46 V86 Z" class="b"/>
+<line x1="24.5" y1="50" x2="31.5" y2="50" class="l"/>
+<path d="M38,86 V46 Q38,35 44.0,30 Q50,35 50,46 V86 Z" class="b"/>
+<line x1="40.5" y1="50" x2="47.5" y2="50" class="l"/>
+<circle cx="63" cy="41" r="4.5" class="l"/>
+<path d="M82,40 Q92,40 88,52" class="w"/>
+<rect x="67" y="36" width="16" height="11" rx="2" class="b"/>
+<circle cx="75" cy="64" r="20" class="b"/></g>
+<path d="M6,86 V46 Q6,35 12.0,30 Q18,35 18,46 V86 Z" class="b"/>
+<line x1="8.5" y1="50" x2="15.5" y2="50" class="l"/>
+<path d="M22,86 V46 Q22,35 28.0,30 Q34,35 34,46 V86 Z" class="b"/>
+<line x1="24.5" y1="50" x2="31.5" y2="50" class="l"/>
+<path d="M38,86 V46 Q38,35 44.0,30 Q50,35 50,46 V86 Z" class="b"/>
+<line x1="40.5" y1="50" x2="47.5" y2="50" class="l"/>
+<circle cx="63" cy="41" r="4.5" class="l"/>
+<path d="M82,40 Q92,40 88,52" class="w"/>
+<rect x="67" y="36" width="16" height="11" rx="2" class="b"/>
+<circle cx="75" cy="64" r="20" class="b"/>
+</g>
+</svg>

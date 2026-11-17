@@ -1,0 +1,64 @@
+# Fireteam round b: the squad you lead takes your calls and no role. BTB Blood Gulch CTF, 16 bots, one load. You lead the first
+# red squad: REGROUP brings it to you and holds until it is there, FOLLOW sticks (no role takes it back), a bot-led squad
+# still runs its role. The dev command "fireteam" gives the orders the wheel's calls give.
+# BTB rules: the squad you lead follows you by default. In arena games (4v4 and smaller) it plays its role instead and follows
+# only after your FOLLOW ME: the arena group at the end checks that. Headless: run_list.py with --after 70 (each test stays that long).
+list fireteam-076b
+revision 1
+title FIRETEAMS, ROUND B
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 16
+set bots.skill easy
+
+test regroup
+title REGROUP brings your squad to you
+setup fireteam regroup
+check The dev command is taken
+expect 1 cmd fireteam regroup ok
+check Your squad gathers on you
+expect 2 log fireteam 0 regrouped
+check Nobody lets go of the order while members live
+expect 3 no log let go of its regroup
+
+test follow
+title FOLLOW sticks
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check No role takes your squad back
+expect 2 no log role fireteam 0
+check Your squad stays within 9 wu, in a V behind you
+expect 3 log follow ok
+
+test bot-squad
+title A bot-led squad still runs its role
+check A red bot squad is given a role
+expect 1 log team 0 role
+check A red squad holds its home spot
+expect 2 log anchor ok
+
+group arena
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.skill easy
+
+test arena-roles
+title Arena: your squad plays its role, no trailing
+check The log names the arena rules
+expect 1 log fireteam: arena rules
+check Your squad has a role
+expect 2 log roles fireteam 0
+check Nobody trails you
+expect 3 no log follow ok
+
+test arena-release
+title Arena: a REGROUP ends by itself and the squad goes back to its role
+setup fireteam regroup
+check The dev command is taken
+expect 1 cmd fireteam regroup ok
+check The order is released, with its reason
+expect 2 log arena release fireteam 0

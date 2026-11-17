@@ -1,0 +1,165 @@
+# 0.7.6 round A, tests 16-31 of the first run: screens, the ELIMINATION and score strips, fireteams, bots. Each test sets itself up
+# (map, gametype, options, its own start weapon: none carried over). The weapons and the EMP moved to rc-077-weapons.
+list rc-076a
+revision 1
+title 0.7.6 FULL BUILD, ROUND A
+
+test territories-picker
+title CHANGE GAMETYPE: TERRITORIES rows
+check Search "territ": AE TERRITORIES and AE COMP TERRITORIES
+check The list is long; the last rows (NEW MODES) are there
+screen 33
+
+test card-glyphs
+title TEST RUN card: BUTTON PROMPTS UNIVERSAL glyphs
+check SETTINGS > BUTTON PROMPTS UNIVERSAL: this card shows icons
+check Not the Xbox letters; the same icons as the menu footers
+screen 36
+
+group elim
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test elim-strip
+title ELIMINATION: the rounds strip
+setup round live
+check Four lit cells a side; pips for the wins to win
+check The goal line says only ROUND 1: no TO bar, no 0-0
+check Your weapon's own reticle (no custom crosshair)
+
+test elim-cells
+title ELIMINATION: a cell goes dark when a player falls
+setup round live
+setup kill bots
+check Their cells go dark, yours stay lit
+expect 1 score player 0 team 1
+check Your team's win lights one pip and the score reads 1
+
+test elim-countdown
+title ELIMINATION: countdown, no crosshair, no strip
+setup round next
+check Big digit 5 to 1, ROUND 2 under it
+expect 1 round_start round 2
+check No crosshair of any kind during the countdown
+check The strip is hidden in it and comes back at LIVE
+
+test elim-out-text
+title ELIMINATION: out until the round ends
+setup round live
+setup kill me
+check The text says You are out of lives, not Rejoin in N
+expect 1 death player 0
+check Hold BACK: your row says DEAD; it stays to round end
+
+test elim-down-status
+title ELIMINATION: DOWN on the scoreboard
+setup round live
+setup down me
+check Hold BACK: your row says DOWN while a mate can revive
+expect 1 down player 0
+check Left to die: it says DEAD, not DOWN
+
+test elim-zone
+title ELIMINATION: a zone death says ZONE
+setup round live
+setup zone small
+check No ring is drawn yet; outside it you die in ~8 s
+expect 1 out player 0
+check The kill feed says ZONE, not FALL
+expect 2 zone phase 2
+
+group strip-snd
+map h2d_salicreek
+gametype AE SND
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test snd-strip
+title SEARCH AND DESTROY: the score strip and DEAD
+setup kill me
+check The SnD strip: rounds, alive cells, no stray bar
+expect 1 death player 0
+check Hold BACK: dead rows say DEAD till the round ends
+check Next round: the DEAD marks are gone
+
+group slayer-strip
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test sly-strip
+title TEAM SLAYER: the score strip, teammate names
+check Strip shows both teams' scores and the limit, readable
+expect 1 no log elimination: the match starts
+check Teammate: name only, no green triangle
+check The name sits just over the head
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 16
+set bots.skill easy
+setup goto start 0
+
+test ft-roles
+title FIRETEAMS: roles per team
+check A red bot squad is given a role
+expect 1 log team 0 role
+check A blue bot squad has its role too (balanced a side)
+expect 2 log team 1 role
+check A red squad holds its home spot
+expect 3 log anchor ok
+
+test ft-follow
+title FIRETEAMS: FOLLOW, no bot role on your squad
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check No role takes your squad back
+expect 2 no log role fireteam 1
+check Your squad stays near you, in a V behind
+expect 3 log follow ok
+
+test ft-regroup
+title FIRETEAMS: REGROUP holds until arrival
+setup fireteam regroup
+check The dev command is taken
+expect 1 cmd fireteam regroup ok
+check Walk 40 wu off: the squad comes to you
+expect 2 log fireteam 1 regrouped
+check Nobody lets go of it while members live
+expect 3 no log let go of its regroup
+
+test bots-tank
+title BOTS: a bot takes a Scorpion on its own
+fresh
+check In a minute a bot drives the Scorpion by itself
+expect 1 log took the driver seat of a scorpion
+check It drives toward the enemy and fights, not wedged
+check No order from you (no fireteam call)
+
+test bots-dodge
+title BOTS: they dodge a Warthog
+setup spawn warthog ahead
+check Drive the Warthog at bots: most jump or step aside
+expect 1 object vehicle warthog
+check Some still get hit: how often? (not every time)
+check They do not freeze in front of it
+
+test bots-ghost-flag
+title BOTS: Ghosts, the flag carrier and the Warthog
+check A bot Ghost does not smash hard into a base wall
+check A flag carrier gets into a Warthog (a seat, not idle)
+check A bot idle in a shot-at Warthog gets out
+
+test bots-stucks
+title BOTS: Gulch side paths and tunnels (look)
+check Watch the side paths and the tunnels a few minutes
+check Bots do not pile up or wedge at a flag stand
+check Note any spot where a bot stands still for long

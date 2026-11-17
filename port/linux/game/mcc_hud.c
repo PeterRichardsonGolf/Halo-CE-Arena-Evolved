@@ -1,0 +1,334 @@
+/* MCC HUD normalization. Unflagged placements use a 960p canvas; legacy
+ * high-resolution placements retain their 480p offsets. Bitmap half-HUD flags
+ * apply independently of anchor conversion. Keep the original bitmap pixels and sprite texture coordinates. */
+#include "cseries.h"
+#include "bitmaps/bitmap_group.h"
+#include "interface/unit_hud_interface_definition.h"
+#include "interface/weapon_hud_interface_definition.h"
+#include "errors.h"
+#include "mcc_runtime.h"
+#include "mcc_hud_draw.h"
+#include <stdlib.h>
+#include <string.h>
+
+char const *config_string(char const *name);
+
+/* MCC's PC score hint contains one formatting argument ("Hold "%s" for
+ * score"). The native HUD copies this string verbatim, so resolve it in owned
+ * UTF-16 storage as the original Xbox maps word it: "Hold BACK for score",
+ * quotes dropped. AE's prompts then draw the button of the player's own input
+ * for BACK (ae_key_prompts_score_text: the keyboard's scoreboard key), as on
+ * every other map. binding is no longer used: AE's key picture names it. */
+static int mcc_hud_score_text(uint16_t const *source,uint32_t characters,
+    char const *binding,uint16_t *out,uint32_t capacity)
+{
+    uint32_t length=0,placeholder=UINT32_MAX,i,used=0,from,to,needed;
+    static char const controller[]="BACK";
+    (void)binding;
+    if (!source || !characters) return -1;
+    while (length<characters && source[length]) length++;
+    if (length==characters) return -1;
+    for (i=0;i+1<length;i++) {
+        if (source[i]=='%' && source[i+1]=='s') {placeholder=i;break;}
+    }
+    if (placeholder==UINT32_MAX) return 0;
+    /* The replaced span: the argument, with its quotes when both are there. */
+    from=placeholder;to=placeholder+2;
+    if (from>0 && to<length && source[from-1]=='"' && source[to]=='"') {from--;to++;}
+    needed=from+(uint32_t)(sizeof(controller)-1)+(length-to)+1;
+    if (!out) return (int)needed;
+    if (capacity<needed) return -1;
+    for (i=0;i<from;i++) out[used++]=source[i];
+    for (i=0;i<sizeof(controller)-1;i++) out[used++]=controller[i];
+    for (i=to;i<=length;i++) out[used++]=source[i];
+    return (int)used;
+}
+
+static uint32_t mcc_hud_word(void const *p)
+{
+    uint32_t n;memcpy(&n,p,4);return n;
+}
+
+static unsigned char *mcc_hud_block(struct mcc_runtime *r,unsigned char *p,uint32_t stride,uint32_t *count)
+{
+    *count=mcc_hud_word(p);
+    if (*count>r->used/stride) return NULL;
+    return *count ? mcc_runtime_pointer(r,mcc_hud_word(p+4),*count*stride) : r->tags;
+}
+
+#include "mcc_hud_layout.inl"
+#include "mcc_hud_ownership.inl"
+
+static int mcc_hud_multiplayer_text(struct mcc_runtime *r,uint32_t const *entry)
+{
+    static char const name[]="ui\\multiplayer_game_text";
+    char const *actual=mcc_runtime_pointer(r,entry[4],sizeof(name));
+    unsigned char *root,*strings,*hint;
+    uint16_t const *source;
+    uint16_t *replacement;
+    uint32_t count,bytes,address;
+    int characters;
+    if (!actual || memcmp(actual,name,sizeof(name))) return 1;
+    root=mcc_runtime_pointer(r,entry[5],12);
+    if (!root) return 0;
+    strings=mcc_hud_block(r,root,20,&count);
+    if (!strings) return 0;
+    if (count<=100) return 1;
+    hint=strings+100*20;bytes=mcc_hud_word(hint);
+    if (!bytes) return 1; /* Maps may deliberately omit the score hint. */
+    if (bytes<2 || (bytes&1)) return 0;
+    source=mcc_runtime_pointer(r,mcc_hud_word(hint+12),bytes);
+    if (!source || ((uintptr_t)source&1)) return 0;
+    characters=mcc_hud_score_text(source,bytes/2,config_string("controls.scoreboard"),NULL,0);
+    if (characters<0) return 0;
+    if (!characters) return 1;
+    replacement=mcc_runtime_allocate(r,(uint32_t)characters*2);
+    if (!replacement || mcc_hud_score_text(source,bytes/2,config_string("controls.scoreboard"),
+        replacement,(uint32_t)characters)!=characters) return 0;
+    bytes=(uint32_t)characters*2;address=mcc_address(replacement);
+    memcpy(hint,&bytes,4);memcpy(hint+12,&address,4);
+    return 1;
+}
+
+static int mcc_hud_half_bitmap(struct mcc_runtime *r,uint32_t handle,int *half)
+{
+    uint32_t *entry;
+    struct bitmap_group *bitmap;
+    *half=0;
+    if (handle==0xFFFFFFFFu) return 1;
+    if ((handle&0xFFFF)>=r->report.tag_count) return 0;
+    entry=(uint32_t *)(r->tag_index+(handle&0xFFFF)*32);
+    if (entry[0]!='bitm' || entry[3]!=handle) return 0;
+    bitmap=mcc_runtime_pointer(r,entry[5],sizeof(*bitmap));
+    if (!bitmap) return 0;
+    *half=(bitmap->flags&(0x10|0x80))!=0;
+    return 1;
+}
+
+static void mcc_hud_offset(struct hud_placement_definition *placement)
+{
+    placement->pad=0;
+    /* Legacy high-resolution placements keep their 480p anchor offsets.
+     * Other MCC placements use the doubled canvas. Bitmap resolution is
+     * independent of this flag. Consume it before native drawing. */
+    if (!(placement->multiplayer_scaling_flags&4)) {
+        placement->offset.x/=2;
+        placement->offset.y/=2;
+    }
+    placement->multiplayer_scaling_flags&=~4;
+}
+
+/* Stock messages sit 60 native pixels below the safe-frame corner. Match
+ * that placement, not the font, icon sheet or tag name: those may be replaced
+ * independently. Other authored offsets and edge/center anchors stay MCC. */
+static void mcc_hud_message_frame(struct hud_messaging_parameters_definition *message)
+{
+    if (message->absolute_placement.corner==0 && !message->placement.offset.x &&
+        message->placement.offset.y==60)
+        message->placement.pad=MCC_HUD_NATIVE_FRAME;
+}
+
+static void mcc_hud_scale(struct hud_placement_definition *placement,int half)
+{
+    float factor=half ? 0.25f : 0.5f;
+    mcc_hud_offset(placement);
+    placement->scale.i*=factor;
+    placement->scale.j*=factor;
+}
+
+static int mcc_hud_bitmap_element(struct mcc_runtime *r,unsigned char *element,short marker)
+{
+    int half;
+    if (!mcc_hud_half_bitmap(r,mcc_hud_word(element+0x30),&half)) return 0;
+    mcc_hud_scale((void *)element,half);
+    ((struct hud_placement_definition *)element)->pad=marker;
+    return 1;
+}
+
+static int mcc_hud_items(struct mcc_runtime *r,unsigned char *definition,uint32_t stride,short marker)
+{
+    uint32_t i,count;
+    unsigned char *items=mcc_hud_block(r,definition+16,stride,&count);
+    int half;
+    if (!items || !mcc_hud_half_bitmap(r,mcc_hud_word(definition+12),&half)) return 0;
+    for (i=0;i<count;i++) {
+        struct hud_placement_definition *placement=(void *)(items+i*stride);
+        mcc_hud_scale(placement,half);placement->pad=marker;
+    }
+    return 1;
+}
+
+/* MCC can omit the unarmed HUD. The native update path requires a tag even
+ * between client spawn and receipt of its weapons. An empty owned definition
+ * preserves the omitted visuals without changing the shared HUD path. */
+static int mcc_hud_default(struct mcc_runtime *r,struct hud_globals_definition *globals,uint32_t *empty)
+{
+    static char const name[]="mcc_runtime\\unarmed_hud";
+    struct weapon_hud_interface_definition *hud;
+    unsigned char *index;
+    uint32_t *entry,count=r->report.tag_count;
+    char *owned_name;
+    if (globals->defaults.default_weapon_hud.index!=NONE) return 1;
+    if (*empty==UINT32_MAX) {
+        /* Native tag lookup uses a signed 16-bit absolute index. */
+        if (count>32767) return 0;
+        index=mcc_runtime_allocate(r,(count+1)*32);
+        hud=mcc_runtime_allocate(r,sizeof(*hud));
+        owned_name=mcc_runtime_allocate(r,sizeof(name));
+        if (!index || !hud || !owned_name) return 0;
+        memcpy(index,r->tag_index,count*32);
+        memcpy(owned_name,name,sizeof(name));
+        hud->parent_hud.group_tag='wphi';hud->parent_hud.index=NONE;
+        hud->absolute_placement.corner=_hud_anchor_center;
+        *empty=0xE1740000u|count;
+        entry=(uint32_t *)(index+count*32);
+        entry[0]='wphi';entry[1]=entry[2]=UINT32_MAX;entry[3]=*empty;
+        entry[4]=mcc_address(owned_name);entry[5]=mcc_address(hud);
+        r->tag_index=index;r->report.tag_count=count+1;
+        error(_error_silent,"mcc hud: omitted unarmed HUD represented by an empty definition");
+    }
+    globals->defaults.default_weapon_hud.group_tag='wphi';
+    globals->defaults.default_weapon_hud.index=(long)*empty;
+    return 1;
+}
+
+static int mcc_hud_convert(struct mcc_runtime *r,struct mcc_hud_plan const *plan)
+{
+    uint32_t i,empty=UINT32_MAX;
+    for (i=0;i<r->report.tag_count;i++) {
+        uint32_t *entry=(uint32_t *)(r->tag_index+i*32),n,count;
+        short marker=i<plan->tag_count && plan->frames[i]==1 ? MCC_HUD_NATIVE_FRAME : 0;
+        unsigned char *p,*block;
+        if (i<plan->tag_count && plan->frames[i]==2) continue;
+        if (entry[0]=='unhi') {
+            static unsigned const elements[]={0x24,0x8C,0xF4,0x17C,0x1E4,0x26C,0x2D4};
+            p=mcc_runtime_pointer(r,entry[5],0x56C);
+            if (!p) return 0;
+            memcpy(p+2,&marker,2);
+            for (n=0;n<NUMBEROF(elements);n++) if (!mcc_hud_bitmap_element(r,p+elements[n],marker)) return 0;
+            mcc_hud_offset((void *)(p+0x35C)); /* radar blip anchor */
+            ((struct hud_placement_definition *)(p+0x35C))->pad=marker;
+            block=mcc_hud_block(r,p+0x3A4,0x84,&count);
+            if (!block) return 0;
+            for (n=0;n<count;n++) if (!mcc_hud_bitmap_element(r,block+n*0x84,marker)) return 0;
+            block=mcc_hud_block(r,p+0x3CC,0x144,&count);
+            if (!block) return 0;
+            for (n=0;n<count;n++) {
+                if (!mcc_hud_bitmap_element(r,block+n*0x144+0x14,marker) ||
+                    !mcc_hud_bitmap_element(r,block+n*0x144+0x7C,marker)) return 0;
+            }
+        } else if (entry[0]=='wphi') {
+            unsigned k;
+            p=mcc_runtime_pointer(r,entry[5],0x17C);
+            if (!p) return 0;
+            memcpy(p+0x3E,&marker,2);
+            for (k=0;k<2;k++) {
+                block=mcc_hud_block(r,p+0x60+k*12,0xB4,&count);
+                if (!block) return 0;
+                for (n=0;n<count;n++) if (!mcc_hud_bitmap_element(r,block+n*0xB4+0x24,marker)) return 0;
+                block=mcc_hud_block(r,p+0x84+k*12,0x68,&count);
+                if (!block) return 0;
+                for (n=0;n<count;n++) if (!mcc_hud_items(r,block+n*0x68+0x24,k ? 0x88 : 0x6C,k ? marker : 0)) return 0;
+            }
+            block=mcc_hud_block(r,p+0x78,0xA0,&count);
+            if (!block) return 0;
+            for (n=0;n<count;n++) {
+                struct hud_placement_definition *placement=(void *)(block+n*0xA0+0x24);
+                mcc_hud_offset(placement);placement->pad=marker;
+            }
+        } else if (entry[0]=='grhi') {
+            p=mcc_runtime_pointer(r,entry[5],0x1F8);
+            if (!p || !mcc_hud_bitmap_element(r,p+0x24,marker) || !mcc_hud_bitmap_element(r,p+0x8C,marker) ||
+                !mcc_hud_items(r,p+0x14C,0x88,marker)) return 0;
+            memcpy(p+2,&marker,2);
+            mcc_hud_offset((void *)(p+0xF4));
+            ((struct hud_placement_definition *)(p+0xF4))->pad=marker;
+        } else if (entry[0]=='hudg') {
+            struct hud_globals_definition *globals=mcc_runtime_pointer(r,entry[5],sizeof(*globals));
+            if (!globals || !mcc_hud_default(r,globals,&empty)) return 0;
+            mcc_hud_offset(&globals->messaging.placement);
+            mcc_hud_message_frame(&globals->messaging);
+            globals->waypoint.top_offset*=0.5f;
+            globals->waypoint.bottom_offset*=0.5f;
+            globals->waypoint.left_offset*=0.5f;
+            globals->waypoint.right_offset*=0.5f;
+            globals->damage_indicators.top_offset/=2;
+            globals->damage_indicators.bottom_offset/=2;
+            globals->damage_indicators.left_offset/=2;
+            globals->damage_indicators.right_offset/=2;
+        } else if (entry[0]=='hud#') {
+            /* The number renderer owns bitmap scaling; these are screen
+             * advances, not sprite texture coordinates. */
+            p=mcc_runtime_pointer(r,entry[5],0x64);
+            if (!p) return 0;
+            ((signed char *)p)[0x11]/=2; /* screen_width */
+            ((signed char *)p)[0x14]/=2; /* decimal_point_width */
+        } else if (entry[0]=='bitm') {
+            struct bitmap_group *bitmap=mcc_runtime_pointer(r,entry[5],sizeof(*bitmap));
+            if (!bitmap) return 0;
+            /* Native number drawing already honors half-HUD-scale; MCC's
+             * force-highres spelling has the same effect for these digits. */
+            if (bitmap->flags&0x80) bitmap->flags|=0x10;
+        } else if (entry[0]=='ustr') {
+            if (!mcc_hud_multiplayer_text(r,entry)) return 0;
+        }
+    }
+    return 1;
+}
+
+/* ---------- a weapon pack's HUD on an MCC map (ae_weapon_pack.c)
+ * A pack's weapon HUD is made for the maps' own sizes, but its crosshairs and overlays may name the map's bitmaps (the
+ * silenced rifle keeps the map's crosshairs). MCC's bitmaps are twice the size (four times for the half-HUD ones), the
+ * map's own HUDs counter that in their placements (mcc_hud_bitmaps_prepare), the pack's did not: the crosshair drew two
+ * to four times too big. The same factor, on the items that use a bitmap the pack does not carry. */
+struct mcc_pack_element
+{
+    long head[9];                       /* 0x24 bytes: type, flags, map type, unused */
+    struct tag_reference bitmap;
+    struct tag_block items;
+    long unused[10];
+};
+struct mcc_pack_crosshair_item { struct hud_placement_definition placement; long rest[(0x6C-0x24)/4]; };
+struct mcc_pack_overlay_item { struct hud_placement_definition placement; long rest[(0x88-0x24)/4]; };
+
+typedef char mcc_pack_element_size_check[sizeof(struct mcc_pack_element)==0x68 ? 1 : -1];
+typedef char mcc_pack_crosshair_item_size_check[sizeof(struct mcc_pack_crosshair_item)==0x6C ? 1 : -1];
+typedef char mcc_pack_overlay_item_size_check[sizeof(struct mcc_pack_overlay_item)==0x88 ? 1 : -1];
+
+void mcc_hud_pack_weapon_scale(struct weapon_hud_interface_definition *hud, boolean (*own)(long tag_index))
+{
+    short which;
+    long element_index;
+
+    if (!hud) return;
+    for (which=0;which<2;which++) {
+        struct tag_block const *block=which ? &hud->overlays : &hud->crosshairs;
+        for (element_index=0;element_index<block->count;element_index++) {
+            struct mcc_pack_element *element=TAG_BLOCK_GET_ELEMENT(block,element_index,struct mcc_pack_element);
+            struct bitmap_group const *bitmap;
+            long item_index;
+            int half;
+            if (element->bitmap.index==NONE || (own && own(element->bitmap.index))) continue;
+            bitmap=bitmap_group_get(element->bitmap.index);
+            if (!bitmap) continue;
+            half=(bitmap->flags&(0x10|0x80))!=0;
+            for (item_index=0;item_index<element->items.count;item_index++) {
+                struct hud_placement_definition *placement=which ?
+                    &TAG_BLOCK_GET_ELEMENT(&element->items,item_index,struct mcc_pack_overlay_item)->placement :
+                    &TAG_BLOCK_GET_ELEMENT(&element->items,item_index,struct mcc_pack_crosshair_item)->placement;
+                /* (the scale alone: the pack's offsets are the native canvas's already) */
+                placement->scale.i*=half ? 0.25f : 0.5f;
+                placement->scale.j*=half ? 0.25f : 0.5f;
+            }
+        }
+    }
+}
+
+int mcc_hud_bitmaps_prepare(struct mcc_runtime *r)
+{
+    struct mcc_hud_plan plan={0};
+    int ok=mcc_hud_plan_prepare(&plan,r) && mcc_hud_convert(r,&plan);
+    if (ok) mcc_hud_plan_report(&plan);
+    mcc_hud_plan_dispose(&plan);
+    return ok;
+}

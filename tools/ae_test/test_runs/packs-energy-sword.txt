@@ -1,0 +1,24 @@
+# The energy sword pack (slot 14): given, kept through weapon switches.
+# The switches are keys the run's input script presses (HALO_TEST_INPUT="menu: ... key:1 ...").
+list packs-energy-sword
+revision 1
+title ENERGY SWORD PACK
+
+group gulch
+map bloodgulch
+set debug.network_test_time_limit 10
+setup goto start 0
+
+test give-sword
+title Energy sword in slot 14
+setup give energy_sword
+check The energy sword is in your hands
+expect 1 weapon energy_sword
+
+test keep-through-switch
+title The sword stays through two switches
+setup give energy_sword
+check The energy sword is in your hands
+check Press 1 twice: the sword is yours again
+expect 1 weapon energy_sword
+expect 2 weapon pistol
