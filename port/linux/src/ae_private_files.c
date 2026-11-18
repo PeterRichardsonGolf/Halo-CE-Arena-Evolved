@@ -263,6 +263,36 @@ void ae_private_crash_mark_disarm(void)
 	crash_mark_path[0] = 0;
 }
 
+/* (the Android guest links no SDL: plain C there, SDL's calls elsewhere, where rename replaces on every platform) */
+#if defined(HALO_ANDROID)
+#include <sys/stat.h>
+static int config_save_whole(const char *path, const char *text, size_t length)
+{
+	FILE *file = fopen(path, "wb");
+	int good;
+
+	if (!file)
+		return 0;
+	good = fwrite(text, 1, length, file) == length;
+	good = fflush(file) == 0 && good;
+	return fclose(file) == 0 && good;
+}
+#define CONFIG_SAVE(path, text, length) config_save_whole((path), (text), (length))
+#define CONFIG_RENAME(from, to) (rename((from), (to)) == 0)
+#define CONFIG_REMOVE(path) remove(path)
+static int config_there(const char *path)
+{
+	struct stat information;
+
+	return stat(path, &information) == 0;
+}
+#else
+#define CONFIG_SAVE(path, text, length) SDL_SaveFile((path), (text), (length))
+#define CONFIG_RENAME(from, to) SDL_RenamePath((from), (to))
+#define CONFIG_REMOVE(path) SDL_RemovePath(path)
+#define config_there(path) SDL_GetPathInfo((path), NULL)
+#endif
+
 int ae_config_file_save(const char *path, const char *text)
 {
 	char temporary[1100];
@@ -272,17 +302,17 @@ int ae_config_file_save(const char *path, const char *text)
 		return 0;
 	length = strlen(text);
 	if (snprintf(temporary, sizeof(temporary), "%s.new", path) >= (int)sizeof(temporary))
-		return SDL_SaveFile(path, text, length) ? 1 : 0;
+		return CONFIG_SAVE(path, text, length) ? 1 : 0;
 	/* (a full disk or a crash mid-write cuts the copy aside, never the file) */
-	if (!SDL_SaveFile(temporary, text, length))
+	if (!CONFIG_SAVE(temporary, text, length))
 	{
-		SDL_RemovePath(temporary);
+		CONFIG_REMOVE(temporary);
 		return 0;
 	}
-	if (SDL_RenamePath(temporary, path))
+	if (CONFIG_RENAME(temporary, path))
 		return 1;
-	SDL_RemovePath(temporary);
-	return SDL_SaveFile(path, text, length) ? 1 : 0;
+	CONFIG_REMOVE(temporary);
+	return CONFIG_SAVE(path, text, length) ? 1 : 0;
 }
 
 int ae_config_file_refuse(const char *path)
@@ -298,5 +328,5 @@ int ae_config_file_refuse(const char *path)
 
 int ae_config_file_there(const char *path)
 {
-	return path && SDL_GetPathInfo(path, NULL);
+	return path && config_there(path);
 }
