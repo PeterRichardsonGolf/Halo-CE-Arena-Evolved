@@ -263,9 +263,8 @@ void ae_private_crash_mark_disarm(void)
 	crash_mark_path[0] = 0;
 }
 
-/* (the Android guest links no SDL: plain C there, SDL's calls elsewhere, where rename replaces on every platform) */
+/* (the Android guest links no SDL and its headers have no stat(): stdio there, SDL's calls elsewhere) */
 #if defined(HALO_ANDROID)
-#include <sys/stat.h>
 static int config_save_whole(const char *path, const char *text, size_t length)
 {
 	FILE *file = fopen(path, "wb");
@@ -282,9 +281,12 @@ static int config_save_whole(const char *path, const char *text, size_t length)
 #define CONFIG_REMOVE(path) remove(path)
 static int config_there(const char *path)
 {
-	struct stat information;
+	FILE *file = fopen(path, "rb");
 
-	return stat(path, &information) == 0;
+	if (!file)
+		return 0;
+	fclose(file);
+	return 1;
 }
 #else
 #define CONFIG_SAVE(path, text, length) SDL_SaveFile((path), (text), (length))
