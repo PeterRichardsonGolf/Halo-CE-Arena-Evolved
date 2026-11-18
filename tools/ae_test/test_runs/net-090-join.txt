@@ -1,0 +1,17 @@
+# 0.9.0 two machines, the JOINER's list (the laptop): its one test joins the host's game (net-090-host.txt on the host,
+# started first) from the menus, and 40 s later stops this machine's game for a second, a hitch. CLOCK SLEW is this
+# machine's: the log says how many ticks it carried and when it had caught up with the host.
+list net-090-join
+revision 1
+title 0.9.0 TWO MACHINES: JOIN
+
+test join-clock-slew
+title Join the host's game; a 1 s hitch 40 s in
+check The laptop joins the host's game on Prisoner by itself
+check After the hitch the game plays on in step with the host's
+check The host's player does not jump about after the hitch
+menus
+setup join_lan
+setup hitch 1000 after 40
+expect 1 cmd join_lan ok
+expect 2 log clock slew: a frame ran

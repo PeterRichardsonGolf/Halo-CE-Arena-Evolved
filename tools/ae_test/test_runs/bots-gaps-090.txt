@@ -1,0 +1,65 @@
+# 0.9.0 bot round: four changes to how the bots play.
+# 1. FRESH SPAWN GRACE: a player who has just spawned is no new target for 1.5 s, unless they shoot the bot or stand
+#    within arm's reach: RECRUIT and EASY only, and only without MODERN spawns (owner 11-11). On HEROIC, as here, bots
+#    take a fresh spawn on at once, as in 0.8.1. Log: "bots: ev=spawn_grace" (none here).
+# 2. WEAPON BY RANGE: in a fight a bot holds whichever of its two weapons suits the distance (sniper rifle away up
+#    close, pistol out for a far target), with no back and forth. Log: "bots: ev=range_swap".
+# 3. HIGH GROUND WHEN FREE: bots with nothing else to do hold an overlook near them (25 units) with any weapon for 10 to
+#    20 s (a third of the bots at most) and fight from it moving, not standing still, also when you come close.
+#    Setting bots.high_ground (on).
+#    Log: ev=vantage_go / ev=vantage_hold with weapon=any.
+# 4. NO SHORT CUTS MID-FIGHT: a fighting bot takes a teleporter only when it saves a long walk. Log: "bots: ev=link_fight_skip".
+list bots-gaps-090
+revision 3
+title BOTS: SPAWN GRACE, WEAPON BY RANGE, HIGH GROUND
+
+group prisoner
+map prisoner
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 2,3
+set debug.bot_events true
+
+test spawn-grace
+title HEROIC bots don't wait after you spawn
+setup kill me
+check Just respawned: a bot that sees you shoots at once
+check Shoot a bot right after you spawn: it fights back at once
+check Spawn next to a bot: it fights you at once
+
+test high-ground
+title Bots with rifles hold the high spots a while
+setup goto start 0
+check Bots with rifles or pistols hold the upper walkways
+check Up close, a bot up there fights, it strafes
+check Never more than about half the bots up there at once
+
+group chillout
+map chillout
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 2,3
+set debug.bot_events true
+
+test teleporter-fight
+title A bot fighting you stays in the fight
+setup goto start 0
+check Near a teleporter, a bot fighting you stays and fights
+check Out of a fight they still use the teleporters
+
+group chillout-sniper
+map chillout
+gametype AE FFA SLAY
+set bots.count 5
+set bots.skill heroic
+set debug.network_test_loadout 5,3
+set debug.bot_events true
+
+test weapon-range
+title Bots pick sniper rifle or pistol by distance
+setup goto start 0
+check Up close, a bot puts its sniper rifle away for the pistol
+check From across the map they snipe you
+check No bot keeps switching weapons back and forth

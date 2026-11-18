@@ -1,0 +1,84 @@
+# 0.9.4 FIRST RUN: HUD SAFE AREA (Settings > HUD: the HUD pulled in 0 to 10 % from the screen's edges, for TVs and very wide
+# screens; the view itself stays full; both HUD styles; split screen moves only the window's outer edges, not where views meet),
+# and SPLIT PAUSE (local split screen: each player's pause menu draws in that player's own view and opens from their own START;
+# the game stays stopped for everyone while any is open; an online game keeps each player pausing alone). Every test opens on its
+# scene from its setup lines: `set display.hud_safe_area` is the test's own value, the HUD is on screen from the first frame.
+# NOT IN THIS LIST (the first-start page comes before the menus, no list can stage it): WHERE IS MCC. On a PC where Steam has no
+# MCC, start the build with no config.toml beside the program (or a new empty folder as the save root) and HALO_MCC_PATH unset:
+# a page "Where is MCC?" names the Steam libraries looked in; CHOOSE FOLDER opens the folder dialog (an MCC folder with both
+# pieces: no more questions); SKIP goes on to the disc question. With MCC installed in Steam the page never shows.
+list firstrun-094
+revision 1
+title FIRST RUN: SAFE AREA, SPLIT PAUSE
+
+test safe-one-0
+title HUD SAFE AREA 0: as before
+check The HUD sits at the screen's edges, as it always did
+check Settings > HUD has HUD SAFE AREA, OFF
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set display.hud_safe_area 0
+players 1
+
+test safe-one-5
+title HUD SAFE AREA 5 %: AE HUD
+check Ammo, shield, sensor, strip, feed: all moved in evenly
+check The view and the crosshair did not move
+check HUD STYLE CLASSIC (Settings > HUD): the same inset
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set display.hud_safe_area 5
+players 1
+
+test safe-one-10
+title HUD SAFE AREA 10 %: AE HUD
+check Every HUD piece is well inside the picture, none cut
+check Hold Tab: the scoreboard sits inside the frame too
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set display.hud_safe_area 10
+players 1
+
+test safe-two-5
+title HUD SAFE AREA 5 %: two players
+check Each view's HUD moves in from the screen's outer edges
+check Where the two views meet, nothing moves in
+check Both players' HUDs keep the same margin
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set display.hud_safe_area 5
+players 2
+
+test safe-two-10
+title HUD SAFE AREA 10 %: two players
+check The outer edges move in 10 %; the middle edge stays
+check Nothing is cut or overlapping in either view
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set display.hud_safe_area 10
+players 2
+
+test pause-two
+title Split pause: two pads
+check Pad 1 START: the menu is in view 1 only; view 2 is frozen
+check Pad 2 START: its menu opens in view 2; pad 1's stays
+check Pad 2 closes its own: pad 1's stays, the game stays stopped
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+players 2
+
+test pause-four
+title Split pause: four pads
+check Each pad's START opens a menu in its own quarter
+check A press moves only its own pad's menu
+check The game runs again only after the last menu closes
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+players 4

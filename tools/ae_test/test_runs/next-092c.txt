@@ -1,0 +1,106 @@
+# 0.9.2 round C (2026-11-14): what round B sent back. A DEV speed readout and a speed to try (the "walking in mud"
+# question), the side-by-side weapon centred on the crosshair, and the bots' three fight fixes (no flank start at a
+# wall, a hold between strafe flips, fewer hits at 10 to 15 units by skill). TARGET 60 FPS is off in every test (its scale fix comes in the
+# next round). Staged only.
+list next-092c
+revision 2
+title 0.9.2 ROUND C
+
+test speed-readout
+title SPEED: the readout, normal speed
+check Top line ends SPEED n WU/S STICK n% CROUCH n%
+check Full stick forward: note the SPEED number (F4)
+check Hold crouch: CROUCH goes to 100%; release: back to 0%
+map chillout
+gametype AE BR TS
+set bots.count 0
+set debug.speed_readout true
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test speed-105
+title SPEED: 105 %
+check Run a lap: does it still feel like mud?
+check SPEED at full stick is about 5 % over your note
+map chillout
+gametype AE BR TS
+set bots.count 0
+set debug.speed_readout true
+set debug.player_speed_percent 105
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test speed-110
+title SPEED: 110 %
+check Run a lap: better or too fast?
+check Jumps you know still land where they did
+map chillout
+gametype AE BR TS
+set bots.count 0
+set debug.speed_readout true
+set debug.player_speed_percent 110
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test speed-115
+title SPEED: 115 %
+check Run a lap: note the percent you would ship (F4)
+map chillout
+gametype AE BR TS
+set bots.count 0
+set debug.speed_readout true
+set debug.player_speed_percent 115
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test split-aim-br
+title SIDE BY SIDE: the rifle points at the crosshair
+card bottom
+check The battle rifle's barrel points at the crosshair
+check Fire: the burst leaves the barrel, not under it
+check Both views show it the same
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test split-aim-sniper
+title SIDE BY SIDE: the sniper's trail
+card bottom
+setup give sniper
+check The sniper rifle sits as it does for one player
+check Fire far: the trail starts at the barrel
+check Zoomed: the shot lands on the crosshair
+map bloodgulch
+gametype Team Slayer
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test bots-wall
+title BOTS: ELITE on Temple, walls and peeking
+check No bot walks into a wall for more than a moment
+check A bot at a corner does not flick left-right fast
+check Bots still flank and strafe in a fight
+map temple
+gametype AE BR TS
+set bots.count 7
+set bots.skill elite
+set display.target_60_fps false
+set display.split_target_60_fps false
+
+test bots-range
+title BOTS: ELITE at battle rifle range
+setup bots 2 against elite
+check At 10 to 15 units an ELITE misses part of its bursts
+check Up close it still hits hard
+check It feels beatable, not like DEMON
+map bloodgulch
+gametype AE BR TS
+set display.target_60_fps false
+set display.split_target_60_fps false

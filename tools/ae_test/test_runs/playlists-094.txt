@@ -1,0 +1,36 @@
+# 0.9.4 PLAYLISTS: several named playlists in CREATE GAME, each with an ORDER (IN TURN, SHUFFLE, RANDOM), and what plays next shown. The
+# board's keys: A Use (the lobby plays it), X Manage (Edit, Rename, Duplicate, Delete), Y New playlist, B Back; Delete asks at once. Keyboard:
+# Enter, F, R, Esc. Check each test on the pad first, then on mouse + keyboard. `playlists demo` gives the run its own made-up set (4V4 ARENA,
+# shuffle, 7 games, in use; FFA NIGHT, random, 6; SWAT TIME, in turn, 4) and `playlists forget` the migration's scene (one old playlist, no
+# playlists.txt); your own playlist files are never touched. `menu playlist` is CREATE GAME offline with the PLAYLISTS board open (`edit <name>`:
+# that playlist's games). MAP VOTE reads SERVERS ONLY in a lobby: the vote runs on a server (HOST A SERVER sets it).
+list playlists-094
+revision 1
+title PLAYLISTS
+
+test playlists-board
+title PLAYLISTS: three lists, one in use
+setup playlists demo
+setup menu playlist
+check 4V4 ARENA has IN USE; A on FFA NIGHT moves the chip
+check B: the lobby row reads FFA NIGHT - RANDOM, UP NEXT is set
+check X on SWAT TIME: Edit, Rename, Duplicate, Delete asks
+menus
+
+test playlists-order
+title A playlist's ORDER: in turn, shuffle, random
+setup playlists demo
+setup menu playlist edit 4V4 ARENA
+check ORDER: IN TURN shows the numbers 1-7 and no pips
+check RANDOM shows pips and %; SHUFFLE shows neither
+check One game has UP NEXT; the lobby's UP NEXT is that game
+menus
+
+test playlists-new
+title NEW PLAYLIST and the migration
+setup playlists forget
+setup menu playlist
+check The old playlist shows as MY PLAYLIST, not in use
+check Y: type a name; then ADD A GAME is focused
+check Keys: Delete on a playlist asks; KEEP is focused
+menus

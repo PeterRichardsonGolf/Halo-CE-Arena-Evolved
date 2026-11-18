@@ -1,0 +1,416 @@
+# AE SOCIAL playlists: the offline games against bots (SOCIAL career).
+# One playlist starts at a "# social: <id>" line, its "# key: value" lines follow (label, about, teams or players, party,
+# kind), then its entries: map:file=<GAMETYPE>  # weight 1-5. A map named <file>@smp is a converted Social Map Pack map:
+# the game never ships it, and an entry whose map is not on this PC is skipped. An entry with "fallback" in its comment
+# is a stock map used when this PC has fewer than 3 of the playlist's pack maps. A line starting "#" with no key is a comment.
+# A "# starts: br 1, evo 1" line makes each game start with one of those loadouts (br the battle rifle, evo the evo rifle, magnum
+# the CE pistol; the weight 1-5 is optional): picked by weight from the game's seed, where the game type has that start. A
+# playlist with no starts line plays its game types as they are. "# kind: comp" playlists mirror the social ones with the
+# competitive game types and mix evo and magnum starts. "# starts: none" keeps that default away; "# weapons: map" plays the maps'
+# own weapons (otherwise a tournament game has AE's weapons forced on). A plain map name is a map file of this
+# PC (found in the maps folder or a map share: never shipped): an entry whose map is not here is skipped, like a pack map.
+
+
+# social: team-slayer
+# label: TEAM SLAYER
+# about: Four against four. Slayer. BR or evo starts.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# starts: br 1, evo 1
+ascetic@smp:file=AE TEAM SLY  # weight 3
+blamitemines@smp:file=AE TEAM SLY  # weight 3
+blood_covenant@smp:file=AE TEAM SLY  # weight 3
+co2@smp:file=AE TEAM SLY  # weight 3
+cold_shoulder@smp:file=AE TEAM SLY  # weight 3
+delta_ruined@smp:file=AE TEAM SLY  # weight 3
+fissurefall@smp:file=AE TEAM SLY  # weight 3
+fractured_peak@smp:file=AE TEAM SLY  # weight 3
+frigid_keep@smp:file=AE TEAM SLY  # weight 3
+gothra@smp:file=AE TEAM SLY  # weight 3
+gridiron@smp:file=AE TEAM SLY  # weight 3
+gutter_nm@smp:file=AE TEAM SLY  # weight 3
+hektik@smp:file=AE TEAM SLY  # weight 3
+intensity_v2@smp:file=AE TEAM SLY  # weight 3
+nitra_v2@smp:file=AE TEAM SLY  # weight 3
+ruins_of_alph@smp:file=AE TEAM SLY  # weight 3
+sympathy@smp:file=AE TEAM SLY  # weight 3
+warren@smp:file=AE TEAM SLY  # weight 3
+damnation:file=AE TEAM SLY  # weight 1  # fallback
+prisoner:file=AE TEAM SLY  # weight 1  # fallback
+hangemhigh:file=AE TEAM SLY  # weight 1  # fallback
+chillout:file=AE TEAM SLY  # weight 1  # fallback
+beavercreek:file=AE TEAM SLY  # weight 1  # fallback
+carousel:file=AE TEAM SLY  # weight 1  # fallback
+wizard:file=AE TEAM SLY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE TEAM SLY  # weight 2
+h2d_desolation:file=AE TEAM SLY  # weight 2
+h2d_foundation:file=AE TEAM SLY  # weight 2
+h2d_gemini:file=AE TEAM SLY  # weight 2
+h2d_ivory_tower:file=AE TEAM SLY  # weight 2
+h2d_midship:file=AE TEAM SLY  # weight 2
+h2_warlock@ce:file=AE TEAM SLY  # weight 2
+h2d_salicreek:file=AE TEAM SLY  # weight 2
+h2d_sanctuary:file=AE TEAM SLY  # weight 2
+h2d_turf:file=AE TEAM SLY  # weight 2
+
+# social: free-for-all
+# label: FREE FOR ALL
+# about: Eight players, every one for themselves. BR or evo starts.
+# players: 8
+# party: 1
+# kind: social
+# starts: br 1, evo 1
+ascetic@smp:file=AE FFA SLAY  # weight 2
+blamitemines@smp:file=AE FFA SLAY  # weight 2
+blood_covenant@smp:file=AE FFA SLAY  # weight 2
+co2@smp:file=AE FFA SLAY  # weight 2
+cold_shoulder@smp:file=AE FFA SLAY  # weight 2
+delta_ruined@smp:file=AE FFA SLAY  # weight 2
+fissurefall@smp:file=AE FFA SLAY  # weight 2
+fractured_peak@smp:file=AE FFA SLAY  # weight 2
+frigid_keep@smp:file=AE FFA SLAY  # weight 2
+gothra@smp:file=AE FFA SLAY  # weight 2
+gridiron@smp:file=AE FFA SLAY  # weight 2
+gutter_nm@smp:file=AE FFA SLAY  # weight 2
+hektik@smp:file=AE FFA SLAY  # weight 2
+intensity_v2@smp:file=AE FFA SLAY  # weight 2
+nitra_v2@smp:file=AE FFA SLAY  # weight 2
+ruins_of_alph@smp:file=AE FFA SLAY  # weight 2
+sympathy@smp:file=AE FFA SLAY  # weight 2
+warren@smp:file=AE FFA SLAY  # weight 2
+hektik@smp:file=AE FFA KING  # weight 1
+co2@smp:file=AE FFA KING  # weight 1
+sympathy@smp:file=AE FFA KING  # weight 1
+nitra_v2@smp:file=AE FFA KING  # weight 1
+prisoner:file=AE FFA SLAY  # weight 1  # fallback
+wizard:file=AE FFA SLAY  # weight 1  # fallback
+chillout:file=AE FFA SLAY  # weight 1  # fallback
+hangemhigh:file=AE FFA SLAY  # weight 1  # fallback
+longest:file=AE FFA SLAY  # weight 1  # fallback
+ratrace:file=AE FFA SLAY  # weight 1  # fallback
+carousel:file=AE FFA SLAY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE FFA SLAY  # weight 2
+h2d_desolation:file=AE FFA SLAY  # weight 2
+h2d_foundation:file=AE FFA SLAY  # weight 2
+h2d_gemini:file=AE FFA SLAY  # weight 2
+h2d_ivory_tower:file=AE FFA SLAY  # weight 2
+h2d_midship:file=AE FFA SLAY  # weight 2
+h2_warlock@ce:file=AE FFA SLAY  # weight 2
+h2d_salicreek:file=AE FFA SLAY  # weight 2
+h2d_sanctuary:file=AE FFA SLAY  # weight 2
+h2d_turf:file=AE FFA SLAY  # weight 2
+
+# social: doubles
+# label: DOUBLES
+# about: Two against two on the smaller maps. BR or evo starts.
+# teams: 2 x 2
+# party: 2
+# kind: social
+# starts: br 1, evo 1
+hektik@smp:file=AE 2V2 SLY  # weight 3
+gutter_nm@smp:file=AE 2V2 SLY  # weight 3
+ruins_of_alph@smp:file=AE 2V2 SLY  # weight 3
+co2@smp:file=AE 2V2 SLY  # weight 3
+sympathy@smp:file=AE 2V2 SLY  # weight 3
+intensity_v2@smp:file=AE 2V2 SLY  # weight 3
+wizard:file=AE 2V2 SLY  # weight 1  # fallback
+longest:file=AE 2V2 SLY  # weight 1  # fallback
+chillout:file=AE 2V2 SLY  # weight 1  # fallback
+beavercreek:file=AE 2V2 SLY  # weight 1  # fallback
+ratrace:file=AE 2V2 SLY  # weight 1  # fallback
+prisoner:file=AE 2V2 SLY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_desolation:file=AE 2V2 SLY  # weight 2
+h2d_foundation:file=AE 2V2 SLY  # weight 2
+h2d_midship:file=AE 2V2 SLY  # weight 2
+h2_warlock@ce:file=AE 2V2 SLY  # weight 2
+
+# social: team-objective
+# label: TEAM OBJECTIVE
+# about: Four against four. Flags, bombs and hills. BR or evo starts.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# starts: br 1, evo 1
+ascetic@smp:file=AE CTF  # weight 3
+cold_shoulder@smp:file=AE CTF  # weight 3
+fissurefall@smp:file=AE CTF  # weight 3
+gutter_nm@smp:file=AE CTF  # weight 3
+ruins_of_alph@smp:file=AE CTF  # weight 3
+blamitemines@smp:file=AE TEAM OB  # weight 3
+blood_covenant@smp:file=AE TEAM OB  # weight 3
+delta_ruined@smp:file=AE TEAM OB  # weight 3
+gothra@smp:file=AE TEAM OB  # weight 3
+co2@smp:file=AE KING  # weight 3
+hektik@smp:file=AE KING  # weight 3
+nitra_v2@smp:file=AE KING  # weight 3
+sympathy@smp:file=AE KING  # weight 3
+fractured_peak@smp:file=AE TERRIT  # weight 3
+beavercreek:file=AE CTF  # weight 1  # fallback
+damnation:file=AE CTF  # weight 1  # fallback
+hangemhigh:file=AE CTF  # weight 1  # fallback
+chillout:file=AE KING  # weight 1  # fallback
+carousel:file=AE KING  # weight 1  # fallback
+prisoner:file=AE TEAM OB  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE CTF  # weight 2
+h2d_gemini:file=AE CTF  # weight 2
+h2d_midship:file=AE CTF  # weight 2
+h2d_sanctuary:file=AE CTF  # weight 2
+h2_warlock@ce:file=AE CTF  # weight 2
+
+# social: big-team
+# label: BIG TEAM
+# about: Eight against eight with vehicles. BR or evo starts.
+# teams: 2 x 8
+# party: 8
+# kind: social
+# starts: br 1, evo 1
+bloodgulch:file=AE BTB SLY  # weight 3
+bloodgulch:file=AE BTB CTF  # weight 3
+bloodgulch:file=AE BTB KING  # weight 2
+bloodgulch:file=AE BTB HVY  # weight 2
+sidewinder:file=AE BTB SLY  # weight 3
+sidewinder:file=AE BTB CTF  # weight 3
+sidewinder:file=AE BTB KING  # weight 2
+sidewinder:file=AE BTB HVY  # weight 2
+dangercanyon:file=AE BTB SLY  # weight 3
+dangercanyon:file=AE BTB CTF  # weight 3
+dangercanyon:file=AE BTB KING  # weight 2
+dangercanyon:file=AE BTB HVY  # weight 2
+icefields:file=AE BTB SLY  # weight 3
+icefields:file=AE BTB CTF  # weight 3
+icefields:file=AE BTB KING  # weight 2
+icefields:file=AE BTB HVY  # weight 2
+timberland:file=AE BTB SLY  # weight 3
+timberland:file=AE BTB CTF  # weight 3
+timberland:file=AE BTB KING  # weight 2
+timberland:file=AE BTB HVY  # weight 2
+infinity:file=AE BTB SLY  # weight 3
+infinity:file=AE BTB CTF  # weight 3
+infinity:file=AE BTB KING  # weight 2
+infinity:file=AE BTB HVY  # weight 2
+deathisland:file=AE BTB SLY  # weight 3
+deathisland:file=AE BTB CTF  # weight 3
+deathisland:file=AE BTB KING  # weight 2
+deathisland:file=AE BTB HVY  # weight 2
+gephyrophobia:file=AE BTB SLY  # weight 3
+gephyrophobia:file=AE BTB CTF  # weight 3
+gephyrophobia:file=AE BTB KING  # weight 2
+gephyrophobia:file=AE BTB HVY  # weight 2
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_burial_mounds:file=AE BTB SLY  # weight 2
+h2d_coagulation:file=AE BTB SLY  # weight 2
+h2d_containment:file=AE BTB SLY  # weight 2
+h2d_headlong:file=AE BTB SLY  # weight 2
+h2d_terminal:file=AE BTB SLY  # weight 2
+h2d_waterworks:file=AE BTB SLY  # weight 2
+h2d_zanzibar:file=AE BTB SLY  # weight 2
+h2d_burial_mounds:file=AE BTB CTF  # weight 2
+h2d_coagulation:file=AE BTB CTF  # weight 2
+h2d_containment:file=AE BTB CTF  # weight 2
+h2d_headlong:file=AE BTB CTF  # weight 2
+h2d_terminal:file=AE BTB CTF  # weight 2
+h2d_waterworks:file=AE BTB CTF  # weight 2
+h2d_zanzibar:file=AE BTB CTF  # weight 2
+h2d_coagulation:file=AE BTB HVY  # weight 2
+h2d_containment:file=AE BTB HVY  # weight 2
+h2d_waterworks:file=AE BTB HVY  # weight 2
+
+# social: swat-snipers
+# label: ACTION SACK
+# about: Four against four. A different weapon set each game.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# (the id stays swat-snipers so the playlist's rank carries over; each game is SWAT, SNIPERS, SHOTGUNS, ROCKETS or SHOTTY SNIPERS)
+ascetic@smp:file=AE SWAT  # weight 2
+blamitemines@smp:file=AE SHOTGUNS  # weight 2
+blood_covenant@smp:file=AE ROCKETS  # weight 2
+co2@smp:file=AE SHOTSNIP  # weight 2
+cold_shoulder@smp:file=AE SNIPERS  # weight 2
+delta_ruined@smp:file=AE SWAT  # weight 2
+fissurefall@smp:file=AE SHOTGUNS  # weight 2
+fractured_peak@smp:file=AE SHOTSNIP  # weight 2
+frigid_keep@smp:file=AE SWAT  # weight 2
+gothra@smp:file=AE SHOTGUNS  # weight 2
+gridiron@smp:file=AE ROCKETS  # weight 2
+gutter_nm@smp:file=AE SHOTSNIP  # weight 2
+hektik@smp:file=AE SNIPERS  # weight 2
+intensity_v2@smp:file=AE SWAT  # weight 2
+nitra_v2@smp:file=AE ROCKETS  # weight 2
+ruins_of_alph@smp:file=AE SHOTGUNS  # weight 2
+sympathy@smp:file=AE SHOTSNIP  # weight 2
+warren@smp:file=AE SWAT  # weight 2
+prisoner:file=AE SWAT  # weight 1  # fallback
+hangemhigh:file=AE SHOTGUNS  # weight 1  # fallback
+damnation:file=AE ROCKETS  # weight 1  # fallback
+chillout:file=AE SHOTSNIP  # weight 1  # fallback
+bloodgulch:file=AE SNIPERS  # weight 1  # fallback
+timberland:file=AE SNIPERS  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE SNIPERS  # weight 1
+h2d_desolation:file=AE SNIPERS  # weight 1
+h2d_foundation:file=AE SWAT  # weight 1
+h2d_gemini:file=AE SHOTGUNS  # weight 1
+h2d_ivory_tower:file=AE SHOTSNIP  # weight 1
+h2d_midship:file=AE ROCKETS  # weight 1
+h2_warlock@ce:file=AE SWAT  # weight 1
+h2d_salicreek:file=AE SHOTGUNS  # weight 1
+h2d_sanctuary:file=AE SHOTSNIP  # weight 1
+h2d_turf:file=AE ROCKETS  # weight 1
+
+# social: comp-team-slayer
+# label: AE COMP TEAM SLAYER
+# about: Four against four. Slayer. Evo or pistol starts.
+# teams: 2 x 4
+# party: 4
+# kind: comp
+# starts: evo 1, magnum 1
+ascetic@smp:file=AE COMP TS  # weight 3
+blamitemines@smp:file=AE COMP TS  # weight 3
+blood_covenant@smp:file=AE COMP TS  # weight 3
+co2@smp:file=AE COMP TS  # weight 3
+cold_shoulder@smp:file=AE COMP TS  # weight 3
+delta_ruined@smp:file=AE COMP TS  # weight 3
+fissurefall@smp:file=AE COMP TS  # weight 3
+fractured_peak@smp:file=AE COMP TS  # weight 3
+frigid_keep@smp:file=AE COMP TS  # weight 3
+gothra@smp:file=AE COMP TS  # weight 3
+gridiron@smp:file=AE COMP TS  # weight 3
+gutter_nm@smp:file=AE COMP TS  # weight 3
+hektik@smp:file=AE COMP TS  # weight 3
+intensity_v2@smp:file=AE COMP TS  # weight 3
+nitra_v2@smp:file=AE COMP TS  # weight 3
+ruins_of_alph@smp:file=AE COMP TS  # weight 3
+sympathy@smp:file=AE COMP TS  # weight 3
+warren@smp:file=AE COMP TS  # weight 3
+damnation:file=AE COMP TS  # weight 1  # fallback
+prisoner:file=AE COMP TS  # weight 1  # fallback
+hangemhigh:file=AE COMP TS  # weight 1  # fallback
+chillout:file=AE COMP TS  # weight 1  # fallback
+beavercreek:file=AE COMP TS  # weight 1  # fallback
+carousel:file=AE COMP TS  # weight 1  # fallback
+wizard:file=AE COMP TS  # weight 1  # fallback
+
+# social: comp-free-for-all
+# label: AE COMP FREE FOR ALL
+# about: Eight players, every one for themselves. Evo or pistol starts.
+# players: 8
+# party: 1
+# kind: comp
+# starts: evo 1, magnum 1
+ascetic@smp:file=AE COMP FFA  # weight 2
+blamitemines@smp:file=AE COMP FFA  # weight 2
+blood_covenant@smp:file=AE COMP FFA  # weight 2
+co2@smp:file=AE COMP FFA  # weight 2
+cold_shoulder@smp:file=AE COMP FFA  # weight 2
+delta_ruined@smp:file=AE COMP FFA  # weight 2
+fissurefall@smp:file=AE COMP FFA  # weight 2
+fractured_peak@smp:file=AE COMP FFA  # weight 2
+frigid_keep@smp:file=AE COMP FFA  # weight 2
+gothra@smp:file=AE COMP FFA  # weight 2
+gridiron@smp:file=AE COMP FFA  # weight 2
+gutter_nm@smp:file=AE COMP FFA  # weight 2
+hektik@smp:file=AE COMP FFA  # weight 2
+intensity_v2@smp:file=AE COMP FFA  # weight 2
+nitra_v2@smp:file=AE COMP FFA  # weight 2
+ruins_of_alph@smp:file=AE COMP FFA  # weight 2
+sympathy@smp:file=AE COMP FFA  # weight 2
+warren@smp:file=AE COMP FFA  # weight 2
+prisoner:file=AE COMP FFA  # weight 1  # fallback
+wizard:file=AE COMP FFA  # weight 1  # fallback
+chillout:file=AE COMP FFA  # weight 1  # fallback
+hangemhigh:file=AE COMP FFA  # weight 1  # fallback
+longest:file=AE COMP FFA  # weight 1  # fallback
+ratrace:file=AE COMP FFA  # weight 1  # fallback
+carousel:file=AE COMP FFA  # weight 1  # fallback
+
+# social: comp-doubles
+# label: AE COMP DOUBLES
+# about: Two against two on the smaller maps. Evo or pistol starts.
+# teams: 2 x 2
+# party: 2
+# kind: comp
+# starts: evo 1, magnum 1
+hektik@smp:file=AE C2V2 TS  # weight 3
+gutter_nm@smp:file=AE C2V2 TS  # weight 3
+ruins_of_alph@smp:file=AE C2V2 TS  # weight 3
+co2@smp:file=AE C2V2 TS  # weight 3
+sympathy@smp:file=AE C2V2 TS  # weight 3
+intensity_v2@smp:file=AE C2V2 TS  # weight 3
+wizard:file=AE C2V2 TS  # weight 1  # fallback
+longest:file=AE C2V2 TS  # weight 1  # fallback
+chillout:file=AE C2V2 TS  # weight 1  # fallback
+beavercreek:file=AE C2V2 TS  # weight 1  # fallback
+ratrace:file=AE C2V2 TS  # weight 1  # fallback
+prisoner:file=AE C2V2 TS  # weight 1  # fallback
+
+# social: comp-team-objective
+# label: AE COMP TEAM OBJECTIVE
+# about: Four against four. Flags, bombs and hills. Evo or pistol starts.
+# teams: 2 x 4
+# party: 4
+# kind: comp
+# starts: evo 1, magnum 1
+ascetic@smp:file=AE COMP CTF  # weight 3
+cold_shoulder@smp:file=AE COMP CTF  # weight 3
+fissurefall@smp:file=AE COMP CTF  # weight 3
+gutter_nm@smp:file=AE COMP CTF  # weight 3
+ruins_of_alph@smp:file=AE COMP CTF  # weight 3
+blamitemines@smp:file=AE COMP OB  # weight 3
+blood_covenant@smp:file=AE COMP OB  # weight 3
+delta_ruined@smp:file=AE COMP OB  # weight 3
+gothra@smp:file=AE COMP OB  # weight 3
+co2@smp:file=AE COMP KOH  # weight 3
+hektik@smp:file=AE COMP KOH  # weight 3
+nitra_v2@smp:file=AE COMP KOH  # weight 3
+sympathy@smp:file=AE COMP KOH  # weight 3
+fractured_peak@smp:file=AE COMP KOH  # weight 3
+beavercreek:file=AE COMP CTF  # weight 1  # fallback
+damnation:file=AE COMP CTF  # weight 1  # fallback
+hangemhigh:file=AE COMP CTF  # weight 1  # fallback
+chillout:file=AE COMP KOH  # weight 1  # fallback
+carousel:file=AE COMP KOH  # weight 1  # fallback
+prisoner:file=AE COMP OB  # weight 1  # fallback
+
+# social: classic-comp
+# label: CLASSIC COMP
+# about: Halo CE's classic competitive 2v2: the community's own rules and maps.
+# teams: 2 x 2
+# party: 2
+# kind: comp
+# starts: none
+# weapons: map
+birdhouse:file=TS 50  # weight 2
+chilledout:file=TS 50  # weight 2
+dere:file=TS 50  # weight 2
+descent:file=TS 50  # weight 2
+downfall:file=TS 50  # weight 2
+downog:file=TS 50  # weight 2
+dread:file=TS 50  # weight 2
+dread_new:file=TS 50  # weight 2
+fallout:file=TS 50  # weight 2
+h1pb_chillout:file=TS 50  # weight 2
+h1pb_hangemhigh:file=TS 50  # weight 2
+h1pb_prisoner:file=TS 50  # weight 2
+h1pb_wizard:file=TS 50  # weight 2
+hangman:file=TS 50  # weight 2
+jaywalk:file=TS 50  # weight 2
+longshot:file=TS 50  # weight 2
+patrace:file=TS 50  # weight 2
+salvation:file=TS 50  # weight 2
+slammer:file=TS 50  # weight 2
+temple:file=TS 50  # weight 2
+tinkered:file=TS 50  # weight 2
+weld:file=TS 50  # weight 2
+whiskey:file=TS 50  # weight 2
+worthy:file=TS 50  # weight 2
+wizard:file=TS 50  # weight 1  # fallback
+longest:file=TS 50  # weight 1  # fallback
+chillout:file=TS 50  # weight 1  # fallback
+ratrace:file=TS 50  # weight 1  # fallback
+prisoner:file=TS 50  # weight 1  # fallback

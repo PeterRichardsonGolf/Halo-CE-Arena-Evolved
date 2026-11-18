@@ -1,0 +1,31 @@
+# Bot scorecard, a map's stuck spots: Danger Canyon, AE TEAM SLY, 11 bots (the servers' worst stuck spot, 11-12: bots in
+# a pocket at the centre (8.9 2.4 -4.0), off the walkable pieces, for minutes). Headless only (the box), not an owner
+# list: run_list.py --after 90, then tools/ae_test/bot_scorecard.py on the game's log against the baseline. Six minutes.
+# Counts: stuck, goals given up, kills/deaths.
+list bots-score-canyon
+revision 1
+title BOT SCORECARD: DANGER CANYON
+
+group canyon
+map dangercanyon@ce
+gametype AE TEAM SLY
+set bots.count 11
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test canyon-1
+title The bots play
+check Bots fight
+
+test canyon-2
+title The bots play on
+check Bots keep fighting
+
+test canyon-3
+title The bots play on
+check Bots keep fighting
+
+test canyon-4
+title The bots play on
+check Bots keep fighting

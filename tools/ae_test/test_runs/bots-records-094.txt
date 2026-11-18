@@ -1,0 +1,84 @@
+# 0.9.4 BOT SERVICE RECORDS: every bot met in an AE TOURNAMENT game keeps a record on this PC (its own file,
+# bot_records.txt): its totals, its record against each profile, how it plays. The post-game's CARNAGE pane shows a
+# bot's SERVICE RECORD block; A opens its BOT RECORD page; CAREER > Y lists the bots a profile has met. Every test opens on
+# its scene: `botrecord demo` switches this run to a made-up store (never written), `social carnage` opens a made-up
+# tournament board on the reopened report's screen, `botrecord page` and `menu bots` open the page and the list.
+# Revision 2 (owner 11-16: "not met yet on all of them" after a real game): the made-up store lasted past its test, so the
+# real game's post-game pages read it. Now each test starts on the file's records, and a real game counted ends it too.
+list bots-records-094
+revision 2
+title BOT SERVICE RECORDS
+
+test carnage-block
+title CARNAGE: a bot's SERVICE RECORD
+check Under the stats and medals: SERVICE RECORD, 23 GAMES
+check RECORD W-L-T, K/D, BEST SPREE; VS YOU: IT LEADS 8-6
+check Nothing overlaps the prompts; A reads Bot record
+menus
+setup botrecord demo seed 4
+setup social carnage team-slayer seed 4 cursor NyxPython
+expect 1 log ae botrecord: carnage team-slayer
+
+test carnage-new
+title CARNAGE: a bot met the first time
+check The bot's board row has an outlined NEW tag
+check Its pane: VS YOU FIRST MEETING, dashes in RECORD
+menus
+setup botrecord demo seed 4
+setup social carnage free-for-all seed 9 cursor Newcomer
+expect 1 log ae botrecord: carnage free-for-all
+
+test page-from-postgame
+title BOT RECORD from the post-game
+retest 2
+check A on NyxPython: THIS GAME first, CAREER TOTALS, IDENTITY
+check IDENTITY: skill, tier, style, weapon; BOT RANK LATER
+check RB: the next bot of the board, B back to the board
+menus
+setup botrecord demo seed 4
+setup social carnage team-slayer seed 4 cursor NyxPython
+expect 1 log ae botrecord: carnage team-slayer
+
+test page-split
+title BOT RECORD: two players
+check VS YOU: a line for each player, its colour chip
+check Player 2's line: YOU LEAD 5-3 (its own score)
+check THIS GAME: ITS KILLS ON YOU (P1 / P2) with two numbers
+menus
+players 2
+setup botrecord demo seed 4
+setup botrecord set NyxPython vs 5-3 with 2 player 2
+setup botrecord page NyxPython game
+expect 1 log ae botrecord: page NyxPython
+
+test career-bots
+title CAREER > BOTS
+retest 2
+check Sorted by GAMES; NyxPython has the RIVAL tag
+check X: the head's word goes LAST MET, then RECORD
+check A opens the page: LAST GAME TOGETHER first
+menus
+setup botrecord demo seed 4
+setup menu bots focus NyxPython
+expect 1 log ae botrecord: list (player 1, 24 bots, GAMES)
+
+test career-empty
+title CAREER > BOTS: none met
+check No rows: "No bots met yet. Play an AE TOURNAMENT game..."
+check The card is not drawn; X Sort still shows
+menus
+setup botrecord demo
+setup botrecord forget
+setup menu bots
+expect 1 log ae botrecord: list (player 1, 0 bots, GAMES)
+
+test real-write
+title A real game writes the records
+retest 2
+check Play it to the end (or DEV end game): post-game opens
+check CARNAGE: a bot's SERVICE RECORD and A page show its games
+check No NOT MET on them; CAREER > Y lists the game's bots
+menus
+setup social start team-slayer map prisoner seed 3 now
+expect 1 log ae social: start team-slayer
+expect 1 log ae botrecord: game added

@@ -1,0 +1,19 @@
+# 0.9.4: the TACTICAL SMG ships (registry row 15 active, the release weapon cache serial 6 carries it). Checks on the
+# release cache, not a test cache: the pack's weapon is the START weapon on every life (debug.network_test_cache_weapon
+# 15), a dummy stands in front of you (it heals to full 3 s after it was last hurt), `ttk on` prints the time to kill.
+# The view: the arms and gun 2 units closer to the camera than round 2 (-4 to -6). Staged only: nothing here waits
+# for something to happen.
+list tac-smg-ship-094
+revision 1
+title TACTICAL SMG SHIPS
+
+test tac-smg-ship
+title Tactical SMG: in the release cache
+setup dummy 1 6
+setup ttk on
+check You start with the TACTICAL SMG; 4 bursts kill the dummy
+check In hand it sits closer than before; the stock stays hidden
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 15

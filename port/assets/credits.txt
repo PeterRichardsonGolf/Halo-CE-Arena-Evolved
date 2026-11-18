@@ -1,0 +1,44 @@
+# ARENA EVOLVED
+Halo CE: Arena Evolved is made by the Arena Evolved contributors. It is free software under the GNU Affero General Public License 3.0 or later (AGPL-3.0-or-later). It is a non-commercial fan project, not made or endorsed by the game's owners or developers, and it must never be sold. Halo is a trademark of its owner.
+- The logo (ORBIT) is Arena Evolved's own drawing; it is not under the code's licence.
+- The medal pictures MCC has no picture for are Arena Evolved's own shapes (CC0), with game-icons.net icons by Delapouite, Lorc, Sbed, Lucasms and Faithtoken (CC BY 3.0).
+- The callout voices were made for Arena Evolved with Qwen3-TTS (the Qwen team, Apache-2.0) and are CC0. Cori is a clone of Cori Samuel's public-domain LibriVox reading.
+
+# BUILT ON
+- OpenCE, the port Arena Evolved is made on, and its contributors (its main contributors are Jonas Volman, @bnunu, and MrBruh, @cybersecurity). Licence: AGPL-3.0 from its build-237, CC0 1.0 before.
+- ChupathingyCE: Milenko and contributors, the base Arena Evolved grew from. Licence: GPL-3.0-or-later from its 0.8.0, CC0 1.0 before. From 0.8.0: ugoboom (Zebouski), HD HUDs on Custom Edition maps and the loading screen's sound on the SDL ports. Its Bomb engine and Grifball are the base of Search and Destroy, Bomb and Grifball.
+- The decompilation of the Xbox build 2342: punpckhdq/halo (AGPL-3.0 from 17 October 2026, CC0 1.0 before) and bnunu/halo-1 (CC0 1.0).
+- Halo Content Evolved (Watanoge): the benchmark run, and the ragdolls by thelinkin3000 with their player and AI settings by Sergio Villanueva (AGPL-3.0-or-later).
+- GulchCE by chestahh: the MCC map loading (AGPL-3.0-or-later).
+- OpenH1 (goatbutt and the OpenH1 team, startupfoundry): the first-frame shader pass, CC0 1.0 at the commit taken, AGPL-3.0 since.
+- halo-ce-vita's bots by BirchWoodGod (GPL-3.0): the bots' side lanes and vantage spots, through Halo Content Evolved.
+- Halo 1: Neutral Host Edition (NHE), the Xbox competitive mod whose rules inspired Arena Evolved: the NHE team. Arena Evolved's versions are its own code; it is not made or endorsed by the NHE team.
+
+# ART, HUD AND INTERFACE
+- The high-res HUD (HUD STYLE CE): Aerocatia's and Jessie's HUD art from Halo PC Restored (release r220), used with Aerocatia's permission on the condition that both are credited. Brought in by ChupathingyCE.
+- The menus' blue arrow mouse cursor: pugzysixtyfour.
+- Controller button icons: snapchipper (CC0). The A, B, X and Y buttons: redraws by saulob. Input prompts: Kenney's Input Prompts (CC0).
+- The scoreboard's platform logos: Simple Icons (CC0) and Wikimedia Commons (public domain), plus ChupathingyCE's own Xbox 360 ring and Wii U GamePad. The names and logos are their owners' trademarks, used only to identify platforms.
+- Voice chat's speaker icons and the Mods menu's warning icons: Lucide (ISC licence).
+- OpenCE's icon: ORION.
+
+# FONTS
+- Overpass (SIL OFL): the game's text and the logo's wordmark.
+- Cyborg Interface Gothic by fizzy (SIL OFL): ChupathingyCE's high-res text font.
+- Noto Sans (SIL OFL).
+
+# WEAPONS, VEHICLES AND SOUNDS
+- The battle rifle's, the DMR's, the EVO RIFLE's and the TACTICAL SMG's models, textures, animations and sounds, the vehicle damage pack's effects and wrecks, and the vehicle horn: CMT, from the source release of The Silent Cartographer: Evolved (the Evolved team), used with credit. The EVO RIFLE's holographic sight is built from CuiGames' accessory kit. The battle rifle's aiming reticle follows crosshair 033 of Kenney's Crosshair Pack (CC0).
+
+# MAPS AND MAP PACKS
+- Custom Edition and HaloMD maps belong to their makers. HaloMD map names come from MacGamingMods' public HaloMD mod list.
+- Maps from community packs are credited by the pack's own credits file where one ships with it.
+- Weld (Search and Destroy): JukkisP and Fuse.
+
+# THIRD-PARTY LIBRARIES
+- SDL3 (zlib licence), stb, Mbed TLS (Apache-2.0), miniupnpc (BSD), KCP, tomlc17, musl's maths, Expat, Monocypher, zlib, SMAA, Project Nayuki's QR Code generator, bcdec, Zstandard (BSD), jsmn (MIT), Opus and FFmpeg.
+- Streamer mode's word list is made from Surge AI's "The Obscenity List" (MIT) and the public-domain english-words list.
+- Each library's licence text is in the download beside the game (the files named *-LICENSE.txt, LICENSE.txt and GPL-3.0.txt).
+
+# YOU NEED YOUR OWN HALO FILES
+Arena Evolved includes none of the game's maps, sounds or art. It plays from your own copy of Halo: Combat Evolved, from a Steam install of the Master Chief Collection with its Halo CE content, or from an Xbox disc image you own.

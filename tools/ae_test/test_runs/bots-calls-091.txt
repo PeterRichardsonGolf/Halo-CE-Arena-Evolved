@@ -1,0 +1,46 @@
+# The bots' wheel calls (0.9.1): bot teammates mark what they already act on, as a human teammate's call does
+# (ENEMY on a shared sighting, SMART on a power item, GOING on a flank, DEFEND on a flag stand or hill, RIDE from a
+# driver waiting for riders, REGROUP while a crew walks its route spread apart). Only teams with a person get calls;
+# bots.calls (on) turns them off. Every test sets itself up. Headless: run_list.py --after 90 --link packs=<the data
+# root's packs> (an AE gametype after the first map needs the weapon packs).
+# Revision 2 (0.9.4, 11-16: the wheel calls ship in 0.9.4, on top of the 0.9.4 bots work).
+list bots-calls-091
+revision 2
+title BOTS: WHEEL CALLS
+
+group ctf
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set bots.calls true
+set debug.bot_events true
+
+test marks
+title BLOOD GULCH CTF: play with your bot team (three minutes)
+setup bots 7 even heroic
+check Bot teammates mark enemies and power weapons on the HUD
+check Not too many calls: a few a minute
+check Calls point where something really is
+
+test defend
+title BLOOD GULCH CTF: wait at your own flag
+setup bots 7 even heroic
+setup goto flag_ours
+check A home bot's DEFEND sits on your flag stand
+
+group btb
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 11
+set bots.teams even
+set bots.skill heroic
+set bots.calls true
+set debug.bot_events true
+
+test ride
+title BLOOD GULCH BTB: stay on foot near your base's vehicles
+setup bots 11 even heroic
+check A bot driver waiting for riders marks its vehicle RIDE
+check The driver really waits for you to get in

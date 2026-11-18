@@ -1,0 +1,59 @@
+# 0.9.4 PRISONER (owner 11-16: "on prisoner they jump down if they get shot a couple times and that is a death sentence
+# especially if they can pop back into cover; on some of the levels there are rooms"). A bot in a fight with its
+# shields under three quarters takes no drop of a floor's height (a ramp still walks), and a retreat backs off to a
+# place on its own level when there is one, so a shot bot on the top floor falls back into its rooms.
+# Revision 2 (owner 11-16: "more experienced players have a sense of what is behind them, always a retreat pathway
+# while they are shooting, and getting to cover if they are hurt"; and a sniper bot that emptied its rifle and pushed
+# him): a hurt bot (NORMAL and up) retreats to a covered place you cannot see and holds there until its shields are
+# back; HEROIC and up keep that place in mind as they fight and back off towards it. A bot whose magazine runs dry in
+# a fight takes its other weapon when you are near, else reloads.
+# Revision 3 (owner 11-16 round: cover-retreat FAIL, "self preservation needs work": the bots began to retreat at
+# confidence 0.1, all but dead, and 12 of 15 died on the way; and "demon bot could not chase me on a small jump it just
+# jumped down instead"): a hurt bot falls back sooner (NORMAL under 0.2, HEROIC 0.3, ELITE and up 0.35; HEROIC and up
+# as its shields pop while losing), and a bot in a fight hops up after you onto a crate or step a jump high.
+# Revision 4 (owner 11-16 round on rev 3: cover-retreat FAIL, "saw them jump down at me instead"; chase-hop FAIL; and
+# "still jumping off top level ... jumping down on prisoner should be seen the same as falling in pit zone"): no bot takes
+# a drop of a floor's height or more (top floor to the ground, 3.6), fighting or not, whatever its shields; a chase hop
+# crouch-jumps, so it reaches a crate's top.
+list bots-prisoner-094
+revision 4
+title PRISONER: SHOT BOTS KEEP THE HIGH GROUND
+
+group prisoner
+map prisoner
+gametype AE COMP TS
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test top-floor
+title PRISONER: no bots jump off the top floor
+retest 4
+check From the ground floor, shoot bots on the top floor
+check A shot bot backs into a top room, not down to you
+check Full shields or not, none jump down to the ground floor
+expect 1 log kept=level
+
+test cover-retreat
+title PRISONER: hurt bots fall back to cover
+retest 4
+check Pop a bot's shields: it backs into a doorway or room
+check It waits there out of your sight, then comes back
+check HEROIC bots back off towards it as they fight
+expect 1 log cover=1
+
+test empty-magazine
+title PRISONER: no fighting with an empty gun
+check Make a bot empty its magazine at you close up
+check It takes its other weapon at once (or reloads far off)
+check Never stands at you with an empty gun
+expect 1 log bots: ev=empty_
+
+test chase-hop
+title PRISONER: bots hop up after you
+retest 4
+check Fight a bot, then jump up onto a crate near it
+check It jumps up after you, not down off the level
+expect 1 log kind=chase
+
