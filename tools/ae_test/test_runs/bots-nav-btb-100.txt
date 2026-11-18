@@ -1,0 +1,163 @@
+# BOT NAV ON THE BIG TEAM BATTLE MAPS: each map carries a nav file of vehicle routes (lanes base to base, base exits,
+# crossings; scorpion lines where a tank fits) and keepouts where a lane must stay off. Each rock and tree's footprint is
+# measured at the map load and drivers steer round it. A driver with a far goal follows the routes, the usual search after
+# their end; on Danger Canyon the bases are joined for vehicles only by the canyon, so the routes are taken however long.
+# Each test seats the player in a warthog's gun seat with a teammate bot at the wheel: watch the line it drives. Log at
+# the load: "bot nav: <map> (built in): N routes (N points), N keepouts"; with bot events "bot nav: bot N on route
+# <name>". Cliffhanger is a Workshop map: it needs the map from the Workshop.
+list bots-nav-btb-100
+revision 6
+title BOT NAV: THE BIG TEAM BATTLE MAPS
+
+group dangercanyon
+map dangercanyon@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-dangercanyon
+title Danger Canyon: the rocket warthog past the boulder
+setup goto -17.0 -2.8 -3.5 facing 90
+setup seat driver mate
+setup seat gunner
+check You ride the rocket warthog's gun seat
+check It leaves the row clear of the boulder and pine
+check It takes the west lane, west of the big boulder
+expect 1 log bot nav: dangercanyon (built in)
+expect 3 log on route west_lane
+
+test drive-dangercanyon-far
+title Danger Canyon: on through the pit to the red base
+setup goto -7.5 -3.6 -3.5 facing 180
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride the warthog's gun seat
+check It goes round the platform's south arm, out west
+check Pit, then up the east lane clear of the rocks
+
+group deathisland
+map deathisland@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-deathisland
+title Death Island: a bot driver keeps to the lanes
+setup goto -42.5 1.9 6.1
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives round the shore to the far base
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: deathisland (built in)
+expect 2 log on route
+
+group icefields
+map icefields@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-icefields
+title Ice Fields: a bot driver keeps to the lanes
+setup goto -69.8 81.1 1.0
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives down the valley to the far base
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: icefields (built in)
+expect 2 log on route
+
+group sidewinder
+map sidewinder@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-sidewinder
+title Sidewinder: a bot driver keeps to the lanes
+setup goto 34.8 -27.2 -3.1
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives up the canyon, round to the far base
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: sidewinder (built in)
+expect 2 log on route
+
+group timberland
+map timberland@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-timberland
+title Timberland: a bot driver keeps to the lanes
+setup goto -13.5 44.0 -17.6
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives down the valley to a stream gap
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: timberland (built in)
+expect 2 log on route
+
+group gephyrophobia
+map gephyrophobia@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-gephyrophobia
+title Gephyrophobia: a bot driver keeps to the lanes
+setup goto 27.0 -34.5 -15.1
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives a side lane to the far pocket
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: gephyrophobia (built in)
+expect 2 log on route
+
+group infinity
+map infinity@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-infinity
+title Infinity: a bot driver keeps to the lanes
+setup goto 1.8 34.5 11.0
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives down the east ring road
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: infinity (built in)
+expect 2 log on route
+
+group cliffhanger
+map cliffhanger@ws2899089905
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test drive-cliffhanger
+title Cliffhanger: a bot driver keeps to the lanes
+setup goto 29.0 -1.5 0.5
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat gunner
+check You ride a warthog's gun seat, a bot drives
+check It drives over a side platform to the far base
+check It goes round rocks and trees, never wedged
+expect 1 log bot nav: cliffhanger (built in)
+expect 2 log on route

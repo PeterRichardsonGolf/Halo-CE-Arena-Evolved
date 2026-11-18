@@ -1,0 +1,533 @@
+{
+ "format": 1,
+ "about": "The AE gravity hammer pack: the gravity hammer of Grifball Beta (grifball.map by SlappyThePirate, 2011, a Custom Edition map; the hammer art's original maker is not named), taken from the map's tags into the donor map and the pack as the map has them: model, first-person model and animations, textures, sounds, HUD, reticle, icon sheet and particles unchanged (shipped unchanged, to everyone; kind: community model). Only the tag paths are the pack's own: every tag moves from the map's folders to hammer/ (source.renames; Invader's refactor moves each tag and every reference to it, nothing else of a tag changes). Mapping, the pack's name <- the map's: hammer/3p.gbxmodel <- h3mt/weapons/covenant/gravity_hammer/3p.gbxmodel; hammer/bitmaps/hammer.bitmap <- h3mt/weapons/covenant/gravity_hammer/bitmaps/hammer.bitmap; hammer/bitmaps/hammer_multi.bitmap <- h3mt/weapons/covenant/gravity_hammer/bitmaps/hammer_multi.bitmap; hammer/effects/explosion old.effect <- h3mt/weapons/covenant/gravity_hammer/effects/explosion old.effect; hammer/effects/push.damage_effect <- h3mt/weapons/covenant/gravity_hammer/effects/push.damage_effect; hammer/effects/shockwave/electric-ring-1.bitmap <- halo3/weapons/plasma-grenade/bitmaps/electric-ring-1.bitmap; hammer/effects/shockwave/shockwave.bitmap <- halo3/weapons/plasma-grenade/bitmaps/shockwave.bitmap; hammer/effects/shockwave/shockwave.particle <- halo3/weapons/plasma-grenade/effects/shockwave.particle; hammer/effects/shockwave/spark-ring.particle <- halo3/weapons/plasma-grenade/effects/spark-ring.particle; hammer/fp/fp.gbxmodel <- h3mt/weapons/covenant/gravity_hammer/fp/fp.gbxmodel; hammer/fp/fp.model_animations <- h3mt/weapons/covenant/gravity_hammer/fp/fp.model_animations; hammer/gravity_hammer.weapon <- h3mt/weapons/covenant/gravity_hammer/gravity_hammer.weapon; hammer/hud/bitmaps/line.bitmap <- halo3/hud/weapon interfaces/master/bitmaps/h3 line.bitmap; hammer/hud/bitmaps/plasma.bitmap <- halo3/hud/weapon interfaces/master/bitmaps/plasma.bitmap; hammer/hud/bitmaps/reticle.bitmap <- halo3/hud/weapon interfaces/bitmaps/reticles/h3 hammer reticle.bitmap; hammer/hud/bitmaps/scope visor.bitmap <- halo3/hud/weapon interfaces/master/bitmaps/scope visor.bitmap; hammer/hud/bitmaps/weapon icons.bitmap <- halo3/hud/weapon interfaces/bitmaps/weapon icons/h3 weapon icons.bitmap; hammer/hud/bitmaps/zoom reticle.bitmap <- halo3/hud/weapon interfaces/bitmaps/reticles/zoom bitch.bitmap; hammer/hud/force_zoom_out.damage_effect <- halo3/hud/weapon interfaces/force_zoom_out.damage_effect; hammer/hud/hammer.weapon_hud_interface <- halo3/hud/weapon interfaces/gravity hammer/hammer.weapon_hud_interface; hammer/hud/master plasma.weapon_hud_interface <- halo3/hud/weapon interfaces/master/master plasma.weapon_hud_interface; hammer/muzzle flash.light <- h3mt/weapons/covenant/gravity_hammer/muzzle flash.light; hammer/particle systems/gravity hammer impact.particle_system <- h3mt/weapons/covenant/gravity_hammer/particle systems/gravity hammer impact.particle_system; hammer/shaders/gravity_hammer.shader_model <- h3mt/weapons/covenant/gravity_hammer/shaders/gravity_hammer.shader_model; hammer/sounds/fire/fire.sound <- h3mt/weapons/covenant/gravity_hammer/sounds/fire/fire.sound; hammer/sounds/melee/melee.sound <- h3mt/weapons/covenant/gravity_hammer/sounds/melee/melee.sound. What an Xbox map needs is done (the models converted, the multipurpose bitmap, the Ogg sound, the two HUDs without high-resolution scaling, the stock message indices), and AE's numbers are set on the swing and the melee blow (see the weapon's, the blast's and the melee blow's steps). The prompts' picture is the map's own picture of the hammer (sequence 8 of its HUD's weapon icon sheet), resampled by source_icon.py. make_pack.py runs it; the locations of the source map, the stock map and the programs are given on its command line (--source-map).",
+ "pack": {
+  "id": "ae_gravity_hammer",
+  "revision": 2,
+  "display": "GRAVITY HAMMER",
+  "prefix": "ae\\packs\\gravity_hammer\\",
+  "weapon": "hammer\\gravity_hammer",
+  "weapon_key": "gravity_hammer",
+  "labels": "gh,rl,ar",
+  "behaviour": 0,
+  "melee": true,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "icon": "ae_pack\\hud\\hammer_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\hammer_icon"
+  ]
+ },
+ "source": {
+  "kind": "map",
+  "name": "grifball.map (Grifball Beta) by SlappyThePirate, 2011 (a Custom Edition map)",
+  "file": "grifball.map",
+  "sha256": "471e48c2a9207e9f39f39be70c3808affd4946d560f772f272bd98028c1f7730",
+  "tags": 2369,
+  "renames": {
+   "hammer/3p.gbxmodel": "h3mt/weapons/covenant/gravity_hammer/3p.gbxmodel",
+   "hammer/bitmaps/hammer.bitmap": "h3mt/weapons/covenant/gravity_hammer/bitmaps/hammer.bitmap",
+   "hammer/bitmaps/hammer_multi.bitmap": "h3mt/weapons/covenant/gravity_hammer/bitmaps/hammer_multi.bitmap",
+   "hammer/effects/explosion old.effect": "h3mt/weapons/covenant/gravity_hammer/effects/explosion old.effect",
+   "hammer/effects/push.damage_effect": "h3mt/weapons/covenant/gravity_hammer/effects/push.damage_effect",
+   "hammer/effects/shockwave/electric-ring-1.bitmap": "halo3/weapons/plasma-grenade/bitmaps/electric-ring-1.bitmap",
+   "hammer/effects/shockwave/shockwave.bitmap": "halo3/weapons/plasma-grenade/bitmaps/shockwave.bitmap",
+   "hammer/effects/shockwave/shockwave.particle": "halo3/weapons/plasma-grenade/effects/shockwave.particle",
+   "hammer/effects/shockwave/spark-ring.particle": "halo3/weapons/plasma-grenade/effects/spark-ring.particle",
+   "hammer/fp/fp.gbxmodel": "h3mt/weapons/covenant/gravity_hammer/fp/fp.gbxmodel",
+   "hammer/fp/fp.model_animations": "h3mt/weapons/covenant/gravity_hammer/fp/fp.model_animations",
+   "hammer/gravity_hammer.weapon": "h3mt/weapons/covenant/gravity_hammer/gravity_hammer.weapon",
+   "hammer/hud/bitmaps/line.bitmap": "halo3/hud/weapon interfaces/master/bitmaps/h3 line.bitmap",
+   "hammer/hud/bitmaps/plasma.bitmap": "halo3/hud/weapon interfaces/master/bitmaps/plasma.bitmap",
+   "hammer/hud/bitmaps/reticle.bitmap": "halo3/hud/weapon interfaces/bitmaps/reticles/h3 hammer reticle.bitmap",
+   "hammer/hud/bitmaps/scope visor.bitmap": "halo3/hud/weapon interfaces/master/bitmaps/scope visor.bitmap",
+   "hammer/hud/bitmaps/weapon icons.bitmap": "halo3/hud/weapon interfaces/bitmaps/weapon icons/h3 weapon icons.bitmap",
+   "hammer/hud/bitmaps/zoom reticle.bitmap": "halo3/hud/weapon interfaces/bitmaps/reticles/zoom bitch.bitmap",
+   "hammer/hud/force_zoom_out.damage_effect": "halo3/hud/weapon interfaces/force_zoom_out.damage_effect",
+   "hammer/hud/hammer.weapon_hud_interface": "halo3/hud/weapon interfaces/gravity hammer/hammer.weapon_hud_interface",
+   "hammer/hud/master plasma.weapon_hud_interface": "halo3/hud/weapon interfaces/master/master plasma.weapon_hud_interface",
+   "hammer/muzzle flash.light": "h3mt/weapons/covenant/gravity_hammer/muzzle flash.light",
+   "hammer/particle systems/gravity hammer impact.particle_system": "h3mt/weapons/covenant/gravity_hammer/particle systems/gravity hammer impact.particle_system",
+   "hammer/shaders/gravity_hammer.shader_model": "h3mt/weapons/covenant/gravity_hammer/shaders/gravity_hammer.shader_model",
+   "hammer/sounds/fire/fire.sound": "h3mt/weapons/covenant/gravity_hammer/sounds/fire/fire.sound",
+   "hammer/sounds/melee/melee.sound": "h3mt/weapons/covenant/gravity_hammer/sounds/melee/melee.sound"
+  },
+  "verbatim": [
+   "hammer/bitmaps/hammer.bitmap",
+   "hammer/effects/explosion old.effect",
+   "hammer/effects/shockwave/electric-ring-1.bitmap",
+   "hammer/effects/shockwave/shockwave.bitmap",
+   "hammer/effects/shockwave/shockwave.particle",
+   "hammer/effects/shockwave/spark-ring.particle",
+   "hammer/fp/fp.model_animations",
+   "hammer/hud/bitmaps/line.bitmap",
+   "hammer/hud/bitmaps/plasma.bitmap",
+   "hammer/hud/bitmaps/reticle.bitmap",
+   "hammer/hud/bitmaps/scope visor.bitmap",
+   "hammer/hud/bitmaps/weapon icons.bitmap",
+   "hammer/hud/bitmaps/zoom reticle.bitmap",
+   "hammer/hud/force_zoom_out.damage_effect",
+   "hammer/muzzle flash.light",
+   "hammer/particle systems/gravity hammer impact.particle_system",
+   "hammer/shaders/gravity_hammer.shader_model",
+   "hammer/sounds/fire/fire.sound"
+  ],
+  "allowlist": [
+   "hammer/3p.gbxmodel",
+   "hammer/bitmaps/hammer.bitmap",
+   "hammer/bitmaps/hammer_multi.bitmap",
+   "hammer/effects/explosion old.effect",
+   "hammer/effects/push.damage_effect",
+   "hammer/effects/shockwave/electric-ring-1.bitmap",
+   "hammer/effects/shockwave/shockwave.bitmap",
+   "hammer/effects/shockwave/shockwave.particle",
+   "hammer/effects/shockwave/spark-ring.particle",
+   "hammer/fp/fp.gbxmodel",
+   "hammer/fp/fp.model_animations",
+   "hammer/gravity_hammer.weapon",
+   "hammer/hud/bitmaps/line.bitmap",
+   "hammer/hud/bitmaps/plasma.bitmap",
+   "hammer/hud/bitmaps/reticle.bitmap",
+   "hammer/hud/bitmaps/scope visor.bitmap",
+   "hammer/hud/bitmaps/weapon icons.bitmap",
+   "hammer/hud/bitmaps/zoom reticle.bitmap",
+   "hammer/hud/force_zoom_out.damage_effect",
+   "hammer/hud/hammer.weapon_hud_interface",
+   "hammer/hud/master plasma.weapon_hud_interface",
+   "hammer/muzzle flash.light",
+   "hammer/particle systems/gravity hammer impact.particle_system",
+   "hammer/shaders/gravity_hammer.shader_model",
+   "hammer/sounds/fire/fire.sound",
+   "hammer/sounds/melee/melee.sound"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08",
+    "invader-refactor": "67a469649547711e94816cadaaa6b8016335abb7737ec5d359688034fbfd883e"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {
+  "hammer_icons.bitmap": {
+   "kind": "tag",
+   "root": "source",
+   "tag": "hammer/hud/bitmaps/weapon icons.bitmap",
+   "sha256": "6eae5559f36a547a79302fb27f2a1811cd1533d18667f016461968e73b74bd61",
+   "scripts": [
+    "source_icon.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "hammer_icon.png": "source_icon.py"
+ },
+ "art_drawings": {
+  "hammer_icon.png": {
+   "draw": "source_icon",
+   "input": "hammer_icons.bitmap",
+   "width": 100,
+   "sequence": 8
+  }
+ },
+ "art": {
+  "hammer_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    33
+   ],
+   "pixels_sha256": "cfd5f251d0d522b8e9d7e32ec0d8a49b4ce7a84568b9370d204a3e74d8ef0fcd"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "hammer\\gravity_hammer.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the prompts' picture)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/3p.model",
+   "op": "model",
+   "from": [
+    "source",
+    "hammer/3p.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/fp/fp.model",
+   "op": "model",
+   "from": [
+    "source",
+    "hammer/fp/fp.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/bitmaps/hammer_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "source",
+    "hammer/bitmaps/hammer_multi.bitmap"
+   ],
+   "why": "the Xbox's multipurpose channel order"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/sounds/melee/melee.sound",
+   "op": "sound",
+   "from": [
+    "source",
+    "hammer/sounds/melee/melee.sound"
+   ],
+   "oggs": "hammer/sounds/melee/melee.sound",
+   "why": "the map's Ogg Vorbis sound as Xbox ADPCM, which an Xbox map can hold; nothing about the sound changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/hud/hammer.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "source",
+    "hammer/hud/hammer.weapon_hud_interface"
+   ],
+   "why": "the Xbox's HUD (no high resolution scaling)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/hud/master plasma.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "source",
+    "hammer/hud/master plasma.weapon_hud_interface"
+   ],
+   "why": "the Xbox's HUD (no high resolution scaling)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/gravity_hammer.weapon",
+   "op": "edit",
+   "from": [
+    "source",
+    "hammer/gravity_hammer.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "hammer/3p.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "hammer/fp/fp.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ],
+    [
+     "set",
+     "autoaim_range",
+     "5.6"
+    ],
+    [
+     "set",
+     "magnetism_range",
+     "2.8"
+    ],
+    [
+     "set",
+     "triggers[0].maximum_rate_of_fire",
+     "0.7 0.7"
+    ],
+    [
+     "set",
+     "ready_time",
+     "1"
+    ],
+    [
+     "set",
+     "player_melee_damage",
+     "hammer/effects/melee.damage_effect"
+    ],
+    [
+     "set",
+     "scale",
+     "1"
+    ]
+   ],
+   "why": "the Xbox models; the pickup and HUD message indices the stock assault rifle's (the map's point into its own HUD texts); our numbers, those of the classic-era hammer, which has no trigger (the fire button and the melee button both swing it) and kills with one blow: the swing's reach 2.8 units (the classic hammer's reach is 0.70 of the energy sword's, 2.45 of the sword pack's 3.5-unit lunge, lengthened by an eighth because nobody sprints in to close the gap): the reticle turns red inside half the autoaim range (5.6) and magnetism holds to 2.8; one swing every 1.43 s (0.7 a second: the classic swing is 1.27 s, the map's own swing animation is 43 frames, 1.43 s, so no quicker than that; the map's was one every 2 s); ready time 1 s as the classic hammer's; the melee button's blow is the pack's own (hammer/effects/melee.damage_effect, the blast's step) in place of the rocket launcher's melee; the 15-degree cones kept as the map has them (the classic hammer's are 10, narrower; a wider cone makes up for the missing sprint); its world scale 1 (the map's was 0.001: grifball's hammer all but vanished on the ground, and the game's item scale check failed for it on every map without Custom Edition tags)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/effects/push.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "hammer/effects/push.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "radius",
+     "1.3 2.6"
+    ],
+    [
+     "set",
+     "damage_lower_bound",
+     "255"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "255 255"
+    ],
+    [
+     "set",
+     "damage_instantaneous_acceleration",
+     "4"
+    ],
+    [
+     "set",
+     "low_frequency_vibrate_frequency",
+     "1"
+    ],
+    [
+     "set",
+     "high_frequency_vibrate_frequency",
+     "0.5"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_duration",
+     "0.5"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_rotation",
+     "0.7"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_pushback",
+     "0.3"
+    ],
+    [
+     "set",
+     "camera_shaking_duration",
+     "1"
+    ],
+    [
+     "set",
+     "camera_shaking_random_translation",
+     "0.05"
+    ]
+   ],
+   "why": "the gravity blast, the swing's damage, in the classic hammer's shape (a full-strength core, the blow falling off to the edge, one swing one kill): the classic blast is 160 inside 0.75 of a unit and falls to 50 at 1.5 units against 45 health and 70 shield, a kill out to 41 percent of the way from the core to the edge (about 1.06 units), the shield stripped out to 1.4; here the radii are 1.73 times those (the kill radius stays at the 1.8 units this pack had: no sprint), so a core of 1.3 units and an edge of 2.6. The game's damage effect falls to nothing at the edge (cutoff scale 0) instead of to 50, so the damage is 255 (not 175): against a full 75 shield and 75 health (150) the kill is still out to 41 percent of the way (1.83 units), the shield is stripped out to about 2.2 (255 x 0.29 = 75), and 2.6 is the edge. The game's damage effect has no cone, so the blast stays a ball. The push (instantaneous acceleration) is 4, the classic 3.5 over the latest 7.5 times the map's 8, rounded (the map's was the latest's); the rumble (low 1, high 0.5, re-stated: the map's own) with the classic's camera shake (impulse 0.5 s, 0.7 degrees, pushback 0.3, shaking 1 s, translation 0.05); it does not hurt its owner, as the map has it"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "hammer/effects/melee.damage_effect",
+   "op": "edit",
+   "from": [
+    "source",
+    "hammer/effects/push.damage_effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "damage_lower_bound",
+     "175"
+    ],
+    [
+     "set",
+     "damage_upper_bound",
+     "175 175"
+    ],
+    [
+     "set",
+     "damage_instantaneous_acceleration",
+     "4"
+    ],
+    [
+     "set",
+     "low_frequency_vibrate_frequency",
+     "1"
+    ],
+    [
+     "set",
+     "high_frequency_vibrate_frequency",
+     "0.5"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_duration",
+     "0.5"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_rotation",
+     "0.7"
+    ],
+    [
+     "set",
+     "temporary_camera_impulse_pushback",
+     "0.3"
+    ],
+    [
+     "set",
+     "camera_shaking_duration",
+     "1"
+    ],
+    [
+     "set",
+     "camera_shaking_random_translation",
+     "0.05"
+    ]
+   ],
+   "why": "the melee button's blow (the weapon's player melee damage, in place of the rocket launcher's melee): the classic hammer's melee button is the same swing as its trigger and kills with it, so a blow of the hammer: 175 to the one it lands on (a kill against a full 75 shield and 75 health), the push and the camera shake the blast has, the map's rumble and damage flags (it does not hurt its owner) as the map's push has them; its reach is the game's melee reach, a blow up close beside the swing that reaches 2.8 units; the blast tag the map's, edited here a second time under its own name"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/hammer_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "hammer_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: the map's own picture of the hammer (sequence 8 of its HUD's weapon icon sheet), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\hammer_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  }
+ ],
+ "expected": {
+  "about": "the recipe on today's pipeline (2026-11-06, revision 2: the classic-era numbers and the melee blow); re-pinned for the weapon's world scale 1 (the map's 0.001); a pack built twice from the recipe was the same",
+  "donor_sha256": "973b70a7b92ea42f9d4895c82367f3ab0808045b172edc7e858463000f89776c",
+  "donor_size": 20537344,
+  "pack_sha256": "1aac02fac46e6175677c87b9777b89de79d93f6cc038fcc1489bbae5d4b2cbfc",
+  "pack_own_sha256": "73cb8394f6a008cdf42f50cc9a9038a58219f58bd43f5d34725d7983328e107c",
+  "pack_size": 10046197,
+  "own_tags": 28,
+  "external_tags": 8
+ }
+}
