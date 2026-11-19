@@ -531,6 +531,9 @@ static int key_append(char *key, size_t size, char const *path)
 #if defined(_WIN32) /* AE hook */
 	/* (the C runtime's times are whole seconds, and it has no inode: a size, a device and the two times) */
 	return snprintf(key + used, size - used, "%s%s,%llu,%llu:%llu,%lld.%09ld,%lld.%09ld", used ? "|" : "", path, (unsigned long long)information.st_size, (unsigned long long)information.st_dev, (unsigned long long)information.st_ino, (long long)information.st_mtime, 0l, (long long)information.st_ctime, 0l) < (int)(size - used); /* AE hook */
+#elif defined(__APPLE__) /* AE hook */
+	/* (macOS spells the two times st_mtimespec and st_ctimespec) */
+	return snprintf(key + used, size - used, "%s%s,%llu,%llu:%llu,%lld.%09ld,%lld.%09ld", used ? "|" : "", path, (unsigned long long)information.st_size, (unsigned long long)information.st_dev, (unsigned long long)information.st_ino, (long long)information.st_mtimespec.tv_sec, (long)information.st_mtimespec.tv_nsec, (long long)information.st_ctimespec.tv_sec, (long)information.st_ctimespec.tv_nsec) < (int)(size - used); /* AE hook */
 #else /* AE hook */
 	return snprintf(key + used, size - used, "%s%s,%llu,%llu:%llu,%lld.%09ld,%lld.%09ld", used ? "|" : "", path,
 		(unsigned long long)information.st_size, (unsigned long long)information.st_dev,

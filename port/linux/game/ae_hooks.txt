@@ -4292,6 +4292,8 @@ port/android/host/steam_downloads.h	int host_steam_author(steam_host_address ite
 port/windows/include/posix/pthread.h	int pthread_join(pthread_t thread, void **result); /* AE hook */
 port/android/host/host_mcc_hash.c	#if defined(_WIN32) /* AE hook */
 port/android/host/host_mcc_hash.c	return snprintf(key + used, size - used, "%s%s,%llu,%llu:%llu,%lld.%09ld,%lld.%09ld", used ? "|" : "", path, (unsigned long long)information.st_size, (unsigned long long)information.st_dev, (unsigned long long)information.st_ino, (long long)information.st_mtime, 0l, (long long)information.st_ctime, 0l) < (int)(size - used); /* AE hook */
+port/android/host/host_mcc_hash.c	#elif defined(__APPLE__) /* AE hook */
+port/android/host/host_mcc_hash.c	return snprintf(key + used, size - used, "%s%s,%llu,%llu:%llu,%lld.%09ld,%lld.%09ld", used ? "|" : "", path, (unsigned long long)information.st_size, (unsigned long long)information.st_dev, (unsigned long long)information.st_ino, (long long)information.st_mtimespec.tv_sec, (long)information.st_mtimespec.tv_nsec, (long long)information.st_ctimespec.tv_sec, (long)information.st_ctimespec.tv_nsec) < (int)(size - used); /* AE hook */
 port/android/host/host_mcc_hash.c	#else /* AE hook */
 port/android/host/host_mcc_hash.c	#endif /* AE hook */
 
