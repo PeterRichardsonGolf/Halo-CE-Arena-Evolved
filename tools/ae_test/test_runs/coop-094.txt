@@ -1,0 +1,120 @@
+# 0.9.4 CAMPAIGN CO-OP: split-screen co-op for up to FOUR players on this PC from AE's own CAMPAIGN screen, and ONLINE co-op
+# hosted from it (X on a level) and joined from the SERVER BROWSER, an invite or an address. A pad's START asks for
+# a seat (its profile card, as in the lobby), its B leaves it; a lone gamepad with the keyboard joins from START too; SPLIT
+# SCREEN's A does the same for the keyboard and the mouse. A level or the Play button starts it for everyone seated. CONTINUE is
+# solo only (a saved game of one does not go on with more). The first seven tests are one PC (the HOST PC). The last five are TWO
+# PCS: the HOST PC hosts (host-online, then play-together), the JOINING PC joins (join-browser, join-address, host-left); run them
+# in this order, the host's test first, both machines on the same network with this list loaded. Every test opens on its scene:
+# `menu campaign players <2-4>` seats that many players as guests on controllers 2 up, `menu campaign error` shows the co-op
+# error dialog, `menu coop [players <1-4>]` hosts level 1 as a LAN game and opens the CO-OP LOBBY, `menu lan` is LAN GAMES.
+list coop-094
+revision 3
+title CAMPAIGN CO-OP, PRIVATE LISTING AND HOST LEFT
+
+test seats-pad
+title Pads: START joins, B leaves
+check Pad 2 START: a profile card opens; A seats it as Player 2
+check Player 2: Controller 2, B Leave; SPLIT SCREEN: 2 PLAYERS
+check Pad 2 B: the seat goes, the screen stays; pad 1 B goes back
+menus
+setup menu campaign
+expect 1 log ae campaign: open
+
+test seats-four
+title Four players: the panel, the count, the full table
+check PLAYERS shows 4/4 players and SPLIT SCREEN says 4 PLAYERS
+check No open card is left; a fifth pad's START does nothing
+check A on Pillar of Autumn starts four views (log: 4 players)
+menus
+setup menu campaign players 4
+expect 1 log ae campaign: staged: player 4 seated
+
+test start-two
+title A level starts for both players
+check The panel shows Player 1 and Player 2 (Guest 2)
+check A on Pillar of Autumn: it loads in split screen, two views
+check The log: co-op start level 1 (2 players), player 2 on c2
+menus
+setup menu campaign seat
+expect 1 log ae campaign: staged: player 2 seated
+
+test keys-mouse
+title Keyboard and mouse
+check SPLIT SCREEN: A sends the last player away; A arms the add
+check A click on a player's row sends them away; the card adds
+check Up/Down, Enter and a click on a level all reach every row
+menus
+setup menu campaign seat
+expect 1 log ae campaign: staged: player 2 seated
+
+test error-dialog
+title The co-op error dialog
+check "The level did not start", a player has no profile
+check It says to press B on their controller and join again
+check A or B closes it; the screen is as it was
+menus
+setup menu campaign seat error
+expect 1 log ae campaign: staged: player 2 seated
+
+test host-lan
+title CO-OP LOBBY on this PC: LAN, two players
+check HOST CO-OP: LEVEL, DIFFICULTY, PLAYERS 2 / 16, START GAME
+check DIFFICULTY steps EASY to LEGENDARY with left and right
+check Player 2's row shows B Leave; its B leaves the lobby seat
+menus
+setup menu coop players 2
+expect 1 log ae coop lobby: hosted, player 1 in
+
+test local-pad-lobby
+title A pad's START joins the lobby, up to four
+check A pad's START opens its card; A on it adds the player
+check Up to 4 on this PC; then the open card goes
+check B on this PC's start screen leaves; the lobby closes
+menus
+setup menu coop players 1
+expect 1 log ae coop lobby: hosted, player 1 in
+
+test host-online
+title HOST PC: host a level online from CAMPAIGN
+check X opens the lobby; PUBLIC starts at its last saved choice
+check Set PUBLIC ON, leave and host again: it is still ON
+check INVITE copies the link; a joining PC appears in PLAYERS
+menus
+setup menu campaign
+expect 1 log ae coop lobby: hosted, player 1 in
+
+test join-browser
+title JOINING PC: only PUBLIC online co-op is listed
+check LAN GAMES leaves the HOST PC's co-op game out
+check PUBLIC ON: SERVER BROWSER shows CO-OP, the level, NORMAL
+check A joins it; the lobby reads WAITING FOR THE HOST
+menus
+setup menu lan
+expect 1 log ae coop lobby: joined
+
+test join-address
+title JOINING PC: join by address lands in the same lobby
+check Y opens JOIN BY ADDRESS; the HOST PC's address joins it
+check It lands in the CO-OP LOBBY, level and difficulty shown
+check The HOST PC's DIFFICULTY change shows here too
+menus
+setup menu lan
+expect 1 log ae coop lobby: joined
+
+test play-together
+title BOTH: the host starts, both play the level
+check HOST PC START GAME: both count down, both load the level
+check Both are in the level, 2 players; the JOINING PC's pad plays
+check Finish or quit: the lobby comes back on both
+menus
+setup menu coop players 2
+expect 1 log ae coop lobby: hosted, player 1 in
+
+test host-left
+title JOINING PC: the co-op host leaves
+check Join by address; in the lobby, close the host's game
+check "The host left the game." says it returns to the menus
+check Rejoin and start; closing the host shows it in-level
+menus
+setup menu lan
+expect 1 log ae errors: shown: The host left the game.

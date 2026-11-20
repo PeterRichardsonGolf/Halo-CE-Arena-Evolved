@@ -1,0 +1,44 @@
+# rc2 MAP + GAMETYPE VOTE FOR A GAME YOU HOST: a game hosted from CREATE GAME with a playlist runs the same vote between games a
+# dedicated server runs: three games on three maps (not the map just played) and SAME AGAIN, 20 seconds, the host's own vote in the
+# same popover as the players'. `playlists demo` gives the run its own made-up playlists (4V4 ARENA in use, MAP VOTE on),
+# `menu hostvote [lan] [now|join]` hosts CREATE GAME and opens the vote as if a game had just ended (now: at once; join: when a second
+# person is in the lobby). The first test is ONE PC (this PC hosts, bots only). The last two are TWO PCS: the HOST PC runs
+# vote-two-host first, the JOINING PC runs vote-two-join right after; both on the same network with this list loaded.
+list host-vote-rc2
+revision 1
+title MAP VOTE FOR A GAME YOU HOST
+
+test vote-host-alone
+title One PC: the host votes, the winner is next
+check The vote opens: 3 games, 3 maps, SAME AGAIN, 20 s
+check A on a game, A again: YOUR VOTE; the vote closes early
+check The winner shows NEXT GAME; UP NEXT is that game
+menus
+setup playlists demo
+setup menu hostvote now
+expect 1 log map vote (host): opened
+expect 1 log map vote (host): vote from this machine (local)
+expect 1 log map vote (host): the next game is
+
+test vote-two-host
+title HOST PC: hosts, then votes with the joiner
+check The lobby opens on the LAN; the vote waits for a joiner
+check The joiner appears; the vote opens: YOUR VOTE on A, A
+check The joiner's vote shows in the counts; a winner shows
+menus
+setup playlists demo
+setup menu hostvote lan join
+expect 1 log map vote (host): opened
+expect 1 log map vote (host): vote from this machine (local)
+expect 1 log map vote (host): over
+
+test vote-two-join
+title JOINING PC: joins the host and votes
+check LAN GAMES: A on the host's game joins its lobby
+check The vote popover opens within seconds: same 4 choices
+check A, A on a game: YOUR VOTE; the winner shows NEXT GAME
+menus
+setup menu lan
+expect 1 log ae vote: opened
+expect 1 log ae vote: voted for
+expect 1 log ae vote: over, the next game is

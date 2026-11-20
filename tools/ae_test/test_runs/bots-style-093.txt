@@ -1,0 +1,45 @@
+# 0.9.3 BOTS: play styles (DEV botstyle; the offline social career gives each bot name its own). A style bends what a bot
+# chooses in a fight, mildly: PUSHER is bolder (retreats later, charges more), jumps a little more and halts less;
+# ANCHOR is the other way; HOPPER jumps the most. Its aim and reaction stay its skill's. Two HEROIC enemy bots, you
+# cannot die (god). The log names each bot's style once a game: "bots: style: bot 1 PUSHER (aggression +2 ...)".
+list bots-style-093
+revision 2
+title BOTS: PLAY STYLES
+
+group temple
+map temple
+gametype AE BR TS
+set bots.count 0
+set bots.skill heroic
+set debug.bot_events true
+
+test pusher-anchor
+title TEMPLE: a PUSHER and an ANCHOR at once
+setup botstyle clear
+setup botskill clear
+setup bots 2 against heroic
+setup botstyle 1 pusher
+setup botstyle 2 anchor
+setup god me
+check Bot 1 presses you and backs off late
+check Bot 2 holds back, pauses more, retreats early
+expect 1 log bots: style: bot 1 PUSHER
+
+test hopper
+title TEMPLE: a HOPPER against a STEADY bot
+setup bots 2 against heroic
+setup god me
+setup botstyle 1 hopper
+setup botstyle 2 steady
+check Bot 1 jumps clearly more in fights than bot 2
+check Both aim about the same
+expect 1 log bots: style: bot 1 HOPPER
+
+test favourite
+title TEMPLE: a favourite weapon
+setup bots 2 against heroic
+setup god me
+setup botstyle 1 steady rockets
+setup botstyle 2 clear
+check Bot 1 takes the rocket launcher when it passes it
+expect 1 log favourite rockets
