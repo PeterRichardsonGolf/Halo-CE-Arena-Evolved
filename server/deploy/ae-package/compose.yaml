@@ -1,0 +1,48 @@
+# Arena Evolved dedicated server in a container (docker compose or podman compose).
+#
+#   1. Unpack the server package. Copy this file, Dockerfile and container-start.sh next to halo into that folder
+#      (they are in it already when you unpack the Linux package).
+#   2. Edit rotation.txt (the maps and gametypes to play; GUIDE.md, "Rotation lines").
+#   3. Set STEAM to the folder that holds steamapps/ (Linux default ~/.local/share/Steam; on a server without Steam, the
+#      target folder of sync-mcc.sh) and bring it up:
+#        STEAM=$HOME/.local/share/Steam docker compose up -d --build
+#        docker compose logs -f
+#   The first start makes the web page's admin password: it is in the volume, `docker compose exec ae-server cat
+#   /var/lib/ae-server/data/first-admin-password.txt`, and so is the invite link (data/invite-link.txt).
+#
+# What this gives the container: an ordinary user (uid 10001), no capabilities, no new privileges, a read-only root,
+# the MCC and Workshop folders read-only, one volume. Only UDP 2302, the internet port, is published. The web page
+# stays on 127.0.0.1 INSIDE the container: the server refuses to open it to a network without a TLS proxy in front. To use
+# it from the host, run with `network_mode: host` (and drop `ports:`): then 127.0.0.1:8080 is the host's own.
+# Never publish 5150, 5151, 5160 or 5153: they are the game's LAN ports and Docker's published ports skip ufw. For a
+# game on a home network only (LAN search), use `network_mode: host` instead of `ports:` and firewall the host.
+services:
+  ae-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ae-server:preview
+    restart: on-failure
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    pids_limit: 256
+    mem_limit: 2g
+    tmpfs:
+      - /tmp
+    ports:
+      - "2302:2302/udp"
+    environment:
+      HALO_MCC_PATH: "/steam/steamapps/common/Halo The Master Chief Collection"
+      HALO_SERVER_WEB_BIND: "127.0.0.1"
+      # HALO_SERVER_NAME: "My server"
+      # HALO_SERVER_MIN_PLAYERS: "8"
+      # HALO_SERVER_BOTS_FILL: "minimum"
+    volumes:
+      - ae-data:/var/lib/ae-server
+      - ./rotation.txt:/etc/ae-server/rotation.txt:ro
+      - "${STEAM:?set STEAM to the folder that holds steamapps/}/steamapps/common/Halo The Master Chief Collection:/steam/steamapps/common/Halo The Master Chief Collection:ro"
+      - "${STEAM:?set STEAM to the folder that holds steamapps/}/steamapps/workshop/content/976730:/steam/steamapps/workshop/content/976730:ro"
+volumes:
+  ae-data:

@@ -1,0 +1,6 @@
+# Halo CE: Arena Evolved: lets the player at the seat open a Nintendo Switch 2 Pro Controller's (057E:2069) USB device,
+# so SDL can send the handshake the pad needs on USB before it sends input (through libusb). Steam's udev rules do the
+# same; this is for a machine without them. Bluetooth needs no rule.
+# Install (once, as root), then plug the pad in again:
+#   sudo cp 70-ae-switch2.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTRS{idVendor}=="057e", ATTRS{idProduct}=="2069", MODE="0660", TAG+="uaccess"

@@ -1,0 +1,61 @@
+# The GRAVITY HAMMER pack, revision 3: on the back it lies along the spine (head low by the hip, pommel up past the
+# shoulder) as another map's hammer does, a little out from the back, not through the body or the shoulder pads; on
+# the ground it lies flat on its side, not standing in the floor. The hammer is the START weapon on every life
+# (debug.network_test_cache_weapon 24) beside the gametype's BR; three dummies stand ahead (they stand still and never
+# shoot), each holding its BR or the hammer, the other on its back; DEV MODE's give puts a pistol in your hands and
+# drops the hammer you held, then you step back to look at it. The pack is held: this list runs only on a test build
+# whose weapon cache holds it (without it the start weapon falls back to the assault rifle). F2 is DEV MODE's shoulder
+# camera (your own back). Staged only: nothing here waits for something to happen.
+list hammer-rc3
+revision 2
+title GRAVITY HAMMER: BACK AND GROUND
+
+test back-behind
+title Hammer on the back, from behind
+setup goto 7.6 -3.2 0.6 facing 157
+setup dummy 3 2.5 away
+check A dummy with its BR in hand: the hammer lies along its back
+check Head low by the hip; pommel clear of the shoulder pads
+check Yours: Y to hold the BR, F2 to look: the same on you
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 24
+
+test back-side
+title Hammer on the back, from the side
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup dummy 3 2.5 away
+setup goto 5.8 0.3 0.6 facing 247
+check From the side the shaft lies flat on the back
+check No part of the hammer goes through a chest or belly
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 24
+
+test drop-flat
+title A dropped hammer on flat ground
+fresh
+setup goto 4.9 -2.2 0.6 facing 157
+setup give pistol
+setup goto 6.6 -2.9 0.6 facing 157
+check The hammer lies flat on its side on the floor
+check No part of it sinks into the floor or stands up
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 24
+
+test drop-slope
+title A dropped hammer on a slope
+setup goto 71.6 -170.0 1.8 facing -90
+setup give pistol
+setup goto 71.6 -167.5 2.0 facing -90
+check On the hillside the hammer lies flat along the slope
+check No part of it sinks into the ground or stands up
+map bloodgulch
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 24

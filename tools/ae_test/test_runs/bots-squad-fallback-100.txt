@@ -1,0 +1,21 @@
+# SQUAD FALLS BACK: in a small game, when the person leading a bot squad dies, the squad goes back to defend its team's flag
+# stand instead of playing free. It holds there after the leader respawns, until the leader gives a new order. A squad led by
+# a bot, a big team game, and a mode with no base keep the plain release. Log with bot events: "bots: ev=squad_fall_back".
+list bots-squad-fallback-100
+revision 3
+title SQUAD FALLS BACK WHEN ITS LEADER DIES
+
+group arena-ctf
+map bloodgulch
+gametype AE CTF
+set bots.count 6
+set debug.bot_events true
+
+test leader-dies
+title Your squad goes back to defend when you die
+setup fireteam follow
+setup kill me by bot after 8
+check Your squad forms on you; you die 8 s in
+check Squad walks back and holds its home spot
+check After you respawn it stays there
+expect 1 log bots: ev=squad_fall_back

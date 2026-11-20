@@ -1,0 +1,1079 @@
+{
+ "format": 1,
+ "about": "The AE assault rifle pack: CMT's individual combat weapon system rifle (its weapon tag over CMT's assault rifle model, first-person animations, sounds and effects) from the stock-compatible source release of The Silent Cartographer: Evolved 1.4, made the Xbox's (the models converted, the multipurpose maps reordered, the Ogg sounds re-encoded, the HUD made the Xbox's) and set to AE's assault rifle numbers, with our own ammunition counter, reticle and prompts' picture. make_pack.py runs it; the locations of the zip, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_ar_modern",
+  "revision": 30,
+  "display": "COMBAT AR",
+  "prefix": "ae\\packs\\ar_modern\\",
+  "weapon": "cmt\\weapons\\evolved\\_egg\\ma5c_individual_combat_wep_sys\\ma5c_individual_combat_wep_sys",
+  "weapon_key": "ar_modern",
+  "labels": "ar",
+  "behaviour": 0,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "icon": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons:0",
+  "smooth": [
+   "ae_pack\\hud\\ar_modern_meter_smooth:coverage",
+   "ae_pack\\hud\\ar_modern_alphas_smooth"
+  ],
+  "stock_derived": {
+   "ae\\packs\\ar_modern\\hud\\ar_modern_ammo": "layout numbers set by AE, from the stock assault rifle HUD's structure: positions, sizes and references (hud_tag.py), no art"
+  }
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/effects/contrail/h1 tracer contrail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood brute splat.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/blood splats/blood splat.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute penetrate.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite penetrate.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt penetrate.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored penetrate.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human penetrate.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter penetrate.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact ice ballistic.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal ballistic.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact snow ballistic.effect",
+   "cmt/effects/impacts/impact stone ballistic.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/lights/human muzzle flare default.lens_flare",
+   "cmt/effects/lights/human muzzle flare default.light",
+   "cmt/effects/lights/human muzzle flash default.light",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp cold.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flare_center_fire.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flash.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flash_side.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_center_fire_expand.particle",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_expand.particle",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flash_quick.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/casing h ar bullet.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/human_rifle_empty.effect",
+   "cmt/globals/evolved/damage_effects/melee.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/powerups/ammo_pack/ammo_pack.gbxmodel",
+   "cmt/powerups/ammo_pack/ammo_pack.model_collision_geometry",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_diff.bitmap",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_multi.bitmap",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_decals_diff.bitmap",
+   "cmt/powerups/ammo_pack/powerups/assault_rifle_ammo_pack.equipment",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_base.shader_model",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_base_twosided.shader_model",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_decals.shader_model",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person melee.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person ready.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person reload.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/fx/assault_rifle_super_bullet_fire_1.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/fx/assault_rifle_super_bullet_fire_2.sound",
+   "cmt/sounds/sfx/weapons/human/battle_rifle/fx/battle_rifle_ammo_pickup.sound",
+   "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload-exit.sound",
+   "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload.sound",
+   "cmt/textures/colours/solid/000-255-000-green.bitmap",
+   "cmt/textures/colours/solid/255-255-255-white.bitmap",
+   "cmt/textures/displays/cmt_unsc_display_compass.bitmap",
+   "cmt/textures/displays/cmt_unsc_display_numbers.bitmap",
+   "cmt/textures/displays/shaders/cmt_unsc_display_compass.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_compass_l.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct_l.shader_transparent_chicago",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "cmt/ui/hudv4.1/weapons/evolved/human/assault_rifle_super.weapon_hud_interface",
+   "cmt/weapons/_shared/assault_rifle/assault_rifle.gbxmodel",
+   "cmt/weapons/_shared/assault_rifle/assault_rifle.model_collision_geometry",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_body_diff.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_body_multi.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_display_bullet.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_display_main.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_magazine_diff.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_magazine_multi.bitmap",
+   "cmt/weapons/_shared/assault_rifle/fp/fp.model_animations",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_buttons.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_dark.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_rubber.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_shiny.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_bullet.shader_transparent_chicago",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_bullet_l.shader_transparent_chicago",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_main.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_magazine.shader_model",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/contrails/7.62x51mm_fmj_ap.contrail",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/7.62x51mm_fmj_ap_impact.damage_effect",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/ma5c_indv_combat_wep_sys_trigger.damage_effect",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/effects/ma5c_indv_combat_wep_sys_fire_1.effect",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/effects/ma5c_indv_combat_wep_sys_fire_2.effect",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/ma5c_individual_combat_wep_sys.weapon",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/projectiles/7.62x51mm_fmj_ap.projectile"
+  ],
+  "verbatim": [
+   "cmt/effects/contrail/h1 tracer contrail.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood brute splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood elite splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood grunt splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood hunter splat.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat light.bitmap",
+   "cmt/effects/decals/blood splats/bitmaps/blood splat.bitmap",
+   "cmt/effects/decals/blood splats/blood brute splat light.decal",
+   "cmt/effects/decals/blood splats/blood brute splat.decal",
+   "cmt/effects/decals/blood splats/blood elite splat light.decal",
+   "cmt/effects/decals/blood splats/blood elite splat.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat light.decal",
+   "cmt/effects/decals/blood splats/blood grunt splat.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat light.decal",
+   "cmt/effects/decals/blood splats/blood hunter splat.decal",
+   "cmt/effects/decals/blood splats/blood splat light.decal",
+   "cmt/effects/decals/blood splats/blood splat.decal",
+   "cmt/effects/impacts/impact brute helmet.effect",
+   "cmt/effects/impacts/impact brute penetrate.effect",
+   "cmt/effects/impacts/impact brute.effect",
+   "cmt/effects/impacts/impact c shield.effect",
+   "cmt/effects/impacts/impact cyborg shield.effect",
+   "cmt/effects/impacts/impact dirt.effect",
+   "cmt/effects/impacts/impact elite penetrate.effect",
+   "cmt/effects/impacts/impact elite.effect",
+   "cmt/effects/impacts/impact glass.effect",
+   "cmt/effects/impacts/impact grunt armor.effect",
+   "cmt/effects/impacts/impact grunt penetrate.effect",
+   "cmt/effects/impacts/impact grunt.effect",
+   "cmt/effects/impacts/impact human armored penetrate.effect",
+   "cmt/effects/impacts/impact human armored.effect",
+   "cmt/effects/impacts/impact human penetrate.effect",
+   "cmt/effects/impacts/impact human.effect",
+   "cmt/effects/impacts/impact hunter penetrate.effect",
+   "cmt/effects/impacts/impact hunter.effect",
+   "cmt/effects/impacts/impact ice ballistic.effect",
+   "cmt/effects/impacts/impact jackal shield reflect.effect",
+   "cmt/effects/impacts/impact leaves.effect",
+   "cmt/effects/impacts/impact metal ballistic.effect",
+   "cmt/effects/impacts/impact rubber.effect",
+   "cmt/effects/impacts/impact sand.effect",
+   "cmt/effects/impacts/impact snow ballistic.effect",
+   "cmt/effects/impacts/impact stone ballistic.effect",
+   "cmt/effects/impacts/impact water ballistic.effect",
+   "cmt/effects/impacts/impact wood.effect",
+   "cmt/effects/lights/human muzzle flare default.lens_flare",
+   "cmt/effects/lights/human muzzle flare default.light",
+   "cmt/effects/lights/human muzzle flash default.light",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/dark/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke cloud dusty.particle",
+   "cmt/effects/particles/air/smoke h fp cold.particle",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/electric discharge.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs animated.bitmap",
+   "cmt/effects/particles/energy/bitmaps/plasma electric arcs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield impact ring.bitmap",
+   "cmt/effects/particles/energy/bitmaps/shield_energy_fragment.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sparkly_sparkles.bitmap",
+   "cmt/effects/particles/energy/bitmaps/sword_glow.bitmap",
+   "cmt/effects/particles/energy/cosiney cosines quick.particle",
+   "cmt/effects/particles/energy/plasma electric arcs animated.particle",
+   "cmt/effects/particles/energy/plasma electric arcs.particle",
+   "cmt/effects/particles/energy/plasma rifle discharge.particle",
+   "cmt/effects/particles/energy/shield impact fragment.particle",
+   "cmt/effects/particles/energy/shield impact ring.particle",
+   "cmt/effects/particles/energy/shield jackal quickbolt.particle",
+   "cmt/effects/particles/energy/shield jackal quicksparks.particle",
+   "cmt/effects/particles/energy/sparkly sparkles quick.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flare_center_fire.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flash.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/bitmaps/muzzle_flash_side.bitmap",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_center_fire_expand.particle",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flare_expand.particle",
+   "cmt/effects/particles/flash/muzzle flash/muzzle_flash_quick.particle",
+   "cmt/effects/particles/flash/sparks impact.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/particles/solid/bitmaps/dirt bits.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst 2.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst thick.bitmap",
+   "cmt/effects/particles/solid/bitmaps/fluid burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/impact burst.bitmap",
+   "cmt/effects/particles/solid/bitmaps/melting chunks.bitmap",
+   "cmt/effects/particles/solid/bitmaps/worms.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst grunt.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst hunter.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood impact burst.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist residual.bitmap",
+   "cmt/effects/particles/solid/blood/bitmaps/blood mist.bitmap",
+   "cmt/effects/particles/solid/blood/blood generic impact.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thick.particle",
+   "cmt/effects/particles/solid/blood/blood grunt thin.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thick.particle",
+   "cmt/effects/particles/solid/blood/blood hunter thin.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst grunt.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst hunter.particle",
+   "cmt/effects/particles/solid/blood/blood impact burst.particle",
+   "cmt/effects/particles/solid/blood/blood mist large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual large.particle",
+   "cmt/effects/particles/solid/blood/blood mist residual small.particle",
+   "cmt/effects/particles/solid/blood/blood mist small.particle",
+   "cmt/effects/particles/solid/blood/blood trails large.particle",
+   "cmt/effects/particles/solid/blood/blood trails small.particle",
+   "cmt/effects/particles/solid/casing h ar bullet.particle",
+   "cmt/effects/particles/solid/dirt bits.particle",
+   "cmt/effects/particles/solid/fluid burst 2.particle",
+   "cmt/effects/particles/solid/fluid burst long.particle",
+   "cmt/effects/particles/solid/fluid burst.particle",
+   "cmt/effects/particles/solid/granular impact burst.particle",
+   "cmt/effects/particles/solid/melting chunks.particle",
+   "cmt/effects/particles/solid/worms.particle",
+   "cmt/effects/point physics/blood burst thick.point_physics",
+   "cmt/effects/point physics/blood burst.point_physics",
+   "cmt/effects/point physics/hanging orbs light.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/human_rifle_empty.effect",
+   "cmt/globals/evolved/damage_effects/melee.damage_effect",
+   "cmt/globals/evolved/damage_effects/melee_response.damage_effect",
+   "cmt/powerups/ammo_pack/ammo_pack.model_collision_geometry",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_diff.bitmap",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_decals_diff.bitmap",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_base.shader_model",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_base_twosided.shader_model",
+   "cmt/powerups/ammo_pack/shaders/ammo_pack_decals.shader_model",
+   "cmt/sounds/sfx/effects/impacts/bullet_impact_terrain.sound",
+   "cmt/sounds/sfx/weapons/_shared/animations/weapon_fp_generic_grenade.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/fx/assault_rifle_super_bullet_fire_1.sound",
+   "cmt/sounds/sfx/weapons/human/assault_rifle/fx/assault_rifle_super_bullet_fire_2.sound",
+   "cmt/sounds/sfx/weapons/human/battle_rifle/fx/battle_rifle_ammo_pickup.sound",
+   "cmt/textures/colours/solid/000-255-000-green.bitmap",
+   "cmt/textures/colours/solid/255-255-255-white.bitmap",
+   "cmt/textures/displays/cmt_unsc_display_compass.bitmap",
+   "cmt/textures/displays/cmt_unsc_display_numbers.bitmap",
+   "cmt/textures/displays/shaders/cmt_unsc_display_compass.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_compass_l.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct.shader_transparent_chicago",
+   "cmt/textures/displays/shaders/cmt_unsc_display_numbers_100ct_l.shader_transparent_chicago",
+   "cmt/ui/hudv4.1/bitmaps/default/visor.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/default/warnings.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/pickup_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_alpha.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_base.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_icons.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_meter.bitmap",
+   "cmt/ui/hudv4.1/bitmaps/weapons/weapon_reticules.bitmap",
+   "cmt/weapons/_shared/assault_rifle/assault_rifle.model_collision_geometry",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_body_diff.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_display_bullet.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_display_main.bitmap",
+   "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_magazine_diff.bitmap",
+   "cmt/weapons/_shared/assault_rifle/fp/fp.model_animations",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_buttons.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_dark.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_rubber.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_body_shiny.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_bullet.shader_transparent_chicago",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_bullet_l.shader_transparent_chicago",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_display_main.shader_model",
+   "cmt/weapons/_shared/assault_rifle/shaders/assault_rifle_magazine.shader_model",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/contrails/7.62x51mm_fmj_ap.contrail",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/effects/ma5c_indv_combat_wep_sys_fire_1.effect",
+   "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/effects/ma5c_indv_combat_wep_sys_fire_2.effect"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {},
+ "art_settings": {},
+ "art_scripts": {
+  "ar_modern_meter_smooth.png": "counter_art.py",
+  "ar_modern_alphas_smooth.png": "counter_art.py",
+  "ar_modern_reticle.png": "reticle_art.py",
+  "ar_modern_icon.png": "hud_sheet.py"
+ },
+ "art_drawings": {
+  "ar_modern_meter_smooth.png": {
+   "draw": "counter_meter",
+   "layout": {
+    "columns": 18,
+    "rows": 2,
+    "group": 6
+   }
+  },
+  "ar_modern_alphas_smooth.png": {
+   "draw": "counter_alphas",
+   "layout": {
+    "columns": 18,
+    "rows": 2,
+    "group": 6
+   }
+  },
+  "ar_modern_reticle.png": {
+   "draw": "reticle",
+   "form": "smg"
+  }
+ },
+ "art": {
+  "ar_modern_meter_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "678070440e0aa03049698618db15e12129834f0ba4eb9c0914a0a6ef2d6edd50"
+  },
+  "ar_modern_alphas_smooth.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    128
+   ],
+   "pixels_sha256": "fab01b627230eb7b3df22e807da8e56ccef5a2b215594b9c263ddd2744afab3f"
+  },
+  "ar_modern_reticle.png": {
+   "mode": "RGBA",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "ec228928637e2d03161b02651eacd14883350aa3c080c5eac6aad5f8b467cb25"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved\\_egg\\ma5c_individual_combat_wep_sys\\ma5c_individual_combat_wep_sys.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ]
+   ],
+   "why": "the donor map: no vehicles"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/ammo_pack/ammo_pack.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/powerups/ammo_pack/ammo_pack.gbxmodel"
+   ],
+   "bludgeon": [
+    "missing-vertices",
+    "invalid-model-markers"
+   ],
+   "why": "the Xbox's model format; its parts had no compressed vertices, which the Xbox's build needs, and its markers, held at the model's level in this release's file, go in its permutations, where the Xbox's model keeps them"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/assault_rifle/assault_rifle.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/assault_rifle/assault_rifle.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_body_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_body_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_magazine_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/assault_rifle/bitmaps/assault_rifle_magazine_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_multi.bitmap",
+   "op": "multipurpose",
+   "from": [
+    "cmt",
+    "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_multi.bitmap"
+   ],
+   "why": "the multipurpose map's channels from Halo PC's order to the Xbox's"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/effects/impacts/flesh_impact.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/effects/impacts/flesh_impact.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person melee.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person melee.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person melee.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person ready.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person ready.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person ready.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person reload.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person reload.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/human/assault_rifle/animations/first-person reload.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload-exit.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload-exit.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload-exit.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload.sound",
+   "op": "sound",
+   "oggs": "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload.sound",
+   "from": [
+    "cmt",
+    "cmt/sounds/sfx/weapons/human/grenade_launcher/animations/first-person reload.sound"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/base/visor.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/_shared/base/weapon_ammo.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved/human/assault_rifle_super.weapon_hud_interface",
+   "op": "hud_hires",
+   "from": [
+    "cmt",
+    "cmt/ui/hudv4.1/weapons/evolved/human/assault_rifle_super.weapon_hud_interface"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/powerups/ammo_pack/powerups/assault_rifle_ammo_pack.equipment",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/powerups/ammo_pack/powerups/assault_rifle_ammo_pack.equipment"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/powerups/ammo_pack/ammo_pack.model"
+    ]
+   ],
+   "why": "the Xbox models"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/ma5c_individual_combat_wep_sys.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/ma5c_individual_combat_wep_sys.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/assault_rifle/assault_rifle.model"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/assault_rifle/assault_rifle.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "hud_text_message_index",
+     "0"
+    ]
+   ],
+   "why": "the Xbox models; the pickup and HUD message indices the stock assault rifle's (CMT's point into CMT's own HUD texts)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/hud/ar_modern_ammo.weapon_hud_interface",
+   "op": "ammo_hud",
+   "icon_sheet": "cmt\\ui\\hudv4.1\\bitmaps\\weapons\\pickup_icons.bitmap",
+   "from": [
+    "stock",
+    "weapons/assault rifle/assault rifle.weapon_hud_interface"
+   ],
+   "why": "The prompts' picture is CMT's own: its pickup icon sheet, the assault rifle's sequence 0."
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_modern_meter_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ar_modern_meter_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_modern_alphas_smooth.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ar_modern_alphas_smooth.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "2d_textures",
+    "-F",
+    "32-bit"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_modern_reticle.bitmap",
+   "op": "bitmap",
+   "art": [
+    "ar_modern_reticle.png"
+   ],
+   "arguments": [
+    "-T",
+    "2d_textures",
+    "-F",
+    "dxt5"
+   ]
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/ar_modern_ammo.weapon_hud_interface",
+   "op": "counter_hud",
+   "alphas": "ae_pack\\hud\\ar_modern_alphas_smooth.bitmap",
+   "meter": "ae_pack\\hud\\ar_modern_meter_smooth.bitmap",
+   "scale": 0.25,
+   "anchor": [
+    -1,
+    20
+   ],
+   "off_screen": [
+    -3000,
+    -3000
+   ],
+   "icon_sequence": 0,
+   "from": [
+    "fix-xbox",
+    "ae_pack/hud/ar_modern_ammo.weapon_hud_interface"
+   ],
+   "why": "the ammunition panel: the counter of 36 rounds in 2 rows of 18, groups of 6 (counter_art.py), the low-ammo flash on it, the prompts' picture off the screen"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/ui/hudv4.1/weapons/evolved/human/assault_rifle_super.weapon_hud_interface",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/ui/hudv4.1/weapons/evolved/human/assault_rifle_super.weapon_hud_interface"
+   ],
+   "edits": [
+    [
+     "erase",
+     "static_elements[*]"
+    ],
+    [
+     "erase",
+     "meter_elements[*]"
+    ],
+    [
+     "set",
+     "child_hud",
+     "ae_pack/hud/ar_modern_ammo.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "crosshairs[0].crosshair_bitmap",
+     "ae_pack\\hud\\ar_modern_reticle.bitmap"
+    ],
+    [
+     "sets",
+     [
+      [
+       "crosshairs[0].crosshair_overlays[0].flags.not_a_sprite",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].sequence_index",
+       "0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].width_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].height_scale",
+       "0.0644"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].default_color",
+       "0 40 150 255"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flashing_color",
+       "0 255 0 0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_period",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_delay",
+       "0"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].number_of_flashes",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].flash_length",
+       "1"
+      ],
+      [
+       "crosshairs[0].crosshair_overlays[0].disabled_color",
+       "0 0 0 0"
+      ]
+     ]
+    ]
+   ],
+   "why": "CMT's interface keeps only its crosshair, now our reticle (reticle_art.py, the SMG form, as the SMG pack's) in CE's colour, red on target; the ammunition panel is the child HUD"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/ma5c_individual_combat_wep_sys.weapon",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/ma5c_individual_combat_wep_sys.weapon"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "collision_model",
+       "weapons\\assault rifle\\assault rifle.model_collision_geometry"
+      ],
+      [
+       "magazines[0].rounds_loaded_maximum",
+       "36"
+      ],
+      [
+       "magazines[0].rounds_reloaded",
+       "36"
+      ],
+      [
+       "magazines[0].rounds_total_initial",
+       "108"
+      ],
+      [
+       "magazines[0].rounds_reserved_maximum",
+       "216"
+      ],
+      [
+       "triggers[0].maximum_rate_of_fire",
+       "12 12"
+      ],
+      [
+       "triggers[0].error_angle",
+       "0.25 2.1"
+      ],
+      [
+       "triggers[0].minimum_error",
+       "0"
+      ],
+      [
+       "triggers[0].error_acceleration_time",
+       "1"
+      ],
+      [
+       "triggers[0].error_deceleration_time",
+       "0.17"
+      ],
+      [
+       "zoom_levels",
+       "1"
+      ],
+      [
+       "zoom_magnification_range",
+       "1.4 1.4"
+      ],
+      [
+       "autoaim_angle",
+       "3"
+      ],
+      [
+       "autoaim_range",
+       "15"
+      ],
+      [
+       "magnetism_angle",
+       "6.5"
+      ],
+      [
+       "magnetism_range",
+       "20"
+      ],
+      [
+       "player_melee_damage",
+       "weapons\\assault rifle\\melee.damage_effect"
+      ],
+      [
+       "player_melee_response",
+       "weapons\\assault rifle\\melee_response.damage_effect"
+      ]
+     ]
+    ]
+   ],
+   "why": "AE's assault rifle numbers: 12 rounds a second, a magazine of 36, 108 rounds in reserve to start and 216 at most (144 and 252 with the magazine), error 0.25 to 2.1 degrees (no minimum), reached in 1 s of fire and lost in 0.17 s, one light zoom at 1.4x (CE's zoom field is a magnification), aim assist 3 degrees / 15 units and magnetism 6.5 / 20; the held weapon's collision the stock assault rifle's; the melee the stock assault rifle's, its damage and response tags left to the map (on every stock multiplayer map), as every stock weapon's"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/projectiles/7.62x51mm_fmj_ap.projectile",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/projectiles/7.62x51mm_fmj_ap.projectile"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "initial_velocity",
+       "360"
+      ],
+      [
+       "final_velocity",
+       "360"
+      ],
+      [
+       "maximum_range",
+       "100"
+      ]
+     ]
+    ]
+   ],
+   "why": "a fast round (360 units a second, CE's assault rifle's 324) carried 100 units"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/7.62x51mm_fmj_ap_impact.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/7.62x51mm_fmj_ap_impact.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "damage_lower_bound",
+       "7.6"
+      ],
+      [
+       "damage_upper_bound",
+       "7.6 7.6"
+      ],
+      [
+       "cyborg_armor",
+       "1"
+      ],
+      [
+       "cyborg_energy_shield",
+       "1"
+      ]
+     ]
+    ]
+   ],
+   "why": "7.6 a round against shield and body alike (the source's x0.54 on shields and x1.34 on the body gone): CE's 75 shield in 10 rounds, the 150 of a full player in 20, about 1.6 s at 12 a second; no head bonus"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/ma5c_indv_combat_wep_sys_trigger.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/_egg/ma5c_individual_combat_wep_sys/damage_effects/ma5c_indv_combat_wep_sys_trigger.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.15"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.06"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.3"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.06"
+      ]
+     ]
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a light rumble on both motors with each round, the automatic packs' pattern (SMG, needler); nothing else of CMT's trigger is changed"
+  }
+ ],
+ "expected": {
+  "about": "the first build of the recipe (2026-11-04, revision 1); re-pinned 2026-11-04 for the haptics; re-pinned 2026-11-04 for CMT's own pickup icon",
+  "donor_sha256": "19124701563df306d08b87378659241303b2fb2203b4d60a868bb2ced86406bb",
+  "donor_size": 22147072,
+  "pack_sha256": "2a519ee4a09b995fc9fbd8139d1d8fd12a639e008e5dc051381734e25a9b97d4",
+  "pack_own_sha256": "ca19ae26283ced8c0f94271be88cb59f8504cc5a7580ba53e9eaca724845cf9a",
+  "pack_size": 12842806,
+  "own_tags": 183,
+  "external_tags": 52
+ }
+}

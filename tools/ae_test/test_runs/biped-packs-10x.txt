@@ -1,0 +1,53 @@
+# PLAYER MODEL: a host option (GAME OPTIONS, SPARTAN) that makes every player, bots too, the biped of a biped pack. Off
+# (STANDARD) by default and never offered in AE COMP, CLASSIC COMP or TRAINING gametypes. These games name the model with the
+# test setting debug.player_model, as a saved gametype would. Needs two biped packs in the packs folder: ae_biped_3.aepack, a
+# biped that passes the fitness check, and ae_biped_4.aepack, one that fails it. Log at the load: "biped pack 3: fit: ..." and
+# "biped pack: added to bloodgulch"; a refused pack says "biped pack 4: not added to bloodgulch: <reason>".
+list biped-packs-10x
+revision 2
+title PLAYER MODEL: A BIPED PACK'S BIPED
+
+group on
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 3
+set bots.skill easy
+set debug.player_model 3
+
+test model-on
+title The pack's biped, a weapon in its hands
+setup camera third
+setup biped check 3
+check You are the pack's biped, the pistol in its hands
+check A bot beside you is the same biped, team coloured
+check The biped check line says fit, stock shield and health
+expect 3 log biped pack 3: fit
+
+group off
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 3
+set bots.skill easy
+set debug.player_model 0
+
+test model-off
+title STANDARD: the map's own biped
+setup camera third
+check You are the map's own biped, the pistol in its hands
+check A bot beside you is the same biped
+
+group refused
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 3
+set bots.skill easy
+set debug.player_model 4
+
+test model-refused
+title A biped that fails the check
+setup camera third
+setup biped check 4
+check You are the map's own biped: the pack was refused
+check The biped check line says refused, with the reasons
+expect 1 log biped pack 4: refused
+expect 2 cmd biped check 4 ok

@@ -1,0 +1,50 @@
+# 0.9.3 SETTINGS: FIND A SETTING (ae/settings-search-093). The field heads SETTINGS' top level; typing lists every setting that
+# has the words, under its group and section; Left / Right change a plain result in place; A opens its group on it (FOUND
+# badge); B goes back with the words kept. Each test opens on its exact scene with the DEV MODE command
+# `menu settings find <text>` (the field has the focus, the keyboard closed). Press Down to go from the field to the results.
+list settings-search-093
+revision 1
+title 0.9.3 SETTINGS: FIND A SETTING
+
+test find-results
+title FIND: "zoom", the results and the panel
+menus
+setup menu settings find zoom
+check Down: ZOOM rows under CONTROLS and CONTROLLER / MOUSE
+check The panel names where the focused result lives
+check Left / Right on ZOOM RESET changes it in place
+expect 1 cmd menu ok
+
+test find-none
+title FIND: nothing matches
+menus
+setup menu settings find zoomz
+check The card reads "No setting matches ZOOMZ."
+check Nothing overlaps the field
+check B (pad) clears the field: the groups come back
+expect 1 cmd menu ok
+
+test find-jump
+title FIND: A goes to the setting
+menus
+setup menu settings find hold
+check Down, A on ZOOM HOLD TIME: CONTROLS opens on it, FOUND
+check B goes back to the results with "hold" still in the field
+expect 1 cmd menu ok
+
+test find-pad-keyboard
+title FIND: a pad types with AE's keyboard
+menus
+setup menu settings find
+check A opens AE's keyboard right of the field; results follow
+check START keeps the text and moves to the list
+expect 1 cmd menu ok
+
+test find-split
+title FIND: player 2 searches
+menus
+setup lobby_fill 2
+setup menu settings player 2 find inv
+check The crumb and the panel name player 2
+check X switches to player 1: the results stay
+expect 1 cmd menu ok
