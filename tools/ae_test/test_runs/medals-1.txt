@@ -1,0 +1,175 @@
+# MEDALS, on testbox: every weapon, vehicle and mode is on it. With the personal announcer pack on, a medal with a clip speaks.
+# Rules marked by name here are readings of a medal's name that want your eye: note one that fires when it should not, or not when it
+# should. Host and client, and an older build, are by hand: TEST RUN cannot host or join.
+list medals-1
+revision 3
+title MEDALS, ROUND 1
+
+test captions
+title A medal and its name
+check A name in its medal's colour, centred under each picture
+check Names read on any ground; note any row touching the radar
+check Hit from the front with the ball: Melee Kill, Ball Kill
+map testbox@ce
+gametype AE FFA BALL
+set bots.count 7
+set bots.skill easy
+
+test first-look
+title A medal on screen
+check Kill a bot: a medal shows lower left, fades after a time
+check Kill two quickly: Double Kill joins it, next along
+check Note the size, place and time on screen
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test multikill-spree
+title Multikills and sprees
+check Two kills within 4 s: Double Kill; a gap over 4 s: none
+check Five kills without dying: Killing Spree
+check Die: the spree starts again from zero
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test announcer
+title The announcer speaks the medals
+check Double Kill and Killing Spree speak in the new voice
+check The map's own voice does not say them as well
+check Lines wait their turn; note any cut short or doubled
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test grenades-melee
+title Grenades and melee
+check Pick up plasma grenades, stick a bot: Grenade Stick
+check Frag kill: Grenade Kill
+check Melee from behind: Beat Down; from the front: Melee Kill
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test heavy-weapons
+title The fuel rod and plasma cannon
+check Kill with the fuel rod gun: Fuel Rod Cannon Kill
+check Kill with the plasma cannon: Fuel Rod Cannon Kill
+check Kill with rockets: Rocket Kill, not the above
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test style
+title Style medals
+check Kill while dead, by your grenade: Kill From The Grave
+check Kill one who is reloading: Reload This
+check Kill while nearly dead: Close Call
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test needler
+title The needler
+check Needle a bot, no blow-up: no Supercombine
+check Enough needles to blow up and kill: Supercombine
+check Note a plain kill's medal, if any
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 9,3
+
+test plasma
+title Plasma grenades and weapons
+check Plasma grenade kill, not stuck: Plasma Kill
+check Plasma rifle or pistol kill: plain Kill, no Plasma Kill
+check Note a Headshot medal from a plasma rifle
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 8,7
+
+test sniper
+title The sniper rifle
+check Headshot: Sniper Kill and Headshot
+check Kill while not zoomed: Snapshot
+check Five sniper kills: Sniper Spree
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set debug.network_test_loadout 5,3
+
+test vehicles
+title Vehicle medals
+check Run a bot over: Splatter
+check Kill with a vehicle's gun: Vehicle Kill
+check Your bot gunner kills while you drive: Wheelman
+map bloodgulch
+gametype AE BTB SLY
+set bots.count 7
+set bots.skill easy
+
+test flag
+title Flag medals
+check Take the flag: Flag Taken; capture it: Flag Captured
+check Kill the carrier: Flag Carrier Kill, no plain Kill too
+check Return your flag: Flag Returned
+map testbox@ce
+gametype AE CTF
+set bots.count 7
+set bots.skill easy
+
+test king-ball
+title Hill medals
+check First on the hill: First Point
+check Stay on it till it moves: Hill Dominance
+map testbox@ce
+gametype AE KING
+set bots.count 7
+set bots.skill easy
+
+test ball
+title Ball medals
+check First Touch; kill the carrier: Ball Carrier Kill
+check Kill with it: Ball Kill
+map testbox@ce
+gametype AE FFA BALL
+set bots.count 7
+set bots.skill easy
+
+test game-end
+title Medals at the end of a game
+check Win a game: First Place or Perfection, at the score screen
+check Note if a medal hides behind the score screen
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 2
+set bots.skill easy
+
+test setting
+title The setting
+check Settings > HUD > MEDALS off: kills show no medal
+check MEDALS on again: they show
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test split-2
+title Split screen
+check A medal is a line in that player's messages, not a picture
+check It shows only in the view of who earned it
+map testbox@ce
+gametype AE TEAM SLY
+players 2
+set bots.count 8
+set bots.skill easy

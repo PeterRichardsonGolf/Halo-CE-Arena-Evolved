@@ -1,0 +1,71 @@
+# 0.9.2, on the release weapon cache (serial 4: the shipped weapons, the Protomag and the HEAVY REVOLVER; the other nine
+# are held). The start weapons list from the registry, REVERB LEVEL at 50 % by default, the revolver as a start weapon,
+# the side-by-side muzzle flash (two players: plug in a second pad), and a short bot game for the bots' performance
+# changes. Staged only.
+list next-092b
+revision 1
+title 0.9.2 ROUND B
+
+test start-list
+title START WEAPONS: every weapon the cache has
+check GAME OPTIONS, WEAPON PACKS ON: PRIMARY lists them all
+check HEAVY REVOLVER, PROTOMAG and AE NEEDLER are in the list
+check The nine held ones (PDW, HAMMER ...) are not in it
+menus
+
+test start-both-slots
+title START WEAPONS: the same weapon in both slots
+check PRIMARY and SECONDARY can both be HEAVY REVOLVER
+check PRIMARY DMR with SECONDARY EVO RIFLE stays as set
+check WEAPON PACKS OFF: only the game's own weapons are left
+menus
+
+test reverb-row
+title SETTINGS: REVERB LEVEL
+check AUDIO, ADVANCED: REVERB LEVEL under REVERB, at 50%
+check It offers XBOX, 75%, 50%, 35%, 25%
+check The help text fits; the row matches its neighbours
+menus
+
+test reverb-guns
+title REVERB LEVEL: gunfire indoors at 50%
+setup dummy 1 5
+check Fire: the ring after each shot is shorter than before
+check Pause, AUDIO: XBOX is the old ring, 25% nearly dry
+check Pick the level you want as the default; note it (F4)
+map chillout
+gametype AE BR TS
+set bots.count 0
+
+test revolver-start
+title HEAVY REVOLVER: the release cache's
+setup dummy 1 8
+setup ttk on
+check You start with the revolver; reticle and model right
+check 2 body slugs pop the shield; a head slug kills
+check HUD, RETICLE, WEAPONS has a HEAVY REVOLVER row
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 17
+
+test split-flash
+title SIDE BY SIDE: the muzzle flash at the barrel
+check Fire the battle rifle: the flash is at its barrel
+check Fire the assault rifle and pistol: the same
+check TOP AND BOTTOM (SETTINGS, SPLIT SCREEN): flash still right
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+
+test bots-elite
+title BOTS: an ELITE game on Temple
+check Bots walk the ramps and stairs; none stands stuck
+check A bot throws grenades in a fight; nothing odd
+check No bot drops into the pit or off a ledge to die
+map temple
+gametype AE BR TS
+set bots.count 7
+set bots.skill elite

@@ -1,0 +1,246 @@
+group	name	bloodgulch	a10	a30	a50	b30	c10	d20
+antr	weapons\assault rifle\fp\fp	1	1	1	1	1	1	1
+bitm	characters\cyborg\bitmaps\cubemap mirror surface	1	1	1	1	1	1	1
+bitm	characters\elite\bitmaps\cubemap dark gray	1	1	1	1	1	1	1
+bitm	characters\grunt\bitmaps\reflection grunt diffuse	1	1	1	1	1	1	1
+bitm	characters\jackal\bitmaps\shield noise	1	1	1	1	1	1	1
+bitm	effects\decals\bullet holes\bitmaps\plasma burn inner glow	1	1	1	1	1	1	1
+bitm	effects\decals\bullet holes\bitmaps\plasma burn outer glow	1	1	1	1	1	1	1
+bitm	effects\decals\bullet holes\bitmaps\plasma green inner glow	1	1	1	1	1	1	1
+bitm	effects\particles\energy\bitmaps\shield jackal bolt	1	1	1	1	1	1	1
+bitm	effects\particles\energy\bitmaps\shield jackal spark	1	1	1	1	1	1	1
+bitm	effects\particles\flash\bitmaps\fire cloud	1	1	1	1	1	1	1
+bitm	effects\particles\flash\bitmaps\flash h pistol detonate	1	1	1	1	1	1	1
+bitm	effects\particles\flash\bitmaps\sparks impact	1	1	1	1	1	1	1
+bitm	effects\particles\lens flare\bitmaps\flares weapon lens	1	1	1	1	1	1	1
+bitm	effects\particles\lens flare\bitmaps\flares_generic	1	1	1	1	1	1	1
+bitm	effects\particles\lens flare\bitmaps\flares_generic2	1	1	1	1	1	1	1
+bitm	effects\particles\solid\bitmaps\blood engineer	1	1	1	1	1	1	1
+bitm	effects\particles\solid\bitmaps\blood generic burst	1	1	1	1	1	1	1
+bitm	effects\particles\solid\bitmaps\casings h ar	1	1	1	1	1	1	1
+bitm	effects\particles\solid\bitmaps\glass breakable mask large	1	1	1	1	1	1	1
+bitm	effects\zmaps\zmap_noisy_large	1	1	1	1	1	1	1
+bitm	effects\zmaps\zmap_noisy_medium	1	1	1	1	1	1	1
+bitm	effects\zmaps\zmap_noisy_small	1	1	1	1	1	1	1
+bitm	levels\b30\bitmaps\cube map forerunner interiors	1	1	1	1	1	1	1
+bitm	levels\b30\bitmaps\detail metal sratches	1	1	1	1	1	1	1
+bitm	ui\hud\bitmaps\combined\hud_reticles	1	1	1	1	1	1	1
+bitm	ui\hud\bitmaps\sniper\hud_reticles_scope	1	1	1	1	1	1	1
+bitm	ui\hud\bitmaps\sniper\sniper_scope_crosshairs2	1	0	1	1	0	0	1
+bitm	ui\hud\bitmaps\sniper\sniper_scope_crosshairs_sm	1	0	1	1	0	0	1
+bitm	ui\hud\bitmaps\sniper\sniper_scope_mask2	1	0	1	1	0	0	1
+bitm	ui\hud\bitmaps\sniper\sniper_scope_mask_sm	1	0	1	1	0	0	1
+bitm	ui\shell\bitmaps\black	1	1	1	1	1	1	1
+bitm	vehicles\banshee\bitmaps\detail banshee	1	0	1	1	1	1	1
+bitm	vehicles\warthog\bitmaps\reflection diffuse metal	1	1	1	1	1	1	1
+bitm	weapons\assault rifle\bitmaps\bolt	1	1	1	1	1	1	1
+bitm	weapons\assault rifle\fp\bitmaps\diffuse gunmetal	1	1	1	1	1	1	1
+bitm	weapons\pistol\bitmaps\pistol cubemap	1	1	1	1	1	1	1
+bitm	weapons\plasma rifle\bitmaps\cubemap plasma rifle	1	1	1	1	1	1	1
+coll	weapons\assault rifle\assault rifle	1	1	1	1	1	1	1
+coll	weapons\needler\needler	1	0	1	1	1	1	1
+cont	weapons\assault rifle\bullet	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\dirt pistol	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\grenade char	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\impact ice	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\metal	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\snow	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\stone	1	1	1	1	1	1	1
+deca	effects\decals\bullet holes\unbreakable glass	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\empty	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\flashlight	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact armored skin	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact c shield	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact cyborg armor	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact cyborg shield	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact dirt	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact elite armored skin	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact engineer force field	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact engineer sack	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact floodcarrier	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact floodcombat elite	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact glass	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact grass	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact grunt	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact h skin	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact hunter skin	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact ice	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact jackal shield	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact metal hollow reflect	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact metal hunter	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact metal reflect	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact metal thick reflect	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact metal thin reflect	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact monitor	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact plastic	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact rubber pen	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact sand	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact sentinel	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact snow	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact stone	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact water pen	1	1	1	1	1	1	1
+effe	weapons\assault rifle\effects\impact wood	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\empty	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact armored skin	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact cyborg armor	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact cyborg shield	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact dirt	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact elite armored skin	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact engineer force field	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact engineer sack	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact floodcarrier	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact floodcombat elite	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact grunt	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact h skin	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact hunter shield	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact hunter skin	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact ice	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact jackal shield	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact metal hollow reflect	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact metal hunter	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact metal thick reflect	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact metal thin reflect	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact monitor	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact plastic	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact rubber pen	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact sentinel	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact snow	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact stone	1	1	1	1	1	1	1
+effe	weapons\pistol\effects\impact wood	1	1	1	1	1	1	1
+effe	weapons\shotgun\effects\impact armored skin	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact c shield	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact cyborg armor	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact cyborg shield	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact dirt	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact elite armored skin	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact engineer force field	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact engineer sack	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact floodcarrier	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact floodcombat elite	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact glass	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact grass	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact grunt	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact h skin	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact hunter shield	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact hunter skin	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact jackal shield	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact metal hollow reflect	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact metal hunter	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact metal thick reflect	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact metal thin reflect	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact monitor	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact plastic	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact rubber pen	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact sand	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact sentinel	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact snow	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact stone	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact water pen	1	0	0	0	0	1	1
+effe	weapons\shotgun\effects\impact wood	1	0	0	0	0	1	1
+effe	weapons\sniper rifle\effects\fire bullet	1	0	1	1	0	0	1
+eqip	powerups\assault rifle ammo\assault rifle ammo	1	1	1	1	1	1	1
+eqip	powerups\sniper rifle ammo\sniper rifle ammo	1	0	1	1	0	0	1
+foot	sound\sfx\impulse\material_effects\weapon	1	1	1	1	1	1	1
+foot	sound\sfx\impulse\shellcasings\ar_casings	1	1	1	1	1	1	1
+jpt!	weapons\assault rifle\melee	1	1	1	1	1	1	1
+jpt!	weapons\assault rifle\melee_response	1	1	1	1	1	1	1
+jpt!	weapons\pistol\melee	1	1	1	1	1	1	1
+jpt!	weapons\pistol\melee_response	1	1	1	1	1	1	1
+jpt!	weapons\rocket launcher\melee	1	0	0	0	1	1	1
+jpt!	weapons\rocket launcher\melee_response	1	0	0	0	1	1	1
+jpt!	weapons\shotgun\melee	1	0	0	0	0	1	1
+jpt!	weapons\shotgun\melee_response	1	0	0	0	0	1	1
+jpt!	weapons\sniper rifle\melee	1	0	1	1	0	0	1
+jpt!	weapons\sniper rifle\melee_response	1	0	1	1	0	0	1
+ligh	characters\marine_armored\flashlight_marine	1	1	1	1	1	1	1
+ligh	weapons\assault rifle\muzzle flash	1	1	1	1	1	1	1
+ligh	weapons\plasma grenade\explosion	1	1	1	1	1	1	1
+ligh	weapons\plasma rifle\muzzle flash	1	1	1	1	1	1	1
+mgs2	characters\marine_armored\flashlight_marine	1	1	1	1	1	1	1
+part	effects\particles\air\bubbles	1	1	1	1	1	1	1
+part	effects\particles\air\smoke h fp	1	1	1	1	1	1	1
+part	effects\particles\air\smoke rifle water	1	1	1	1	1	1	1
+part	effects\particles\energy\flash c generic	1	1	1	1	1	1	1
+part	effects\particles\energy\flash c generic med	1	1	1	1	1	1	1
+part	effects\particles\energy\plasma overheat	1	1	1	1	1	1	1
+part	effects\particles\energy\sparks energy trail	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h ar	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h ar center	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h generic	1	1	1	0	1	1	1
+part	effects\particles\flash\flash h generic med	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h pistol	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h pistol center	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h pistol muzzle	1	1	1	1	1	1	1
+part	effects\particles\flash\flash h pistol side	1	1	1	1	1	1	1
+part	effects\particles\flash\sparks impact	1	1	1	1	1	1	1
+part	effects\particles\flash\sparks trail	1	1	1	1	1	1	1
+part	effects\particles\solid\blood engineer trails	1	1	1	1	1	1	1
+part	effects\particles\solid\casing h ar bullet	1	1	1	1	1	1	1
+part	effects\particles\solid\casing h pistol	1	1	1	1	1	1	1
+part	effects\particles\solid\casing h shotgun	1	0	0	0	0	1	1
+part	effects\particles\solid\grass impact	1	1	1	1	1	1	1
+part	effects\particles\solid\gravel small	1	1	1	1	1	1	1
+part	effects\particles\solid\ice	1	1	1	1	1	1	1
+part	effects\particles\solid\metal chips	1	1	1	1	1	1	1
+part	effects\particles\solid\rubber impact	1	1	1	1	1	1	1
+part	effects\particles\solid\wood impact	1	1	1	1	1	1	1
+pphy	effects\point physics\cold smoke cloud	1	1	1	1	1	1	1
+pphy	effects\point physics\cold smoke puff	1	1	1	1	1	1	1
+pphy	effects\point physics\fire	1	0	0	0	1	1	1
+pphy	effects\point physics\glass	1	1	1	1	1	1	1
+pphy	effects\point physics\hot smoke cloud	1	1	1	1	1	1	1
+pphy	effects\point physics\hot smoke puff	1	1	1	1	1	1	1
+pphy	effects\point physics\stone bunch	1	1	1	1	1	1	1
+pphy	effects\point physics\stones	1	1	1	1	1	1	1
+pphy	effects\point physics\vacuum particle	1	1	1	1	1	1	1
+pphy	effects\point physics\warm smoke cloud	1	1	1	1	1	1	1
+pphy	weapons\frag grenade\effects\fire explosion	1	1	1	1	1	1	1
+proj	weapons\assault rifle\bullet	1	1	1	1	1	1	1
+proj	weapons\sniper rifle\sniper bullet	1	0	1	1	0	0	1
+schi	weapons\assault rifle\fp\shaders\ar data	1	1	1	1	1	1	1
+schi	weapons\assault rifle\fp\shaders\compass	1	1	1	1	1	1	1
+schi	weapons\assault rifle\fp\shaders\icons	1	1	1	1	1	1	1
+schi	weapons\assault rifle\fp\shaders\numbers	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\glass\glass_large	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\ar_water	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\bullets_projectile	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\fleshhit	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\glass_hits	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\granhit	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\ice_hits	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\med_dirthits	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\metal_chips	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\metalhit	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\needle_ricc	1	0	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\needler_projectile	1	0	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\needler_super_expl	1	0	1	1	1	1	1
+snd!	sound\sfx\impulse\impacts\woodhit	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\melee\pistol_impact	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\weapon_drops\assault_impact	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\weapon_drops\pistol_impact	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\weapon_drops\plasma_impact	1	1	1	1	1	1	1
+snd!	sound\sfx\impulse\weapon_drops\rlauncher_impact	1	0	0	0	1	1	1
+snd!	sound\sfx\impulse\weapon_drops\shotgun_impact	1	0	1	1	0	1	1
+snd!	sound\sfx\weapons\assault rifle\dryfire	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\needler\dryfire	1	0	1	1	1	1	1
+snd!	sound\sfx\weapons\needler\expl	1	0	1	1	1	1	1
+snd!	sound\sfx\weapons\needler\fire	1	0	1	1	1	1	1
+snd!	sound\sfx\weapons\pistol\eject	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\shield fx\hits	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\sniper rifle\sniper_10x_zoom	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\sniper rifle\sniper_2x_zoom	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_anims\needle_ready	1	0	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_anims\sniper_melee	1	0	1	1	0	0	1
+snd!	sound\sfx\weapons\weapon_anims\sniper_ready	1	0	1	1	0	0	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\ar_ammo	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\grenade_ammo	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\needle_ammo	1	0	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\pistol_ammo	1	1	1	1	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\rocket_ammo	1	0	0	0	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\shotgun_ammo	1	0	0	0	1	1	1
+snd!	sound\sfx\weapons\weapon_pickup_ammo\sniper_ammo	1	0	1	1	0	0	1
+soso	weapons\assault rifle\fp\shaders\display	1	1	1	1	1	1	1
+soso	weapons\assault rifle\fp\shaders\grip	1	1	1	1	1	1	1
+soso	weapons\assault rifle\fp\shaders\gun	1	1	1	1	1	1	1
+wphi	ui\hud\master plasma	1	1	1	1	1	1	1
+wphi	ui\hud\master rounds	1	1	1	1	1	1	1

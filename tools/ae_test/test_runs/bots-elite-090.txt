@@ -1,0 +1,113 @@
+# Bot level ELITE (0.9.0): HEROIC, ELITE and LEGENDARY side by side, the same map and the same two bots against you, one level a
+# test. Play each test the same way (about a minute: fight the two bots, hold your own spot, do not hunt them) and compare how
+# each level feels: how soon it turns and shoots when it sees you, how long it takes to hit you, how it moves, how it throws.
+# Every test sets itself up (bots.count, level and sides by the bots dev command; the bot event stream is on for the logs).
+# Arena maps only. Headless: run_list.py with --after 60.
+list bots-elite-090
+revision 2
+title BOTS: ELITE BETWEEN HEROIC AND LEGENDARY
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 2
+set bots.teams against
+set bots.skill heroic
+set debug.bot_events true
+
+test temple-heroic
+title TEMPLE: two HEROIC bots against you
+setup bots 2 against heroic
+setup goto start 0
+check The bots are HEROIC: reaction and aim
+expect 1 log skill=heroic
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like HEROIC
+
+test temple-elite
+title TEMPLE: two ELITE bots against you
+setup bots 2 against elite
+setup goto start 0
+check The bots are ELITE: reaction and aim
+expect 1 log skill=elite
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like ELITE
+
+test temple-legendary
+title TEMPLE: two LEGENDARY bots against you
+setup bots 2 against legendary
+setup goto start 0
+check The bots are LEGENDARY: reaction and aim
+expect 1 log skill=legendary
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like LEGENDARY
+
+group sali
+map h2d_salicreek
+gametype AE TEAM SLY
+set bots.count 2
+set bots.teams against
+set bots.skill heroic
+set debug.bot_events true
+
+test sali-heroic
+title SALI CREEK: two HEROIC bots against you
+setup bots 2 against heroic
+setup goto start 0
+check The bots are HEROIC: reaction and aim
+expect 1 log skill=heroic
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like HEROIC
+
+test sali-elite
+title SALI CREEK: two ELITE bots against you
+setup bots 2 against elite
+setup goto start 0
+check The bots are ELITE: reaction and aim
+expect 1 log skill=elite
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like ELITE
+
+test sali-legendary
+title SALI CREEK: two LEGENDARY bots against you
+setup bots 2 against legendary
+setup goto start 0
+check The bots are LEGENDARY: reaction and aim
+expect 1 log skill=legendary
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like LEGENDARY
+
+group octagon
+map octagon_b
+gametype AE TEAM SLY
+set bots.count 2
+set bots.teams against
+set bots.skill heroic
+set debug.bot_events true
+
+test octagon-heroic
+title OCTAGON: two HEROIC bots against you
+setup bots 2 against heroic
+setup goto start 0
+check The bots are HEROIC: reaction and aim
+expect 1 log skill=heroic
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like HEROIC
+
+test octagon-elite
+title OCTAGON: two ELITE bots against you
+setup bots 2 against elite
+setup goto start 0
+check The bots are ELITE: reaction and aim
+expect 1 log skill=elite
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like ELITE
+
+test octagon-legendary
+title OCTAGON: two LEGENDARY bots against you
+setup bots 2 against legendary
+setup goto start 0
+check The bots are LEGENDARY: reaction and aim
+expect 1 log skill=legendary
+check How long until the first shot that hits you
+check Strafe, crouch, grenade: does it feel like LEGENDARY

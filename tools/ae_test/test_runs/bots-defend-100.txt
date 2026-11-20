@@ -1,0 +1,49 @@
+# BOTS HOLD DEFEND, staged: a fireteam told DEFENDING HERE (the wheel's call; DEV `fireteam defend` gives the same order)
+# takes spaced cover places round the point, each watching a way in. In a fight a defender peeks: it steps out along its
+# cover's open side to shoot and back in, crouched; it never chases. A squad that loses too many under pressure falls back
+# together, regroups and comes back. A squad a player leads is let go when the player dies in a small game, so the fall
+# back shows on a bot squad holding its base in Big Team Battle. Logs: "ae defend: places fireteam", "ae defend: place bot",
+# "ae defend: peek bot" (one line a place), "ae defend: fall back", "ae defend: return". HALO_BOTS_DEFEND_HOLD=0 turns all
+# of it off.
+list bots-defend-100
+revision 1
+title BOTS HOLD DEFEND: COVER AND PEEK
+
+group hang
+map hangemhigh
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill normal
+set debug.bot_events true
+
+test cover
+title Your squad holds the spot in cover
+setup fireteam defend
+check Your bots spread to cover round you, not a clump
+check Each faces a different way in
+check None runs off after a kill
+expect 1 log ae defend: places fireteam
+expect 2 log ae defend: place bot
+
+test peek
+title A defender peeks from its cover
+setup fireteam defend
+check Let the enemy come to your held spot
+check A defender steps out, shoots, steps back in
+check It stays crouched behind its cover between shots
+expect 2 log ae defend: peek bot
+
+group btb
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 18
+set bots.skill normal
+set debug.bot_events true
+
+test fallback
+title A bot squad that breaks falls back and returns
+check Attack the enemy base, down two or three of its guard
+check The rest pull back together and regroup
+check Then they come back to their spot together
+expect 2 log ae defend: fall back
+expect 3 log ae defend: return

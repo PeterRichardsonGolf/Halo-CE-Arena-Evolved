@@ -1,0 +1,31 @@
+# SPLIT SCREEN JOIN CARD: the card a pad with no player gets from its START shows the seat's tile in the seat's colour with the seat
+# number, PLAYER n and the player's name, PRESS A TO JOIN and the A and B prompts. When the game would not take the player the card
+# says CANNOT JOIN and why, with the same tile. Each test opens on its scene from its setup lines.
+list split-join-11x
+revision 1
+title SPLIT SCREEN: THE JOIN CARD
+
+group casual
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 3
+
+test card-shown
+title A pad's START opens the join card
+setup split card 2
+check The seat 2 tile in blue, PLAYER 2, GUEST 2
+check PRESS A TO JOIN, then the A and B prompts
+check The card is upper middle and covers no HUD
+
+group comp
+map beavercreek
+gametype AE COMP TS
+set bots.count 3
+
+test card-refused
+title The host keeps joining off: the card says so
+setup split card 3
+check The seat 3 tile in green, CANNOT JOIN
+check THE HOST HAS TURNED OFF JOINING IN PROGRESS
+expect 1 cmd split card 3 ok
+expect 1 log split join: controller 3 card open: THE HOST HAS TURNED OFF
