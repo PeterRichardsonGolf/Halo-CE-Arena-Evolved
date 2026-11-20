@@ -1,0 +1,153 @@
+nav 1 bloodgulch
+made 66c36ec5
+
+# keepouts: rocks, trees and steep ledges beside the lanes and stuck spots
+keepout 43.9 -69.1 0.6 radius 1.2
+keepout 85.2 -158.8 0.3 radius 1.2
+keepout 97.3 -139.5 0.4 radius 1.2
+keepout 85.8 -150.1 0.1 radius 0.9
+keepout 105.0 -163.1 0.2 radius 0.9
+keepout 70.0 -126.7 1.4 radius 0.9
+keepout 39.1 -96.0 1.5 radius 2.5
+keepout 80.7 -149.5 1.3 radius 1.8
+keepout 94.2 -168.5 0.3 radius 0.9
+keepout 84.9 -126.9 0.1 radius 2.0
+keepout 27.0 -111.5 5.2 radius 6.0
+keepout 21.5 -106.0 5.1 radius 9.7
+keepout 33.7 -120.2 4.9 radius 7.0
+keepout 65.0 -118.5 0.2 radius 3.0
+keepout 69.5 -122.0 0.2 radius 3.0
+keepout 52.1 -122.5 0.2 radius 1.0
+keepout 69.0 -91.5 4.8 radius 6.0
+keepout 95.5 -97.0 3.9 radius 6.0
+
+# west lane: blue west spawn, along the west valley floor, to red west spawn
+route west_lane warthog,ghost
+point 28.9 -90.8 0.30
+point 34.9 -97.8 0.79
+point 37.9 -100.8 0.10
+point 45.0 -111.0 1.08
+point 54.0 -133.0 1.08 speed 0.78 turn 7.0
+point 62.0 -140.0 2.03
+point 79.0 -153.0 0.06 speed 0.69 turn 8.8
+point 80.0 -153.0 0.01
+end
+
+# west lane scorpion line: same lane, ends south of red west spawn (the spawn pocket is too tight for a scorpion)
+route west_lane_sc scorpion
+point 28.9 -90.8 0.30
+point 31.9 -95.8 0.79
+point 34.9 -98.8 1.05
+point 38.9 -102.8 0.27 speed 0.62 turn 11.9
+point 42.9 -102.8 0.42 speed 0.37 turn 17.0
+point 45.0 -111.0 1.08
+point 49.0 -132.0 1.01 speed 0.53 turn 13.8
+point 68.0 -140.0 1.44 speed 0.70 turn 10.4
+point 80.0 -160.0 0.04
+end
+
+# east lane: blue east spawn over the low east ridge and down the east side to red north spawn
+route east_lane warthog,ghost
+point 52.0 -88.0 0.09
+point 60.0 -98.0 1.22 speed 0.68 turn 9.0
+point 60.0 -99.0 1.22 speed 0.62 turn 10.1
+point 61.0 -100.0 1.17
+point 69.0 -110.0 2.58
+point 80.0 -127.0 0.30
+point 86.0 -136.0 0.66 speed 0.75 turn 7.6
+point 90.0 -138.0 1.36 speed 0.85 turn 5.7
+point 100.0 -148.0 0.11
+end
+
+# mid crossing: joins west and east lanes mid valley, south of the centre rocks
+route mid_cross warthog,ghost
+point 54.0 -133.0 1.08
+point 64.0 -129.0 1.10 speed 0.82 turn 6.2
+point 78.0 -129.0 0.11 speed 0.62 turn 10.1
+point 80.0 -127.0 0.30
+end
+
+# blue base north vehicle spawn out around the base wall to the east lane start
+route blue_n_exit warthog,ghost
+point 40.0 -66.0 0.66
+point 41.0 -67.0 0.66 speed 0.62 turn 10.1
+point 41.0 -70.0 0.36 speed 0.62 turn 10.1
+point 52.0 -81.0 0.13 speed 0.62 turn 10.1
+point 52.0 -88.0 0.09
+end
+
+# red base south vehicle spawn out west to the west lane end
+route red_s_exit warthog,ghost
+point 95.0 -172.0 0.31
+point 86.0 -171.0 0.14 speed 0.47 turn 13.1
+point 80.0 -155.0 -0.04 speed 0.83 turn 6.0
+point 80.0 -153.0 0.01
+end
+
+# red south exit, scorpion line
+route red_s_exit_sc scorpion
+point 95.0 -172.0 0.31
+point 91.0 -172.0 0.19 speed 0.60 turn 12.3
+point 80.0 -160.0 0.04
+end
+
+# red base east vehicle spawn around to the east lane end
+route red_e_exit warthog,ghost
+point 107.0 -168.0 0.07
+point 112.0 -155.0 0.15 speed 0.35 turn 16.1
+point 100.0 -148.0 0.11
+end
+
+# blue link: east lane start to west lane, so drivers near the blue base can pick either lane
+route blue_link warthog,ghost
+point 52.0 -88.0 0.09
+point 50.0 -100.0 0.31
+point 45.0 -111.0 1.08
+end
+
+# red link: east lane end to west lane end near the red base
+route red_link warthog,ghost
+point 100.0 -148.0 0.11
+point 92.0 -153.0 0.08 speed 0.73 turn 7.9
+point 80.0 -153.0 0.01
+end
+
+# mid crossing scorpion line over the low bump
+route mid_cross_sc scorpion
+point 49.0 -132.0 1.01
+point 60.0 -131.0 1.11 speed 0.86 turn 7.2
+point 65.0 -132.0 1.85
+point 70.0 -132.0 0.56
+point 76.0 -133.0 -0.07 speed 0.49 turn 14.5
+point 80.0 -128.0 0.26
+end
+
+# blue link, scorpion line
+route blue_link_sc scorpion
+point 52.0 -88.0 0.09
+point 55.0 -96.0 -0.05 speed 0.52 turn 14.0
+point 52.0 -100.0 -0.05
+point 45.0 -111.0 1.08
+end
+
+# east lane scorpion line: starts flatter at the ridge
+route east_lane_sc scorpion
+point 52.0 -88.0 0.09
+point 55.0 -96.0 -0.05 speed 0.86 turn 7.1
+point 58.0 -100.0 0.38
+point 69.0 -111.0 2.55
+point 80.0 -128.0 0.26
+point 86.0 -136.0 0.66 speed 0.78 turn 8.8
+point 90.0 -138.0 1.36 speed 0.85 turn 7.5
+point 100.0 -148.0 0.11
+end
+
+# blue north exit, scorpion line
+route blue_n_exit_sc scorpion
+point 40.0 -66.0 0.66
+point 47.0 -64.0 1.27 speed 0.49 turn 14.6
+point 55.0 -72.0 0.42 speed 0.62 turn 11.9
+point 55.0 -80.0 0.18 speed 0.83 turn 7.8
+point 52.0 -88.0 0.09
+end
+

@@ -1,0 +1,199 @@
+# MAPS & MODS: the main menu's MAPS & MODS screen under a tab strip of five pages (LB / RB, Q / E, a click): INSTALLED, REQUIRED
+# FILES, BROWSE CE MAPS, WORKSHOP and MODS. Every test opens on its page in the state its setup line asks for, from made-up
+# data: DEV MODE's `menu maps <page> <state>` reads no map folder, changes no file and asks the network for nothing. The
+# tests cover each page's list, card, footer and states (loading, empty, in use, the options, the folder picker, the delete
+# confirm, the first-use consent, a download, the offline and disk-full errors, a signed-out Workshop, moving a mod, the
+# modded disc's restart) at the window's shape; run the list at 16:9 and again at 4:3.
+list maps-hub-10x
+revision 2
+title MAPS & MODS: THE PAGES
+
+test installed-list
+title INSTALLED: the list and the card
+menus
+card bottom
+setup menu maps installed list
+check SEARCH, SHOW, SORT, the count line, the list and a card
+check Down the list: the card follows the focused map
+check LB and RB move between the five pages
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-options
+title INSTALLED: A opens a map's options
+menus
+card bottom
+setup menu maps installed options
+check CREATE A GAME ON IT, MOVE, OPEN ITS FOLDER, DELETE (red)
+check Up and down move the focus; B closes the list
+check A on DELETE asks first, it never deletes at once
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-folder
+title INSTALLED: move a map to a folder
+menus
+card bottom
+setup menu maps installed folder
+check MAPS FOLDER, the folders with counts, NEW FOLDER...
+check The current folder says HERE NOW and is muted
+check A on another folder moves the map; B closes
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-delete
+title INSTALLED: the delete confirm
+menus
+card bottom
+setup menu maps installed delete
+check Delete Coldwater? with the file and its size
+check CANCEL has the focus first
+check A on DELETE removes the map and says so
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-in-use
+title INSTALLED: a map a lobby has
+menus
+card bottom
+setup menu maps installed in-use
+check The row says IN USE
+check The card ends in a blue line saying why
+check A: MOVE and DELETE are muted with IN USE
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-loading
+title INSTALLED: reading the map folders
+menus
+card bottom
+setup menu maps installed loading
+check The count line says READING THE MAP FOLDERS...
+check The footer offers Search and Back only
+check The help line says what is read
+expect 1 log ae maps hub: staged: INSTALLED
+
+test installed-empty
+title INSTALLED: a source with no maps
+menus
+card bottom
+setup menu maps installed empty
+check SHOW is WORKSHOP and the count is 0 MAPS
+check A sentence says where Workshop maps come from
+check A on GET WORKSHOP MAPS opens the WORKSHOP page
+expect 1 log ae maps hub: staged: INSTALLED
+
+test required-missing
+title REQUIRED FILES: a file is missing
+menus
+card bottom
+setup menu maps required missing
+check SOUNDS.MAP says MISSING in blue; the card says why
+check The card's two doors: STEAM ACCOUNT, OPEN THE MAPS FOLDER
+check The tab has the change dot
+expect 1 log ae maps hub: staged: REQUIRED FILES
+
+test required-found
+title REQUIRED FILES: everything is there
+menus
+card bottom
+setup menu maps required found
+check Every row says FOUND; the card says where from
+check The card says every file is on this PC
+check MODDED DISCS says how many were found
+expect 1 log ae maps hub: staged: REQUIRED FILES
+
+test browse-consent
+title BROWSE CE MAPS: the first-use card
+menus
+card bottom
+setup menu maps browse consent
+check The card names what it contacts; NOT NOW has the focus
+check The right card: off until you say yes, where to change it
+check A on TURN ON BROWSING shows the list; B leaves
+expect 1 log ae maps hub: staged: BROWSE CE MAPS
+
+test browse-results
+title BROWSE CE MAPS: the map list
+menus
+card bottom
+setup menu maps browse results
+check SEARCH, SHOW, SORT and PAGE 1 OF 286
+check INSTALLED and UPDATE in the rows; the card has size, state
+check LT and RT turn the page
+expect 1 log ae maps hub: staged: BROWSE CE MAPS
+
+test browse-download
+title BROWSE CE MAPS: a map installing
+menus
+card bottom
+setup menu maps browse download
+check The row shows its percent; the card an INSTALLING bar
+check A on that row cancels it and says nothing was kept
+check The tab has the change dot
+expect 1 log ae maps hub: staged: BROWSE CE MAPS
+
+test browse-offline
+title BROWSE CE MAPS: no answer from the archive
+menus
+card bottom
+setup menu maps browse offline
+check The card says it can't reach the archive and names it
+check The list says no map list yet; A asks again
+check The help line is blue
+expect 1 log ae maps hub: staged: BROWSE CE MAPS
+
+test browse-disk-full
+title BROWSE CE MAPS: not enough room
+menus
+card bottom
+setup menu maps browse disk-full
+check The row says NO ROOM
+check The card says what it needs and what is free
+check The footer says A Try again
+expect 1 log ae maps hub: staged: BROWSE CE MAPS
+
+test workshop-list
+title WORKSHOP: the Workshop list under the tab strip
+menus
+card bottom
+setup menu maps workshop list
+check SEARCH, SHOW (ALL), SORT, PAGE n OF n and the items
+check The card: picture, name, STATE, SIZE, SUBSCRIBERS lines
+check LB and RB go to the other pages; B leaves
+expect 1 log ae maps hub: staged: WORKSHOP
+
+test workshop-signed-out
+title WORKSHOP: signed out
+menus
+card bottom
+setup menu maps workshop signed-out
+check The card says to sign in and why
+check STEAM ACCOUNT SIGN IN opens it; B comes back here
+check WORKSHOP MAPS ON INSTALLED opens that list
+expect 1 log ae maps hub: staged: WORKSHOP
+
+test mods-list
+title MODS: the list
+menus
+card bottom
+setup menu maps mods list
+check MODDED DISC, the count line, mods with check boxes
+check A turns a mod on or off; the card follows the focus
+check A mod that loads in the wrong order says ORDER (blue)
+expect 1 log ae maps hub: staged: MODS
+
+test mods-moving
+title MODS: moving a mod
+menus
+card bottom
+setup menu maps mods moving
+check The moving mod's value is the moving mark
+check Up and down move it; A puts it down; B puts it back
+check The footer says Put down, Put it back
+expect 1 log ae maps hub: staged: MODS
+
+test mods-restart
+title MODS: the modded disc needs a restart
+menus
+card bottom
+setup menu maps mods restart
+check The card says AFTER A RESTART with two doors
+check The help line is blue and names the MENU button
+check B keeps the change for the next start
+expect 1 log ae maps hub: staged: MODS

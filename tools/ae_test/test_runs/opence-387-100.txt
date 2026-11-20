@@ -1,0 +1,49 @@
+# 1.0.0-rc1: OpenCE build-387's shield look. ARM SHIELDS (display.viewmodel_shield, off by default) draws the shield's
+# flare on your first-person arms, now held close to the hands at any field of view; the overshield comes up the arms as
+# it rises, green above double shields and reddish-pink below. AE's HIT FEEDBACK keeps its effects on the arms. Hurt
+# yourself with a grenade at your feet. Staged only: nothing here waits for something to happen.
+list opence-387-100
+revision 2
+title OPENCE 387: SHIELD LOOK
+
+test arms-default
+title ARM SHIELDS off (the default)
+setup goto start 0
+setup config display.viewmodel_shield false
+check Throw a grenade at your feet: no flare on your arms
+check The flare shows on your body as before (look down)
+map damnation
+gametype slayer
+set bots.count 0
+
+test arms-on
+title ARM SHIELDS on
+setup goto start 0
+setup config display.viewmodel_shield true
+check A grenade at your feet: flare on your arms, near the hands
+check It never fills the view (zoom in and out, then again)
+map damnation
+gametype slayer
+set bots.count 0
+
+test overshield-arms
+title Overshield on the arms
+setup goto start 0
+setup config display.viewmodel_shield true
+setup config display.overshield_effect true
+setup powerup over_shield now
+check The overshield rises up your body and onto your arms
+check Green while above double shields, reddish-pink as it drains
+map damnation
+gametype slayer
+set bots.count 0
+
+test hit-feedback-arms
+title AE HIT FEEDBACK on the arms
+setup goto start 0
+setup config display.viewmodel_shield true
+check A grenade at your feet: the shield's pop shows on your arms
+check Nothing on the arms fills the view or stays lit afterwards
+map damnation
+gametype AE TEAM SLY
+set bots.count 0

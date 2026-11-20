@@ -1,0 +1,1606 @@
+/*
+CUSTOM_EDITION_GEOMETRY.C
+
+The model and structure BSP geometry of Halo Custom Edition maps, made into
+the geometry this build draws (custom_edition_cache.h).
+
+Custom Edition keeps geometry as Halo PC draws it. A model's parts hold no
+vertices: their strips and uncompressed vertices lie in the map's model data,
+which no tag holds, and when a model's parts have local nodes, each vertex
+names its nodes through a table of its part's. A structure BSP's materials
+hold uncompressed environment and lightmap vertices. This build draws
+compressed vertices only, from Direct3D buffers that Xbox caches carry ready
+made, so every part and material has its vertices compressed by the game's
+own rasterizer_geometry_compress_vertices and its buffers made by the game's
+own rasterizer_vertex_buffer_new and rasterizer_triangle_buffer_new. The
+strips need no change. Against the Xbox maps of build 2276, whose models have
+this build's layout, the models the two versions of Blood Gulch share have
+the same strips and positions, and their compressed texture coordinates,
+node indices and node weights are what the compressor makes of the Custom
+Edition vertices (docs/custom_edition_caches.md).
+*/
+
+/* ---------- headers */
+
+#include "cseries.h"
+#include "cseries/cseries_windows.h"
+#include "errors.h"
+#include "tag_files/tag_groups.h"
+#include "models/model_definitions.h"
+#include "rasterizer/rasterizer.h"
+#include "rasterizer/rasterizer_geometry.h"
+#include "rasterizer/rasterizer_model_types.h"
+#include "structures/structure_bsp_definitions.h"
+#include "cache_file_formats.h"
+#include "custom_edition_cache.h"
+#include "mods.h"
+
+#include <math.h>
+#include <stdlib.h>
+#include <xtl.h>
+
+/* (rasterizer_xbox_hardware_geometry.c) */
+boolean rasterizer_vertex_buffer_new(struct vertex_buffer *vertex_buffer, long vertex_type, long count,
+	void const *vertices, long buffer_size);
+void rasterizer_vertex_buffer_delete(struct vertex_buffer *vertex_buffer);
+boolean rasterizer_triangle_buffer_new(struct triangle_buffer *triangle_buffer, short triangle_type, long count,
+	void const *triangles);
+void rasterizer_triangle_buffer_delete(struct triangle_buffer *triangle_buffer);
+
+/* ---------- constants */
+
+enum
+{
+	GBXMODEL_GROUP_TAG = 'mod2',
+};
+
+enum
+{
+	/* a gbxmodel's parts have node tables of their own (OpenSauce
+	model_definitions.hpp, gbxmodel_definition::parts_have_local_nodes) */
+	_gbxmodel_parts_have_local_nodes_bit = 1,
+};
+
+enum
+{
+	/* the part's vertices name nodes through its node table: set on exactly
+	the parts that have one in every map examined (models.c) */
+	_model_geometry_part_local_nodes_bit = 1,
+};
+
+/* rasterizer_geometry_compress_vertices clamps normals and the like to
+[-1, 1] and asserts the packed vector is within 0.01 of the original: a
+component this far past 1 stays within that after the packing's rounding
+(every vector of the maps examined is within 1.0001) */
+#define MAXIMUM_COMPRESSIBLE_COMPONENT 1.005f
+
+/* the most room a map's models, or a structure BSP, are given for their
+compressed vertices and strip indices: several times what the largest maps
+take (some 470000 model vertices, 15 MB), and far less than the 4 GB past
+which the sizes would wrap. Parts and materials may name the same vertices,
+each checked alone (cache_file_formats.c), so the file's size does not bound
+what they add up to */
+#define MAXIMUM_GEOMETRY_BYTES 0x8000000
+
+/* ---------- structures */
+
+/* this build's model geometry and part, as models.c and rasterizer.c each
+define them for themselves (no header declares them) */
+struct model_geometry
+{
+	byte reserved[0x24];
+	struct tag_block parts;
+};
+
+struct model_geometry_part
+{
+	unsigned long flags;
+	short shader_index;
+	char previous_part_index;
+	char next_part_index;
+	short centroid_primary_node_index;
+	short centroid_secondary_node_index;
+	real centroid_primary_node_weight;
+	real centroid_secondary_node_weight;
+	real_point3d centroid;
+	struct tag_block uncompressed_vertices;
+	struct tag_block compressed_vertices;
+	struct tag_block triangles;
+	struct triangle_buffer triangle_buffer;
+	struct vertex_buffer vertex_buffer;
+};
+
+/* A model part as Custom Edition caches hold it (OpenSauce
+model_definitions.hpp, gbxmodel_geometry_part). Where this build keeps its
+buffers it keeps the kind, length and place of its strip and vertices in the
+model data (cache_file_formats.c checked they lie within it), and after them
+the table its vertices' node indices go through when the model's parts have
+local nodes. */
+struct custom_edition_model_part
+{
+	unsigned long flags;
+	short shader_index;
+	char previous_part_index;
+	char next_part_index;
+	short centroid_primary_node_index;
+	short centroid_secondary_node_index;
+	real centroid_primary_node_weight;
+	real centroid_secondary_node_weight;
+	real_point3d centroid;
+	struct tag_block uncompressed_vertices;
+	struct tag_block compressed_vertices;
+	struct tag_block triangles;
+	short strip_type;
+	word pad1;
+	long strip_triangle_count;
+	unsigned long strip_offset;
+	unsigned long unused1;
+	short vertex_type;
+	word pad2;
+	long vertex_count;
+	unsigned long unused2[2];
+	unsigned long vertex_offset;
+	byte pad3[3];
+	byte local_node_count;
+	byte local_node_indices[MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART];
+	word pad4;
+};
+
+typedef char verify_model_geometry_size[
+	sizeof(struct model_geometry) == 0x30 ? 1 : -1];
+typedef char verify_model_geometry_part_size[
+	sizeof(struct model_geometry_part) == 0x68 ? 1 : -1];
+typedef char verify_custom_edition_model_part_size[
+	sizeof(struct custom_edition_model_part) == 0x84 ? 1 : -1];
+typedef char verify_custom_edition_model_part_vertex_offset[
+	offsetof(struct custom_edition_model_part, vertex_offset) == 0x64 ? 1 : -1];
+typedef char verify_structure_material_size[
+	sizeof(struct structure_material) == 0x100 ? 1 : -1];
+
+/* A part of a model with more nodes than the renderer skins at once
+(RASTERIZER_MAXIMUM_NODES_PER_MODEL - 1): its vertices name the part's own
+nodes, and before it is drawn the renderer is given those nodes' matrices
+alone (rasterizer_model_part_skinning, by its vertex buffer). Custom Edition
+models of so many nodes have local nodes, at most
+MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART to a part. */
+struct part_palette
+{
+	struct vertex_buffer const *vertex_buffer;
+	byte node_count;
+	byte nodes[MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART];
+};
+
+/* what the models of a map need, counted before any is converted */
+struct model_geometry_totals
+{
+	long part_count;
+	long vertex_count;
+	long strip_index_count;
+	long largest_part_vertex_count;
+	/* the parts of models of more nodes than the renderer skins at once */
+	long many_node_part_count;
+	/* the room the parts' compressed vertices and strips take */
+	unsigned long geometry_bytes;
+};
+
+/* the model parts given buffers, and the parts of models of many nodes, in
+the order they were converted */
+struct converted_models
+{
+	struct model_geometry_part **parts;
+	long part_count;
+	struct part_palette *palettes;
+	long palette_count;
+};
+
+/* the compressed vertices and strips of a tag bundle's model */
+struct injected_geometry
+{
+	byte *geometry;
+	boolean contiguous;
+};
+
+struct custom_edition_geometry_globals
+{
+	/* the map's models: their parts that have buffers, and the compressed
+	vertices and strips their buffers were made from */
+	struct converted_models models;
+	byte *model_geometry;
+	boolean model_geometry_contiguous;
+
+	/* the models of tag bundles added to a map (tag_injector.c), each
+	converted alone: their parts (as many as there is room for), and each
+	one's geometry */
+	struct converted_models injected;
+	long injected_part_capacity;
+	long injected_palette_capacity;
+	struct injected_geometry *injected_geometries;
+	long injected_geometry_count;
+	long injected_geometry_capacity;
+
+	/* the structure BSP whose materials have buffers, and the compressed
+	vertices those were made from */
+	struct structure_bsp *structure_bsp;
+	byte *structure_bsp_vertices;
+	boolean structure_bsp_vertices_contiguous;
+};
+
+/* ---------- globals */
+
+static struct custom_edition_geometry_globals custom_edition_geometry_globals;
+
+/* ---------- private code */
+
+static boolean vector_compressible(
+	real_vector3d const *vector)
+{
+	/* a NaN fails every comparison */
+	return fabs(vector->i) <= MAXIMUM_COMPRESSIBLE_COMPONENT &&
+		fabs(vector->j) <= MAXIMUM_COMPRESSIBLE_COMPONENT &&
+		fabs(vector->k) <= MAXIMUM_COMPRESSIBLE_COMPONENT;
+}
+
+/* Whether this build can draw the part `part` of `model` (`part_count`
+parts in its geometry) from `vertices` and `strip`: every index its fields,
+strip and vertices hold names what exists, and every vector compresses.
+Node indices are checked as the model data holds them, local to the part
+when the model's parts have local nodes. */
+static boolean custom_edition_model_part_verify(
+	struct model const *model,
+	struct custom_edition_model_part const *part,
+	long part_count,
+	struct model_vertex_uncompressed const *vertices,
+	word const *strip)
+{
+	boolean local_nodes = TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit);
+	long node_limit = local_nodes ? part->local_node_count : model->nodes.count;
+	long strip_index;
+	long vertex_index;
+	long node_index;
+
+	if (part->shader_index < 0 || part->shader_index >= model->shaders.count ||
+		part->centroid_primary_node_index < 0 || part->centroid_primary_node_index >= model->nodes.count ||
+		part->centroid_secondary_node_index < 0 || part->centroid_secondary_node_index >= model->nodes.count ||
+		part->previous_part_index < NONE || part->previous_part_index >= part_count ||
+		part->next_part_index < NONE || part->next_part_index >= part_count ||
+		(local_nodes && (part->local_node_count == 0 || part->local_node_count > MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART)))
+	{
+		return FALSE;
+	}
+	if (local_nodes)
+	{
+		for (node_index = 0; node_index < part->local_node_count; node_index++)
+		{
+			if (part->local_node_indices[node_index] >= model->nodes.count)
+			{
+				return FALSE;
+			}
+		}
+	}
+	for (strip_index = 0; strip_index < part->strip_triangle_count + 2; strip_index++)
+	{
+		if (strip[strip_index] >= part->vertex_count)
+		{
+			return FALSE;
+		}
+	}
+	for (vertex_index = 0; vertex_index < part->vertex_count; vertex_index++)
+	{
+		struct model_vertex_uncompressed const *vertex = &vertices[vertex_index];
+
+		if (vertex->nodes[0] < 0 || vertex->nodes[0] >= node_limit ||
+			vertex->nodes[1] < 0 || vertex->nodes[1] >= node_limit ||
+			!vector_compressible(&vertex->normal) ||
+			!vector_compressible(&vertex->binormal) ||
+			!vector_compressible(&vertex->tangent))
+		{
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+/* whether the model has more nodes than the renderer skins at once, and so
+is drawn a part's own nodes at a time */
+static boolean model_has_many_nodes(
+	struct model const *model)
+{
+	return model->nodes.count >= RASTERIZER_MAXIMUM_NODES_PER_MODEL;
+}
+
+/* The nodes the part's vertices name, at most
+MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART of them, into `nodes`: their count, or
+NONE when there are more, or a vertex names a node the model lacks. */
+static long part_nodes_used(
+	struct model const *model,
+	struct custom_edition_model_part const *part,
+	struct model_vertex_uncompressed const *vertices,
+	byte nodes[MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART])
+{
+	long count = 0;
+	long vertex_index;
+
+	for (vertex_index = 0; vertex_index < part->vertex_count; vertex_index++)
+	{
+		long slot;
+
+		for (slot = 0; slot < 2; slot++)
+		{
+			short node = vertices[vertex_index].nodes[slot];
+			long index;
+
+			if (node < 0 || node >= model->nodes.count)
+				return NONE;
+			for (index = 0; index < count && nodes[index] != node; index++)
+				;
+			if (index == count)
+			{
+				if (count == MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART)
+					return NONE;
+				nodes[count++] = (byte)node;
+			}
+		}
+	}
+
+	return count;
+}
+
+/* Halo PC skins a model's nodes all at once; this build's renderer at most
+RASTERIZER_MAXIMUM_NODES_PER_MODEL - 1, so a model of more is drawn a part's
+own nodes at a time (local nodes). A model of more whose parts have none is
+given them here: each part the nodes its vertices name, its vertices naming
+them by their place there. FALSE, with nothing changed, when a part's
+vertices name more than one part holds. */
+static boolean model_local_nodes_make(
+	struct model *model,
+	byte *model_data)
+{
+	long pass;
+
+	/* (every part checked before any is changed) */
+	for (pass = 0; pass < 2; pass++)
+	{
+		long geometry_index;
+
+		for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+		{
+			struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+				&model->geometries,
+				geometry_index,
+				struct model_geometry);
+			long part_index;
+
+			for (part_index = 0; part_index < geometry->parts.count; part_index++)
+			{
+				struct custom_edition_model_part *part = TAG_BLOCK_GET_ELEMENT(
+					&geometry->parts,
+					part_index,
+					struct custom_edition_model_part);
+				struct model_vertex_uncompressed *vertices =
+					(struct model_vertex_uncompressed *)(model_data + part->vertex_offset);
+				byte nodes[MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART];
+				long count = part_nodes_used(model, part, vertices, nodes);
+				long vertex_index;
+
+				if (count == NONE)
+					return FALSE;
+				if (pass == 0)
+					continue;
+				for (vertex_index = 0; vertex_index < part->vertex_count; vertex_index++)
+				{
+					long slot;
+
+					for (slot = 0; slot < 2; slot++)
+					{
+						short local = 0;
+
+						while (nodes[local] != vertices[vertex_index].nodes[slot])
+							local++;
+						vertices[vertex_index].nodes[slot] = local;
+					}
+				}
+				part->local_node_count = (byte)count;
+				csmemcpy(part->local_node_indices, nodes, (size_t)count);
+			}
+		}
+	}
+	SET_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit, TRUE);
+
+	return TRUE;
+}
+
+/* Gives each part of `model` that names a shader past the model's shaders
+the model's last one, rather than the map refused: bigass_v3's oak tree has
+geometries left from a third shader the tag no longer has, which no region
+permutation draws, beside the same ones drawn with its leaves (its last
+shader). Halo PC reads such a part's shader from past the model's
+shaders. A model with no shaders is refused. */
+static void custom_edition_model_part_shaders_bound(
+	struct model *model,
+	char const *name)
+{
+	long bound = 0;
+	long geometry_index;
+
+	if (model->shaders.count < 1)
+		return;
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+
+			if (part->shader_index < 0 || part->shader_index >= model->shaders.count)
+			{
+				part->shader_index = (short)(model->shaders.count - 1);
+				bound++;
+			}
+		}
+	}
+	if (bound)
+	{
+		error(_error_silent, "custom edition: %ld parts of the model '%s' name shaders it has not got, and are given its last",
+			bound, name);
+	}
+
+	return;
+}
+
+/* a vector this build cannot compress made one it can: its direction, or
+(i, j, k) where it has none (zero, infinite or not a number) */
+static boolean vector_repair(
+	real_vector3d *vector,
+	real i,
+	real j,
+	real k)
+{
+	double length;
+
+	if (vector_compressible(vector))
+		return FALSE;
+	length = sqrt((double)vector->i * vector->i + (double)vector->j * vector->j + (double)vector->k * vector->k);
+	if (length > 0.0 && length < HUGE_VAL)
+	{
+		vector->i = (real)(vector->i / length);
+		vector->j = (real)(vector->j / length);
+		vector->k = (real)(vector->k / length);
+	}
+	if (!vector_compressible(vector))
+	{
+		vector->i = i;
+		vector->j = j;
+		vector->k = k;
+	}
+
+	return TRUE;
+}
+
+/* Gives every index of the parts of `model` that names what the model or
+part has not got (a node, a part, a vertex) one that it has, and every
+vector this build cannot compress its direction, rather than the map
+refused: Halo PC draws such parts as they are (Stargate_Infinity's
+protected 'tag_2625'). Run before local nodes are made (which need every
+vertex's nodes to exist) and before any model is verified: vertices and
+strips that parts of different models share are each only given what is
+valid in the part of fewer (any part's check passes with it, verified
+before or after). A part of no vertices whose strip names some is left to
+be refused. */
+static void custom_edition_model_parts_repair(
+	struct model *model,
+	char const *name,
+	byte *model_data,
+	unsigned long index_data_offset)
+{
+	boolean local_nodes = TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit);
+	long links = 0;
+	long nodes = 0;
+	long strip_indices = 0;
+	long vectors = 0;
+	long geometry_index;
+
+	if (model->nodes.count < 1)
+		return;
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+			struct model_vertex_uncompressed *vertices =
+				(struct model_vertex_uncompressed *)(model_data + part->vertex_offset);
+			word *strip = (word *)(model_data + index_data_offset + part->strip_offset);
+			long node_limit;
+			long index;
+
+			if (part->centroid_primary_node_index < 0 || part->centroid_primary_node_index >= model->nodes.count)
+			{
+				part->centroid_primary_node_index = 0;
+				links++;
+			}
+			if (part->centroid_secondary_node_index < 0 || part->centroid_secondary_node_index >= model->nodes.count)
+			{
+				part->centroid_secondary_node_index = 0;
+				links++;
+			}
+			if (part->previous_part_index < NONE || part->previous_part_index >= geometry->parts.count)
+			{
+				part->previous_part_index = NONE;
+				links++;
+			}
+			if (part->next_part_index < NONE || part->next_part_index >= geometry->parts.count)
+			{
+				part->next_part_index = NONE;
+				links++;
+			}
+			if (local_nodes)
+			{
+				if (part->local_node_count == 0 || part->local_node_count > MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART)
+				{
+					if (part->local_node_count == 0)
+						part->local_node_indices[0] = 0;
+					part->local_node_count = part->local_node_count ? MAXIMUM_NODES_PER_MODEL_GEOMETRY_PART : 1;
+					nodes++;
+				}
+				for (index = 0; index < part->local_node_count; index++)
+				{
+					if (part->local_node_indices[index] >= model->nodes.count)
+					{
+						part->local_node_indices[index] = 0;
+						nodes++;
+					}
+				}
+			}
+			node_limit = local_nodes ? part->local_node_count : model->nodes.count;
+			if (part->vertex_count > 0)
+			{
+				for (index = 0; index < part->strip_triangle_count + 2; index++)
+				{
+					if (strip[index] >= part->vertex_count)
+					{
+						/* (the index before it: a triangle of no area) */
+						strip[index] = index > 0 ? strip[index - 1] : 0;
+						strip_indices++;
+					}
+				}
+			}
+			for (index = 0; index < part->vertex_count; index++)
+			{
+				struct model_vertex_uncompressed *vertex = &vertices[index];
+				long slot;
+
+				for (slot = 0; slot < 2; slot++)
+				{
+					short other = vertex->nodes[1 - slot];
+
+					if (vertex->nodes[slot] < 0 || vertex->nodes[slot] >= node_limit)
+					{
+						vertex->nodes[slot] = other >= 0 && other < node_limit ? other : 0;
+						nodes++;
+					}
+				}
+				vectors += vector_repair(&vertex->normal, 0.0f, 0.0f, 1.0f);
+				vectors += vector_repair(&vertex->binormal, 0.0f, 1.0f, 0.0f);
+				vectors += vector_repair(&vertex->tangent, 1.0f, 0.0f, 0.0f);
+			}
+		}
+	}
+	if (links || nodes || strip_indices || vectors)
+	{
+		error(_error_silent,
+			"custom edition: the model '%s' had %ld part links or centroid nodes, %ld vertex or local nodes and %ld strip indices past what it has, and %ld vectors this build cannot compress: given ones it can draw",
+			name, links, nodes, strip_indices, vectors);
+	}
+
+	return;
+}
+
+/* Adds to `bytes` the room for `vertex_count` vertices of `vertex_size`
+bytes and `index_count` strip indices, unless the total would pass
+MAXIMUM_GEOMETRY_BYTES. */
+static boolean geometry_bytes_add(
+	unsigned long *bytes,
+	unsigned long vertex_count,
+	unsigned long vertex_size,
+	unsigned long index_count)
+{
+	unsigned long added;
+
+	if (vertex_count > MAXIMUM_GEOMETRY_BYTES / vertex_size ||
+		index_count > MAXIMUM_GEOMETRY_BYTES / sizeof(word))
+	{
+		return FALSE;
+	}
+	added = vertex_count * vertex_size + index_count * sizeof(word);
+	if (added > MAXIMUM_GEOMETRY_BYTES - *bytes)
+	{
+		return FALSE;
+	}
+	*bytes += added;
+
+	return TRUE;
+}
+
+/* Whether this build can draw `model`: every part must pass
+custom_edition_model_part_verify, and a model of more nodes than the
+renderer skins at once must have local nodes (each part few enough). Adds
+what its parts need to `totals`. */
+static boolean custom_edition_model_verify(
+	struct model const *model,
+	char const *name,
+	struct custom_edition_load_report const *report,
+	byte const *model_data,
+	struct model_geometry_totals *totals)
+{
+	long geometry_index;
+
+	if (model->nodes.count < 1 || model->nodes.count > MAXIMUM_NODES_PER_MODEL ||
+		(model_has_many_nodes(model) && !TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit)))
+	{
+		error(
+			_error_silent,
+			"custom edition: the model '%s' has %ld nodes; this build draws models of 1 to %d, or up to %d whose parts have local nodes",
+			name,
+			model->nodes.count,
+			RASTERIZER_MAXIMUM_NODES_PER_MODEL - 1,
+			MAXIMUM_NODES_PER_MODEL);
+		return FALSE;
+	}
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part const *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+
+			if (!custom_edition_model_part_verify(
+				model,
+				part,
+				geometry->parts.count,
+				(struct model_vertex_uncompressed const *)(model_data + part->vertex_offset),
+				(word const *)(model_data + report->model_index_data_offset + part->strip_offset)))
+			{
+				error(
+					_error_silent,
+					"custom edition: part %ld of geometry %ld of the model '%s' names a node, vertex, shader or part that does not exist, or has a vector this build cannot compress",
+					part_index,
+					geometry_index,
+					name);
+				return FALSE;
+			}
+			if (!geometry_bytes_add(
+				&totals->geometry_bytes,
+				(unsigned long)part->vertex_count,
+				(unsigned long)rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_model_compressed),
+				(unsigned long)part->strip_triangle_count + 2))
+			{
+				error(
+					_error_silent,
+					"custom edition: the models' parts, to part %ld of geometry %ld of the model '%s', take more than 0x%X bytes of geometry",
+					part_index,
+					geometry_index,
+					name,
+					MAXIMUM_GEOMETRY_BYTES);
+				return FALSE;
+			}
+			totals->part_count++;
+			if (model_has_many_nodes(model))
+				totals->many_node_part_count++;
+			totals->vertex_count += part->vertex_count;
+			totals->strip_index_count += part->strip_triangle_count + 2;
+			totals->largest_part_vertex_count = MAX(totals->largest_part_vertex_count, part->vertex_count);
+		}
+	}
+
+	return TRUE;
+}
+
+/* The model's node for a node the part `part` names by its index among its
+local nodes; an index past them is left as it is. */
+static short part_model_node(
+	struct custom_edition_model_part const *part,
+	short node_index)
+{
+	if (node_index >= 0 && node_index < part->local_node_count)
+	{
+		return part->local_node_indices[node_index];
+	}
+
+	return node_index;
+}
+
+/* Makes `part` this build's part for the Custom Edition part `source`,
+compressing its vertices (by way of `scratch`, room for all of them) to
+`vertices` and copying its strip to `strip`, and gives it buffers. Its
+vertices name the model's nodes when local_nodes, else as they are. */
+static boolean custom_edition_model_part_convert(
+	struct model_geometry_part *part,
+	struct custom_edition_model_part const *source,
+	boolean local_nodes,
+	struct model_vertex_uncompressed const *source_vertices,
+	word const *source_strip,
+	struct model_vertex_uncompressed *scratch,
+	struct model_vertex_compressed *vertices,
+	word *strip)
+{
+	long vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_model_compressed);
+	long uncompressed_vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_model_uncompressed);
+	long strip_index_count = source->strip_triangle_count + 2;
+
+	csmemcpy(scratch, source_vertices, source->vertex_count * uncompressed_vertex_size);
+	if (local_nodes)
+	{
+		long vertex_index;
+
+		for (vertex_index = 0; vertex_index < source->vertex_count; vertex_index++)
+		{
+			short *nodes = scratch[vertex_index].nodes;
+
+			nodes[0] = source->local_node_indices[nodes[0]];
+			nodes[1] = source->local_node_indices[nodes[1]];
+		}
+	}
+	rasterizer_geometry_compress_vertices(
+		_rasterizer_vertex_type_model_uncompressed,
+		source->vertex_count,
+		vertices,
+		source->vertex_count * vertex_size,
+		scratch,
+		source->vertex_count * uncompressed_vertex_size);
+	csmemcpy(strip, source_strip, strip_index_count * sizeof(*strip));
+
+	part->flags = source->flags & ~FLAG(_model_geometry_part_local_nodes_bit);
+	part->shader_index = source->shader_index;
+	part->previous_part_index = source->previous_part_index;
+	part->next_part_index = source->next_part_index;
+	part->centroid_primary_node_index = source->centroid_primary_node_index;
+	part->centroid_secondary_node_index = source->centroid_secondary_node_index;
+	part->centroid_primary_node_weight = source->centroid_primary_node_weight;
+	part->centroid_secondary_node_weight = source->centroid_secondary_node_weight;
+	part->centroid = source->centroid;
+	/* empty, as in Xbox caches (whatever the map held: the game draws from
+	the buffers alone) */
+	csmemset(&part->uncompressed_vertices, 0, sizeof(part->uncompressed_vertices));
+	csmemset(&part->compressed_vertices, 0, sizeof(part->compressed_vertices));
+	csmemset(&part->triangles, 0, sizeof(part->triangles));
+	csmemset(&part->triangle_buffer, 0, sizeof(part->triangle_buffer));
+	csmemset(&part->vertex_buffer, 0, sizeof(part->vertex_buffer));
+
+	return rasterizer_vertex_buffer_new(
+			&part->vertex_buffer,
+			_rasterizer_vertex_type_model_compressed,
+			source->vertex_count,
+			vertices,
+			source->vertex_count * vertex_size) &&
+		rasterizer_triangle_buffer_new(
+			&part->triangle_buffer,
+			_triangle_buffer_type_precompiled_strip,
+			source->strip_triangle_count,
+			strip);
+}
+
+/* Converts every part of `model`, repacking each geometry's parts from
+Custom Edition's size to this build's in place, and records them in
+`models` (the map's, or the tag bundles'); the geometry goes to `*vertices`
+and `*strips`, which advance. */
+static boolean custom_edition_model_convert(
+	struct model *model,
+	struct custom_edition_load_report const *report,
+	byte const *model_data,
+	struct model_vertex_uncompressed *scratch,
+	struct model_vertex_compressed **vertices,
+	word **strips,
+	struct converted_models *models)
+{
+	boolean local_nodes = TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit);
+	/* (the renderer skins with the model's nodes, or a part's own when the
+	model has more than it skins at once) */
+	boolean part_palettes = model_has_many_nodes(model);
+	long geometry_index;
+
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		/* a part is never written over a Custom Edition part not yet read:
+		this build's parts are smaller, and each is read first */
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part source = *TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+			struct model_geometry_part *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct model_geometry_part);
+
+			models->parts[models->part_count++] = part;
+			/* a part with local nodes names its centroid's nodes among them
+			too, and the renderer places a transparent part by them */
+			if (local_nodes)
+			{
+				source.centroid_primary_node_index = part_model_node(&source, source.centroid_primary_node_index);
+				source.centroid_secondary_node_index = part_model_node(&source, source.centroid_secondary_node_index);
+			}
+			if (!custom_edition_model_part_convert(
+				part,
+				&source,
+				local_nodes && !part_palettes,
+				(struct model_vertex_uncompressed const *)(model_data + source.vertex_offset),
+				(word const *)(model_data + report->model_index_data_offset + source.strip_offset),
+				scratch,
+				*vertices,
+				*strips))
+			{
+				return FALSE;
+			}
+			if (part_palettes)
+			{
+				struct part_palette *palette = &models->palettes[models->palette_count++];
+
+				palette->vertex_buffer = &part->vertex_buffer;
+				palette->node_count = source.local_node_count;
+				csmemcpy(palette->nodes, source.local_node_indices, sizeof(palette->nodes));
+			}
+			*vertices += source.vertex_count;
+			*strips += source.strip_triangle_count + 2;
+		}
+	}
+	/* the parts' node indices are now the model's, or their own as the
+	palettes say: the game's code knows nothing of local nodes */
+	model->flags &= ~FLAG(_gbxmodel_parts_have_local_nodes_bit);
+
+	return TRUE;
+}
+
+static void structure_bsp_buffers_release(
+	struct structure_bsp *structure_bsp)
+{
+	long lightmap_index;
+
+	for (lightmap_index = 0; lightmap_index < structure_bsp->lightmaps.count; lightmap_index++)
+	{
+		struct structure_lightmap *lightmap = TAG_BLOCK_GET_ELEMENT(
+			&structure_bsp->lightmaps,
+			lightmap_index,
+			struct structure_lightmap);
+		long material_index;
+
+		for (material_index = 0; material_index < lightmap->materials.count; material_index++)
+		{
+			struct structure_material *material = TAG_BLOCK_GET_ELEMENT(
+				&lightmap->materials,
+				material_index,
+				struct structure_material);
+
+			rasterizer_vertex_buffer_delete(&material->vertices);
+			rasterizer_vertex_buffer_delete(&material->lightmap_vertices);
+		}
+	}
+
+	return;
+}
+
+/* Gives `material` compressed vertices at `vertices` and buffers made from
+them. Its uncompressed vertices (cache_file_formats.c checked their size and
+place) stay where they are. */
+/* geometry the renderer draws from: in the Xbox's contiguous memory, as the
+game's own vertex and index buffers are (physical_memory_map.c), which the
+renderer keeps on the GPU (d3d8_gl.c's mirror: anything outside it is sent
+again at every draw); in the game's heap when that memory is spent */
+static void *geometry_allocate(
+	unsigned long size,
+	boolean *contiguous)
+{
+	void *geometry = XPhysicalAlloc(size, (unsigned long)-1, 0, PAGE_READWRITE);
+
+	*contiguous = geometry != NULL;
+	if (!geometry)
+	{
+		error(_error_silent, "custom edition: 0x%lX bytes of geometry drawn from outside contiguous memory (slower)",
+			size);
+		geometry = system_malloc(size);
+	}
+
+	return geometry;
+}
+
+static void geometry_free(
+	void *geometry,
+	boolean contiguous)
+{
+	if (contiguous)
+		XPhysicalFree(geometry);
+	else
+		system_free(geometry);
+}
+
+/* Contiguous memory kept back while a level's added tags load. They take what
+they find, and what loads after them cannot do without it: the PC menus'
+textures (Forge's SAVE MAP is built on those menus) and Forge's markers. Past
+the menus and the markers (about 3 MB), the rest is for whatever else the
+level still makes. */
+enum
+{
+	LEVEL_CONTIGUOUS_RESERVE_BYTES = 8 * 1024 * 1024
+};
+
+static void *level_contiguous_reserve;
+
+void level_contiguous_reserve_hold(
+	void)
+{
+	if (!level_contiguous_reserve)
+		level_contiguous_reserve = XPhysicalAlloc(LEVEL_CONTIGUOUS_RESERVE_BYTES, (unsigned long)-1, 0, PAGE_READWRITE);
+}
+
+void level_contiguous_reserve_release(
+	void)
+{
+	if (level_contiguous_reserve)
+		XPhysicalFree(level_contiguous_reserve);
+	level_contiguous_reserve = NULL;
+}
+
+static boolean structure_material_convert(
+	struct structure_material *material,
+	byte *vertices)
+{
+	long vertex_count = material->vertices.count;
+	long lightmap_vertex_count = material->lightmap_vertices.count;
+	long vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_compressed);
+	long lightmap_vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_lightmap_compressed);
+	byte *uncompressed_vertices = XBOX_POINTER(byte, material->uncompressed_vertex_data.address);
+	byte *lightmap_vertices = vertices + vertex_count * vertex_size;
+	boolean success = TRUE;
+
+	/* the lightmap vertices follow the environment vertices, as object
+	lights and the structure's point queries expect of the compressed ones */
+	if (vertex_count)
+	{
+		rasterizer_geometry_compress_vertices(
+			_rasterizer_vertex_type_environment_uncompressed,
+			vertex_count,
+			vertices,
+			vertex_count * vertex_size,
+			uncompressed_vertices,
+			vertex_count * rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_uncompressed));
+		success = rasterizer_vertex_buffer_new(
+			&material->vertices,
+			_rasterizer_vertex_type_environment_compressed,
+			vertex_count,
+			vertices,
+			vertex_count * vertex_size);
+	}
+	if (success && lightmap_vertex_count)
+	{
+		rasterizer_geometry_compress_vertices(
+			_rasterizer_vertex_type_environment_lightmap_uncompressed,
+			lightmap_vertex_count,
+			lightmap_vertices,
+			lightmap_vertex_count * lightmap_vertex_size,
+			uncompressed_vertices + vertex_count * rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_uncompressed),
+			lightmap_vertex_count * rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_lightmap_uncompressed));
+		success = rasterizer_vertex_buffer_new(
+			&material->lightmap_vertices,
+			_rasterizer_vertex_type_environment_lightmap_compressed,
+			lightmap_vertex_count,
+			lightmap_vertices,
+			lightmap_vertex_count * lightmap_vertex_size);
+	}
+	material->compressed_vertex_data.size = vertex_count * vertex_size + lightmap_vertex_count * lightmap_vertex_size;
+	material->compressed_vertex_data.address = XBOX_ADDRESS(vertices);
+
+	return success;
+}
+
+/* the buffers of the parts converted, and the lists of them */
+static void converted_models_dispose(
+	struct converted_models *models)
+{
+	long part_index;
+
+	for (part_index = 0; part_index < models->part_count; part_index++)
+	{
+		rasterizer_triangle_buffer_delete(&models->parts[part_index]->triangle_buffer);
+		rasterizer_vertex_buffer_delete(&models->parts[part_index]->vertex_buffer);
+	}
+	/* the game's free stops on NULL (cseries.h), and a map can fail before
+	its models are converted */
+	if (models->parts)
+	{
+		free(models->parts);
+	}
+	if (models->palettes)
+	{
+		free(models->palettes);
+	}
+	csmemset(models, 0, sizeof(*models));
+
+	return;
+}
+
+/* room in `*list` (of `*capacity` elements of `element_size` bytes) for
+`count` more after `used` */
+static boolean list_reserve(
+	void **list,
+	long *capacity,
+	long used,
+	long count,
+	unsigned long element_size)
+{
+	long needed = used + count;
+	long grown_capacity = *capacity ? *capacity : 64;
+	void *grown;
+
+	if (count < 0 || needed < used)
+	{
+		return FALSE;
+	}
+	if (needed <= *capacity)
+	{
+		return TRUE;
+	}
+	while (grown_capacity < needed)
+	{
+		if (grown_capacity > 0x3FFFFFFF)
+			return FALSE;
+		grown_capacity *= 2;
+	}
+	if ((unsigned long)grown_capacity > 0x7FFFFFFFUL / element_size)
+	{
+		return FALSE;
+	}
+	grown = *list ? realloc(*list, (unsigned long)grown_capacity * element_size) :
+		malloc((unsigned long)grown_capacity * element_size);
+	if (!grown)
+	{
+		return FALSE;
+	}
+	*list = grown;
+	*capacity = grown_capacity;
+
+	return TRUE;
+}
+
+/* Whether each part of `model` (Custom Edition's layout) has its vertices
+and strip within the `model_data_size` bytes of `model_data`: a tag
+bundle's file data, which its loader checked laid out, not each part's
+counts against its own. */
+static boolean injected_model_parts_inside(
+	struct model const *model,
+	unsigned long model_data_size)
+{
+	long geometry_index;
+
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part const *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+			unsigned long vertex_bytes;
+			unsigned long strip_bytes;
+
+			if (part->vertex_count < 0 || part->strip_triangle_count < 0 ||
+				(unsigned long)part->vertex_count > model_data_size / sizeof(struct model_vertex_uncompressed) ||
+				(unsigned long)part->strip_triangle_count > model_data_size / sizeof(word))
+			{
+				return FALSE;
+			}
+			vertex_bytes = (unsigned long)part->vertex_count * sizeof(struct model_vertex_uncompressed);
+			strip_bytes = ((unsigned long)part->strip_triangle_count + 2) * sizeof(word);
+			if (part->vertex_offset > model_data_size - vertex_bytes ||
+				strip_bytes > model_data_size || part->strip_offset > model_data_size - strip_bytes)
+			{
+				return FALSE;
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+/* ---------- public code */
+
+boolean custom_edition_models_convert(
+	byte *tag_cache,
+	unsigned long loaded_bytes,
+	struct custom_edition_load_report const *report,
+	byte *model_data)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+	struct model_geometry_totals totals = { 0, 0, 0, 0, 0, 0 };
+	struct model_vertex_uncompressed *scratch;
+	struct model_vertex_compressed *vertices;
+	struct model *model;
+	word *strips;
+	int32_t tag_index = NONE;
+	boolean success = TRUE;
+
+	assert(!globals->models.parts && !globals->model_geometry);
+	/* (every model's parts repaired before local nodes are made or any is
+	verified: custom_edition_model_parts_repair) */
+	while ((model = custom_edition_cache_tag_next(tag_cache, loaded_bytes, GBXMODEL_GROUP_TAG, sizeof(*model), &tag_index)) != NULL)
+	{
+		custom_edition_model_parts_repair(model, custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index),
+			model_data, (unsigned long)report->model_index_data_offset);
+	}
+	tag_index = NONE;
+	/* (every model's local nodes are made before any model is verified:
+	making them writes node indices into the model data, and parts of
+	different models may name the same vertices there, so a model verified
+	earlier could otherwise be drawn from vertices changed after its check) */
+	while ((model = custom_edition_cache_tag_next(tag_cache, loaded_bytes, GBXMODEL_GROUP_TAG, sizeof(*model), &tag_index)) != NULL)
+	{
+		if (model_has_many_nodes(model) && !TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit) &&
+			model->nodes.count <= MAXIMUM_NODES_PER_MODEL && model_local_nodes_make(model, model_data))
+		{
+			error(_error_silent, "custom edition: the model '%s', of %ld nodes, is drawn a part's nodes at a time",
+				custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index), model->nodes.count);
+		}
+	}
+	tag_index = NONE;
+	while ((model = custom_edition_cache_tag_next(tag_cache, loaded_bytes, GBXMODEL_GROUP_TAG, sizeof(*model), &tag_index)) != NULL)
+	{
+		custom_edition_model_part_shaders_bound(model, custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index));
+		if (!custom_edition_model_verify(
+			model,
+			custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index),
+			report,
+			model_data,
+			&totals))
+		{
+			return FALSE;
+		}
+	}
+
+	globals->models.parts = malloc((totals.part_count + 1) * sizeof(*globals->models.parts));
+	globals->models.palettes = malloc((totals.many_node_part_count + 1) * sizeof(*globals->models.palettes));
+	/* (totals.geometry_bytes is the vertices' and strips' room, at most
+	MAXIMUM_GEOMETRY_BYTES) */
+	globals->model_geometry = geometry_allocate(totals.geometry_bytes + 1, &globals->model_geometry_contiguous);
+	scratch = malloc(totals.largest_part_vertex_count * sizeof(*scratch) + 1);
+	if (!globals->models.parts || !globals->model_geometry || !globals->models.palettes || !scratch)
+	{
+		error(_error_silent, "custom edition: out of memory for the geometry of %ld model parts", totals.part_count);
+		/* (the game's free, debug_free, does not take NULL) */
+		if (scratch)
+			free(scratch);
+		return FALSE;
+	}
+	vertices = (struct model_vertex_compressed *)globals->model_geometry;
+	strips = (word *)(vertices + totals.vertex_count);
+
+	tag_index = NONE;
+	while (success &&
+		(model = custom_edition_cache_tag_next(tag_cache, loaded_bytes, GBXMODEL_GROUP_TAG, sizeof(*model), &tag_index)) != NULL)
+	{
+		success = custom_edition_model_convert(model, report, model_data, scratch, &vertices, &strips,
+			&globals->models);
+		if (!success)
+		{
+			error(
+				_error_silent,
+				"custom edition: cannot make the buffers of the model '%s'",
+				custom_edition_cache_tag_name(tag_cache, loaded_bytes, tag_index));
+		}
+	}
+	free(scratch);
+	if (success)
+	{
+		custom_edition_cache_tags_regroup(tag_cache, loaded_bytes, GBXMODEL_GROUP_TAG, MODELS_GROUP_TAG);
+		error(
+			_error_silent,
+			"custom edition: %ld model parts converted (%ld vertices compressed, %ld parts drawn with their own nodes)",
+			totals.part_count,
+			totals.vertex_count,
+			totals.many_node_part_count);
+	}
+
+	return success;
+}
+
+short custom_edition_part_palette(
+	struct vertex_buffer const *vertex_buffer,
+	byte const **nodes)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+	long index;
+
+	for (index = 0; index < globals->models.palette_count; index++)
+	{
+		if (globals->models.palettes[index].vertex_buffer == vertex_buffer)
+		{
+			*nodes = globals->models.palettes[index].nodes;
+			return globals->models.palettes[index].node_count;
+		}
+	}
+	/* (a tag bundle's model: tag_injector.c) */
+	for (index = 0; index < globals->injected.palette_count; index++)
+	{
+		if (globals->injected.palettes[index].vertex_buffer == vertex_buffer)
+		{
+			*nodes = globals->injected.palettes[index].nodes;
+			return globals->injected.palettes[index].node_count;
+		}
+	}
+	/* (a mod's model of many nodes, drawn its parts' nodes at a time too:
+	mod_models.c) */
+	return mod_models_part_palette(vertex_buffer, nodes);
+}
+
+void custom_edition_models_dispose(
+	void)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+
+	converted_models_dispose(&globals->models);
+	if (globals->model_geometry)
+	{
+		geometry_free(globals->model_geometry, globals->model_geometry_contiguous);
+	}
+	globals->model_geometry = NULL;
+
+	return;
+}
+
+/* the bytes of the bundle's file data that `model`'s parts' vertices and
+strips (checked inside it) take, from *low up to *high */
+static void injected_model_span(
+	struct model const *model,
+	unsigned long *low,
+	unsigned long *high)
+{
+	long geometry_index;
+
+	*low = 0xFFFFFFFFUL;
+	*high = 0;
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part const *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+			unsigned long vertex_end = part->vertex_offset +
+				(unsigned long)part->vertex_count * sizeof(struct model_vertex_uncompressed);
+			unsigned long strip_end = part->strip_offset + ((unsigned long)part->strip_triangle_count + 2) * sizeof(word);
+
+			*low = MIN(*low, MIN(part->vertex_offset, part->strip_offset));
+			*high = MAX(*high, MAX(vertex_end, strip_end));
+		}
+	}
+	if (*low > *high)
+		*low = *high;
+
+	return;
+}
+
+/* the parts' vertices and strips named from `low` on */
+static void injected_model_rebase(
+	struct model *model,
+	unsigned long low)
+{
+	long geometry_index;
+
+	for (geometry_index = 0; geometry_index < model->geometries.count; geometry_index++)
+	{
+		struct model_geometry const *geometry = TAG_BLOCK_GET_ELEMENT(
+			&model->geometries,
+			geometry_index,
+			struct model_geometry);
+		long part_index;
+
+		for (part_index = 0; part_index < geometry->parts.count; part_index++)
+		{
+			struct custom_edition_model_part *part = TAG_BLOCK_GET_ELEMENT(
+				&geometry->parts,
+				part_index,
+				struct custom_edition_model_part);
+
+			part->vertex_offset -= low;
+			part->strip_offset -= low;
+		}
+	}
+
+	return;
+}
+
+/* the model's geometry made from model_data, where its parts' vertices and
+strips are */
+static boolean injected_model_convert(
+	struct model *model,
+	char const *name,
+	byte *model_data)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+	struct model_geometry_totals totals = { 0, 0, 0, 0, 0, 0 };
+	struct custom_edition_load_report report;
+	struct injected_geometry *injected;
+	struct model_vertex_uncompressed *scratch;
+	struct model_vertex_compressed *vertices;
+	word *strips;
+	boolean success;
+
+	/* (its strips at their offsets in model_data itself) */
+	csmemset(&report, 0, sizeof(report));
+	custom_edition_model_parts_repair(model, name, model_data, 0);
+	if (model_has_many_nodes(model) && !TEST_FLAG(model->flags, _gbxmodel_parts_have_local_nodes_bit) &&
+		model->nodes.count <= MAXIMUM_NODES_PER_MODEL && model_local_nodes_make(model, model_data))
+	{
+		error(_error_silent, "tag injector: the model '%s', of %ld nodes, is drawn a part's nodes at a time",
+			name, model->nodes.count);
+	}
+	custom_edition_model_part_shaders_bound(model, name);
+	if (!custom_edition_model_verify(model, name, &report, model_data, &totals))
+	{
+		return FALSE;
+	}
+	if (!list_reserve((void **)&globals->injected.parts, &globals->injected_part_capacity,
+			globals->injected.part_count, totals.part_count, sizeof(*globals->injected.parts)) ||
+		!list_reserve((void **)&globals->injected.palettes, &globals->injected_palette_capacity,
+			globals->injected.palette_count, totals.many_node_part_count, sizeof(*globals->injected.palettes)) ||
+		!list_reserve((void **)&globals->injected_geometries, &globals->injected_geometry_capacity,
+			globals->injected_geometry_count, 1, sizeof(*globals->injected_geometries)))
+	{
+		error(_error_silent, "tag injector: out of memory for the model '%s'", name);
+		return FALSE;
+	}
+	injected = &globals->injected_geometries[globals->injected_geometry_count];
+	/* (in the heap: the part's buffers copy these into contiguous memory, and
+	it is those that are drawn. Here too they would take it twice) */
+	injected->geometry = system_malloc(totals.geometry_bytes + 1);
+	injected->contiguous = FALSE;
+	scratch = malloc(totals.largest_part_vertex_count * sizeof(*scratch) + 1);
+	if (!injected->geometry || !scratch)
+	{
+		error(_error_silent, "tag injector: out of memory for the geometry of the model '%s'", name);
+		if (injected->geometry)
+			geometry_free(injected->geometry, injected->contiguous);
+		if (scratch)
+			free(scratch);
+		return FALSE;
+	}
+	globals->injected_geometry_count++;
+	vertices = (struct model_vertex_compressed *)injected->geometry;
+	strips = (word *)(vertices + totals.vertex_count);
+	success = custom_edition_model_convert(model, &report, model_data, scratch, &vertices, &strips,
+		&globals->injected);
+	free(scratch);
+	if (!success)
+	{
+		error(_error_silent, "tag injector: cannot make the buffers of the model '%s'", name);
+	}
+
+	return success;
+}
+
+boolean custom_edition_injected_model_convert(
+	struct model *model,
+	char const *name,
+	unsigned long model_data_size,
+	custom_edition_model_data_read_proc read,
+	void *context)
+{
+	unsigned long low;
+	unsigned long high;
+	byte *model_data;
+	boolean success;
+
+	if (!injected_model_parts_inside(model, model_data_size))
+	{
+		error(_error_silent, "tag injector: the model '%s' names vertices or strips its bundle has not got", name);
+		return FALSE;
+	}
+	/* (its vertices and strips read for it alone, and let go once made the
+	game's: the bundle's file data stays in its file) */
+	injected_model_span(model, &low, &high);
+	model_data = malloc(high - low + 1);
+	if (!model_data)
+	{
+		error(_error_silent, "tag injector: out of memory for the vertices of the model '%s'", name);
+		return FALSE;
+	}
+	if (!read(context, low, high - low, model_data))
+	{
+		error(_error_silent, "tag injector: cannot read the vertices of the model '%s'", name);
+		free(model_data);
+		return FALSE;
+	}
+	injected_model_rebase(model, low);
+	success = injected_model_convert(model, name, model_data);
+	free(model_data);
+
+	return success;
+}
+
+void custom_edition_injected_models_dispose(
+	void)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+	long index;
+
+	converted_models_dispose(&globals->injected);
+	for (index = 0; index < globals->injected_geometry_count; index++)
+	{
+		geometry_free(globals->injected_geometries[index].geometry, globals->injected_geometries[index].contiguous);
+	}
+	if (globals->injected_geometries)
+	{
+		free(globals->injected_geometries);
+	}
+	globals->injected_geometries = NULL;
+	globals->injected_geometry_count = 0;
+	globals->injected_geometry_capacity = 0;
+	globals->injected_part_capacity = 0;
+	globals->injected_palette_capacity = 0;
+
+	return;
+}
+
+boolean custom_edition_structure_bsp_load(
+	struct structure_bsp *structure_bsp)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+	long vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_compressed);
+	long lightmap_vertex_size = rasterizer_geometry_get_vertex_size(_rasterizer_vertex_type_environment_lightmap_compressed);
+	unsigned long vertices_size = 0;
+	unsigned long vertices_offset = 0;
+	boolean success = TRUE;
+	boolean too_large = FALSE;
+	long lightmap_index;
+
+	assert(!globals->structure_bsp);
+	/* the Custom Edition buffer fields name nothing in this process: every
+	material starts with none, so that a failure releases only what was
+	made (cache_file_formats.c checked the counts and sizes) */
+	for (lightmap_index = 0; lightmap_index < structure_bsp->lightmaps.count; lightmap_index++)
+	{
+		struct structure_lightmap *lightmap = TAG_BLOCK_GET_ELEMENT(
+			&structure_bsp->lightmaps,
+			lightmap_index,
+			struct structure_lightmap);
+		long material_index;
+
+		for (material_index = 0; material_index < lightmap->materials.count; material_index++)
+		{
+			struct structure_material *material = TAG_BLOCK_GET_ELEMENT(
+				&lightmap->materials,
+				material_index,
+				struct structure_material);
+			long vertex_count = material->vertices.count;
+			long lightmap_vertex_count = material->lightmap_vertices.count;
+
+			csmemset(&material->vertices, 0, sizeof(material->vertices));
+			csmemset(&material->lightmap_vertices, 0, sizeof(material->lightmap_vertices));
+			material->vertices.type = _rasterizer_vertex_type_environment_compressed;
+			material->vertices.count = vertex_count;
+			material->lightmap_vertices.type = _rasterizer_vertex_type_environment_lightmap_compressed;
+			material->lightmap_vertices.count = lightmap_vertex_count;
+			/* (every material is still emptied when the sizes are past the
+			most there is room for, so that the failure releases nothing) */
+			if (!too_large &&
+				(!geometry_bytes_add(&vertices_size, (unsigned long)vertex_count, (unsigned long)vertex_size, 0) ||
+				!geometry_bytes_add(&vertices_size, (unsigned long)lightmap_vertex_count, (unsigned long)lightmap_vertex_size, 0)))
+			{
+				too_large = TRUE;
+			}
+		}
+	}
+
+	globals->structure_bsp = structure_bsp;
+	if (too_large)
+	{
+		error(_error_silent, "custom edition: the structure BSP's materials take more than 0x%X bytes of vertices",
+			MAXIMUM_GEOMETRY_BYTES);
+		custom_edition_structure_bsp_unload();
+		return FALSE;
+	}
+	/* (in Xbox memory either way: the material points at them by Xbox address) */
+	globals->structure_bsp_vertices = geometry_allocate(vertices_size + 1,
+		&globals->structure_bsp_vertices_contiguous);
+	if (!globals->structure_bsp_vertices)
+	{
+		error(_error_silent, "custom edition: out of memory for 0x%lX bytes of structure BSP vertices", vertices_size);
+		custom_edition_structure_bsp_unload();
+		return FALSE;
+	}
+	for (lightmap_index = 0; success && lightmap_index < structure_bsp->lightmaps.count; lightmap_index++)
+	{
+		struct structure_lightmap *lightmap = TAG_BLOCK_GET_ELEMENT(
+			&structure_bsp->lightmaps,
+			lightmap_index,
+			struct structure_lightmap);
+		long material_index;
+
+		for (material_index = 0; success && material_index < lightmap->materials.count; material_index++)
+		{
+			struct structure_material *material = TAG_BLOCK_GET_ELEMENT(
+				&lightmap->materials,
+				material_index,
+				struct structure_material);
+
+			success = structure_material_convert(material, globals->structure_bsp_vertices + vertices_offset);
+			vertices_offset += material->compressed_vertex_data.size;
+		}
+	}
+	if (success)
+	{
+		error(
+			_error_silent,
+			"custom edition: the structure BSP lit by bitmap tag 0x%08lX has its vertices compressed (0x%lX bytes)",
+			(unsigned long)structure_bsp->lightmap_group.index,
+			vertices_size);
+	}
+	else
+	{
+		error(_error_silent, "custom edition: cannot make the buffers of the structure BSP's materials");
+		custom_edition_structure_bsp_unload();
+	}
+
+	return success;
+}
+
+void custom_edition_structure_bsp_unload(
+	void)
+{
+	struct custom_edition_geometry_globals *globals = &custom_edition_geometry_globals;
+
+	if (globals->structure_bsp)
+	{
+		structure_bsp_buffers_release(globals->structure_bsp);
+		/* (none when the load failed before they were made) */
+		if (globals->structure_bsp_vertices)
+			geometry_free(globals->structure_bsp_vertices, globals->structure_bsp_vertices_contiguous);
+		globals->structure_bsp = NULL;
+		globals->structure_bsp_vertices = NULL;
+	}
+
+	return;
+}

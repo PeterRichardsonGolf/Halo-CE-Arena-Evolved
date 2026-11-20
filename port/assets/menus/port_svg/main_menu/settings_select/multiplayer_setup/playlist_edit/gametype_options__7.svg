@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+<style>
+.b { fill:#000; stroke:#2896FF; stroke-width:2.406; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2.406; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.608; stroke-linecap:round; stroke-linejoin:round }
+.e { fill:none; stroke:#2896FF; stroke-width:2.406; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:6.014 }
+.f { fill:#2896FF; stroke:none }
+.red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
+</style>
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.80"/></filter></defs>
+<g transform="translate(77.49 32.49) scale(1.3303)">
+<g filter="url(#glow)" opacity="0.9"><polygon points="92.5,67.6 67.6,92.5 32.4,92.5 7.5,67.6 7.5,32.4 32.4,7.5 67.6,7.5 92.5,32.4" class="b"/>
+<polygon points="85.1,64.5 64.5,85.1 35.5,85.1 14.9,64.5 14.9,35.5 35.5,14.9 64.5,14.9 85.1,35.5" class="l"/>
+<path d="M40,33 H31 Q27,33 27,37.5 Q27,46 40,48 M60,33 H69 Q73,33 73,37.5 Q73,46 60,48" class="w"/>
+<rect x="46.5" y="54" width="7" height="11" class="b"/>
+<path d="M36,30 H64 V38 C64,50 58,57 50,57 C42,57 36,50 36,38 Z" class="b"/>
+<rect x="38" y="64" width="24" height="7" rx="1.5" class="b"/></g>
+<polygon points="92.5,67.6 67.6,92.5 32.4,92.5 7.5,67.6 7.5,32.4 32.4,7.5 67.6,7.5 92.5,32.4" class="b"/>
+<polygon points="85.1,64.5 64.5,85.1 35.5,85.1 14.9,64.5 14.9,35.5 35.5,14.9 64.5,14.9 85.1,35.5" class="l"/>
+<path d="M40,33 H31 Q27,33 27,37.5 Q27,46 40,48 M60,33 H69 Q73,33 73,37.5 Q73,46 60,48" class="w"/>
+<rect x="46.5" y="54" width="7" height="11" class="b"/>
+<path d="M36,30 H64 V38 C64,50 58,57 50,57 C42,57 36,50 36,38 Z" class="b"/>
+<rect x="38" y="64" width="24" height="7" rx="1.5" class="b"/>
+</g>
+</svg>

@@ -1,0 +1,24 @@
+# The campaign randomizer's pack (port/linux/game/randomizer.c): every
+# campaign map's tags, and the pixels and samples of their actors, weapons
+# and effects. A randomized level copies the actors and weapons its pools
+# want from here.
+
+name = "ae_randomizer"
+version = 1
+legacy_file_names = []
+maps = ["a10", "a30", "a50", "b30", "b40", "c10", "c20", "c40", "d20", "d40"]
+minimum_bitmaps = 20
+minimum_sounds = 20
+wanted = ["setting:game.randomizer"]
+
+# level geometry, menus, music and ambience are not actors or weapons, and
+# the same character tags would otherwise carry them in every map
+[keep]
+exclude_bitmap_prefixes = ["levels\\", "sky\\", "ui\\", "rasterizer\\", "scenery\\", "cinematics\\"]
+exclude_sound_prefixes = ["sound\\music\\", "sound\\sfx\\ambience\\"]
+
+[text]
+notice = "The randomizer needs to build\nits data from the campaign maps."
+building = "Building the randomizer's\ndata from the maps:\n"
+ready = "The randomizer's data is ready."
+failed = "The randomizer's data could not\nbe built."

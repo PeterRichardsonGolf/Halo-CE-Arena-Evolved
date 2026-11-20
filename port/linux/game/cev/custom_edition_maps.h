@@ -1,0 +1,197 @@
+/*
+CUSTOM_EDITION_MAPS.H
+
+Custom Edition maps in the menus. With game.custom_edition on, the CE maps
+of the custom_maps folder are listed: the multiplayer maps after the Xbox
+levels in the multiplayer level list (ui_widget_event_handler_functions.c),
+and both kinds in the map lists' CUSTOM SINGLEPLAYER and CUSTOM MULTIPLAYER
+(port/linux/game/menu_functions.c). A CE map's level name is
+custom_maps\<name> (custom_edition_cache.h).
+
+The menus that show a level (ui_widget_game_data_input_functions.c) refer
+to it by an index into their own tags' strings and frames. Maps that the
+tags don't have get "display indices" past those, and text_group.c and
+ui_widget.c ask this file for their names, descriptions and pictures.
+
+	below 0x1000   Xbox multiplayer level (the tags' own index)
+	0x3000 + n     stock campaign level n (co-op)
+	0x4000 + n     CE multiplayer map
+	0x6000 + n     CE campaign map (played alone or as co-op)
+*/
+
+#ifndef __CUSTOM_EDITION_MAPS_H
+#define __CUSTOM_EDITION_MAPS_H
+
+/* ---------- constants */
+
+/* the most CE multiplayer maps the level list holds, which every map list
+(the menus', the Map screen's) has room for: as many as their display
+indices fit before the campaigns' (custom_edition_maps.c) */
+#define CUSTOM_EDITION_MAPS_MAXIMUM 8192
+
+/* a subfolder of custom_maps, named on a map that was found in one (empty
+when the map is in the maps folder itself). One level of folders. */
+#define CUSTOM_EDITION_MAP_CATEGORY_LENGTH 64
+
+/* the most of custom_maps' own folders listed (custom_edition_maps_folder_name) */
+#define CUSTOM_EDITION_MAP_FOLDERS_MAXIMUM 256
+
+/* room for a map's file name, without .map (51 characters at most: the
+level name custom_maps\<name> the game keeps whole) */
+#define CUSTOM_EDITION_MAP_NAME_SIZE 64
+
+/* ---------- structures */
+
+struct bitmap_data;
+
+/* a map's files (custom_edition_maps_file_get) */
+struct custom_edition_map_file
+{
+	/* its file name without .map, and its subfolder ("" for none) */
+	char name[CUSTOM_EDITION_MAP_NAME_SIZE];
+	char category[CUSTOM_EDITION_MAP_CATEGORY_LENGTH];
+	/* it is in custom_maps (not the Custom Edition install's maps folder,
+	which is not changed) */
+	boolean managed;
+	boolean campaign;
+	/* its folder has <name>.bmp and <name>.txt */
+	boolean has_picture;
+	boolean has_description;
+};
+
+/* ---------- prototypes/CUSTOM_EDITION_MAPS.C */
+
+/* Returns the level list: the Xbox levels, then the CE multiplayer maps
+sorted by name. *level_count gets the total. Scans for CE maps the first
+time, and after custom_edition_maps_look_again. */
+char **custom_edition_maps_level_list(
+	char **xbox_levels,
+	short xbox_level_count,
+	short *level_count);
+
+/* Has the next level list scan the maps folders again (a map list opening,
+which shows maps added since). */
+void custom_edition_maps_look_again(
+	void);
+
+/* As custom_edition_maps_look_again, but only if the names in the maps
+folders have changed since the last scan (a map list opening). */
+void custom_edition_maps_look_again_if_changed(
+	void);
+
+/* (port) The maps folders looked at, and scanned again if their names have
+changed, on a thread of the scan's own (a map list's opening); and whether
+it is done, its maps then taken for the lists (TRUE also if none runs). */
+void custom_edition_maps_scan_start(
+	void);
+boolean custom_edition_maps_scan_poll(
+	void);
+
+/* the display index of an entry in the latest level list */
+short custom_edition_maps_level_display_index(
+	short level_index);
+
+/* The display index for a level name (a network game's map name): a stock
+campaign level, a CE map (custom_maps\<name>) this machine has, or NONE.
+Scans for maps the first time. */
+short custom_edition_maps_display_index(
+	char const *level_name);
+
+/* whether the display index is a campaign level (stock or CE), i.e. co-op */
+boolean custom_edition_maps_campaign(
+	short display_index);
+
+/* the stock campaign level (0 is the first) for a display index, or NONE */
+short custom_edition_maps_campaign_level(
+	short display_index);
+
+/* whether a level name is a campaign level's, stock or CE: the game played
+on it is a campaign, or network co-op */
+boolean custom_edition_maps_level_campaign(
+	char const *level_name);
+
+/* The CE campaign maps (campaign TRUE) or multiplayer maps, sorted by name:
+how many there are, and the display index of the one at `index` (NONE past
+them). Scans for maps the first time. */
+short custom_edition_maps_count(
+	boolean campaign);
+short custom_edition_maps_display_index_of(
+	boolean campaign,
+	short index);
+
+/* The subfolder of the map at `index`, or "" when it is in the maps folder
+itself. NULL when `index` is past the list. */
+char const *custom_edition_maps_category(
+	boolean campaign,
+	short index);
+
+/* the level name to load for a display index, or NULL */
+char const *custom_edition_maps_level_name(
+	short display_index);
+
+/* whether the display index is one of Halo PC's own multiplayer maps (Ice
+Fields, Death Island and so on), which are listed as VANILLA */
+boolean custom_edition_maps_stock(
+	short display_index);
+
+/* deletes the CE map with this display index: its .map, and the description
+(.txt) and picture (.bmp) beside it, then its set's folder if that is left
+empty; or with whole_folder, the set's folder the map is in, with all in it
+(FALSE for a map at the maps folder's top). Whether it is gone. The maps are
+the menus' to find again (custom_edition_maps_look_again). */
+boolean custom_edition_maps_delete(
+	short display_index,
+	boolean whole_folder);
+
+/* name and description for a display index, or NULL (text_group.c) */
+/* a stock campaign level's title by its level's name (levels\a10\a10: The
+Pillar of Autumn), or NULL for any other level */
+wchar_t const *custom_edition_maps_level_title(
+	char const *level_name);
+wchar_t *custom_edition_maps_name(
+	short display_index);
+wchar_t *custom_edition_maps_description(
+	short display_index);
+
+/* Called by ui_widget.c when a bitmap widget draws frame *frame_index of a
+bitmap tag. If the tag is the level pictures and the frame is a display
+index of ours, returns the picture to draw over the whole widget, and sets
+*frame_index to the unknown level's frame (shown when NULL is returned).
+For anything else it returns NULL and leaves the frame alone. */
+struct bitmap_data *custom_edition_maps_picture(
+	long bitmap_tag_index,
+	short *frame_index);
+
+/* ---------- the Map Manager's (map_manager.c) */
+
+/* custom_maps' own folders, empty ones too, sorted by name, as of the last
+scan: how many, and the name of the one at `index` (NULL past them) */
+short custom_edition_maps_folder_count(
+	void);
+char const *custom_edition_maps_folder_name(
+	short index);
+
+/* the files of a display index's map; FALSE for none */
+boolean custom_edition_maps_file_get(
+	short display_index,
+	struct custom_edition_map_file *file);
+
+/* <folder><category\><name><extension>, the path of a display index's
+map's file (".map") or of one beside it (".bmp", ".txt"); FALSE for none,
+or one that does not fit */
+boolean custom_edition_maps_file_path(
+	short display_index,
+	char const *extension,
+	char *path,
+	long size);
+
+/* the picture file at path (a .bmp) as a texture of the menus' map
+pictures' shape, or NULL (logged) */
+struct bitmap_data *custom_edition_maps_picture_file_read(
+	char const *path);
+
+/* the map's picture read again when next drawn (it was changed) */
+void custom_edition_maps_picture_forget(
+	short display_index);
+
+#endif

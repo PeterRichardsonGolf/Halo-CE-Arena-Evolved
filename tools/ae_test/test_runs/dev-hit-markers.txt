@@ -1,0 +1,66 @@
+# DEV MODE's hit markers: brackets round the reticle when your damage lands (red on a kill).
+list dev-hit-markers
+revision 1
+title DEV MODE HIT MARKERS
+
+test hit-white
+title A hit shows white brackets
+check Shoot a bot: white corner brackets round the reticle
+check They hold a moment and fade, and a new hit restarts them
+map bloodgulch
+gametype slayer
+set bots.count 3
+set bots.skill easy
+set debug.network_test_loadout 2,3
+card bottom
+
+test kill-red
+title A kill shows red, larger brackets
+check Kill a bot: the brackets turn red and pop larger
+check They settle, hold a little longer than a hit and fade
+map bloodgulch
+gametype slayer
+set bots.count 3
+set bots.skill recruit
+set debug.network_test_loadout 4,3
+card bottom
+
+test grenade-melee
+title Grenades and melee show markers
+check Hit a bot with a grenade: brackets show
+check Melee a bot: brackets show
+map hangemhigh
+gametype slayer
+set bots.count 3
+set bots.skill recruit
+card bottom
+
+test fits-reticle
+title The brackets fit each weapon's reticle
+check Hit with the pistol, then the sniper rifle
+check The brackets box the reticle with a small gap each time
+map bloodgulch
+gametype slayer
+set bots.count 3
+set bots.skill recruit
+set debug.network_test_loadout 5,3
+card bottom
+
+test no-self-hit
+title Your own damage shows no marker
+check Throw a grenade at your feet: no brackets
+check Shoot a wall or the ground: no brackets
+map chillout
+gametype slayer
+set bots.count 0
+card bottom
+
+test shoulder-camera
+title Markers still show in the shoulder camera
+check F2, then shoot a bot: the brackets show at the reticle
+map bloodgulch
+gametype slayer
+set bots.count 3
+set bots.skill recruit
+set debug.network_test_loadout 2,3
+card bottom
