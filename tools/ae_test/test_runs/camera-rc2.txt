@@ -1,0 +1,29 @@
+# CAMERA (temple): the death camera twice in one game. A second death shows the death camera, not the teammate view,
+# when a camera that holds the view in life (the DEV third-person one) is on. One run kills you at once and again 20 s
+# later: the respawn comes about 10.5 s after a death, which leaves about 9 s alive to press A on the first death.
+# `setup camera third` is the D-PAD DOWN key's switch.
+list camera-rc2
+revision 1
+title CAMERA RC2: the death camera twice
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 3
+set bots.teams even
+set bots.skill normal
+set display.follow_camera always
+set debug.bot_events true
+set debug.dev_camera third
+
+test death-camera-twice
+title CAMERA: two deaths in one game, 20 s apart
+setup bots 3 even normal
+setup camera third
+setup goto start 0
+setup dummy 1 6
+setup kill me by bot
+setup kill me by bot after 20
+check First death: eases out to your body, looks at your killer
+check A after 3 s, then wait: the 2nd death eases out again
+check Right stick orbits your body on the second death

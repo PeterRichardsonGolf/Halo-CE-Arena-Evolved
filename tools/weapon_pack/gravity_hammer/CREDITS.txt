@@ -1,0 +1,21 @@
+AE GRAVITY HAMMER (weapon pack ae_gravity_hammer) - credits
+
+Gravity hammer from Grifball Beta (grifball.map) by SlappyThePirate, 2011; the hammer art's original maker is not
+named.
+
+The hammer (its model and first-person model, animations, textures, sounds, effects and particles, its HUD, reticle
+and weapon icon sheet) is taken as it is from that Custom Edition map's tags. Nothing of its art is changed: only the
+tags' paths are the pack's own (gravity_hammer\hammer\...), the models, one bitmap, one sound and the two HUDs are
+converted to what an Xbox map holds, and the picture the pickup prompts show is the map's own picture of the hammer,
+resampled. Arena Evolved sets the swing's numbers in the classic way, one blow one kill: a blast of 255 that kills a
+full shield and health within 1.8 units of the hammer's head, strips the shield to 2.2 and falls to nothing at 2.6, a
+reach of 2.8 units, one swing every 1.43 seconds; the melee button is a blow of the hammer too (175 to the one it lands
+on).
+
+Kind: community model. Shipped as is, to every player.
+
+What the hammer needs of the game (the rocket launcher's melee response, the stock material effects and impact sounds) it
+names, and the map the player owns provides.
+
+Thank you, SlappyThePirate. If you made the hammer's art, or know who did, and want it credited differently or taken
+out, tell us.

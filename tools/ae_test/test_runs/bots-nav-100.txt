@@ -1,0 +1,43 @@
+# 1.0 rc2 BOT NAV: a map may carry a hand-placed nav file of vehicle routes (lanes base to base, base exits, crossings;
+# scorpion lines of their own) and keepouts (rocks, trees, steep ledges every driver's route goes round), placed with
+# the nav tools. A driver with a far goal follows the routes, the usual search after their end. Blood Gulch is the first
+# map with one; a map without a file plays as before (setting bots.nav, on). Log: "bot nav: bloodgulch (built in): 14
+# routes (74 points), 18 keepouts" at the load, and with bot events "bot nav: bot N on route <name>".
+# A bot that sits at a Warthog's wheel with the gun empty honks (GET IN), a teammate bot near by goes for the gun and
+# the driver waits up to 10 s for it; a human teammate heading at the vehicle counts from 20 units and is waited for up
+# to 10 s.
+list bots-nav-100
+revision 2
+title BOT NAV: BLOOD GULCH ROUTES
+
+group bloodgulch
+map bloodgulch@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test lanes
+title Blood Gulch: drivers keep to the lanes
+check Ride with or watch the warthogs and ghosts a while
+check They drive the valley lanes, not into rocks or walls
+check None sits stuck against a rock or ledge for long
+expect 1 log bot nav: bloodgulch (built in)
+expect 1 log on route
+
+test exits
+title Blood Gulch: drivers get out of the bases
+check Watch both bases' vehicles as bots take them
+check They drive out round the base walls, no wedging
+check The scorpions get out too, slower lines
+
+test scorpion
+title Blood Gulch: a tank crosses the map
+check Watch a bot drive a scorpion toward the other base
+check It keeps off the west wall's steep ledge
+check It reaches the far side without backing in circles
+
+test gunner
+title Blood Gulch: a bot driver waits for its gunner
+check Walk to a Warthog a bot has just got in (20 u)
+check It honks and waits; you get in the gun seat
+check Its gun is manned more often than it drives alone

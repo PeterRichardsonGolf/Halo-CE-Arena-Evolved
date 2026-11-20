@@ -1,0 +1,177 @@
+nav 1 deathisland
+made bc82f454
+
+# keepouts: boulders and the trunk-slope beside the lanes and the stuck spots
+keepout 39.0 -16.0 3.8 radius 3.0
+keepout -52.2 5.0 3.7 radius 3.5
+keepout -55.1 8.2 3.7 radius 1.4
+keepout -49.0 -22.4 3.3 radius 1.2
+
+# south lane: red base apron along the west and south beaches, then up the east side to the blue base apron
+route south_lane warthog,ghost
+point -44 -9 4.43
+point -45 -9 4.33 speed 0.62 turn 10.1
+point -55 -19 1.96 speed 0.62 turn 10.1
+point -55 -26 1.56 speed 0.68 turn 9.0
+point -51 -31 1.70 speed 0.68 turn 9.0
+point -51 -34 1.68 speed 0.72 turn 8.2
+point -49 -37 1.87 speed 0.72 turn 8.2
+point -49 -42 1.72 speed 0.65 turn 9.5
+point -41 -51 1.73
+point -37 -53 1.70
+point -31 -59 1.55 speed 0.68 turn 9.0
+point -22 -60 1.54 speed 0.73 turn 8.1
+point -16 -57 1.55
+point -14 -55 1.56 speed 0.62 turn 10.1
+point -7 -55 1.55 speed 0.62 turn 10.1
+point 0 -48 2.10 speed 0.62 turn 10.1
+point 5 -48 2.05 speed 0.62 turn 10.1
+point 6 -47 2.18 speed 0.62 turn 10.1
+point 26 -47 1.98 speed 0.62 turn 10.1
+point 27 -46 2.08 speed 0.62 turn 10.1
+point 37 -46 2.02 speed 0.62 turn 10.1
+point 38 -45 2.10 speed 0.62 turn 10.1
+point 42 -45 2.01 speed 0.62 turn 10.1
+point 43 -44 2.05 speed 0.62 turn 10.1
+point 47 -44 1.91 speed 0.78 turn 7.0
+point 49 -43 1.91
+point 52 -40 1.90 speed 0.62 turn 10.1
+point 52 -26 2.09
+point 51 -13 2.69
+point 51 1 2.91 speed 0.62 turn 10.1
+point 47 5 3.72 speed 0.62 turn 10.1
+point 46 5 4.11
+end
+
+# south lane for scorpions: same way with a wider berth
+route south_lane_sc scorpion
+point -44 -9 4.43
+point -47 -9 4.08 speed 0.62 turn 11.9
+point -55 -17 2.14 speed 0.62 turn 11.9
+point -55 -21 1.81 speed 0.62 turn 11.9
+point -56 -22 1.67 speed 0.62 turn 11.9
+point -56 -26 1.55 speed 0.62 turn 11.9
+point -52 -30 1.64 speed 0.62 turn 11.9
+point -52 -33 1.57 speed 0.78 turn 8.8
+point -50 -37 1.76 speed 0.78 turn 8.8
+point -50 -43 1.57 speed 0.72 turn 10.0
+point -48 -46 1.63 speed 0.72 turn 10.0
+point -48 -49 1.55 speed 0.62 turn 11.9
+point -44 -53 1.55 speed 0.62 turn 11.9
+point -39 -53 1.59 speed 0.78 turn 8.8
+point -37 -54 1.60
+point -31 -60 1.54 speed 0.62 turn 11.9
+point -19 -60 1.54 speed 0.68 turn 10.8
+point -14 -56 1.55 speed 0.68 turn 10.8
+point -7 -56 1.54 speed 0.78 turn 8.8
+point -5 -55 1.55
+point -3 -53 1.56 speed 0.62 turn 11.9
+point -3 -51 1.76 speed 0.62 turn 11.9
+point 0 -48 2.10 speed 0.62 turn 11.9
+point 13 -48 2.12
+point 26 -48 1.87 speed 0.72 turn 10.0
+point 29 -46 2.08 speed 0.75 turn 9.5
+point 47 -45 1.91
+point 51 -43 1.89 speed 0.75 turn 9.4
+point 53 -40 1.84 speed 0.72 turn 10.0
+point 53 -31 1.92 speed 0.62 turn 11.9
+point 52 -30 2.05 speed 0.62 turn 11.9
+point 52 -23 2.08 speed 0.62 turn 11.9
+point 51 -22 2.21 speed 0.62 turn 11.9
+point 51 -3 3.03 speed 0.62 turn 11.9
+point 47 1 3.52 speed 0.74 turn 9.6
+point 46 5 4.11
+end
+
+# north lane: red base apron up the west shore, across the north land and down the north-east shore to the blue base apron
+route north_lane warthog,ghost
+point -44 -9 4.43
+point -47 -9 4.08 speed 0.62 turn 10.1
+point -50 -6 3.80 speed 0.62 turn 10.1
+point -54 -6 3.35 speed 0.62 turn 10.1
+point -60 0 2.64 speed 0.62 turn 10.1
+point -60 2 2.87 speed 0.62 turn 10.1
+point -62 4 2.47 speed 0.62 turn 10.1
+point -62 17 3.97 speed 0.75 turn 7.6
+point -66 24 3.65 speed 0.75 turn 7.6
+point -66 26 3.55 speed 0.62 turn 10.1
+point -68 28 3.14 speed 0.62 turn 10.1
+point -68 41 2.20 speed 0.62 turn 10.1
+point -66 43 2.27 speed 0.62 turn 10.1
+point -66 50 2.14 speed 0.78 turn 7.0
+point -65 52 2.11
+point -59 58 2.46 speed 0.74 turn 7.8
+point -55 59 2.86 speed 0.74 turn 7.8
+point -41 73 2.01 speed 0.62 turn 10.1
+point -27 73 2.01 speed 0.62 turn 10.1
+point -26 72 2.08 speed 0.72 turn 8.2
+point -21 71 2.03
+point -18 69 2.04 speed 0.72 turn 8.2
+point -14 69 1.90 speed 0.62 turn 10.1
+point -12 67 1.96 speed 0.62 turn 10.1
+point -12 62 2.34 speed 0.62 turn 10.1
+point 1 49 3.70 speed 0.62 turn 10.1
+point 3 49 3.94 speed 0.62 turn 10.1
+point 4 48 4.22 speed 0.62 turn 10.1
+point 15 48 3.83 speed 0.62 turn 10.1
+point 18 45 3.81 speed 0.62 turn 10.1
+point 25 45 3.55 speed 0.62 turn 10.1
+point 27 47 3.32
+point 29 52 2.89
+point 29 56 2.08 speed 0.78 turn 7.0
+point 27 60 1.87 speed 0.35 turn 29.5
+point 31 56 2.10 speed 0.62 turn 10.1
+point 37 56 2.00 speed 0.62 turn 10.1
+point 50 43 2.04 speed 0.62 turn 10.1
+point 52 43 1.96 speed 0.35 turn 25.1
+point 51 42 2.01 speed 0.62 turn 10.1
+point 51 36 2.24 speed 0.62 turn 10.1
+point 50 35 2.39 speed 0.66 turn 9.3
+point 49 23 2.84 speed 0.66 turn 9.3
+point 47 21 3.37
+end
+
+# north lane for scorpions, blue side only: up the north-east shore to the north middle (the west shore is too tight for a scorpion)
+route north_lane_sc scorpion
+point 47 21 3.37
+point 47 24 3.12 speed 0.62 turn 11.9
+point 50 27 2.62 speed 0.62 turn 11.9
+point 50 41 2.15 speed 0.62 turn 11.9
+point 52 43 1.96 speed 0.35 turn 26.9
+point 51 43 1.98 speed 0.60 turn 12.5
+point 43 52 2.06
+point 41 53 2.09 speed 0.78 turn 8.8
+point 33 53 2.82 speed 0.59 turn 12.6
+point 27 60 1.87 speed 0.59 turn 12.6
+point 25 60 1.86 speed 0.62 turn 11.9
+point 22 63 1.58
+point 14 68 1.55 speed 0.73 turn 9.7
+point 4 68 1.56 speed 0.78 turn 8.8
+point 2 67 1.68
+point -3 62 2.00 speed 0.62 turn 11.9
+point -3 59 2.06 speed 0.62 turn 11.9
+point -5 57 2.14
+end
+
+# red base: the vehicle pad by the ramp foot out to the start of both lanes
+route red_exit any
+point -36 -7 5.33
+point -42 -7 4.76 speed 0.62 turn 11.9
+point -44 -9 4.43
+end
+
+# blue base: the strip below the vehicle pads, joining the ends of the south and north lanes
+route blue_apron any
+point 46 5 4.11
+point 48 8 3.40
+point 48 14 3.57
+point 48 20 3.26
+point 47 21 3.37
+end
+
+# blue base: the vehicle pad by the ramp foot out onto the strip
+route blue_exit any
+point 41 16 4.91
+point 46 16 4.14
+point 48 14 3.57
+end

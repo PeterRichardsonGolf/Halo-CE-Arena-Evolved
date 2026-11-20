@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="256" viewBox="0 0 512 256">
+<style>
+.b { fill:#000; stroke:#2896FF; stroke-width:2.036; stroke-linejoin:round }
+.l { fill:none; stroke:#2896FF; stroke-width:2.036; stroke-linecap:round; stroke-linejoin:round }
+.w { fill:none; stroke:#2896FF; stroke-width:3.053; stroke-linecap:round; stroke-linejoin:round }
+.e { fill:none; stroke:#2896FF; stroke-width:2.036; stroke-linejoin:round }
+.arc { fill:none; stroke:#2896FF; stroke-width:5.089 }
+.f { fill:#2896FF; stroke:none }
+.red { stroke:#FF3A3A }
+.red-fill { fill:#FF3A3A }
+.blue-fill { fill:#2896FF }
+</style>
+<defs><filter id="glow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.53"/></filter><clipPath id="coop_0"><rect x="4" y="8" width="92" height="36"/></clipPath><clipPath id="coop_1"><rect x="4" y="44" width="92" height="36"/></clipPath><clipPath id="coop_screen"><rect x="4" y="8" width="92" height="72"/></clipPath></defs>
+<g transform="translate(67.40 42.97) scale(1.5720)">
+<g filter="url(#glow)" opacity="0.9"><path d="M42.0,79 l-4,11 h24 l-4,-11 z" class="b"/>
+<rect x="4" y="8" width="92" height="72" rx="3" class="b"/>
+<g clip-path="url(#coop_0)">
+<path d="M29.599999999999998,55.888000000000005 L30.959999999999997,43.648 Q32.32,36.848 40.48,35.488 L59.52,35.488 Q67.68,36.848 69.04,43.648 L70.4,55.888000000000005 Z" class="b"/>
+<path d="M41.296,33.584 C39.12,23.792 41.296,14.000000000000004 50.0,14.000000000000004 C58.704,14.000000000000004 60.88,23.792 58.704,33.584 L54.352000000000004,36.848000000000006 L45.647999999999996,36.848000000000006 Z" class="b"/>
+<path d="M42.928,22.704000000000004 Q50.0,19.984 57.072,22.704000000000004 L55.984,28.144000000000005 Q50.0,26.512000000000004 44.016,28.144000000000005 Z" class="f"/>
+</g>
+<g clip-path="url(#coop_1)">
+<path d="M29.599999999999998,91.888 L30.959999999999997,79.648 Q32.32,72.848 40.48,71.488 L59.52,71.488 Q67.68,72.848 69.04,79.648 L70.4,91.888 Z" class="b"/>
+<path d="M41.296,69.584 C39.12,59.792 41.296,50.0 50.0,50.0 C58.704,50.0 60.88,59.792 58.704,69.584 L54.352000000000004,72.848 L45.647999999999996,72.848 Z" class="b"/>
+<path d="M42.928,58.704 Q50.0,55.984 57.072,58.704 L55.984,64.144 Q50.0,62.512 44.016,64.144 Z" class="f"/>
+</g>
+<g clip-path="url(#coop_screen)">
+<line x1="4" y1="44" x2="96" y2="44" class="w"/>
+</g>
+<rect x="4" y="8" width="92" height="72" rx="3" class="e"/></g>
+<path d="M42.0,79 l-4,11 h24 l-4,-11 z" class="b"/>
+<rect x="4" y="8" width="92" height="72" rx="3" class="b"/>
+<g clip-path="url(#coop_0)">
+<path d="M29.599999999999998,55.888000000000005 L30.959999999999997,43.648 Q32.32,36.848 40.48,35.488 L59.52,35.488 Q67.68,36.848 69.04,43.648 L70.4,55.888000000000005 Z" class="b"/>
+<path d="M41.296,33.584 C39.12,23.792 41.296,14.000000000000004 50.0,14.000000000000004 C58.704,14.000000000000004 60.88,23.792 58.704,33.584 L54.352000000000004,36.848000000000006 L45.647999999999996,36.848000000000006 Z" class="b"/>
+<path d="M42.928,22.704000000000004 Q50.0,19.984 57.072,22.704000000000004 L55.984,28.144000000000005 Q50.0,26.512000000000004 44.016,28.144000000000005 Z" class="f"/>
+</g>
+<g clip-path="url(#coop_1)">
+<path d="M29.599999999999998,91.888 L30.959999999999997,79.648 Q32.32,72.848 40.48,71.488 L59.52,71.488 Q67.68,72.848 69.04,79.648 L70.4,91.888 Z" class="b"/>
+<path d="M41.296,69.584 C39.12,59.792 41.296,50.0 50.0,50.0 C58.704,50.0 60.88,59.792 58.704,69.584 L54.352000000000004,72.848 L45.647999999999996,72.848 Z" class="b"/>
+<path d="M42.928,58.704 Q50.0,55.984 57.072,58.704 L55.984,64.144 Q50.0,62.512 44.016,64.144 Z" class="f"/>
+</g>
+<g clip-path="url(#coop_screen)">
+<line x1="4" y1="44" x2="96" y2="44" class="w"/>
+</g>
+<rect x="4" y="8" width="92" height="72" rx="3" class="e"/>
+</g>
+</svg>

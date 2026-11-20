@@ -1,0 +1,130 @@
+# rc2 SERVICE RECORD: three pages for a player and for a bot (OVERVIEW | COMBAT | MODES & MAPS, Y or Tab or a click on the chips),
+# and the post-game DETAILS page (Y on CARNAGE). Every test opens on its page from its setup lines: `record_medals` is a made-up
+# player (a record of its own, the file untouched; page 1-3; counted <n> = how many of its games carry the new numbers), `botrecord`
+# a made-up store (page #<n> = its n-th bot, the first has the most games, the fourth is a record from before the update),
+# `pgcr_demo` a made-up post-game report on the player of slot 3. Try a pad and the keyboard (Tab = Y).
+list records-rc2
+revision 1
+title RC2 SERVICE RECORD: PAGES
+
+test player-overview
+title PLAYER RECORD: OVERVIEW
+check LAST GAME 8 rows, map and kind after its head
+check CAREER TOTALS 8 x 2: spread, KDA, ACCURACY, RATIO
+check HIGHLIGHTS 5 rows; LB / RB change the page
+menus
+setup record_medals 36 7
+expect 1 cmd record_medals ok
+
+test player-combat
+title PLAYER RECORD: COMBAT
+check ACCURACY and KILL KINDS: counts with a share of kills
+check DAMAGE, PER GAME: 1,234 style numbers, ratio 1.23
+check ASSISTS rows; RB goes to MODES & MAPS
+menus
+setup record_medals 36 7 page 2
+expect 1 cmd record_medals ok
+
+test player-modes
+title PLAYER RECORD: MODES & MAPS
+check OBJECTIVES 10 rows, a dash where a kind was not played
+check BY MAP two columns, TOP WEAPONS 5 rows with kills
+check D-pad to MEDALS (ring), A opens ALL MEDALS
+menus
+setup record_medals 36 7 page 3
+expect 1 cmd record_medals ok
+
+test player-old-record
+title PLAYER RECORD: from before the update
+check OVERVIEW: TIME, SPREE, ACCURACY, RATIO are dashes
+check GAMES, KILLS, K/D, MEDALS still show their numbers
+check Y: COMBAT cells are dashes; heads FROM 0 GAMES
+menus
+setup record_medals 36 7 counted 0
+expect 1 cmd record_medals ok
+
+test player-few-games
+title PLAYER RECORD: 3 games carry the new numbers
+check COMBAT heads: muted FROM 3 GAMES, numbers below
+check OVERVIEW totals show time, accuracy, ratio
+check MODES & MAPS: OBJECTIVES, BY MAP say FROM 3 GAMES
+menus
+setup record_medals 36 7 page 2 counted 3
+expect 1 cmd record_medals ok
+
+test bot-overview
+title BOT RECORD: OVERVIEW
+check THIS GAME, TOTALS 8 x 2 with TIME PLAYED, IDENTITY
+check Chips show OVERVIEW; foot: A, B, LB RB Page, LT RT
+check VS YOU is ringed; A shows the whole versus record
+menus
+setup botrecord demo seed 3
+setup botrecord page #1 game
+expect 1 cmd botrecord page ok
+
+test bot-combat
+title BOT RECORD: COMBAT
+check Same page as a player's: ACCURACY, KILL KINDS, ASSISTS
+check DAMAGE, PER GAME with 1,234 style numbers
+check Crumb: SERVICE RECORD . COMBAT; BOT chip by the name
+menus
+setup botrecord demo seed 3
+setup botrecord page #1 game page 2
+expect 1 cmd botrecord page ok
+
+test bot-modes
+title BOT RECORD: MODES & MAPS
+check BY KIND OF GAME and MEDALS pane, BY MAP, TOP WEAPONS
+check D-pad to MEDALS, A opens the bot's ALL MEDALS
+check B from ALL MEDALS returns to MODES & MAPS
+menus
+setup botrecord demo seed 3
+setup botrecord page #1 game page 3
+expect 1 cmd botrecord page ok
+
+test bot-old-record
+title BOT RECORD: from before the update
+check The fourth bot: 2 games carry the new numbers
+check COMBAT heads FROM 2 GAMES; damage, kinds dashes
+check MODES & MAPS: BY KIND head says FROM 2 GAMES
+menus
+setup botrecord demo seed 3
+setup botrecord page #4 page 2
+expect 1 cmd botrecord page ok
+
+test player-focus
+title PLAYER RECORD: focus and details
+check Ring on OBJECTIVES; D-pad moves it box to box, no wrap
+check A on TOP WEAPONS lists every weapon, kills and share
+check B returns to the same ringed box; A reads Details
+menus
+setup record_medals 36 7 page 3
+expect 1 cmd record_medals ok
+
+test bot-lt-rt
+title BOT RECORD: LT / RT keep page and box
+check D-pad to KILL KINDS; LT / RT (Page Up / Down): next bot
+check The page stays COMBAT and the ring stays on KILL KINDS
+check A opens its table with per-game numbers; LB / RB flip
+menus
+setup botrecord demo seed 3
+setup botrecord page #1 game page 2
+expect 1 cmd botrecord page ok
+
+test details-flag
+title POST-GAME DETAILS: flag game
+check TEAMS lines K D A ACC DAMAGE; kind block 5 rows
+check THIS GAME, ACCURACY AND DAMAGE, KILL KINDS fill the page
+check LB / RB: the next player; B: back to the board
+menus
+setup pgcr_demo 4v4 flag details
+expect 1 cmd pgcr_demo ok
+
+test details-ffa
+title POST-GAME DETAILS: free for all
+check TOP PLAYERS: three lines, by place, 6 columns
+check The kind's block reads MEDALS (a slayer game)
+check Y: the board again, with a Details prompt
+menus
+setup pgcr_demo ffa8 slayer details
+expect 1 cmd pgcr_demo ok

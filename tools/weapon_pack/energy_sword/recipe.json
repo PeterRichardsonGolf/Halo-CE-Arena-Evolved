@@ -1,0 +1,883 @@
+{
+ "format": 1,
+ "about": "The AE energy sword pack: CMT's energy sword (the evolved set's energy_sword from the stock-compatible source release of The Silent Cartographer: Evolved 1.4, no Open Sauce), its model taken as CMT made it for the third person, and for the first person CMT's mesh put on the node frames of ZTeam's first-person sword (frame handle, frame blades) so that ZTeam's first-person animations (idle, ready, moving, posing, melee, lunge, lunge in the air, grenade throws) move it, with ZTeam's melee and posing sounds, HUD, reticle and the picture of the sword for the prompts, each of ZTeam's taken as it is (an extra zip, --extra-zip zteam=...). CMT's release has no first-person sword, so the two views are two authors'. Only what an Xbox map needs is done: the models converted, the glow widgets and the detonation's boom left out, the pickup index the stock one's. The sword's swing and lunge are the game's (ae_sword_lunge.c). make_pack.py runs it; the locations of the zips, the stock map and the programs are given on its command line.",
+ "pack": {
+  "id": "ae_energy_sword",
+  "revision": 2,
+  "display": "ENERGY SWORD",
+  "prefix": "ae\\packs\\energy_sword\\",
+  "weapon": "cmt\\weapons\\evolved\\energy_sword\\energy_sword",
+  "weapon_key": "energy_sword",
+  "labels": "c_swd,ar",
+  "behaviour": 0,
+  "melee": true,
+  "replaces": 0,
+  "texts": "texts.txt",
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {},
+  "icon": "ae_pack\\hud\\sword_icon:0",
+  "roots": [
+   "bitm:ae_pack\\hud\\sword_icon"
+  ]
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4 source release, stock-compatible edition (no Open Sauce tags)",
+  "file": "tsce_1-4_source_release_stock.zip",
+  "sha256": "b0aac3f3148d939fd7c82c77cca47a4b23c5a3830eb5318fb5188fa647f2b833",
+  "root": "tsce_1-4_source_release_stock/tags/",
+  "allowlist": [
+   "cmt/effects/particles/air/bitmaps/animated smoke 3.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/wispy smoke.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/noisy_glow.bitmap",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/energy/energy sword drop.particle",
+   "cmt/effects/particles/energy/plasma energy residue blue.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/energy sword drop impact.effect",
+   "cmt/effects/shared effects/plasma drop impact blue.effect",
+   "cmt/weapons/_shared/energy_sword/bitmaps/energy_sword_diff.bitmap",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation.effect",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation_fire.particle_system",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation_smoke.particle_system",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_drops.effect",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_flaming.effect",
+   "cmt/weapons/_shared/energy_sword/energy_sword.gbxmodel",
+   "cmt/weapons/_shared/energy_sword/lights/energy_sword_detonation.light",
+   "cmt/weapons/_shared/energy_sword/lights/energy_sword_glow.light",
+   "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_bottom.shader_transparent_chicago",
+   "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_top.shader_transparent_chicago",
+   "cmt/weapons/_shared/energy_sword/shaders/energy_sword_handle.shader_model",
+   "cmt/weapons/evolved/energy_sword/damage_effects/energy_sword_melee.damage_effect",
+   "cmt/weapons/evolved/energy_sword/energy_sword.weapon"
+  ],
+  "verbatim": [
+   "cmt/effects/particles/air/bitmaps/animated smoke 3.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_fade.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke_wispy_small.bitmap",
+   "cmt/effects/particles/air/smoke h fp.particle",
+   "cmt/effects/particles/air/wispy smoke.particle",
+   "cmt/effects/particles/energy/bitmaps/cosine orbs.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/bitmaps/noisy_glow.bitmap",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/energy/plasma energy residue blue.particle",
+   "cmt/effects/particles/flash/bitmaps/impact flash.bitmap",
+   "cmt/effects/particles/flash/impact flash.particle",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/shared effects/energy sword drop impact.effect",
+   "cmt/effects/shared effects/plasma drop impact blue.effect",
+   "cmt/weapons/_shared/energy_sword/bitmaps/energy_sword_diff.bitmap",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation_fire.particle_system",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation_smoke.particle_system",
+   "cmt/weapons/_shared/energy_sword/effects/energy_sword_flaming.effect",
+   "cmt/weapons/_shared/energy_sword/lights/energy_sword_detonation.light",
+   "cmt/weapons/_shared/energy_sword/lights/energy_sword_glow.light",
+   "cmt/weapons/_shared/energy_sword/shaders/energy_sword_handle.shader_model"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08",
+    "invader-recover": "cf21c64b3f0a04f1727371902fb3dcb9eacbedf22f5ee2099ad46b03bfb378e0",
+    "invader-model": "f9ef0e57f55046b77d95dc29e5e2b6a8037259a9ba8807b34dd64596c7357883"
+   }
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "donor": {
+  "scenario": "ae_pack\\donor\\donor"
+ },
+ "layers": [
+  "fix-ae",
+  "fix-xbox"
+ ],
+ "art_inputs": {
+  "antr_energy_sword_fp_spartan.model_animations": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations",
+   "sha256": "87962116ed47c0c8bba70acb3748a14dedf8b8bcafb5d15857ed6610e709e64c",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "m1_melee_1.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_1.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_1.sound",
+   "sha256": "44c51298e5762dab4ba6dc5926078ab7960895901644fbdcf5f8fbad7fdb7f97",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "m2_melee_2.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_2.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_2.sound",
+   "sha256": "ad80391a334c79840fd280a0773bddac06db3981c75f8ec6b7b3aeb8bb143193",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "po_posing.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/posing.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/posing.sound",
+   "sha256": "414dc78494272e08ef04bac52b14a8bdbb81164c4df818865b0bbc88e0cd1d98",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "hud_h3_energy_sword.weapon_hud_interface": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/hud/temp/weapon_interfaces/h3_energy_sword.weapon_hud_interface",
+   "root": "zteam",
+   "tag": "zteam/hud/temp/weapon_interfaces/h3_energy_sword.weapon_hud_interface",
+   "sha256": "25dc3e02cddd272fa1ba8beef6c53f510c8c082e328d1987786532baffd1be9d",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "ret_energy_sword.bitmap": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/hud/shared/bitmaps/reticles/weapons/energy_sword.bitmap",
+   "root": "zteam",
+   "tag": "zteam/hud/shared/bitmaps/reticles/weapons/energy_sword.bitmap",
+   "sha256": "f50b797a65dde02afd61b1cb7376eebc3cd96f9a6271ad80b9f5c97993065407",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "sword_picture.bitmap": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/hud/h3/bitmaps/icons/weapons/energy_sword.bitmap",
+   "root": "zteam",
+   "tag": "zteam/hud/h3/bitmaps/icons/weapons/energy_sword.bitmap",
+   "sha256": "8cc2bb4e40b65c185e1881dcb681fcbe8720579a5ed5b6f61dc838aa0223146f",
+   "scripts": [
+    "source_icon.py"
+   ]
+  },
+  "rd_ready.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/ready.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/ready.sound",
+   "sha256": "4717973197b69a2f5c747a65531e3d277a151f547f3b52ff186c5fbbc3a7fd9c",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "sl_sword_loop.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound",
+   "sha256": "d3b536c85e267b441be829c3b174d257dde113881a5fb9a163592e3450a6d104",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "sll_sword_loop.sound_looping": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound_looping",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound_looping",
+   "sha256": "e3b0ba169f64685379159c1e3853ae9b39e138e0a2cf9bed66fb98d4a12a0ea6",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "dr_drop.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h2/sounds/drop.sound",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/drop.sound",
+   "sha256": "d115c2cb3ca5e0c1fc573e2cfa41f3379392aa4c66d57333f199e035956e6a79",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "fl_sword_impact_flesh.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/shared/sounds/sfx/projectile_impacts/sword_impact_flesh.sound",
+   "root": "zteam",
+   "tag": "zteam/shared/sounds/sfx/projectile_impacts/sword_impact_flesh.sound",
+   "sha256": "1363f3255d4f81b4590168c5ed07a55c8984e36a42d53b138050ebe7cbea41e2",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "en_melee_impact_energy.sound": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/shared/sounds/sfx/melee_impacts/melee_impact_energy.sound",
+   "root": "zteam",
+   "tag": "zteam/shared/sounds/sfx/melee_impacts/melee_impact_energy.sound",
+   "sha256": "19ca0c76f7f33d81c39ac6c69d6d09a5866f71ce95e8fd4dfe22a75b6d5b5001",
+   "scripts": [
+    "copy_input.py"
+   ]
+  },
+  "lu_lunge.effect": {
+   "kind": "zip",
+   "zip": "zteam",
+   "member": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/effects/lunge.effect",
+   "root": "zteam",
+   "tag": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/effects/lunge.effect",
+   "sha256": "bc2674c7572e4d5d009b279963bde415ed249b94310d30b4ef0b9db570811360",
+   "scripts": [
+    "copy_input.py"
+   ]
+  }
+ },
+ "art_settings": {},
+ "art_scripts": {
+  "sword_icon.png": "source_icon.py"
+ },
+ "art_drawings": {
+  "sword_icon.png": {
+   "draw": "source_icon",
+   "input": "sword_picture.bitmap",
+   "width": 100
+  }
+ },
+ "art": {
+  "sword_icon.png": {
+   "mode": "RGBA",
+   "size": [
+    102,
+    42
+   ],
+   "pixels_sha256": "8ff93508939db577b72aa5e0dcc9905fddb90928023be44e507aa5020325f235"
+  }
+ },
+ "steps": [
+  {
+   "layer": "fix-xbox",
+   "tag": "ae_pack/donor/donor.scenario",
+   "op": "edit",
+   "from": [
+    "stock",
+    "levels/test/bloodgulch/bloodgulch.scenario"
+   ],
+   "edits": [
+    [
+     "erase",
+     "vehicles[*]"
+    ],
+    [
+     "erase",
+     "vehicle_palette[*]"
+    ],
+    [
+     "insert",
+     "weapon_palette",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "weapon_palette[0].name",
+     "cmt\\weapons\\evolved\\energy_sword\\energy_sword.weapon"
+    ]
+   ],
+   "why": "the donor map: Blood Gulch's scenario without vehicles, the weapon in its weapon palette"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "globals/globals.globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "globals/globals.globals"
+   ],
+   "edits": [
+    [
+     "erase",
+     "multiplayer_information[0].vehicles[*]"
+    ],
+    [
+     "set",
+     "interface_bitmaps[0].hud_globals",
+     "ae_pack\\donor\\hud.hud_globals"
+    ]
+   ],
+   "why": "the donor map: no vehicles; its HUD globals the donor's own (the prompts' picture)"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/energy_sword/energy_sword.model",
+   "op": "model",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/energy_sword.gbxmodel"
+   ],
+   "why": "the Xbox's model format (Invader's gbxmodel to model); its markers, which CMT's file holds at the model's level, put in its permutations, where the Xbox's model keeps them; the part CMT's file holds with no vertices (nothing to draw) taken out",
+   "bludgeon": [
+    "invalid-model-markers",
+    "missing-vertices"
+   ]
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_bottom.shader_transparent_chicago",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_bottom.shader_transparent_chicago"
+   ],
+   "edits": [
+    [
+     "set",
+     "shader_transparent_chicago_flags.draw_before_water",
+     "0"
+    ]
+   ],
+   "why": "the blade is drawn in the first-person view too, which the game's transparent pass refuses for a shader that draws before the water (it asserts, each frame): the flag cleared; nothing else of CMT's shader is changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_top.shader_transparent_chicago",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_top.shader_transparent_chicago"
+   ],
+   "edits": [
+    [
+     "set",
+     "shader_transparent_chicago_flags.draw_before_water",
+     "0"
+    ]
+   ],
+   "why": "the blade is drawn in the first-person view too, which the game's transparent pass refuses for a shader that draws before the water (it asserts, each frame): the flag cleared; nothing else of CMT's shader is changed"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/energy_sword/fp/fp.model",
+   "op": "model_rig",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/energy_sword.gbxmodel"
+   ],
+   "bludgeon": [
+    "invalid-model-markers"
+   ],
+   "rig": {
+    "scale": 1.0185,
+    "origin": [
+     0,
+     0,
+     0.8069
+    ],
+    "target": [
+     0.5834,
+     0,
+     0
+    ],
+    "nodes": {
+     "frame blades": [
+      8,
+      0,
+      0
+     ]
+    }
+   },
+   "shaders": [
+    "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_bottom.shader_transparent_chicago",
+    "cmt/weapons/_shared/energy_sword/shaders/energy_sword_blade_top.shader_transparent_chicago",
+    "cmt/weapons/_shared/energy_sword/shaders/energy_sword_handle.shader_model"
+   ],
+   "why": "the first-person sword: CMT's mesh on the node frames of ZTeam's first-person animations (\"frame handle\", and \"frame blades\" 8 units out along the blade): moved uniformly (x1.0185) so its grip centre and blade tip sit where ZTeam's first-person sword has them, its blade along the same axis; the Xbox's model format"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations",
+   "op": "derived",
+   "derived": "antr_energy_sword_fp_spartan.model_animations"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_1.sound",
+   "op": "derived",
+   "derived": "m1_melee_1.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_2.sound",
+   "op": "derived",
+   "derived": "m2_melee_2.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/posing.sound",
+   "op": "derived",
+   "derived": "po_posing.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/hud/temp/weapon_interfaces/h3_energy_sword.weapon_hud_interface",
+   "op": "derived",
+   "derived": "hud_h3_energy_sword.weapon_hud_interface"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/hud/shared/bitmaps/reticles/weapons/energy_sword.bitmap",
+   "op": "derived",
+   "derived": "ret_energy_sword.bitmap"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/energy_sword/energy_sword.weapon",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/energy_sword/energy_sword.weapon"
+   ],
+   "edits": [
+    [
+     "set",
+     "weapon_flags.detonates_when_dropped",
+     "0"
+    ],
+    [
+     "erase",
+     "widgets[*]"
+    ],
+    [
+     "set",
+     "model",
+     "cmt/weapons/_shared/energy_sword/energy_sword.model"
+    ],
+    [
+     "set",
+     "pickup_text_index",
+     "4"
+    ],
+    [
+     "set",
+     "first_person_model",
+     "cmt/weapons/_shared/energy_sword/fp/fp.model"
+    ],
+    [
+     "set",
+     "first_person_animations",
+     "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations"
+    ],
+    [
+     "set",
+     "hud_interface",
+     "zteam/hud/temp/weapon_interfaces/h3_energy_sword.weapon_hud_interface"
+    ],
+    [
+     "set",
+     "ready_effect",
+     "ae_sword/ready_sound.effect"
+    ],
+    [
+     "set",
+     "collision_sound",
+     "zteam/objects/weapons/single/energy_sword/h2/sounds/drop.sound"
+    ],
+    [
+     "insert",
+     "attachments",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "attachments[2].type",
+     "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound_looping"
+    ]
+   ],
+   "why": "the Xbox model; the pickup message index the stock assault rifle's (CMT's points into CMT's own HUD texts); the two glow widgets left out (their sprite, rasterizer\\glow sprite, is a bitmap of the PC kit that no Xbox map has, and the Xbox maps hold no glow tags); the first-person model CMT's mesh on ZTeam's node frames, with ZTeam's first-person animations and HUD; the flag \"detonates when dropped\" cleared (CMT's sword has it: the game counts a weapon put away on a switch as dropped, so the detonation timer ran and deleted the sword 13 ticks after a switch to another weapon); ZTeam's sounds: the ready sound on draw (a one-sound effect), the hum (its looping sound) while held, the drop sound when it lands"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/effects/energy_sword_detonation.effect"
+   ],
+   "edits": [
+    [
+     "erase",
+     "events[0].parts[2]"
+    ]
+   ],
+   "why": "the detonation's sword boom (a sound of the PC kit, sound\\sfx\\impulse\\impacts\\elite_sword_boom) is on no Xbox map: left out; the effect's other parts stay"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "cmt/weapons/evolved/energy_sword/damage_effects/energy_sword_melee.damage_effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/evolved/energy_sword/damage_effects/energy_sword_melee.damage_effect"
+   ],
+   "edits": [
+    [
+     "sets",
+     [
+      [
+       "low_frequency_vibrate_frequency",
+       "0.8"
+      ],
+      [
+       "low_frequency_vibrate_duration",
+       "0.15"
+      ],
+      [
+       "high_frequency_vibrate_frequency",
+       "0.7"
+      ],
+      [
+       "high_frequency_vibrate_duration",
+       "0.12"
+      ]
+     ]
+    ],
+    [
+     "set",
+     "sound",
+     "zteam/shared/sounds/sfx/projectile_impacts/sword_impact_flesh.sound"
+    ]
+   ],
+   "why": "haptics (the done checklist's point 14): a heavy thump on both motors with each blow; nothing else of CMT's melee damage is changed; ZTeam's sword-hit sound (sword_impact_flesh) played with each blow"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/ready.sound",
+   "op": "derived",
+   "derived": "rd_ready.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound",
+   "op": "derived",
+   "derived": "sl_sword_loop.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/sword_loop.sound_looping",
+   "op": "derived",
+   "derived": "sll_sword_loop.sound_looping"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h2/sounds/drop.sound",
+   "op": "derived",
+   "derived": "dr_drop.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/shared/sounds/sfx/projectile_impacts/sword_impact_flesh.sound",
+   "op": "derived",
+   "derived": "fl_sword_impact_flesh.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/shared/sounds/sfx/melee_impacts/melee_impact_energy.sound",
+   "op": "derived",
+   "derived": "en_melee_impact_energy.sound"
+  },
+  {
+   "layer": "fix-xbox",
+   "tag": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/effects/lunge.effect",
+   "op": "derived",
+   "derived": "lu_lunge.effect"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/animations/energy_sword_fp_spartan.model_animations"
+   ],
+   "edits": [
+    [
+     "set",
+     "first_person_weapons[0].animations[14].animation",
+     "3"
+    ]
+   ],
+   "why": "the animations' table slot the game plays for a lunge in the air (a secondary fire message): ZTeam's lunge-airborne (its table has the ground lunge there)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/hud/sword_icon.bitmap",
+   "op": "bitmap",
+   "art": [
+    "sword_icon.png"
+   ],
+   "arguments": [
+    "-I",
+    "-T",
+    "sprites",
+    "-F",
+    "32-bit",
+    "-M",
+    "0",
+    "-B",
+    "128",
+    "-C",
+    "1"
+   ],
+   "sprite": "corner",
+   "why": "the swap and pickup prompts' picture: ZTeam's own picture of the sword (its HUD's weapon picture), resampled onto a one-sprite sheet by source_icon.py; nothing drawn"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_pack/donor/hud.hud_globals",
+   "op": "edit",
+   "from": [
+    "stock",
+    "ui/hud/default.hud_globals"
+   ],
+   "edits": [
+    [
+     "set",
+     "icon_bitmap",
+     "ae_pack\\hud\\sword_icon.bitmap"
+    ]
+   ],
+   "why": "the donor map only: HUD globals naming the prompts' picture so the donor holds it (the pack takes it by its root)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_sword/clash.sound",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "zteam/shared/sounds/sfx/melee_impacts/melee_impact_energy.sound"
+   ],
+   "edits": [
+    [
+     "set",
+     "random_pitch_bounds",
+     "1.35 1.35"
+    ]
+   ],
+   "why": "the sword clash's sound: ZTeam's melee_impact_energy (it has no clash sound of its own) played a third higher"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "ae_sword/ready_sound.effect",
+   "op": "edit",
+   "from": [
+    "fix-xbox",
+    "zteam/objects/weapons/single/energy_sword/h3_lunge_parry/effects/lunge.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].parts[0].type",
+     "zteam/objects/weapons/single/energy_sword/h2/sounds/ready.sound"
+    ],
+    [
+     "insert",
+     "events",
+     1,
+     "end"
+    ],
+    [
+     "set",
+     "events[1].skip_fraction",
+     "1"
+    ],
+    [
+     "insert",
+     "events[1].parts",
+     2,
+     "end"
+    ],
+    [
+     "set",
+     "events[1].parts[0].type",
+     "ae_sword/clash.sound"
+    ],
+    [
+     "set",
+     "events[1].parts[1].type",
+     "zteam/objects/weapons/single/energy_sword/h2/sounds/melee_1.sound"
+    ]
+   ],
+   "why": "ZTeam's lunge effect (one part, no delay) with its damage effect replaced by ZTeam's ready sound: the weapon's ready effect, the sound on draw; a second event that is never made (it is skipped always) names the clash sound and the lunge sound, so the weapon holds them in the donor and the pack (the game plays them by name, ae_sword_lunge.c)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/weapons/_shared/energy_sword/effects/energy_sword_drops.effect",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/weapons/_shared/energy_sword/effects/energy_sword_drops.effect"
+   ],
+   "edits": [
+    [
+     "set",
+     "events[0].particles[0].count",
+     "0 2"
+    ],
+    [
+     "set",
+     "events[0].particles[1].count",
+     "0 1"
+    ]
+   ],
+   "why": "the dripping sparks off the blade toned down (owner: too sparkly): about half the particles (0 to 3 at each of the two places made 0 to 2 and 0 to 1)"
+  },
+  {
+   "layer": "fix-ae",
+   "tag": "cmt/effects/particles/energy/energy sword drop.particle",
+   "op": "edit",
+   "from": [
+    "cmt",
+    "cmt/effects/particles/energy/energy sword drop.particle"
+   ],
+   "edits": [
+    [
+     "set",
+     "lifespan",
+     "0.225 0.35"
+    ]
+   ],
+   "why": "the dripping sparks toned down: each lives half as long (0.45 to 0.7 s made 0.225 to 0.35 s)"
+  }
+ ],
+ "expected": {
+  "about": "re-pinned 2026-11-04 (revision 2: sounds, softer sparks)",
+  "donor_sha256": "a4e3a534a59e675d90735204db3fbfc1d62bf3524a880949eb5a9c297343fd3c",
+  "donor_size": 20377600,
+  "pack_sha256": "d947c9b30f09cd361c4ba64e6ef620e821b8355d4d3a622715167906c5eea80d",
+  "pack_own_sha256": "c945188a4028a17d5aa21e15a45732e4a1e9382bb849ce297878fc2fc805852d",
+  "pack_size": 1854944,
+  "own_tags": 46,
+  "external_tags": 6
+ },
+ "extra_sources": {
+  "zteam": {
+   "name": "ZTeam's tag pack (the energy sword's first-person animations, sounds, HUD, reticle and picture)",
+   "file": "zteam_Tag_Pack.zip",
+   "sha256": "3f3cb3af7524dd4c1c49327cd75d811eb5df191d3cb3aa789474ae9b8205ffa3"
+  }
+ },
+ "derived": {
+  "antr_energy_sword_fp_spartan.model_animations": {
+   "script": "copy_input.py",
+   "input": "antr_energy_sword_fp_spartan.model_animations",
+   "sha256": "87962116ed47c0c8bba70acb3748a14dedf8b8bcafb5d15857ed6610e709e64c"
+  },
+  "m1_melee_1.sound": {
+   "script": "copy_input.py",
+   "input": "m1_melee_1.sound",
+   "sha256": "44c51298e5762dab4ba6dc5926078ab7960895901644fbdcf5f8fbad7fdb7f97"
+  },
+  "m2_melee_2.sound": {
+   "script": "copy_input.py",
+   "input": "m2_melee_2.sound",
+   "sha256": "ad80391a334c79840fd280a0773bddac06db3981c75f8ec6b7b3aeb8bb143193"
+  },
+  "po_posing.sound": {
+   "script": "copy_input.py",
+   "input": "po_posing.sound",
+   "sha256": "414dc78494272e08ef04bac52b14a8bdbb81164c4df818865b0bbc88e0cd1d98"
+  },
+  "hud_h3_energy_sword.weapon_hud_interface": {
+   "script": "copy_input.py",
+   "input": "hud_h3_energy_sword.weapon_hud_interface",
+   "sha256": "25dc3e02cddd272fa1ba8beef6c53f510c8c082e328d1987786532baffd1be9d"
+  },
+  "ret_energy_sword.bitmap": {
+   "script": "copy_input.py",
+   "input": "ret_energy_sword.bitmap",
+   "sha256": "f50b797a65dde02afd61b1cb7376eebc3cd96f9a6271ad80b9f5c97993065407"
+  },
+  "rd_ready.sound": {
+   "script": "copy_input.py",
+   "input": "rd_ready.sound",
+   "sha256": "4717973197b69a2f5c747a65531e3d277a151f547f3b52ff186c5fbbc3a7fd9c"
+  },
+  "sl_sword_loop.sound": {
+   "script": "copy_input.py",
+   "input": "sl_sword_loop.sound",
+   "sha256": "d3b536c85e267b441be829c3b174d257dde113881a5fb9a163592e3450a6d104"
+  },
+  "sll_sword_loop.sound_looping": {
+   "script": "copy_input.py",
+   "input": "sll_sword_loop.sound_looping",
+   "sha256": "e3b0ba169f64685379159c1e3853ae9b39e138e0a2cf9bed66fb98d4a12a0ea6"
+  },
+  "dr_drop.sound": {
+   "script": "copy_input.py",
+   "input": "dr_drop.sound",
+   "sha256": "d115c2cb3ca5e0c1fc573e2cfa41f3379392aa4c66d57333f199e035956e6a79"
+  },
+  "fl_sword_impact_flesh.sound": {
+   "script": "copy_input.py",
+   "input": "fl_sword_impact_flesh.sound",
+   "sha256": "1363f3255d4f81b4590168c5ed07a55c8984e36a42d53b138050ebe7cbea41e2"
+  },
+  "en_melee_impact_energy.sound": {
+   "script": "copy_input.py",
+   "input": "en_melee_impact_energy.sound",
+   "sha256": "19ca0c76f7f33d81c39ac6c69d6d09a5866f71ce95e8fd4dfe22a75b6d5b5001"
+  },
+  "lu_lunge.effect": {
+   "script": "copy_input.py",
+   "input": "lu_lunge.effect",
+   "sha256": "bc2674c7572e4d5d009b279963bde415ed249b94310d30b4ef0b9db570811360"
+  }
+ }
+}

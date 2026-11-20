@@ -1,0 +1,18 @@
+# 0.9.3 AE TOURNAMENT: the bots play under their lobby names. The lobby names the bots (from the bot name pool) and the
+# game keeps those names (not bot_names.txt or the built-in names), so the scoreboard, kill feed and post-game show the
+# lobby name. Each bot seat takes its lobby name for the game, and the usual names come back after it. The log names
+# each seat once: "bots: name: seat 0 (bot 1): <name>".
+list bots-names-093
+revision 1
+title BOTS: LOBBY NAMES
+
+test names-match
+title TOURNAMENT: the lobby's names in the game
+check Note the lobby's bot names, then press A
+check In game, the scoreboard has the same names
+check A kill feed line names a bot the same way
+menus
+setup social maps hide none
+setup social mode doubles heroic
+setup social start doubles map hektik@smp
+expect 1 log bots: name: seat 0 (bot 1)

@@ -1,0 +1,41 @@
+# 0.9.3 BOTS: each bot its own SHOOTING and MOVEMENT skill (DEV botskill; the offline social career's bot spread uses it).
+# Two enemy bots play at once, each with its own pair, while you cannot die (god). Bot 1 is the first bot that joins
+# (bot=1 in the log). The log names each bot's pair once a game: "bots: skill: bot 2 shooting LEGENDARY movement NORMAL
+# (its own)". Judge by feel: the two should play clearly differently at the same time.
+list bots-seat-skill-093
+revision 2
+title BOTS: EACH BOT ITS OWN SKILL
+
+group temple
+map temple
+gametype AE BR TS
+set bots.count 0
+set bots.skill normal
+set debug.bot_events true
+
+test shooting-pair
+title TEMPLE: a RECRUIT and a LEGENDARY shooter at once
+setup botskill clear
+setup bots 2 against normal
+setup botskill 1 recruit normal
+setup botskill 2 legendary normal
+setup god me
+check Bot 2 hits you far more often than bot 1
+check Bot 1 is slow to turn and misses a lot
+expect 1 log bots: skill: bot 2 shooting LEGENDARY
+
+test movement-pair
+title TEMPLE: a RECRUIT and a LEGENDARY mover at once
+setup bots 2 against normal
+setup botskill 1 normal recruit
+setup botskill 2 normal legendary
+check Bot 2 strafes, jumps and crouches; bot 1 barely does
+check Both aim about the same
+expect 1 log bots: skill: bot 2 shooting NORMAL movement LEGENDARY
+
+test back-to-settings
+title TEMPLE: botskill clear: both play the settings
+setup bots 2 against normal
+setup botskill clear
+check Both bots now play alike (NORMAL)
+expect 1 log the settings)

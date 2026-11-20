@@ -1,0 +1,93 @@
+# rc2 seeds: every AE CASUAL and BTB gametype (EVO, battle rifle and pistol starts too) has SHOOTABLE GRENADES on; the capture the
+# flag ones (AE CTF, AE 2V2 CTF, AE BTB CTF, AE BTB+ CTF) play the modern flag rules: HALO 2 flag return, FLAG PICKUP by holding
+# the action button, FLAG MELEE KILLS, no DRIVE WITH FLAG, the own flag's waypoint WHEN SPOTTED (flag-spotted.txt). The slower
+# carrier stays off. AE COMP and CLASSIC keep Halo CE's. DIGSITE BIG
+# TEAM (AE TOURNAMENT) starts with the PROTOMAG. Each test opens on its scene from its setup lines; nothing waits for a game.
+# An item or a flag to walk to or to shoot lies 3 units in front of you (ahead), never at your feet, where it would be taken as
+# the test opens. The expect lines read the rules the game says it plays at the scene ("live rule: ..."), not the gametype's
+# choice before the game. The tournament test is the last: its game borrows the bot settings and puts them back when it ends.
+# The dummy's test is the last of its game: a dummy leaves at the next test, and a team left empty ends the game in 60 s.
+list seeds-rc2
+revision 3
+title SEEDS RC2
+
+group casual
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 0
+
+test grenade-casual
+title Casual: a grenade on the ground goes off
+setup goto start 1
+setup powerup frag_grenade ahead
+check A frag grenade lies on the ground in front of you
+check Shoot it: it goes off
+expect 1 cmd powerup frag_grenade ahead ok
+expect 2 log live rule: shootable grenades on
+
+group comp
+map beavercreek
+gametype AE COMP TS
+set bots.count 0
+
+test grenade-comp
+title Comp: the same grenade does not
+setup goto start 1
+setup powerup frag_grenade ahead
+check A frag grenade lies on the ground in front of you
+check Shoot it: nothing happens, as in Halo CE
+expect 1 cmd powerup frag_grenade ahead ok
+expect 2 log live rule: shootable grenades off
+
+group ctf
+map beavercreek
+gametype AE CTF
+set bots.count 0
+
+test flag-hold
+title Flag pickup: hold the action button
+setup goto start 1
+setup flag theirs ahead
+check Walk over their flag in front of you: nothing happens
+check Hold the action button on it: soon you carry it
+expect 1 cmd flag theirs ahead ok
+expect 2 log live rule: flag pickup hold
+
+test flag-no-drive
+title Carrier: no driving
+setup goto start 1
+setup flag theirs carry
+setup spawn warthog door
+check You carry their flag at a warthog's driver's door
+check The driver's seat: refused, the passenger seat only
+expect 1 cmd flag theirs carry ok
+expect 2 log live rule: drive with flag no
+
+test own-flag-away
+title Own flag away from home: its waypoint shows
+setup goto start 1
+setup flag ours ahead
+check Your own flag lies ahead, away from home: waypoint shows
+check Touch it: it goes home, the waypoint goes
+expect 1 log live rule: own flag waypoint 5
+
+test flag-melee
+title Carrier: a blow with the flag kills
+setup goto start 1
+setup dummy 1 2
+setup flag theirs carry
+check You carry their flag, a dummy stands in front of you
+check Melee the dummy with the flag: one blow kills it
+expect 1 cmd flag theirs carry ok
+expect 2 log live rule: flag melee on
+
+group tournament
+
+test digsite-protomag
+title DIGSITE BIG TEAM starts with the PROTOMAG
+menus
+setup social start digsite-big-team map 20@ws3477809506 now
+check The Digsite pack is needed: Blood Gulch of the pack
+check You start with the PROTOMAG in hand
+expect 1 log ae social: start digsite-big-team
+expect 2 log ae game options: the PRIMARY start is cache weapon 25

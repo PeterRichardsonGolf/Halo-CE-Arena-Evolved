@@ -1,0 +1,51 @@
+# DEV MODE tune on Octagon 2: change the held weapon's numbers live, see the time to kill move, keep the numbers in a
+# tune file that tools/weapon_pack/apply_tune.py puts into the weapon's recipe. Typed in the DEV console: tune ...
+list sandbox-pipeline
+revision 1
+title SANDBOX PIPELINE: DEV TUNE
+
+group octagon
+map octagon_b
+gametype slayer
+set bots.count 0
+set debug.network_test_time_limit 10
+
+test tune-list
+title tune lists the held weapon's numbers
+setup give smg
+check Type tune: the weapon's name, then a key and number each
+check Keys: trigger0.rate, magazine0.size, projectile0.speed ...
+expect 1 cmd tune ok
+
+test tune-ttk
+title A faster trigger kills sooner
+setup give smg
+setup dummy
+setup ttk on
+check Kill the dummy: note the ttk line's seconds
+check Type tune trigger0.rate 30, kill it again: fewer seconds
+expect 1 cmd tune ok
+
+test tune-save
+title tune save writes the tune file
+setup give smg
+setup tune trigger0.rate 25
+check Type tune save: the answer gives the path of tune/smg.json
+check The file names trigger0.rate with the number 25
+expect 1 cmd tune ok
+
+test tune-reset
+title tune reset puts the numbers back
+setup give smg
+setup tune projectile0.speed 900
+check The list shows * before projectile0.speed
+check Type tune reset: the * is gone, the old speed is back
+expect 1 cmd tune ok
+
+test tune-limits
+title Only numbers the engine cannot hold are refused
+setup give smg
+setup tune projectile0.impact.damage 5000
+check Type tune magazine0.size -1: refused
+check tune projectile0.impact.damage 5000 was taken (one-shot)
+expect 1 cmd tune error

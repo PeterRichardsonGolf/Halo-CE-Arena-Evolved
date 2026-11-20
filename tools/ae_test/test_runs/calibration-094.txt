@@ -1,0 +1,86 @@
+# 0.9.4 CALIBRATION: the first time a profile opens AE TOURNAMENT it is asked "HOW MUCH HALO HAVE YOU PLAYED?" (NEW / SOME /
+# A LOT). The answer sets where every playlist's bots start: NEW = EASY, SOME = NORMAL, A LOT = HEROIC. B leaves it unanswered
+# (asked again next time, the bots stay at NORMAL). The first 5 games of a playlist adjust the start either way and count your
+# kills and deaths. CAREER's EXPERIENCE line (X, or a click) changes the answer later and starts the playlists again. Every test
+# opens on its scene from its setup lines: `social calibration me unset|new|some|alot` sets the answer, `social reset all` clears
+# the ratings, `social roster <id> seed <n>` draws a roster and logs "you L.. T..", `menu tournament` / `menu career` open the screens.
+list calibration-094
+revision 1
+title AE TOURNAMENT CALIBRATION
+
+test ask-pad
+title The question: pad
+check HOW MUCH HALO...: NEW, SOME, A LOT with EASY/NORMAL/HEROIC
+check The note: 5 games adjust it; SOME has the focus
+check A picks, no more asking; B leaves it: asked again
+menus
+setup social calibration me unset
+setup social reset all
+setup menu tournament
+expect 1 log ae tournament: calibration asked of player 1
+
+test ask-keyboard-mouse
+title The question: keyboard and mouse
+check Up/Down move, Enter picks; Esc leaves it unanswered
+check A click picks a choice; a click outside closes it
+check The prompts show keyboard keys, not pad buttons
+menus
+setup social calibration me unset
+setup social reset all
+setup menu tournament
+expect 1 log ae tournament: calibration asked of player 1
+
+test roster-new
+title NEW: the first roster is EASY
+check Log: roster team-slayer ... you L.. T4
+check After NEW the question does not come back
+menus
+setup social calibration me new
+setup social reset all
+setup social roster team-slayer seed 5
+expect 1 log ae social: roster team-slayer seed 5
+
+test roster-some
+title SOME: the first roster is NORMAL
+check Log: roster team-slayer ... you L.. T7
+check The same start as before calibration
+menus
+setup social calibration me some
+setup social reset all
+setup social roster team-slayer seed 5
+expect 1 log ae social: roster team-slayer seed 5
+
+test roster-alot
+title A LOT: the first roster is HEROIC
+check Log: roster team-slayer ... you L.. T10
+check A playlist with its own rating keeps it
+menus
+setup social calibration me alot
+setup social reset all
+setup social roster team-slayer seed 5
+expect 1 log ae social: roster team-slayer seed 5
+
+test career-change
+title CAREER: change EXPERIENCE
+check Panel: EXPERIENCE SOME; X or a click opens the question
+check Pick NEW: confirm says playlists start again at EASY
+check CHANGE: reads NEW; CANCEL: SOME; help line stays clear
+menus
+setup social calibration me some
+setup social exp team-slayer 37
+setup social match team-slayer tier 9
+setup menu career focus team-slayer
+expect 1 log ae career: open
+
+test split-screen
+title Split screen: each player is asked
+check Player 1 is asked, then 2; the body names whose
+check Each answer is kept per profile (CAREER, LB: player)
+menus
+players 2
+setup social calibration me unset
+setup social calibration me unset player 2
+setup social reset all
+setup social reset all player 2
+setup menu tournament
+expect 1 log ae tournament: calibration asked of player 1
