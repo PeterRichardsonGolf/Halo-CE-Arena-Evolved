@@ -1,0 +1,26 @@
+AE SPIKER (weapon pack ae_spiker) - credits
+
+The spiker's model, first-person model and animations, textures, shaders, HUD, effects and sounds, and its weapon,
+spike and damage, are the work of CMT (the Custom Mapping Team), from the stock-compatible source release of The Silent
+Cartographer: Evolved 1.4 (the Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their credits.txt
+names): CMT's multiplayer spiker, spiker_mp. They are used under the release's own terms ("Just don't take credit for
+things you didn't make") and are unchanged but for what an Xbox map needs: the models converted, the multipurpose
+maps' channels reordered, the high-resolution HUD made the Xbox's, a flesh impact sound's Ogg Vorbis samples encoded
+again as Xbox ADPCM, and one shader's detail map, which names a campaign bitmap no multiplayer map has, left empty.
+
+The weapon's numbers are AE's own, not CMT's: a close-to-mid automatic, 10 spikes a second and a magazine of 40 as
+CMT's, 10 a spike at x0.85 on shields and x1.3 on the body (15 spikes kill from full), a faster spike (50 slowing to
+30 units a second) carried 60 units with CMT's arc, a tighter first spike, aim assist at the assault rifle's reach,
+and a pad pulse with each spike. The held weapon's collision and melee are the stock assault rifle's, left to the map.
+
+The pack holds no pixel, sound or model of the game's own: what the spiker needs of the game (impact materials,
+decals, particles, sounds and a reflection map) it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1).
+
+Kind: community model. CMT's attribution note in the release says its models, textures and shaders are CMT's own
+and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music and sfx
+files": the spiker's models, animations and textures are CMT's. Which sounds those are the note does not say; the
+spiker's firing and impact sounds may be some of them.
+
+Thank you, CMT.

@@ -1,0 +1,36 @@
+# MCC maps load faster: checking a map's sounds in Custom Edition's sounds.map reads each sound once, not once for each of
+# its permutations, and debug.txt gives each resource step's time ("mcc loading: resources selected in ... ms, checksum
+# ... ms, identity ... ms"). Each test opens on the map's spawn; the question is how long the load took and whether the
+# map plays as before. After the list, the hub reads the step times from debug.txt.
+list mcc-load-rc4
+revision 1
+title MCC MAPS: LOAD TIME
+
+group stock
+map timberland@mcc
+gametype AE BR TS
+set bots.count 0
+
+test load-stock
+title Timberland from MCC
+setup god
+check The map loads and is drawn
+check Its sounds play: footsteps, a shot, a grenade
+check The load took less time than on rc3 (say about how long)
+expect 1 log mcc loading: resources selected in
+expect 1 cmd god ok
+
+group workshop
+map dredwerkz mcc debug flycam pm@ws2900215828
+gametype AE BR TS
+set bots.count 0
+
+test load-workshop
+title A Workshop map
+fresh
+setup god
+check The map loads and is drawn
+check Its sounds play: footsteps, a shot
+check The load took less time than on rc3 (say about how long)
+expect 1 log mcc loading: resources selected in
+expect 1 cmd god ok

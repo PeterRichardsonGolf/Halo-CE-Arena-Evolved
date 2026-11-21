@@ -1,0 +1,21 @@
+# (spike, DEV only) the first campaign map's tags, for the importer's proof
+name = "ae_spike"
+version = 1
+legacy_file_names = []
+maps = ["a10"]
+minimum_bitmaps = 1
+minimum_sounds = 0
+wanted = ["setting:debug.spike_tag_pack"]
+
+[keep]
+include_contains = []
+include_prefixes = ["characters\\", "weapons\\", "effects\\", "sound\\sfx\\", "sound\\dialog\\"]
+exclude_contains = []
+exclude_bitmap_prefixes = []
+exclude_sound_prefixes = []
+
+[text]
+notice = "Spike data from another map."
+building = "Building spike data:\n"
+ready = "The spike data is ready."
+failed = "The spike data could not be built."

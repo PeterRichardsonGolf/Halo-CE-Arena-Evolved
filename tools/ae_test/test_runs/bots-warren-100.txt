@@ -1,0 +1,38 @@
+# 1.0 rc2 WARREN: bots on ledges and paths. The upper level's 34 degree ramps (352 of Warren's 2241 walkable surfaces
+# are that steep) are not taken by the edge guard for slides into a floor's drop: a floor the map's own path data calls
+# walkable is walked, up to 45 degrees. The camo platform's one way off is a walk link at its corner: a walk link is
+# walked with only the map's lethal drop guarded, and the way back is open when the goal is off the platform. Edge lines
+# carry the guard's probes (probe=near,far), so a stuck spot's log says what the bot saw.
+list bots-warren-100
+revision 1
+title WARREN: RAMPS AND THE CAMO PLATFORM
+
+group warren
+map warren@smp
+gametype EV TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test ramp
+title WARREN: a bot walks down the upper ramp
+setup goto bot -11.2 -1.2 6.7
+check A bot is put at the top of the upper level's ramp
+check It walks down or on, it does not turn back
+check No bot stands at a ramp's top for long
+expect 1 cmd goto bot
+
+test camo
+title WARREN: a bot gets off the camo platform
+setup goto bot -13.7 15.7 3.9
+check A bot is put on the camo platform
+check It walks off within 10 s
+check No bot stands on the platform after taking camo
+expect 1 cmd goto bot
+
+test game
+title WARREN: bots get round the map
+check Play a game
+check Bots don't stand stuck at ledges or ramps
+check Tell me where any bot does (a screenshot)

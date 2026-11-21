@@ -1,0 +1,42 @@
+# 0.9.2: two laps to compare with every display setting the same, and the loading screen on NO WAIT. Do not open
+# SETTINGS during a lap. Staged only.
+list next-092f
+revision 1
+title 0.9.2 ROUND F
+
+test lap-a
+title LAP A: run two laps, shoot the bots
+check Two laps of the map: note how smooth it feels (F4)
+check The picture stays sharp
+map chillout
+gametype AE BR TS
+set bots.count 3
+set display.vsync true
+set display.max_fps 0
+set display.low_latency off
+set display.interpolation true
+set display.target_60_fps false
+
+test lap-b
+title LAP B: the same two laps
+check Same laps: smoother, rougher or the same as LAP A? (F4)
+check The picture stays sharp
+map chillout
+gametype AE BR TS
+set bots.count 3
+set display.vsync true
+set display.max_fps 0
+set display.low_latency off
+set display.interpolation true
+set display.target_60_fps true
+
+test loading-none
+title LOADING SCREEN on NO WAIT: none at all
+check This map opened from black: no ring, no loading picture
+check No loading tones played
+check The game starts as usual once the map is in
+map bloodgulch
+gametype AE BR TS
+set bots.count 0
+set display.loading_screen_campaign_seconds 0
+set display.loading_screen_multiplayer_seconds 0
