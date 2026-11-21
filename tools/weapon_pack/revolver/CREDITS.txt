@@ -1,0 +1,34 @@
+AE HEAVY REVOLVER (weapon pack ae_revolver) - credits
+
+The heavy revolver's models (the h3b world and first-person models), its weapon tag, first-person and third-person
+animations, collision, sounds, metal shader (its cube map and detail map), textures and HUD (its ammunition meter,
+aiming reticle and picture of the revolver) are ZTeam's, from the ZTeam tag pack (released on halomaps.org). The
+pack names no individual authors, so none are named here. ZTeam left the h3b models untextured; this pack dresses
+them with ZTeam's own textures of the h3 version of the same gun. They are used as released, but for what an Xbox
+map needs: the models converted to the Xbox model format, the multipurpose map's channels reordered.
+
+Made for Arena Evolved:
+- the textures re-dressed for the h3b models (revolver_art.py, nothing painted by hand): ZTeam's lights carried to
+  their places on the gun, the drum and the receiver's side panel a dark red and the rest a dark metal (each from
+  ZTeam's own brightness, so its panel lines and wear stay), ZTeam's lights in a red;
+- the weapon's numbers (one slug a shot, drum, rate of fire, error, aim assist) and the damage of a slug and of a
+  blow, set to our own values; the HUD's ammunition meter ZTeam's eight-shell one (from the same sheets) and its
+  reticle drawn round;
+- the slug, the firing effect and the melee are the stock pistol's with our numbers and ZTeam's shot sound;
+- ZTeam's light left out; the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a
+  full-screen visor frame);
+- the swap and pickup prompts' picture is ZTeam's own picture of the revolver, resampled onto a sprite sheet
+  (nothing drawn);
+- the firing kick is the stock pistol's with a rumble.
+- the first-person animations are ZTeam's with the whole view (arms and gun) set back a little, so the gun
+  sits off and lower right at AE's field of view.
+
+The pack's slug, firing effect, kick and melee are built from the stock pistol's tags (no pixel, sound or model of
+the game's): what else the revolver needs of the game (the stock rounds panel, ammunition pickup, melee response,
+impacts, materials, muzzle flash) it names, and the map the player owns provides.
+
+Kind: unknown. ZTeam's models are made for Custom Edition (their own nodes, a Custom Edition polygon budget) and
+recreate a later game's weapon; nothing in the release says whether they and the sounds were modelled and recorded
+by ZTeam or taken from that game, so this pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.

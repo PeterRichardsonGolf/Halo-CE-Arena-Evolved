@@ -1,0 +1,41 @@
+# The SPIKER pack (CMT's spiker_mp, AE's numbers: a close-to-mid automatic): spawns with the pack's weapon on every
+# life on Octagon 2, a few bots, as the other pack tests do.
+# Needs the pack's slot (19: mask 262144, START 19) registered in the game; until then the lists below cannot run.
+# NETWORKED DAMAGE: these run in a local game. The trigger keeps CMT's "projectile is client side only" flag; a
+# hosted game with a joiner must show the joiner's spikes hurting the host's player as the host's do.
+list pack-spiker
+revision 1
+title SPIKER PACK
+
+test spiker-look
+title Spiker: how it looks and reads
+check In hand: dark spiker with its blade, orange lights
+check Ammo counter 40; reload refills it
+check Spikes fly in a slight arc, glowing
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 19
+
+test spiker-kill
+title Spiker: kill time up close and at mid
+check Close: one held burst (about 1.5 s) kills a full bot
+check Mid range: the first spikes land, a held spray spreads
+check Long range: the spikes drop and fade out, hard to hit
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 19
+
+test spiker-feel
+title Spiker: pad, melee and pickup
+check Pad: a short pulse with each spike, no constant buzz
+check Melee: the assault rifle's blow, not a blade one-hit
+check Pickup prompt and kill feed show the spiker picture
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 19

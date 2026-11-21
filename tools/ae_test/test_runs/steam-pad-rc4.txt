@@ -1,0 +1,49 @@
+# The STEAM CONTROLLER (2026) on its own USB receiver, no Steam Input: its right trackpad aims (added to the right stick),
+# its four grips are bindable (SETTINGS > CONTROLS > BACK PADDLES shows L4, R4, L5, R5) and its gyroscope aims while
+# zoomed in. Needs the pad itself. debug.txt names the pad (gamepad: Valve vendor id ...) and the gyroscope in use (gyro:
+# using the gyroscope of ...). Staged only: nothing here waits for something to happen.
+list steam-pad-rc4
+revision 1
+title STEAM CONTROLLER
+
+test trackpad-aim
+title Right trackpad aims at a dummy
+setup goto 7.6 -3.2 0.6 facing 157
+setup dummy 1 6
+check Rest your right thumb, no slide: the view stays
+check Slide the thumb: the view follows it
+check Flick hard and lift: the view glides on, then stops
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set input.trackpad_aim true
+set input.trackpad_sensitivity 1.0
+
+test grip-binding
+title Grips pressed as buttons
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup give pistol
+setup config input.back_right black
+setup config input.back_right_2 a
+setup config input.back_left y
+check Press R4 (right upper grip): you melee
+check Press R5 (right lower grip): you jump
+check Press L4 (left upper grip): you switch weapon
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+
+test gyro-aim
+title Gyro aims while zoomed
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup dummy 1 8
+setup give dmr
+check Zoom in and tilt the pad: the view turns with it
+check Not zoomed, tilting the pad turns nothing
+check Turn the pad left: the view turns left, not right
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set input.gyro_aim zoom

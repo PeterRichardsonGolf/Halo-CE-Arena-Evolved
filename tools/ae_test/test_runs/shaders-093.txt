@@ -1,0 +1,17 @@
+# 0.9.3 shader prep: a map's shaders are made while its loading screen is up (one compile thread, the map's own list
+# before the game's, failed compiles checked). This round runs on a FRESH shader cache (the old cache files are moved
+# aside before the run), so every program is made new: the loading screen may hold a little longer, and play must not
+# stall on new things coming into view. The log names the map's shaders once: "shaders: <map>: ...".
+list shaders-093
+revision 1
+title SHADERS: A FRESH CACHE
+
+test fresh-cache
+title SHADERS: the first load with nothing cached
+check The loading screen ends and the map opens without a crash
+check Turn around and walk: no stall on new things in view
+check Fire and throw a grenade: no stall at the first effects
+map bloodgulch
+gametype AE TEAM SLY
+setup god me
+expect 1 log shaders: bloodgulch:

@@ -1,0 +1,129 @@
+# 1.0.0-rc1 ROUND: everything since 0.9.4.1 in one build.
+# NAMES (octagon) and the SCOREBOARD / PAUSE first look (blood gulch).
+# OPENCE 387 (damnation): ARM SHIELDS, the overshield up the arms, AE HIT FEEDBACK on them.
+# CAMERA (temple): the death camera, killed by a bot in front of you.
+# ROCKETS (damnation, bots): do bots fire the rockets they hold at 10+ units? The log notes each hold.
+# Same-map tests follow each other and share one load.
+list round-rc1
+revision 2
+title 1.0.0-rc1 ROUND: 387, CAMERA, ROCKETS, UI
+
+test scoreboard-split-two
+title SCOREBOARD, two players: hold BACK
+check The title (the gametype's name) is whole
+check The PING column is inside the view
+check The last row sits above the score strip
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 6
+set bots.teams even
+players 2
+
+test scoreboard-split-four
+title SCOREBOARD, four players: hold BACK
+check The title is whole in each view
+check The PING column is inside each view
+check The last row sits above the score strip
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 4
+set bots.teams even
+players 4
+
+test pause-1080
+title PAUSE at 1920x1080: press START
+check Every row's value is whole, none cut at the right
+check The scoreboard does not show behind the pause menu
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.resolution 1920x1080
+
+test arms-default
+title ARM SHIELDS off (the default)
+setup goto start 0
+setup config display.viewmodel_shield false
+check Throw a grenade at your feet: no flare on your arms
+check The flare shows on your body as before (look down)
+map damnation
+gametype slayer
+set bots.count 0
+
+test arms-on
+title ARM SHIELDS on
+setup goto start 0
+setup config display.viewmodel_shield true
+check A grenade at your feet: flare on your arms, near the hands
+check It never fills the view (zoom in and out, then again)
+map damnation
+gametype slayer
+set bots.count 0
+
+test overshield-arms
+title Overshield on the arms
+setup goto start 0
+setup config display.viewmodel_shield true
+setup config display.overshield_effect true
+setup powerup over_shield now
+check The overshield rises up your body and onto your arms
+check Green while above double shields, reddish-pink as it drains
+map damnation
+gametype slayer
+set bots.count 0
+
+test hit-feedback-arms
+title AE HIT FEEDBACK on the arms
+setup goto start 0
+setup config display.viewmodel_shield true
+check A grenade at your feet: the shield's pop shows on your arms
+check Nothing on the arms fills the view or stays lit afterwards
+map damnation
+gametype AE TEAM SLY
+set bots.count 0
+
+group names
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+
+test names-close
+title NAMES over three players standing close
+check Each name is readable, none drawn over another
+check The names sit over the right heads
+setup dummy 3 6
+expect 1 cmd dummy ok
+
+group damnation-bots
+map damnation
+gametype AE COMP TS
+set bots.count 7
+set bots.teams even
+set bots.skill normal
+set debug.bot_events true
+
+test rocket-use
+title DAMNATION: bots fire the rockets they hold
+check Let a bot take the rockets, then stay across the map
+check Show yourself to it 10 or more units off, a few times
+check Note whether it fires a rocket at you or holds
+expect 1 log weapon=weapons\rocket launcher\rocket launcher
+
+group temple
+map temple
+gametype AE TEAM SLY
+set bots.count 3
+set bots.teams even
+set bots.skill heroic
+set display.follow_camera always
+set debug.bot_events true
+
+test camera-death-hold
+title CAMERA: dying, eyes out to your body, killer in view
+retest 8
+setup bots 3 even normal
+setup goto start 0
+setup dummy 1 6
+setup kill me by bot
+check Eases out from your eyes; looks at your killer
+check Right stick orbits your body; it stays till respawn
+check Press A after 3 s: a quick fade in on a teammate
