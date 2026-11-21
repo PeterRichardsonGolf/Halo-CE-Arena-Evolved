@@ -1,0 +1,33 @@
+# 0.9.3: a blind A/B of display.frames_in_flight. Two laps, the same map and lap, V-SYNC on, LOW LATENCY off, TARGET 60
+# FPS off; the titles do not say which lap has which (one is 1, one the default 3). debug.frame_summary logs the frames
+# every 10 s with the setting, for the fps cost. Staged only.
+list fif-093
+revision 1
+title 0.9.3 AIM A/B
+
+test aim-lap-a
+title AIM LAP A
+check Run and aim the same lap as LAP B
+check Note how quick aiming feels, and any frame drops
+map chillout
+gametype AE BR TS
+set bots.count 3
+set display.vsync true
+set display.low_latency off
+set display.target_60_fps false
+set display.frames_in_flight 1
+set debug.frame_summary true
+
+test aim-lap-b
+title AIM LAP B
+check Run and aim the same lap as LAP A
+check Which lap felt quicker to aim, A or B? (F4 note)
+check Frame drops here that LAP A did not have?
+map chillout
+gametype AE BR TS
+set bots.count 3
+set display.vsync true
+set display.low_latency off
+set display.target_60_fps false
+set display.frames_in_flight 3
+set debug.frame_summary true

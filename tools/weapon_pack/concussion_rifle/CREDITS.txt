@@ -1,0 +1,27 @@
+AE CONCUSSION RIFLE (weapon pack ae_concussion_rifle) - credits
+
+The concussion rifle's models (third-person and first-person), shaders, textures, first-person animations,
+collision, sounds, its explosive bolt (model, effects, contrail, light, explosion and their particles, decal and
+sounds), its firing effect and kick, and its HUD (the six-shell ammunition meter and the launcher reticle) are
+ZTeam's, from the ZTeam tag pack (released on halomaps.org). The pack names no individual authors, so none are named
+here. They are used as released, but for what an Xbox map needs: the models converted to the Xbox model format, the
+multipurpose maps' channels reordered.
+
+Made for Arena Evolved:
+- the weapon's numbers (magazine, rate of fire, aim assist), the bolt's speed and drop, and its blast (damage,
+  radius, knockback) set to our own values;
+- the firing kick and the blast's rumble given our own pad timings;
+- the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a full-screen visor frame); its
+  reticle is another of ZTeam's own (its launcher reticle with a drop ladder); ZTeam's picture of a different
+  weapon on that HUD left out;
+- no picture of this weapon is shown (ZTeam's pack has none): its name is written in its place.
+
+What the rifle needs of the game (materials, its melee and melee response, drop and ammunition pickup sounds, the
+stock rounds panel) it names, and the map the player owns provides: the pack holds no pixel, sound or model of the
+game's.
+
+Kind: unknown. ZTeam's models are made for Custom Edition (their own nodes, a Custom Edition polygon budget) and
+recreate a later game's weapon; nothing in the release says whether they and the sounds were modelled and recorded
+by ZTeam or taken from that game, so this pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.

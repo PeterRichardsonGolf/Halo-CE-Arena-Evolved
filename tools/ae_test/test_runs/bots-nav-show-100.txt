@@ -1,0 +1,24 @@
+# THE BOTS' VEHICLE NAVIGATION DRAWN IN THE WORLD (DEV MODE): "nav show all" draws, over the ground near you, the routes the
+# bots' drivers follow (ice-blue lines with squares at their points and an arrow mid-way along each leg), the rings round the
+# rocks and trees their routes keep clear of, the ground closed to them, the places drivers crashed or wedged, and a line from
+# each driving bot to the point it makes for. This list stands you at the west mouth of Danger Canyon looking down the
+# lane, with the drawing on, so you can check the routes run clear of the rings and the drivers keep off the rocks and
+# trees. Log at the start: "bot nav overlay: dangercanyon: N routes (N points), N obstacles, ...".
+list bots-nav-show-100
+revision 1
+title BOT NAV: THE ROUTES DRAWN IN THE WORLD
+
+group dangercanyon
+map dangercanyon@mcc
+gametype AE BTB CTF
+set bots.count 12
+set debug.bot_events true
+
+test show-dangercanyon
+title Danger Canyon: routes, rings and drivers drawn
+setup nav show all
+setup goto -39.0 3.0 -2.3 facing 60
+check Routes and red rings show on the ground
+check The route keeps clear of the red rings
+check Drivers going by stay off the rocks and trees
+expect 1 log bot nav overlay: dangercanyon

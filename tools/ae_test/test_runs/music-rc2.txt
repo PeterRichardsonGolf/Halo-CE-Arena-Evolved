@@ -1,0 +1,49 @@
+# 1.0.0-rc2 MENU MUSIC: MENU MUSIC and its two song screens, each opened on its scene.
+# `menu music mcc` reads the songs of this PC's MCC installation: real songs, heard. `menu music none` stages a PC with no MCC
+# (the title theme only), which a PC with MCC cannot show. The settings these tests change are this build's own test settings.
+list music-rc2
+revision 2
+title MENU MUSIC: MODES, ONE SONG, MY PLAYLIST, NO MCC, HALO 3 MENU PIECES
+
+test music-menu
+title MENU MUSIC: the modes
+setup config audio.menu_music game_menus
+setup config audio.menu_music_shuffle true
+setup menu music mcc
+check MODE: four chips, GAME MENUS filled; Left/Right step them
+check NOW PLAYING shows a song with a bar; UP NEXT lists three
+check X fades to the next song; Y asks to restore defaults
+menus
+
+test music-one-song
+title ONE SONG: picking and previewing
+setup menu music song mcc
+check Game chips show counts; MENU badges on the menu songs
+check Y plays the song, the menus' music fades out; Y stops
+check A chooses the song; MENU MUSIC then reads ONE SONG
+menus
+
+test music-menu-pieces
+title HALO 3 main menu: its pieces
+setup menu music song mcc
+check MENU: HALO 3 MAIN MENU, then 6 pieces with titles
+check Y on a piece plays only that piece
+menus
+
+test music-playlist
+title MY PLAYLIST: the editor
+setup config audio.menu_music_playlist none
+setup menu music playlist mcc
+check A adds a song: box fills, PLAY ORDER lists it; Y plays it
+check Right, A picks a song up; Up/Down move it; A puts it down
+check X in PLAY ORDER takes the song off; it stays unchecked
+menus
+
+test music-no-mcc
+title No MCC: the title theme only
+setup config audio.menu_music game_menus
+setup menu music none
+check ONE SONG, MY PLAYLIST chips and SHUFFLE show NEEDS MCC
+check NOW PLAYING reads TITLE THEME; an MCC NOT FOUND card shows
+check LOOK AGAIN reads NOT FOUND; A on it keeps NOT FOUND
+menus

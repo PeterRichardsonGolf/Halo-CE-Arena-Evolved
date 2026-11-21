@@ -1,0 +1,53 @@
+# The MAP CONVERTER's new copies of the Social Map Pack (@smp) and Pro Edition (@pro) maps: every tag the map ships is
+# its own now (its weapons, projectiles, damage, vehicles, physics), a sky bitmap marked swizzled is fixed, and each copy
+# was checked against its source tag by tag. Each test opens on the map's spawn, holding what it names.
+list converted-maps-rc4
+revision 1
+title CONVERTED MAPS: THE MAPS' OWN TAGS
+
+test dredwerkz-weapons
+title DREDWERKZ: its own shotgun and amped plasma rifle
+fresh
+map dredwerkz@smp
+gametype AE BR TS
+set bots.count 0
+setup god
+setup give protected_127
+check The shotgun is the map's own: its look and its shot
+check give protected_1061: the amped plasma rifle fires
+check Neither is a pistol or a stock weapon in its place
+expect 1 cmd god ok
+
+test ratrace-sky
+title RAT RACE: the night sky
+fresh
+map pat_ratrace@pro
+gametype AE BR TS
+set bots.count 0
+setup god
+check Look up: the sky shows stars
+check No noise, stripes or blocks in the sky
+expect 1 cmd god ok
+
+test blood-covenant-slopes
+title BLOOD COVENANT: walking the slopes
+fresh
+map blood_covenant@smp
+gametype AE BR TS
+set bots.count 0
+setup god
+check Walk up and down the slopes near your spawn
+check You neither slide down nor stick on them
+expect 1 cmd god ok
+
+test beavercreek-scripts
+title BEAVER CREEK: the map's scripts
+fresh
+map pat_beavercreek@pro
+gametype AE BR TS
+set bots.count 0
+setup god
+check The map plays as before: its sounds and lights
+check Nothing in the map is missing or out of place
+expect 1 log scenario scripts:
+expect 1 cmd god ok
