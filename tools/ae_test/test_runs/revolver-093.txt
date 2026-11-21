@@ -1,0 +1,38 @@
+# 0.9.3 HEAVY REVOLVER: its own reticle (design D) and its name where a mark, the pickup text and the kill feed show it.
+# The revolver is the START weapon (debug.network_test_cache_weapon 17); a dummy stands 8 units ahead. Staged only.
+list revolver-093
+revision 1
+title 0.9.3 HEAVY REVOLVER
+
+test revolver-reticle
+title HEAVY REVOLVER: its own reticle
+setup dummy 1 8
+check The reticle is a wide blue < . > pair, not the mauler's
+check The reticle turns red on the dummy
+check HUD, RETICLE, WEAPONS has a HEAVY REVOLVER row
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 17
+
+test revolver-mark
+title HEAVY REVOLVER: a mark names it
+setup give br
+setup dummy 1 8
+check Drop it, look at it: the pickup text says HEAVY REVOLVER
+check Ping it: the mark reads HEAVY REVOLVER, not MAULER
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 17
+
+test revolver-killfeed
+title HEAVY REVOLVER: the kill feed
+setup dummy 1 8
+setup ttk on
+check 2 body slugs pop the shield; a head slug kills
+check The kill feed shows the revolver's picture
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 17

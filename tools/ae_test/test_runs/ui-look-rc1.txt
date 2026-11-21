@@ -1,0 +1,50 @@
+# UI FIRST LOOK rc1: the scoreboard, the pause menu and the names over heads on the AE HUD and menus. Each test opens on
+# its scene; press the button the check names.
+# - the scoreboard at two and four players: its title cut, the PING column off the view, the last rows under the
+#   score strip
+# - the pause menu at 1920x1080: a value cut at the right
+# - the names over heads overlapping when players stand close
+list ui-look-rc1
+revision 1
+title UI FIRST LOOK rc1: SCOREBOARD, PAUSE, NAMES
+
+test scoreboard-split-two
+title SCOREBOARD, two players: hold BACK
+check The title (the gametype's name) is whole
+check The PING column is inside the view
+check The last row sits above the score strip
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 6
+set bots.teams even
+players 2
+
+test scoreboard-split-four
+title SCOREBOARD, four players: hold BACK
+check The title is whole in each view
+check The PING column is inside each view
+check The last row sits above the score strip
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 4
+set bots.teams even
+players 4
+
+test pause-1080
+title PAUSE at 1920x1080: press START
+check Every row's value is whole, none cut at the right
+check The scoreboard does not show behind the pause menu
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.resolution 1920x1080
+
+test names-close
+title NAMES over three players standing close
+check Each name is readable, none drawn over another
+check The names sit over the right heads
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+setup dummy 3 6
+expect 1 cmd dummy ok

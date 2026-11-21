@@ -1,0 +1,24 @@
+AE BRUTE SHOT (weapon pack ae_brute_shot) - credits
+
+The brute shot's model, first-person model and animations, textures, shaders, HUD, effects and sounds, and its
+weapon, grenade and damage, are the work of CMT (the Custom Mapping Team), from the stock-compatible source release of
+The Silent Cartographer: Evolved 1.4 (the Evolved team: Teh Lag, Ifafudafi, Siliconmaster and the contributors their
+credits.txt names): CMT's multiplayer brute shot, brute_shot_mp. They are used under the release's own terms ("Just
+don't take credit for things you didn't make") and are unchanged but for what an Xbox map needs: the models
+converted, the multipurpose map's channels reordered, the high-resolution HUD made the Xbox's, and the explosion's
+underwater flash left out (its bitmap is on no stock multiplayer map; the stock bubbles under water stay).
+
+The weapon's numbers are CMT's: 6 grenades a magazine, 12 to start and 24 in reserve at most, about 2.6 shots a
+second, bouncing grenades that burst on a second contact, its blade melee.
+
+The pack holds no pixel, sound or model of the game's own: what the brute shot needs of the game (impact materials,
+decals, particles, sounds and a reflection map) it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1).
+
+Kind: community model. CMT's attribution note in the release says its models, textures and shaders are CMT's own
+and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music and sfx
+files": the brute shot's models, animations and textures are CMT's. Which sounds those are the note does not say;
+one of the brute shot's firing sounds is named for a later game (brute_shot_grenade_fire_h3) and may be one of them.
+
+Thank you, CMT.

@@ -1,0 +1,61 @@
+# 0.9.3 AE PICKUPS: in an AE game the weapons lying on the map are AE's (the starts are not touched). An assault rifle's
+# spots take turns, COMBAT AR, SUPPRESSED AR, the map's own; a sniper rifle is the BOLT SNIPER; on a Halo 2 map its
+# magnums are the SIDEARM and its brute shots AE's BRUTE SHOT; a needler is AE's NEEDLER (Hang 'em High's needlers too,
+# where the gametype names only its battle rifle). A server turns it on with ae_pickups (the first two tests play that
+# switch: the gametype's PACK WEAPONS ON MAP); every AE TOURNAMENT playlist plays it but CLASSIC COMP, which keeps the
+# maps' own weapons. No bots, so nothing takes a weapon before you see it. Staged only: nothing here waits for something
+# to happen.
+list pickups-093
+revision 2
+title AE PICKUPS
+
+test hang-pickups
+title Hang 'em High: AE's weapons on the map
+check The sniper on the map is the BOLT SNIPER
+check The map's assault rifles are AE's ARs, not all one kind
+check The needlers on the map are AE's NEEDLER (pink needles)
+map hangemhigh
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log AE pickups
+
+test turf-halo2
+title Turf: a Halo 2 map's own weapons
+check The brute shots on the map are AE's BRUTE SHOT
+check The magnums on the map are the SIDEARM
+check The rocket launcher and shotgun stay the map's
+map h2d_turf
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log a Halo 2 map
+
+test containment-layout
+title Containment: Halo 2's weapons back
+check The bases' BR and carbine spots hold AE's BR and carbine
+check The two rocket spots by the bases hold the BRUTE SHOT
+check The SMG spots hold AE's SMG
+map h2d_containment
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log layout, AE pickups
+
+test tournament-pickups
+title AE TOURNAMENT lays AE's weapons
+check The weapons on the map are AE's (BOLT SNIPER, AE ARs)
+menus
+setup social maps hide smp
+setup social start team-slayer map prisoner variant br now
+expect 1 log ae social: start team-slayer
+
+test classic-keeps
+title CLASSIC COMP keeps the maps' own
+check The weapons on the map are the map's own, none of AE's
+menus
+setup social start classic-comp map dread now
+expect 1 log ae social: the maps' own weapons play

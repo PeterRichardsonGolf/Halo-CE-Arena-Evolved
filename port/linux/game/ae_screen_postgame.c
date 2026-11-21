@@ -1,0 +1,860 @@
+/*
+AE_SCREEN_POSTGAME.C
+
+AE's post-game (ae_screen_postgame.h; the approved design). Its facts and its two ways out: ae_glue_postgame.h.
+*/
+
+#include <stdio.h>
+#include <string.h>
+
+#include "cseries.h"
+#include "cseries/cseries_windows.h"
+#include "../src/ae_draw.h"
+#include "../src/ae_layout.h"
+#include "../src/ae_platform.h"
+#include "ae_glue_pause.h"
+#include "ae_glue_pgcr.h"
+#include "ae_glue_postgame.h"
+#include "ae_glue_social_game.h"
+#include "ae_screen_pgcr.h"
+#include "ae_hooks.h"
+#include "ae_screen_postgame.h"
+#include "ae_social_rules.h"
+#include "ae_sound.h"
+#include "ae_style.h"
+#include "ae_test_hooks.h"
+#include "ae_ui.h"
+#include "ae_widgets.h"
+#include "ae_screen_record.h"
+#include "ae_screen_bot_record.h"
+
+void platform_log(char const *format, ...);
+
+enum
+{
+	POSTGAME_HIT = 0x7500,
+	HIT_PROMPTS = POSTGAME_HIT + 1,
+	PROMPTS = 5,
+	ROWS = 5,
+	STEP_RESULT = 1,
+	STEP_CARNAGE = 2,
+	/* the rows' timings (the first row at 600 ms, then one every 1100 ms; a number
+	counts up in 700 ms), and a row's own fade and rise in */
+	ROW_FIRST_MS = 600,
+	ROW_EVERY_MS = 1100,
+	COUNT_MS = 700,
+	ROW_IN_MS = 220,
+	/* CARNAGE's fade in */
+	CARNAGE_IN_MS = 160,
+	/* the report's refresh: the host's summaries and the last scores arrive as the post-game opens */
+	REPORT_REFRESH_MS = 300
+};
+
+/* the backdrop: the game draws no world in its post-game (the scoreboard's scrim colour, opaque) */
+#define BACKDROP 0x04070AFFu
+#define RESULT_ROW AE_COLOR_ROW
+#define CARD_PANEL AE_COLOR_VIEW_PANEL
+/* (0.9.3) the social EXP row: the ice blue of its RANK UP chip, edge and this game's share of the bar */
+#define EXP_ICE 0xB8D6FFFFu
+
+/* GAME RESULT at 1080 (the mockup's layout units of the 16:9 frame, times UI SCALE for sizes): the column's left and
+width, the title's top; the card's left, right and top */
+#define COLUMN_X 154.0f
+#define COLUMN_W 760.0f
+#define COLUMN_TOP 96.0f
+/* the title's least size, of its own, before a long one is cut (FFA's spelled places) */
+#define TITLE_FLOOR 0.45f
+#define CARD_X 1100.0f
+#define CARD_RIGHT 1740.0f
+#define CARD_TOP 302.0f
+#define CARD_GAP 40.0f
+#define PROMPTS_FROM_FOOT 96.0f
+/* a split view's: the mockup's 0.62 of the full size (a half view's floors: row words 16 px and up), its column at
+most 900 wide, the title 24 from the view's top, the prompts 32 from its foot */
+#define SPLIT_SCALE 0.62f
+#define SPLIT_COLUMN_W 900.0f
+#define SPLIT_TOP 24.0f
+#define SPLIT_PROMPTS_FROM_FOOT 32.0f
+#define SPLIT_PROMPT_SCALE 0.73f
+static struct
+{
+	int on_stack;
+	int step;
+	unsigned long step_ms;
+	/* the counting done (all rows in) or skipped */
+	int skipped;
+	/* a host's CONTINUE before the scores were up: taken when they are */
+	int continue_asked;
+	int leave_open;
+	/* the leave dialog's screen data (ae_dialog_open's, the top as it opened), to close with this screen */
+	void *dialog;
+	struct ae_postgame_facts facts;
+	/* CARNAGE's report: the board and the pane (ae_screen_pgcr.c), refreshed while the numbers settle */
+	struct ae_pgcr_view view;
+	unsigned long view_refreshed_ms;
+	struct ae_density density;
+	struct ae_prompt prompts[PROMPTS];
+	short prompt_count;
+	int logged_open;
+	/* (0.9.3 DEV MODE) a made-up post-game: its facts as given, its views the players present */
+	int dev;
+} pg;
+
+static struct ae_screen_class const postgame_class;
+/* (a report taken, before the view copies it: too large for the stack) */
+static struct ae_pgr_report scratch;
+
+/* ---------- small things */
+
+static float ease_out(float t)
+{
+	t = t < 0.0f ? 0.0f : t > 1.0f ? 1.0f : t;
+	return 1.0f - (1.0f - t) * (1.0f - t) * (1.0f - t);
+}
+
+static float cap_top(int font, float size, float center)
+{
+	return center - ae_draw_cap_height(font, size) * 0.5f;
+}
+
+static unsigned int with_alpha(unsigned int rgba, float alpha)
+{
+	unsigned int a = (unsigned int)((float)(rgba & 0xFF) * (alpha < 0.0f ? 0.0f : alpha > 1.0f ? 1.0f : alpha) + 0.5f);
+
+	return (rgba & 0xFFFFFF00u) | a;
+}
+
+static struct ae_prompt prompt_of(int button, const char *label, int action)
+{
+	struct ae_prompt prompt;
+
+	memset(&prompt, 0, sizeof(prompt));
+	prompt.button = button;
+	prompt.label = label;
+	prompt.action = action;
+	return prompt;
+}
+
+/* the rows of a seat's GAME RESULT: RESULT, KILLS, ASSISTS, and BEST SPREE when it is known */
+static short row_count(struct ae_postgame_seat const *seat)
+{
+	struct ae_social_pg social;
+
+	/* (0.9.3 a social game's fifth row, EXP, after BEST SPREE; with no spree known it takes that row's place) */
+	return (short)((seat->spree >= 0 ? 4 : 3) + (ae_social_game_postgame_seat((short)(seat->slot - 1), &social) ? 1 : 0));
+}
+
+/* a player's view: the game's, or (a made-up post-game) the players present in order */
+static int view_of(short local, short *view, short *views, short *spans)
+{
+	short each, index = 0, total = 0;
+
+	if (!pg.dev)
+		return ae_glue_postgame_view(local, view, views, spans);
+	for (each = 0; each < AE_POSTGAME_SEATS; each++)
+	{
+		if (!pg.facts.seats[each].present)
+			continue;
+		if (each < local)
+			index++;
+		total++;
+	}
+	if (!pg.facts.seats[local].present)
+		return 0;
+	*views = total;
+	*view = index;
+	*spans = total == 3 && index == 0;
+	return 1;
+}
+
+static unsigned long since(void)
+{
+	return ae_motion_now() - pg.step_ms;
+}
+
+/* every row in and counted */
+static unsigned long counting_ms(void)
+{
+	short most = 0, local;
+
+	for (local = 0; local < AE_POSTGAME_SEATS; local++)
+	{
+		if (pg.facts.seats[local].present && row_count(&pg.facts.seats[local]) > most)
+			most = row_count(&pg.facts.seats[local]);
+	}
+	return most ? ROW_FIRST_MS + (unsigned long)(most - 1) * ROW_EVERY_MS + COUNT_MS : 0;
+}
+
+static int counting(void)
+{
+	return pg.step == STEP_RESULT && !pg.skipped && since() < counting_ms();
+}
+
+/* ---------- the ways on and out */
+
+static void to_carnage(void)
+{
+	pg.step = STEP_CARNAGE;
+	pg.step_ms = ae_motion_now();
+	pg.skipped = 1;
+	platform_log("ae postgame: carnage");
+	ae_glue_pgcr_collect(&scratch);
+	ae_pgcr_view_open(&pg.view, &scratch);
+	/* (A opens the highlighted player's card, as in the last game's report; the host's Continue is START or Space) */
+	pg.view.accept_opens_card = 1;
+	pg.view_refreshed_ms = ae_motion_now();
+	/* (debug.capture_on_event's "pg_carnage": the tests' frame of it) */
+	ae_test_capture("pg_carnage", 900);
+}
+
+static void leave_picked(short choice, void *context)
+{
+	(void)context;
+	pg.leave_open = 0;
+	pg.dialog = NULL;
+	if (choice != 1)
+	{
+		platform_log("ae postgame: stayed (leave not picked)");
+		return;
+	}
+	ae_glue_postgame_leave();
+}
+
+static void ask_leave(void)
+{
+	struct ae_dialog_spec spec;
+	struct ae_layout layout;
+	struct ae_frame frame;
+
+	ae_draw_current_layout(&layout);
+	ae_frame_compute(layout.width, ae_settings_ui_scale(), &frame);
+	memset(&spec, 0, sizeof(spec));
+	spec.kind = AE_DIALOG_CONFIRM;
+	spec.title = "Leave the game?";
+	spec.body = pg.facts.host ? "The game closes for everyone in it." : "You go back to the main menu.";
+	spec.choices[0] = "STAY";
+	spec.choices[1] = "LEAVE";
+	spec.choice_count = 2;
+	spec.has_cancel = 1;
+	spec.density = pg.density;
+	spec.bounds = frame.rect;
+	spec.picked = leave_picked;
+	platform_log("ae postgame: leave asked");
+	if (ae_dialog_open(&spec, 0))
+	{
+		pg.leave_open = 1;
+		pg.dialog = ae_ui_top() ? ae_ui_top()->data : NULL;
+	}
+	else
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+}
+
+static void ask_continue(void)
+{
+	if (!pg.facts.host)
+	{
+		/* (a guest's machine goes back with its host's) */
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	ae_sound_request(AE_SOUND_FORWARD, 0);
+	platform_log("ae postgame: continue asked");
+	/* (0.9.3 a social game: the game is left and MATCHMAKING comes back on its playlist) */
+	if (ae_social_game_continue())
+		return;
+	if (!ae_glue_postgame_continue())
+		pg.continue_asked = 1;
+}
+
+/* ---------- input */
+
+static int postgame_handle(struct ae_screen *screen, struct ae_event const *event)
+{
+	(void)screen;
+	if (pg.step == STEP_RESULT)
+	{
+		/* (anyone's A or START: the counting skipped, then on to CARNAGE) */
+		if (event->action != AE_ACTION_ACCEPT && event->action != AE_ACTION_START)
+			return 1;
+		if (counting())
+		{
+			pg.skipped = 1;
+			ae_sound_request(AE_SOUND_CURSOR, 0);
+			platform_log("ae postgame: counting skipped");
+			return 1;
+		}
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		if (pg.dev)
+		{
+			/* (a made-up post-game has no carnage report: A closes it) */
+			pg.on_stack = 0;
+			ae_ui_remove(&pg);
+			platform_log("ae postgame: closed (made up)");
+			return 1;
+		}
+		to_carnage();
+		return 1;
+	}
+	/* CARNAGE: player 1's (the owner's "p1/host only", as the game's report had it) */
+	if (event->player != 0)
+		return 1;
+	/* (Space is A for the game's menu keys: with no card open it is the Continue, not the player's card) */
+	if (event->action == AE_ACTION_ACCEPT && !ae_pgcr_view_card_is_open(&pg.view) && !ae_pgcr_view_details_is_open(&pg.view) &&
+		(ae_platform_keys() & AE_KEY_SPACE))
+	{
+		ask_continue();
+		return 1;
+	}
+	if (ae_pgcr_view_handle(&pg.view, event->action))
+		return 1;
+	switch (event->action)
+	{
+	case AE_ACTION_START:
+		ask_continue();
+		return 1;
+	case AE_ACTION_BACK:
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		ask_leave();
+		return 1;
+	}
+	return 1;
+}
+
+static void postgame_pointer(struct ae_screen *screen, struct ae_pointer const *pointer)
+{
+	struct ae_event event;
+
+	(void)screen;
+	if (pointer->player != 0)
+		return;
+	if (pg.step == STEP_CARNAGE)
+		ae_pgcr_view_pointer(&pg.view, pointer);
+	if (ae_prompts_pointer(pg.prompts, pg.prompt_count, pointer, HIT_PROMPTS, &event))
+		postgame_handle(NULL, &event);
+}
+
+/* ---------- GAME RESULT */
+
+/* a view's rectangle in layout units, as compute_window_bounds splits the screen in play */
+static void view_rect(short view, short views, short spans, struct ae_rect *rect)
+{
+	struct ae_layout layout;
+	short columns = views <= 2 ? 1 : 2, rows = views <= 1 ? 1 : 2, slot = view;
+
+	ae_draw_current_layout(&layout);
+	if (views == 3 && view > 0)
+		slot = (short)(view + 1);
+	rect->width = layout.width / columns * (spans ? 2 : 1);
+	rect->height = layout.height / rows;
+	rect->x = (slot % columns) * (layout.width / columns);
+	rect->y = (slot / columns) * (layout.height / rows);
+}
+
+/* the column's height at scale s (title to the last row), for a split view's fit */
+static float column_height(short rows, float s)
+{
+	return (84.0f + 48.0f + 36.0f + 20.0f + 18.0f + rows * 100.0f - 8.0f) * s;
+}
+
+/* a seat's column: the title, MODE ON MAP, the player, the rows (as far as the clock has them in); returns its foot */
+static float draw_column(struct ae_postgame_seat const *seat, float x, float y, float w, float s, int full)
+{
+	char line[112], number[24];
+	float e = 36.0f * s, row_h = 92.0f * s, cy;
+	unsigned long t = pg.skipped ? 0xFFFFFFFFul : since();
+	short rows = row_count(seat), index;
+	struct ae_social_pg social;
+	int has_social = ae_social_game_postgame_seat((short)(seat->slot - 1), &social);
+
+	/* the title (OpenCE, as SETTINGS' titles) in the result's colour; the gametype on the map under it */
+	{
+		/* (a long one, "TWENTY-SECOND PLACE": smaller to fit the column, down to TITLE_FLOOR of its size, then cut) */
+		float size = 76.0f * s, width = ae_draw_text_width(AE_FONT_TITLE, size, seat->title);
+		char fitted[64];
+
+		if (width > w)
+			size = size * w / width > TITLE_FLOOR * size ? size * w / width : TITLE_FLOOR * size;
+		ae_fit_text(AE_FONT_TITLE, size, seat->title, w, fitted, sizeof(fitted));
+		ae_draw_text(AE_FONT_TITLE, size, x, cap_top(AE_FONT_TITLE, size, y + 34.0f * s), AE_ALIGN_LEFT,
+			seat->title_color, fitted);
+	}
+	y += 84.0f * s;
+	snprintf(line, sizeof(line), "%s ON %s", pg.facts.gametype, pg.facts.map);
+	/* (a tournament game: the start loadout after the map) */
+	if (ae_social_game_start_label()[0])
+		snprintf(line + strlen(line), sizeof(line) - strlen(line), " \xC2\xB7 %s", ae_social_game_start_label());
+	{
+		float size = full ? 22.0f * s : (22.0f * s > 14.0f ? 22.0f * s : 14.0f);
+		char fitted[112];
+
+		ae_fit_text(AE_FONT_BODY, size, line, w, fitted, sizeof(fitted));
+		ae_draw_text_tracked(AE_FONT_BODY, size, 0.08f, x, cap_top(AE_FONT_BODY, size, y + 12.0f * s), AE_ALIGN_LEFT,
+			AE_COLOR_MUTED, fitted);
+	}
+	y += 48.0f * s;
+	/* the player: the emblem with the slot number, the name, the team */
+	ae_draw_rect(x, y, e, e, 2.0f * s, seat->chip);
+	snprintf(number, sizeof(number), "%d", seat->slot);
+	ae_draw_text(AE_FONT_ROW, 22.0f * s, x + e * 0.5f, cap_top(AE_FONT_ROW, 22.0f * s, y + e * 0.5f), AE_ALIGN_CENTER,
+		ae_emblem_number_color(seat->chip), number);
+	{
+		char fitted[48];
+		float team_w = seat->team[0] ? ae_draw_text_tracked_width(AE_FONT_BODY, 18.0f * s, 0.08f, seat->team) +
+			24.0f * s : 0.0f;
+
+		ae_fit_text(AE_FONT_ROW, 26.0f * s, seat->name, w - e - 14.0f * s - team_w, fitted, sizeof(fitted));
+		ae_draw_text(AE_FONT_ROW, 26.0f * s, x + e + 14.0f * s, cap_top(AE_FONT_ROW, 26.0f * s, y + e * 0.5f),
+			AE_ALIGN_LEFT, AE_COLOR_TITLE, fitted);
+	}
+	if (seat->team[0])
+		ae_draw_text_tracked(AE_FONT_BODY, 18.0f * s, 0.08f, x + w, cap_top(AE_FONT_BODY, 18.0f * s, y + e * 0.5f),
+			AE_ALIGN_RIGHT, AE_COLOR_MUTED, seat->team);
+	y += e + 20.0f * s;
+	ae_draw_rect(x, y, w, s > 0.5f ? s : 1.0f, 0.0f, AE_COLOR_RULE);
+	y += 18.0f * s;
+	/* the rows, one by one */
+	for (index = 0; index < rows; index++)
+	{
+		static const char *const labels[ROWS] = { "RESULT", "KILLS", "ASSISTS", "BEST SPREE", "EXP" };
+		int is_exp = has_social && index == rows - 1;
+		unsigned long at = ROW_FIRST_MS + (unsigned long)index * ROW_EVERY_MS;
+		float in, alpha, rise, count;
+		const char *sub = NULL;
+		char deaths[32];
+		long value = 0;
+		unsigned int value_color = AE_COLOR_TITLE;
+
+		if (t < at)
+			break;
+		in = ae_settings_reduce_motion() || pg.skipped ? 1.0f : ease_out((float)(t - at) / ROW_IN_MS);
+		alpha = in;
+		rise = (1.0f - in) * 12.0f * s;
+		count = pg.skipped ? 1.0f : ease_out((float)(t - at) / COUNT_MS);
+		switch (is_exp ? 4 : index)
+		{
+		case 4:
+			/* (0.9.3 EXP: "+1" in the accent, "0" in white, never red; the sub line says the rank) */
+			sub = social.sub;
+			snprintf(number, sizeof(number), social.delta > 0 ? "+%d" : "%d", social.delta);
+			if (social.delta > 0)
+				value_color = AE_COLOR_ACCENT;
+			break;
+		case 0:
+			sub = seat->result_sub;
+			snprintf(number, sizeof(number), "%s", seat->result_text);
+			/* (the accent for a win or a place, white for a loss or a tie) */
+			if (seat->result == AE_POSTGAME_WIN || seat->result == AE_POSTGAME_PLACE)
+				value_color = AE_COLOR_ACCENT;
+			break;
+		case 1:
+			value = seat->kills;
+			snprintf(deaths, sizeof(deaths), "%ld death%s", seat->deaths, seat->deaths == 1 ? "" : "s");
+			sub = deaths;
+			break;
+		case 2:
+			value = seat->assists;
+			break;
+		default:
+			value = seat->spree;
+			sub = "kills in one life";
+			break;
+		}
+		if (index > 0 && !is_exp)
+			snprintf(number, sizeof(number), "%ld", (long)((float)value * count + 0.5f));
+		ae_draw_rect(x, y + rise, w, row_h, 2.0f * s, with_alpha(RESULT_ROW, alpha * (float)(RESULT_ROW & 0xFF) / 255.0f));
+		if (index == 0)
+			ae_draw_rect(x, y + rise, 6.0f * s, row_h, 0.0f, with_alpha(seat->stripe, alpha));
+		/* (a rank up: a 6 u ice edge on the row's left, as RESULT's stripe) */
+		if (is_exp && social.rank_after > social.rank_before && !social.guest)
+		{
+			float edge_alpha = pg.skipped || ae_settings_reduce_motion() ? 1.0f :
+				ease_out((float)(t > at + COUNT_MS ? t - at - COUNT_MS : 0) / 300.0f);
+
+			ae_draw_rect(x, y + rise, 6.0f * s, row_h, 0.0f, with_alpha(EXP_ICE, alpha * edge_alpha));
+		}
+		cy = y + rise + row_h * 0.5f;
+		if (sub && sub[0])
+		{
+			float sub_size = full ? 20.0f * s : (20.0f * s > 14.0f ? 20.0f * s : 14.0f);
+
+			ae_draw_text(AE_FONT_ROW, 30.0f * s, x + 28.0f * s, cap_top(AE_FONT_ROW, 30.0f * s, cy - 13.0f * s),
+				AE_ALIGN_LEFT, with_alpha(AE_COLOR_TITLE, alpha), labels[index]);
+			ae_draw_text(AE_FONT_BODY, sub_size, x + 28.0f * s, cap_top(AE_FONT_BODY, sub_size, cy + 20.0f * s),
+				AE_ALIGN_LEFT, with_alpha(AE_COLOR_MUTED, alpha), sub);
+		}
+		else
+			ae_draw_text(AE_FONT_ROW, 30.0f * s, x + 28.0f * s, cap_top(AE_FONT_ROW, 30.0f * s, cy), AE_ALIGN_LEFT,
+				with_alpha(AE_COLOR_TITLE, alpha), labels[index]);
+		ae_draw_text(AE_FONT_ROW, 52.0f * s, x + w - 28.0f * s, cap_top(AE_FONT_ROW, 52.0f * s, cy), AE_ALIGN_RIGHT,
+			with_alpha(value_color, alpha), number);
+		if (is_exp)
+		{
+			/* (the RANK UP chip after the label, 14 u of gap; a 4 u bar at the row's foot: the EXP held in the accent,
+			this game's in the ice blue) */
+			float chip_alpha = pg.skipped || ae_settings_reduce_motion() ? 1.0f :
+				ease_out((float)(t > at + COUNT_MS ? t - at - COUNT_MS : 0) / 300.0f);
+
+			if (social.rank_after > social.rank_before && !social.guest)
+			{
+				float label_w = ae_draw_text_width(AE_FONT_ROW, 30.0f * s, labels[4]), ch = 24.0f * s;
+				float cw = ae_draw_text_tracked_width(AE_FONT_ROW, 15.0f * s, 0.08f, "RANK UP") + 20.0f * s;
+				float chip_x = x + 28.0f * s + label_w + 14.0f * s, chip_y = cy - 13.0f * s - ch * 0.5f;
+
+				ae_draw_rect(chip_x, chip_y, cw, ch, 0.0f, with_alpha(EXP_ICE, alpha * chip_alpha));
+				ae_draw_text_tracked(AE_FONT_ROW, 15.0f * s, 0.08f, chip_x + cw * 0.5f, cap_top(AE_FONT_ROW, 15.0f * s, chip_y +
+					ch * 0.5f), AE_ALIGN_CENTER, with_alpha(AE_COLOR_SELECTION_TEXT, alpha * chip_alpha), "RANK UP");
+			}
+			if (!social.guest)
+			{
+				float bar_x = x + 30.0f * s, bar_w = w * 0.78f, bar_y = y + rise + row_h - 10.0f * s;
+				int percent_before = social.rank_before == social.rank_after ? ae_social_rank_percent(social.exp_before) : 0;
+				int percent_after = ae_social_rank_percent(social.exp_after);
+				float held = bar_w * (float)percent_before / 100.0f, total = bar_w * (float)percent_after / 100.0f;
+
+				ae_draw_rect(bar_x, bar_y, bar_w, 4.0f * s, 0.0f, with_alpha(AE_COLOR_RULE, alpha));
+				if (total > held)
+				{
+					ae_draw_rect(bar_x, bar_y, held, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
+					ae_draw_rect(bar_x + held, bar_y, (total - held) * count, 4.0f * s, 0.0f, with_alpha(EXP_ICE, alpha));
+				}
+				else
+					ae_draw_rect(bar_x, bar_y, total, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
+			}
+		}
+		y += row_h + 8.0f * s;
+	}
+	return y;
+}
+
+/* the FINAL SCORE card (one view): the team scores, FFA the leaders; TIME PLAYED */
+static void draw_card(short local, float x, float right, float y, float u)
+{
+	struct ae_pause_card card;
+	float w = right - x, pad = 29.0f * u, yy;
+	short row;
+
+	if (pg.dev)
+	{
+		/* (a made-up post-game: the card from its banner) */
+		char const *dash = strchr(pg.facts.banner_score, '-');
+		int red_first = strncmp(pg.facts.banner, "BLUE", 4) != 0;
+
+		memset(&card, 0, sizeof(card));
+		if (pg.facts.teams && dash)
+		{
+			char first[16], second[16];
+
+			snprintf(first, sizeof(first), "%.*s", (int)(dash - pg.facts.banner_score) - 1, pg.facts.banner_score);
+			snprintf(second, sizeof(second), "%s", dash + 2);
+			card.rows = 2;
+			snprintf(card.names[0], sizeof(card.names[0]), "RED TEAM");
+			snprintf(card.names[1], sizeof(card.names[1]), "BLUE TEAM");
+			snprintf(card.scores[0], sizeof(card.scores[0]), "%s", red_first ? first : second);
+			snprintf(card.scores[1], sizeof(card.scores[1]), "%s", red_first ? second : first);
+			card.colors[0] = 0xC0392BFFu;
+			card.colors[1] = 0x2E86DEFFu;
+			card.mine[0] = 1;
+		}
+	}
+	else
+		ae_glue_postgame_card(local, &card);
+	ae_draw_rect(x, y, w, (86.0f + card.rows * 74.0f + 66.0f) * u, 3.0f * u, CARD_PANEL);
+	ae_draw_rect(x, y, w, 5.0f * u, 0.0f, AE_COLOR_ACCENT);
+	ae_draw_text_tracked(AE_FONT_BODY, 22.0f * u, 0.09f, x + pad, cap_top(AE_FONT_BODY, 22.0f * u, y + 46.0f * u),
+		AE_ALIGN_LEFT, AE_COLOR_MUTED, "FINAL SCORE");
+	yy = y + 86.0f * u;
+	for (row = 0; row < card.rows; row++)
+	{
+		float mid = yy + 27.0f * u, score_w = ae_draw_text_width(AE_FONT_ROW, 48.0f * u, card.scores[row]);
+		char fitted[48];
+
+		ae_draw_rect(x + pad, yy, 10.0f * u, 54.0f * u, 0.0f, card.colors[row]);
+		ae_fit_text(AE_FONT_ROW, 35.0f * u, card.names[row], w - 2.0f * pad - 29.0f * u - score_w - 16.0f * u, fitted,
+			sizeof(fitted));
+		ae_draw_text(AE_FONT_ROW, 35.0f * u, x + pad + 29.0f * u, cap_top(AE_FONT_ROW, 35.0f * u, mid), AE_ALIGN_LEFT,
+			card.mine[row] ? AE_COLOR_TITLE : AE_COLOR_TEXT, fitted);
+		ae_draw_text(AE_FONT_ROW, 48.0f * u, x + w - pad, cap_top(AE_FONT_ROW, 48.0f * u, mid), AE_ALIGN_RIGHT,
+			AE_COLOR_TITLE, card.scores[row]);
+		yy += 74.0f * u;
+	}
+	ae_draw_text(AE_FONT_BODY, 22.0f * u, x + pad, cap_top(AE_FONT_BODY, 22.0f * u, yy + 40.0f * u), AE_ALIGN_LEFT,
+		AE_COLOR_MUTED, "TIME PLAYED");
+	ae_draw_text(AE_FONT_ROW, 35.0f * u, x + w - pad, cap_top(AE_FONT_ROW, 35.0f * u, yy + 40.0f * u), AE_ALIGN_RIGHT,
+		AE_COLOR_TEXT, pg.facts.played);
+}
+
+static void result_prompts(float x, float center_y, float bottom)
+{
+	pg.prompts[0] = prompt_of(AE_BUTTON_A, counting() ? "Skip" : "Continue", AE_ACTION_ACCEPT);
+	pg.prompt_count = 1;
+	ae_widget_footer_band(&pg.density, bottom);
+	ae_widget_prompts(&pg.density, x, center_y, pg.prompts, pg.prompt_count, NULL, x + 1600.0f, -1, HIT_PROMPTS);
+}
+
+static void draw_result(void)
+{
+	struct ae_layout layout;
+	struct ae_frame frame;
+	short local, views = 1;
+	float scale = ae_settings_ui_scale();
+
+	ae_draw_current_layout(&layout);
+	ae_frame_compute(layout.width, scale, &frame);
+	ae_draw_rect(0.0f, 0.0f, layout.width, layout.height, 0.0f, BACKDROP);
+	for (local = 0; local < AE_POSTGAME_SEATS; local++)
+	{
+		short view, spans;
+
+		if (pg.facts.seats[local].present && view_of(local, &view, &views, &spans))
+			break;
+	}
+	if (views <= 1)
+	{
+		/* one player: the column on the left, the card on the right (R-team; R-ffa with the leaders) */
+		float k = frame.rect.width / 1920.0f, u = frame.unit;
+		float x = frame.rect.x + COLUMN_X * k, w = COLUMN_W * u, card_x = frame.rect.x + CARD_X * k;
+		float card_right = frame.rect.x + CARD_RIGHT * k;
+
+		for (local = 0; local < AE_POSTGAME_SEATS && !pg.facts.seats[local].present; local++)
+			;
+		if (local >= AE_POSTGAME_SEATS)
+			return;
+		/* (at a bigger UI SCALE the card keeps its right edge and its gap from the column: it narrows) */
+		if (card_x < x + w + CARD_GAP * k)
+			card_x = x + w + CARD_GAP * k;
+		ae_density_full(layout.height * layout.scale, scale, &pg.density);
+		draw_column(&pg.facts.seats[local], x, COLUMN_TOP, w, u, 1);
+		draw_card(local, card_x, card_right, CARD_TOP, u);
+		result_prompts(x, layout.height - PROMPTS_FROM_FOOT, layout.height);
+		return;
+	}
+	/* split screen: each player's own result in their own view (R-2p), no card; one prompt line per view */
+	ae_density_full(layout.height * layout.scale, SPLIT_PROMPT_SCALE * (scale > 1.0f ? scale : 1.0f), &pg.density);
+	for (local = 0; local < AE_POSTGAME_SEATS; local++)
+	{
+		struct ae_postgame_seat const *seat = &pg.facts.seats[local];
+		struct ae_rect view_r;
+		short view, spans;
+		float s, x, w, room;
+
+		if (!seat->present || !view_of(local, &view, &views, &spans))
+			continue;
+		view_rect(view, views, spans, &view_r);
+		x = view_r.x + COLUMN_X * view_r.width / 1920.0f;
+		if (x < view_r.x + 32.0f)
+			x = view_r.x + 32.0f;
+		w = view_r.width - 2.0f * (x - view_r.x);
+		if (w > SPLIT_COLUMN_W)
+			w = SPLIT_COLUMN_W;
+		/* (its size: the mockup's 0.62, larger with UI SCALE, as fits above the prompts) */
+		room = view_r.height - SPLIT_TOP - SPLIT_PROMPTS_FROM_FOOT - 40.0f;
+		s = SPLIT_SCALE * (scale > 1.0f ? scale : 1.0f);
+		if (column_height(row_count(seat), s) > room)
+			s = room / column_height(row_count(seat), 1.0f);
+		if (local > 0)
+			ae_draw_rect(view_r.x, view_r.y, view_r.width, 2.0f, 0.0f, 0x000000FFu);
+		draw_column(seat, x, view_r.y + SPLIT_TOP, w, s, 0);
+		/* (each view's prompt: anyone's A; the pointer's are player 1's, the first drawn) */
+		pg.prompts[0] = prompt_of(AE_BUTTON_A, counting() ? "Skip" : "Continue", AE_ACTION_ACCEPT);
+		pg.prompt_count = 1;
+		/* (0.9.4: the band under this view's row only) */
+		ae_draw_clip_push(view_r.x, view_r.y, view_r.width, view_r.height);
+		ae_widget_footer_band(&pg.density, view_r.y + view_r.height);
+		ae_draw_clip_pop();
+		ae_widget_prompts(&pg.density, x, view_r.y + view_r.height - SPLIT_PROMPTS_FROM_FOOT, pg.prompts, 1, NULL,
+			x + w, -1, (short)(HIT_PROMPTS + 4 * local));
+	}
+}
+
+/* ---------- CARNAGE */
+
+/* a fresher report while the numbers settle (the host's summaries, the last scores), and kept for the lobby once the
+post-game's scores are up */
+static void refresh_report(void)
+{
+	unsigned long now = ae_motion_now();
+
+	if (now - pg.view_refreshed_ms < REPORT_REFRESH_MS)
+		return;
+	pg.view_refreshed_ms = now;
+	ae_glue_pgcr_collect(&scratch);
+	if (!scratch.valid)
+		return;
+	ae_pgcr_view_refresh(&pg.view, &scratch);
+	if (pg.facts.can_continue)
+		ae_glue_pgcr_keep(&scratch);
+}
+
+static void draw_carnage(void)
+{
+	struct ae_layout layout;
+	struct ae_frame frame;
+	float in, center_y, x, right;
+
+	ae_draw_current_layout(&layout);
+	ae_frame_compute(layout.width, ae_settings_ui_scale(), &frame);
+	in = ae_settings_reduce_motion() ? 1.0f : ease_out((float)since() / CARNAGE_IN_MS);
+	ae_draw_rect(0.0f, 0.0f, layout.width, layout.height, 0.0f, BACKDROP);
+	ae_draw_set_alpha(ae_ui_drawing_alpha() * in);
+	refresh_report();
+	ae_pgcr_view_draw(&pg.view, &frame);
+	ae_density_full(layout.height * layout.scale, ae_settings_ui_scale(), &pg.density);
+	/* the prompts: a player's A, LB / RB between the teams (a free for all of more than a page: the pages), the host's START, everyone's B;
+	a guest waits for its host */
+	pg.prompt_count = 0;
+	if (ae_pgcr_view_card_is_open(&pg.view))
+	{
+		/* (a player's card is open: its own two) */
+		pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_A, "Select", AE_ACTION_ACCEPT);
+		pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_B, "Back", AE_ACTION_BACK);
+	}
+	else if (ae_pgcr_view_details_is_open(&pg.view))
+	{
+		/* (rc2: the DETAILS page: the player before and after, and back to the board) */
+		pg.prompts[pg.prompt_count] = prompt_of(AE_BUTTON_LEFT_SHOULDER, "Player", AE_ACTION_TAB_PREVIOUS);
+		pg.prompts[pg.prompt_count++].pair = 1;
+		pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_B, "Back", AE_ACTION_BACK);
+	}
+	else
+	{
+		if (ae_pgcr_view_can_open_card(&pg.view))
+			pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_A, ae_pgcr_view_accept_label(&pg.view), AE_ACTION_ACCEPT);
+		if (ae_pgcr_view_can_open_details(&pg.view))
+			pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_Y, "Details", AE_ACTION_Y);
+		if (pg.view.report.teams || pg.view.report.rows > AE_PGR_PAGE)
+		{
+			pg.prompts[pg.prompt_count] = prompt_of(AE_BUTTON_LEFT_SHOULDER, pg.view.report.teams ? "Team" : "Page",
+				AE_ACTION_TAB_PREVIOUS);
+			pg.prompts[pg.prompt_count++].pair = 1;
+		}
+		if (pg.facts.host)
+		{
+			pg.prompts[pg.prompt_count] = prompt_of(AE_BUTTON_START, "Continue", AE_ACTION_START);
+			pg.prompts[pg.prompt_count++].key = "Space";
+		}
+		pg.prompts[pg.prompt_count++] = prompt_of(AE_BUTTON_B, "Leave", AE_ACTION_BACK);
+	}
+	ae_pgcr_view_footer(&frame, &center_y, &x, &right);
+	ae_widget_footer_band(&pg.density, frame.rect.y + frame.rect.height);
+	ae_widget_prompts(&pg.density, x, center_y, pg.prompts, pg.prompt_count,
+		pg.facts.host ? (pg.continue_asked ? "Back to the lobby..." : NULL) : "Waiting for the host", right, -1,
+		HIT_PROMPTS);
+	ae_draw_set_alpha(ae_ui_drawing_alpha());
+}
+
+static void postgame_draw(struct ae_screen *screen)
+{
+	(void)screen;
+	ae_draw_view_full();
+	if (pg.step == STEP_CARNAGE)
+		draw_carnage();
+	else
+		draw_result();
+}
+
+/* ---------- each frame */
+
+static void postgame_close(void)
+{
+	if (!pg.on_stack)
+		return;
+	pg.on_stack = 0;
+	/* (its own and its leave dialog only, wherever they are: the lobby the game's back to pushes over them) */
+	if (pg.leave_open && pg.dialog && pg.dialog != (void *)&pg && ae_ui_holds(pg.dialog))
+		ae_ui_remove(pg.dialog);
+	pg.leave_open = 0;
+	pg.dialog = NULL;
+	/* (a SERVICE RECORD opened from a player's card leaves with it: nothing of the report stays over the next game) */
+	ae_screen_record_remove();
+	ae_screen_bot_record_remove();
+	if (ae_ui_holds(&pg))
+		ae_ui_remove(&pg);
+	platform_log("ae postgame: closed");
+}
+
+int ae_screen_postgame_dev_open(struct ae_postgame_facts const *facts)
+{
+	if (pg.on_stack || ae_ui_holds(&pg))
+		return 0;
+	memset(&pg, 0, sizeof(pg));
+	pg.facts = *facts;
+	pg.dev = 1;
+	if (!ae_ui_push(&postgame_class, AE_OWNER_ANY, &pg))
+		return 0;
+	pg.on_stack = 1;
+	pg.step = STEP_RESULT;
+	pg.step_ms = ae_motion_now();
+	pg.skipped = ae_settings_reduce_motion() ? 1 : 0;
+	platform_log("ae postgame: open (made up, %d players, %s)", (int)facts->players, facts->teams ? "teams" : "ffa");
+	ae_test_capture("pg_counting", ROW_FIRST_MS + ROW_EVERY_MS + COUNT_MS / 2);
+	ae_test_capture("pg_result", (int)counting_ms() + 600);
+	return 1;
+}
+
+void ae_screen_postgame_dev_close(void)
+{
+	if (!pg.dev)
+		return;
+	pg.on_stack = 0;
+	ae_screen_record_remove();
+	ae_screen_bot_record_remove();
+	if (ae_ui_holds(&pg))
+		ae_ui_remove(&pg);
+}
+
+void ae_screen_postgame_tick(void)
+{
+	ae_social_game_tick();
+	if (pg.dev)
+	{
+		/* (a made-up post-game stays until A closes it) */
+		if (pg.on_stack && !ae_ui_holds(&pg))
+			pg.on_stack = 0;
+		if (pg.on_stack && pg.step == STEP_RESULT && !pg.skipped && since() >= counting_ms())
+			pg.skipped = 1;
+		return;
+	}
+	ae_glue_postgame_track();
+	ae_glue_pause_restart_tick();
+	if (!ae_glue_postgame_due())
+	{
+		postgame_close();
+		return;
+	}
+	ae_glue_postgame_facts(&pg.facts);
+	if (!pg.on_stack)
+	{
+		/* (over the game only: another AE screen up first, a dialog or the pause, closes as the game ends) */
+		if (ae_ui_depth() > 0)
+			return;
+		memset(&pg, 0, sizeof(pg));
+		ae_glue_postgame_facts(&pg.facts);
+		if (!ae_ui_push(&postgame_class, AE_OWNER_ANY, &pg))
+			return;
+		pg.on_stack = 1;
+		pg.step = STEP_RESULT;
+		pg.step_ms = ae_motion_now();
+		pg.skipped = ae_settings_reduce_motion() ? 1 : 0;
+		platform_log("ae postgame: open (%d players, %s)", (int)pg.facts.players, pg.facts.teams ? "teams" : "ffa");
+		/* (the tests' frames: GAME RESULT counting, and done) */
+		ae_test_capture("pg_counting", ROW_FIRST_MS + ROW_EVERY_MS + COUNT_MS / 2);
+		ae_test_capture("pg_result", (int)counting_ms() + 600);
+		return;
+	}
+	if (pg.step == STEP_RESULT && !pg.skipped && since() >= counting_ms())
+		pg.skipped = 1;
+	/* (the host's CONTINUE asked before the scores were up) */
+	if (pg.continue_asked && pg.facts.can_continue && ae_glue_postgame_continue())
+		pg.continue_asked = 0;
+}
+
+int ae_screen_postgame_up(void)
+{
+	return pg.on_stack && ae_ui_holds(&pg);
+}
+
+static struct ae_screen_class const postgame_class =
+{
+	.name = "postgame", .handle = postgame_handle, .draw = postgame_draw, .pointer = postgame_pointer,
+	.start_from_anyone = 1,
+};

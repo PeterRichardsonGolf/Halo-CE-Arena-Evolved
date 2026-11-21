@@ -1,0 +1,19 @@
+# The Workshop pack CE Digsite Multiplayer's own talking timer, powerup navpoints and flashlight taunts are off on its
+# maps: their scripts get no thread (AE has its own item timers and waypoints). Each test opens on the map's spawn.
+list digsite-scripts-rc4
+revision 1
+title DIGSITE: THE PACK'S TIMER OFF
+
+group arena
+map 1@ws3477809506
+gametype AE TEAM SLY
+set bots.count 0
+
+test digsite-timer-off
+title Albatross: no talking timer
+setup god
+check No voice calls out the game time in the first 20 seconds
+check No navpoint markers point at a powerup
+check The flashlight plays no taunt sound
+expect 3 log script is off (AE has its own timers and waypoints)
+expect 1 cmd god ok
