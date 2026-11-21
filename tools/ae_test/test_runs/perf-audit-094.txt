@@ -1,0 +1,36 @@
+# 0.9.4 performance audit: the same game, drawn with less work. The HUD's panels (cells, outlines, soft lines and
+# discs) go to the GPU in one batch; the window's size is asked of the system only after the window changes; a tag
+# looked up by name (menus, game modes, weapon packs) is found through an index rebuilt for each map; settings and the
+# announcer's pack are kept until a setting changes. Nothing should look or play differently: each test checks that the
+# screens, modes and settings these paths serve still work. The performance line at the top shows the frame rate.
+list perf-audit-094
+revision 1
+title PERFORMANCE AUDIT
+
+test menus
+title Menus: as before
+check Menus, Settings and lobby move with the pad as before
+check In a lobby, map and gametype names and pictures show
+check Change ANNOUNCER: the new pack speaks at next game start
+menus
+
+test hud-ctf
+title HUD and CTF on Blood Gulch
+setup flag theirs carry
+check HUD cells, outlines and round marks look as in 0.9.3
+check Run their flag home: it scores and the announcer calls it
+check Leave fullscreen and resize the window: the HUD fits
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 6
+set display.performance full
+
+test next-map
+title After a map change
+check HUD and weapon pickup names show right on Damnation
+check The frame rate stays steady: no new stutters
+map damnation
+gametype AE TEAM SLY
+set bots.count 4
+set display.performance full
+fresh

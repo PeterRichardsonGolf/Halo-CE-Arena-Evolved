@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's multiplayer screens, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_modal" width="640" height="480" flags="pass_unhandled_to_focused_child no_history" bitmap="bitmaps/gradient">
+		<on event="b" run="ae mcc not now" back="true"/>
+		<on event="back" run="ae mcc not now" back="true"/>
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_title"/>
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_text"/>
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_title" type="text" controller="1" left="35" top="11" width="605" height="59" text="HALO MASTER CHIEF COLLECTION FOUND" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_text" type="text" controller="1" left="68" top="120" width="504" height="120" text="Custom Edition maps need three files from Halo: The\nMaster Chief Collection. AE can read them from your\nMCC folder. It only reads them and never changes\nyour MCC files." font="ui\large_ui" color="#FF2896FF" text_flags="no_focus_test">
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_use" x="160" y="1"/>
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_not_now" x="320" y="1"/>
+		<child widget="main_menu/multiplayer_type_select/mp_map_select/mcc_found_never" x="480" y="1"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_use" type="text" width="150" height="24" bitmap="bitmaps/text_button_background" text="USE MCC FILES" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="ae mcc use" open="main_menu/multiplayer_type_select/connected/gametype_select_screen_wrapper"/>
+		<on event="start" run="ae mcc use" open="main_menu/multiplayer_type_select/connected/gametype_select_screen_wrapper"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_not_now" type="text" width="150" height="24" bitmap="bitmaps/text_button_background" text="NOT NOW" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="ae mcc not now" back="true"/>
+		<on event="start" run="ae mcc not now" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/multiplayer_type_select/mp_map_select/mcc_found_never" type="text" width="150" height="24" bitmap="bitmaps/text_button_background" text="NEVER ASK AGAIN" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="ae mcc never ask" back="true"/>
+		<on event="start" run="ae mcc never ask" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+</menus>

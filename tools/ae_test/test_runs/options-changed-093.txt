@@ -1,0 +1,62 @@
+# 0.9.3 GAME OPTIONS: a value is gray until you change it. A changed option shows in blue with a dot and the game type's
+# value struck beside it; the CHANGED tab lists only those, with RESET EVERY OPTION at its foot. Y (R) puts the focused
+# option back, no dialog; the mouse does it with a click on the struck value. Menus tests: each setup opens GAME OPTIONS on
+# the last used game type with the changes already made (menu game_options <chip> change <option>=<value>), so the
+# checks only say where to look. The log says "dev: menu game_options <chip> opened, N changed".
+list options-changed-093
+revision 1
+title GAME OPTIONS: CHANGED VIEW
+
+test options-gray
+title All options: gray until changed
+check Unchanged values are gray; the two changed ones are blue
+check Each changed row has a dot and the old value struck
+check The top right reads "2 CHANGED"
+menus
+setup menu game_options all change kills_to_win=25 change time_limit=10
+expect 1 log dev: menu game_options all opened, 2 changed
+
+test options-changed-tab
+title CHANGED tab: only what differs
+check Only the two changed rows show, under their groups
+check RESET EVERY OPTION sits at the foot, in red
+check Y on KILLS TO WIN: it goes back, no dialog, row leaves
+menus
+setup menu game_options changed change kills_to_win=25 change respawn_time=5
+expect 1 log dev: menu game_options changed opened, 2 changed
+
+test options-reset-all
+title CHANGED tab: RESET EVERY OPTION
+check A on the red row asks first; CANCEL is focused
+check The question names the 3 options that go back
+check Yes empties the tab: "Nothing is changed yet."
+menus
+setup menu game_options changed change kills_to_win=25 change time_limit=10 change respawn_time=5
+expect 1 log dev: menu game_options changed opened, 3 changed
+
+test options-empty
+title CHANGED tab: nothing changed
+check The CHANGED chip is selected with a 0 and shows a card
+check The card says nothing is changed; LB RB goes back to ALL
+check Nothing is focused; the footer has no A and no Y
+menus
+setup menu game_options changed
+expect 1 log dev: menu game_options changed opened, 0 changed
+
+test options-value-tag
+title ALL VALUES: the game type's own value
+check A on KILLS TO WIN: the list tags the game type's value
+check Picking the tagged value puts the option back
+check The dot, the struck value and the changed count go
+menus
+setup menu game_options all change kills_to_win=25
+expect 1 log dev: menu game_options all opened, 1 changed
+
+test options-mouse-reset
+title Mouse: click the struck value
+check Hover the struck old value: it lights and the help says so
+check One click puts the old value back, no picker opens
+check The dot goes and the top right says NO CHANGES
+menus
+setup menu game_options all change time_limit=10
+expect 1 log dev: menu game_options all opened, 1 changed

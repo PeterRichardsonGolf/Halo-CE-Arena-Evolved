@@ -1,0 +1,34 @@
+# DREDWERKZ from its Steam Workshop item (2900215828), read as the file is (no converted copy). The map has no script
+# for its lift or its pit: it uses teleporters. One takes a player to the low pad, a second one 1.6 m beside that spot
+# takes him to the upper floor, a third takes who falls into the pit to a room under the map. AE's map volumes rule
+# kills in a volume named as a kill zone ('Hell') on every map; its lifts do not act on a map read from MCC's files. The item is
+# found in Steam's Workshop folder or in the game's own mcc_maps (STEAM ACCOUNT > WORKSHOP MAPS): the same name.
+list dredwerkz-ws-11x
+revision 1
+title DREDWERKZ: THE WORKSHOP FILE
+
+group workshop
+map dredwerkz mcc debug flycam pm@ws2900215828
+gametype AE BR TS
+set bots.count 0
+
+test look
+title DREDWERKZ from the Workshop: the map and its look
+setup goto -21.2 1.0 -0.1
+check The map is drawn: walls, lights and sky as they should be
+check It plays as it does in MCC (note with F4 what differs)
+
+test teleporters
+title DREDWERKZ from the Workshop: its own teleporters
+setup goto -15.0 9.3 2.2
+check The first teleporter drops you on the low pad
+check Step onto the pad to your right: it takes you upstairs
+check You are not lifted by yourself while you stand still
+expect 3 no log lifted from 'TPA'
+
+test pit
+title DREDWERKZ from the Workshop: the pit
+setup goto -21.2 1.0 -0.1
+check Walk off the ledge into the pit below
+check You die in the pit (its 'Hell' volume kills)
+expect 1 log fell into 'Hell'

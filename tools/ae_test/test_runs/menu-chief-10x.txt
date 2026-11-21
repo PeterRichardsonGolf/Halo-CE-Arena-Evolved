@@ -1,0 +1,16 @@
+# PROFILES > EDIT: the profile's Spartan drawn under the COLOURS grid, the game's own model in the row's colour. The
+# test opens on the first profile's EDIT page (a PC with no profile gets one named DEV first). The model is read from
+# wizard.map while the main menu's map is loaded: a PC without that file draws nothing there.
+list menu-chief-10x
+revision 1
+title PROFILES: THE SPARTAN
+
+test edit-spartan
+title EDIT: the Spartan under the colours
+menus
+card bottom
+setup menu profiles edit
+check A Spartan stands under the COLOURS grid, nothing over him
+check COLOUR left and right: his armour takes the row's colour
+check Right stick turns him; alone he changes what he holds
+expect 1 log menu chief: drawn from now on
