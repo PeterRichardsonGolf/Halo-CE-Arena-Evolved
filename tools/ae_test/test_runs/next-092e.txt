@@ -1,0 +1,19 @@
+# 0.9.2: the sniper rifle side by side. Staged only.
+list next-092e
+revision 1
+title 0.9.2 ROUND E
+
+test split-aim-sniper
+title SIDE BY SIDE: the sniper's trail
+card bottom
+setup give weapons\sniper_rifle\sniper_rifle
+check You hold a sniper rifle; it sits as for one player
+check Fire far: the trail starts at the barrel
+check Zoomed: the shot lands on the crosshair
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+set display.split_target_60_fps false
+set display.low_latency off
+players 2

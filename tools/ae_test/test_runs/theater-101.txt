@@ -1,0 +1,58 @@
+# The Theater's engine: a bot game recorded, then played back through a bot's eyes and a free camera, a seek and the
+# end. The first group's game is the recording (network.record_replays on). The second group's map load (another
+# map, no bots) ends it; each of its tests starts the newest recording again (replay play 1), seeks to 15 s, when
+# the bots are out and fighting, and only then turns to its view (refused as "still seeking" till the seek is there).
+# (Started from the menus, the menus stay drawn over the playback: the replay command does not close them.)
+# The playback strip (a seek bar, pause and speed on screen) is not in this build: seek and views are DEV MODE's.
+list theater-101
+revision 1
+title THEATER: RECORD A GAME, WATCH IT BACK
+
+group record
+map bloodgulch
+set network.record_replays true
+
+test record
+title BLOOD GULCH: play a minute with the bots, then pass
+setup bots 7 even normal
+setup replay status
+check Play about a minute: the game plays as usual
+expect 1 cmd replay status ok
+
+group watch
+map chillout
+set network.record_replays false
+set bots.count 0
+
+test eyes
+title BLOOD GULCH replay at 15 s: a bot's eyes
+setup replay play 1
+setup replay seek 15
+setup replay eyes 2
+check Blood Gulch is drawn; you see as bot 2 sees
+check The view glides as the world does, no stutter
+check Bots move, shoot and die as they did
+expect 1 log the postgame name its map, bloodgulch
+expect 1 cmd replay eyes 2 ok
+expect 1 no log replay: free camera: no player has a unit
+
+test free
+title BLOOD GULCH replay at 15 s: the free camera
+setup replay play 1
+setup replay seek 15
+setup replay free
+check The view is behind and above a player
+check Blood Gulch is drawn around it, not a void
+expect 1 log replay: free camera at
+expect 1 no log no player has a unit
+expect 2 log the postgame name its map, bloodgulch
+
+test end
+title BLOOD GULCH replay: seek to 50 s, then the end
+setup replay play 1
+setup replay seek 50
+check It plays fast to 50 s (no seek bar in this build)
+check It ends by itself; the menus are back, no error
+expect 1 cmd replay seek 50 ok
+expect 2 log ended at tick
+expect 2 log replay: stopped

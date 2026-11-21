@@ -1,0 +1,33 @@
+AE AUTO SHOTGUN (weapon pack ae_auto_shotgun) - credits
+
+The auto-shotgun's model (the modern combat shotgun, worn in first and third person), shaders, textures, first-person
+animations, collision, sounds (the shot, the draw's rack, the shell-by-shell reload, the forend stroke at the end of a reload, melee) and
+HUD (its 6-shell meter, round reticle and picture of the shotgun) are ZTeam's, from the ZTeam tag pack (released on
+halomaps.org). The pack names no individual authors, so none are named here. They are used as released, but for what an
+Xbox map needs: the model converted to the Xbox model format, the multipurpose map's channels reordered.
+
+Made for Arena Evolved:
+- the first-person animations made semi-automatic from ZTeam's (tools/weapon_pack/auto_shotgun_anims.py, our own
+  script): a shot no longer works the forend (the recoil is ZTeam's, played faster, with the loading port's cycle and
+  the spent shell moved into it), the draw racks it once (ZTeam's own draw and its sound), the reload's enter and
+  shell loop play about a fifth faster, the idle posing is ZTeam's one that leaves the forend alone, and the forend is
+  worked once, at the end of each reload, by ZTeam's own exit animation; the stroke sounds of the shot and the
+  forend-check posing are left out;
+- the third-person animation graph (a forend stroke) and ZTeam's flashlight are left out;
+- the weapon's numbers (shells, rate of fire, pellets, spread, aim assist) and the damage, falloff and range of a
+  pellet, set to our own values;
+- the pellet and the firing effect are the stock shotgun's with our numbers and ZTeam's shot sound;
+- the HUD's rounds panel is the map's stock one (ZTeam's chain of panels ends in a full-screen visor frame);
+- the swap and pickup prompts' picture is ZTeam's own picture of the shotgun, resampled onto a sprite sheet (nothing
+  drawn);
+- the firing kick is the stock shotgun's with our rumble.
+
+The pack's pellet and firing effect are built from the stock shotgun's tags (no pixel, sound or model of the game's):
+what else the shotgun needs of the game (the stock rounds panel, ammunition pickup, melee, impacts, materials, muzzle
+flash, empty click) it names, and the map the player owns provides.
+
+Kind: unknown. ZTeam's models are made for Custom Edition (their own nodes, a Custom Edition polygon budget) and
+recreate a later game's shotgun; nothing in the release says whether they and the sounds were modelled and recorded by
+ZTeam or taken from that game, so this pack is not yet classed as a community model or a direct port.
+
+Thank you, ZTeam.

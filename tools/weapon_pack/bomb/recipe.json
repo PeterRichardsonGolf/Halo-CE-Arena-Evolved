@@ -1,0 +1,422 @@
+{
+ "format": 1,
+ "about": "The AE Search and Destroy bomb pack: the bomb's model, timer and pickup chirp (our own geometry and sound, its textures baked from the game's own at build time) and CMT's TSC:E 1.4.1c blast effects (credited). make_bomb.py runs it.",
+ "pack": {
+  "id": "ae_bomb",
+  "revision": 3,
+  "display": "SND BOMB",
+  "prefix": "ae\\packs\\bomb\\",
+  "roots": [
+   "mode:ae_pack\\bomb\\bomb",
+   "effe:cmt\\vehicles\\h1_spirit\\scorpion\\weapons\\scorpion_cannon\\effects\\scorpion_cannon_shell_explosion",
+   "effe:cmt\\vehicles\\_shared\\warthog\\_warthog_chaingun\\effects\\warthog_chaingun_body_depleted",
+   "snd!:ae_pack\\bomb\\sounds\\pickup"
+  ],
+  "credits": "CREDITS.txt",
+  "smooth": [],
+  "stock_derived": {
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_a": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_b": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_c": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_d": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_e": "one colour sampled from a stock texture (the steel, the wires), a flat 8 x 8 picture",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_f": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_g": "one colour sampled from a stock texture (the steel, the wires), a flat 8 x 8 picture",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_h": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_i": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_j": "baked at build time from the stock textures the mockup reads (inputs.hek: the warthog, the a10 tech rack, Blood Gulch's metal and ground, the rocket ammo case, the grenades' plastic) and CMT's (inputs.tsce)",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_k": "one colour sampled from a stock texture (the steel, the wires), a flat 8 x 8 picture",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_l": "one colour sampled from a stock texture (the steel, the wires), a flat 8 x 8 picture",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\detail_a": "a stock detail map (corroded metal, the warthog's scratches) resized by the mockup",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\detail_b": "a stock detail map (corroded metal, the warthog's scratches) resized by the mockup",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_a": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_b": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_c": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_d": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_e": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_f": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_g": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_h": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_i": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_j": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_k": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_l": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_bar_a": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_bar_b": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_bar_c": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_bar_d": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_led": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set",
+   "ae\\packs\\bomb\\bomb\\shaders\\bomb_beacon": "the stock rocket ammo case's shader_model tag (powerups/rocket launcher ammo/shaders/rl ammo body) with this material's maps set"
+  },
+  "own_art": [
+   "ae\\packs\\bomb\\bomb\\bitmaps\\mp_plain",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\mp_glow",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\mp_bar",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_bar_a",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_bar_b",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_bar_c",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_bar_d",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_led",
+   "ae\\packs\\bomb\\bomb\\bitmaps\\bomb_beacon"
+  ]
+ },
+ "source": {
+  "name": "CMT's The Silent Cartographer: Evolved 1.4.1c source release",
+  "file": "tsce_1-4-1c_source_release.zip",
+  "sha256": "311518659c4551342c867da2bb83c4f9c3b8c798604169a4301422970fede8a9",
+  "root": "tsce_1-4-1c_source_release/tags/",
+  "allowlist": [
+   "cmt/effects/lights/large explosion.lens_flare",
+   "cmt/effects/lights/large explosion.light",
+   "cmt/effects/lights/quickflash.lens_flare",
+   "cmt/effects/lights/quickflash.light",
+   "cmt/effects/particle systems/vehicle explosion/human med fire.particle_system",
+   "cmt/effects/particle systems/vehicle explosion/human med smoke.particle_system",
+   "cmt/effects/particles/air/bitmaps/fire_human.bitmap",
+   "cmt/effects/particles/air/bitmaps/light_animated_smoke_1.bitmap",
+   "cmt/effects/particles/air/bitmaps/smoke dusty.bitmap",
+   "cmt/effects/particles/air/bitmaps/weird_smoke_fade.bitmap",
+   "cmt/effects/particles/air/fire human large.particle",
+   "cmt/effects/particles/air/smoke impact dusty.particle",
+   "cmt/effects/particles/energy/bitmaps/emp_cloud.bitmap",
+   "cmt/effects/particles/energy/bitmaps/energy orbs white.bitmap",
+   "cmt/effects/particles/energy/bitmaps/explosion_burst_sharp.bitmap",
+   "cmt/effects/particles/energy/embers small.particle",
+   "cmt/effects/particles/energy/energy line.particle",
+   "cmt/effects/particles/flash/bitmaps/new sparks.bitmap",
+   "cmt/effects/particles/flash/explosion flare long.particle",
+   "cmt/effects/particles/flash/explosion flare.particle",
+   "cmt/effects/particles/flash/sparks trail.particle",
+   "cmt/effects/point physics/fire explosion.point_physics",
+   "cmt/effects/point physics/plasma debris.point_physics",
+   "cmt/effects/point physics/smoke explosion.point_physics",
+   "cmt/effects/shared effects/damage_effects/medium explosion shockwave.damage_effect",
+   "cmt/sounds/sfx/vehicles/human/_shared/fx/human_explosion_large.sound",
+   "cmt/sounds/sfx/weapons/human/rocket_launcher/fx/rocket_launcher_rocket_explosion.sound",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_explosion_fire.particle_system",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_explosion_smoke.particle_system",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_explosion_smoke_ring.particle_system",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_shell_explosion.effect",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/lights/scorpion_cannon_shell_explosion.lens_flare",
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/lights/scorpion_cannon_shell_explosion.light"
+  ]
+ },
+ "stock_map": {
+  "name": "bloodgulch",
+  "sha256": "50fe52406f075d975e24100a65b26ff696458023dd3509878953052ab0ef858f",
+  "tags": 1806
+ },
+ "tools": {
+  "invader": {
+   "version": "0.44.0",
+   "commit": "54188c0",
+   "build_arguments": [
+    "-E",
+    "-q",
+    "-g",
+    "xbox-2276"
+   ],
+   "sha256": {
+    "invader-build": "89e3ccc8a46579bc0018b8ead170089670e54b33128bae1e65caada06822fc1d",
+    "invader-extract": "3cd6c72ae7a2026cc6f325bf5a8481289274e683e9b04a8650db8c441ae75eaf",
+    "invader-edit": "84be727338a4901a1bd77eadcec71f9863b7ebba98b3cb3ba655b1fad03f9583",
+    "invader-bitmap": "c1afc089ba0e2336cffc56369daaa6832d415c0b955a8e8812282bf370f6aa04",
+    "invader-sound": "338522bc5079bf4e45d881b3ead53243d096c93fba43277fd4d2a939a789e254",
+    "invader-convert": "0ab63c6d55ae12133ddc9332645300ed72855e3a7f9541ea288a30aeadba762e",
+    "invader-bludgeon": "41aea5d512f3d89fab93cadac1b13e8ace75e5bbc1ba99ed4ae26c2598e1a97f",
+    "libinvader.so": "bfd4db53c3a33cd4a828d37b4a227660bb0feef1dd43d21d10c674df0e0e4f08"
+   },
+   "model_sha256": "f9ef0e57f55046b77d95dc29e5e2b6a8037259a9ba8807b34dd64596c7357883"
+  },
+  "ffmpeg": "n9.0.2 (decodes the Ogg Vorbis permutations to 16-bit PCM)",
+  "art": "Python 3.14 with Pillow 12.2.0 and numpy 2.4.4 drew the art pinned below (each by its decoded pixels, mode and size, not by its file)"
+ },
+ "inputs": {
+  "hek": {
+   "characters/cyborg/bitmaps/detail corroded metal light.bitmap": "333c634ae806e9ad233e2b21578a33be34b9eef83f03c67e594aaeb2c21f275b",
+   "digsite/weapons/_shared/00_e3/bitmaps/h grenade decal.bitmap": "6b82f6394e33c68c040c88bdaca72ad411254050315dd3db9de0ef66275bc375",
+   "digsite/weapons/_shared/00_e3/bitmaps/h grenade timer.bitmap": "6dbb06823b39730c6dd3c1e44324f061b9e139aa03c7c7fa566b3bee42d937fa",
+   "effects/particles/lens flare/bitmaps/flares_generic2.bitmap": "62c93d0364a1cdbcc82695518b1c5267155c488192cde330a99a7ef9d21024f8",
+   "levels/a10/bitmaps/tech rack mount glow.bitmap": "ff8cd03a2a8057cfbff3bb404082fce075804cb8a6890743749c93411d3ed7eb",
+   "levels/a10/bitmaps/tech rack mount.bitmap": "78771daaad143c85d237302006ceef86eaf7641ceb8b99cb29c11f40471a67d2",
+   "levels/a10/bitmaps/tech rack plate.bitmap": "0f2802a9b9f43bb54554ff4869c370ecfbc8ae2b511cba47f16481fdcad06e0c",
+   "levels/a30/bitmaps/detail grass.bitmap": "e89a9906baa11f4b2065383149da7398045460dd780ed43e66a1c6b035b9dff4",
+   "levels/b30/bitmaps/detail ground.bitmap": "13081bda83d26f50bfb1e68bcc32ac08a24a386d37085e0e70f780998263e8a0",
+   "levels/b30/bitmaps/detail sand.bitmap": "3f960118c3b60f3c2ac0489def464d9757672cdefbbdcda3433aeee352908211",
+   "levels/b30/bitmaps/metal flat generic.bitmap": "85ca5b46fceb1e04125ce39450f32c2dc920d81a409106413b17d289aab42801",
+   "levels/b30/devices/light fixtures/light fixture ceiling1/bitmaps/light fixtures.bitmap": "eac8925f20e80fbccc157779b09e9ec7916fda80918dad82709693def17dfe48",
+   "levels/test/bloodgulch/bitmaps/blood ground.bitmap": "a00b61c50757908ed4563799b55e3b9de73a4b60b0caf7f876d9276bf1e823af",
+   "levels/test/bloodgulch/bitmaps/cap_metal.bitmap": "993148d5f30357d2eae8289a45e7c207ef07e703bceef7f74668be298063c102",
+   "levels/test/bloodgulch/bitmaps/mp lights small strips red.bitmap": "76ce2447dfb0f06234a5a25f3be0002aaf5a5bf74294da5ed53ee2bfa2822415",
+   "powerups/active camoflage/bitmaps/powerups.bitmap": "f56af95e510c19e26ffa23f951a3192c9d8a7b2b9574c9072f2de159f7954a84",
+   "powerups/healthpack/bitmaps/healthpack.bitmap": "b73cf805ba915dfd76812cf6e39e6e2662e4fbb59a7387395c82449b2d2606e1",
+   "powerups/rocket launcher ammo/bitmaps/rocket launcher ammo.bitmap": "2c6387cf4c0fa5bfe7f0947c9e7af821bd87f099f3923d1269dc7c840c15b84d",
+   "powerups/rocket launcher ammo/rocket launcher ammo.gbxmodel": "7f2d467e70ec3e21d087dfd1edeeede850129e258dee4f7a8290e2efe02de93f",
+   "powerups/shotgun ammo/bitmaps/sg ammo.bitmap": "965b839646aa85aec61c82d68509a3090ad8390b1387b7e5818b683084fb6375",
+   "powerups/shotgun ammo/shotgun ammo.gbxmodel": "a2caaa98ff346e88f03ba650abc1b709596fba1b3f84c2801084b7b35fa3c0ae",
+   "scenery/small beacon/small beacon.gbxmodel": "c96bb93abded9d46c642117ca71f019e3472fda3388f441b8ae3f0948ca909b2",
+   "vehicles/warthog/bitmaps/warthog.bitmap": "bab681d87f473f0394803909867fde1d82e62606df9a106416557e7e66df5d2b",
+   "weapons/frag grenade/bitmaps/frag grenade decal.bitmap": "f3cd8d2fe6483076b630229689d375e58923d3771b47555f191aae1e8a8b6164",
+   "weapons/frag grenade/bitmaps/frag grenade.bitmap": "547d3e1705fd1fe39082be0bc1719a2b9a500d757a559cf3fccf89576f8603c9",
+   "weapons/frag grenade/frag grenade.gbxmodel": "87e2f71419333f8d3ba045ff3f7aa69dce72aaeeb29a8b31d49083662be9e744",
+   "weapons/plasma grenade/bitmaps/plasma grenade.bitmap": "56b67848952c9a6df782f5f6a349a9b8952b654aad2f74e3a606c964c163d52b",
+   "weapons/plasma grenade/plasma grenade.gbxmodel": "142c01def63b213060fcfd90946a8dd98a7289a8c066657d3ef16ffa0b09298e"
+  },
+  "tsce": {
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_diff.bitmap": "ba94a42129fca05af14ff6f6116e1d40c7da7e1c17461359a5423ce882ffcc1f",
+   "cmt/powerups/ammo_pack/bitmaps/ammo_pack_base_nrml.bitmap": "06e5bb5ca7ecf12461e7a60eb707f0cedb1058be6cdbf023d1141f1b88186887",
+   "cmt/powerups/h_powerup_pack/_health/_health.gbxmodel": "3c554ff8f45c1b8e2979408215c3452cd9aea2e7e62485482eb8c322e208f32e",
+   "cmt/powerups/h_powerup_pack/_health/bitmaps/h_powerup_pack_health_diff.bitmap": "738e8a837f7e91da26ebaea145554b2cd7e87b89799fcb75b1b7b4abf3100096",
+   "cmt/textures/decals/UNSC_Decal_Sheet_One.bitmap": "3bf56f037896892dd9c36d973c1df2735eec158518b53dcbf6e272684dc63ae1",
+   "cmt/textures/detail_maps/detail_new_metal_dirty.bitmap": "341904598212307d63442b0069a2fd0f44a21f6aa8397710e986b03a5e979b12",
+   "cmt/textures/normal_maps/detail_boilerplate.bitmap": "859909bdf71828109907d994010f5d12b1285d8e6c4280be2ec9a10a7b6ba930",
+   "cmt/textures/normal_maps/detail_new_metal_scratch.bitmap": "8b509cfab8bb56647a408f60ae72cbf46b298e5e9dc46f387959379138532822",
+   "cmt/textures/normal_maps/detail_scratches_thin.bitmap": "4fc8fbdda653172218f580d2c5cee05a5814c8402699ddb575b5cec4cbe90ee5",
+   "cmt/weapons/_shared/grenade_launcher/bitmaps/grenade_launcher_grenade_diff.bitmap": "95937d373083bef456c25b89d88934de36ea90d50b8b634af1c38946ff009251"
+  }
+ },
+ "art": {
+  "bitmaps/bomb_a.png": {
+   "mode": "RGBA",
+   "size": [
+    256,
+    256
+   ],
+   "pixels_sha256": "fd3e087b8817e4b4cdf05eb44ef95e7f1a3f766bdaf4c5c808399d719d60a017"
+  },
+  "bitmaps/bomb_b.png": {
+   "mode": "RGB",
+   "size": [
+    256,
+    256
+   ],
+   "pixels_sha256": "087dac78f1a6e300d6c57fa03c8624a73863f133f720d5d41b97b44b5e85acfc"
+  },
+  "bitmaps/bomb_bar_a.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "6540f245f94ff7ed9a250e2276d9c8cd6596405ee2d8538ea6a474d70a28e0cd"
+  },
+  "bitmaps/bomb_bar_b.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "6540f245f94ff7ed9a250e2276d9c8cd6596405ee2d8538ea6a474d70a28e0cd"
+  },
+  "bitmaps/bomb_bar_c.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "6540f245f94ff7ed9a250e2276d9c8cd6596405ee2d8538ea6a474d70a28e0cd"
+  },
+  "bitmaps/bomb_bar_d.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "6540f245f94ff7ed9a250e2276d9c8cd6596405ee2d8538ea6a474d70a28e0cd"
+  },
+  "bitmaps/bomb_beacon.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "5353c7995261e81a3d6a4cd982b0e0c0943ad6393415887db305fd991457aa3d"
+  },
+  "bitmaps/bomb_c.png": {
+   "mode": "RGB",
+   "size": [
+    32,
+    64
+   ],
+   "pixels_sha256": "83c7128478b8e645f3bd02184a6e3cbfdccaebbba3c93514eee8a4e64df8e005"
+  },
+  "bitmaps/bomb_d.png": {
+   "mode": "RGB",
+   "size": [
+    256,
+    256
+   ],
+   "pixels_sha256": "aa55a58b1ace1ad696aad00c64b1ec51d33bb7d8562ed138805ea1c23255ae56"
+  },
+  "bitmaps/bomb_e.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "5da9eaa9e3246da55911eb001f6a8a1b33c14092e49fb9cc118aff1b1ab938c8"
+  },
+  "bitmaps/bomb_f.png": {
+   "mode": "RGB",
+   "size": [
+    128,
+    128
+   ],
+   "pixels_sha256": "5a4ef54efd495e5503944d1540f91541e24da28b075c91f6cb5a3b60dbb5b0a2"
+  },
+  "bitmaps/bomb_g.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "d99f508e2f2868c4eb1e49b4106918548738279dfb158bec57a387837c78a8d6"
+  },
+  "bitmaps/bomb_h.png": {
+   "mode": "RGB",
+   "size": [
+    64,
+    64
+   ],
+   "pixels_sha256": "d833415b13aa363d46ea4f5e83b02fabec79f9cb58a636e79847b849ed64b333"
+  },
+  "bitmaps/bomb_i.png": {
+   "mode": "RGBA",
+   "size": [
+    128,
+    32
+   ],
+   "pixels_sha256": "7db7b077671d3a592abfdc3dafb40436bd6de0e961daeea12009f2830e30810f"
+  },
+  "bitmaps/bomb_j.png": {
+   "mode": "RGB",
+   "size": [
+    256,
+    256
+   ],
+   "pixels_sha256": "d16ff227e6ccaefd8523f409654eb156b0d3da51d8491fa6f900f67061f4635f"
+  },
+  "bitmaps/bomb_k.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "b127afb2914f47d9deed8c88de697b07672e7039b685cbc5c7acf1791e1554a2"
+  },
+  "bitmaps/bomb_l.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "5d487e94835e3e63327e8319b5b3eec7811b59022552a7528a0602f8f31a2f5a"
+  },
+  "bitmaps/bomb_led.png": {
+   "mode": "RGB",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "b35c026d5f4dc3f041892f9f2c1c82db8d059076c0d71fd70dd31d392a69c59a"
+  },
+  "bitmaps/detail_a.png": {
+   "mode": "RGB",
+   "size": [
+    512,
+    512
+   ],
+   "pixels_sha256": "90fee28fb65128eb722638ed89dfa7b2cc94411ae46fc540b1fc49b6bcd6365a"
+  },
+  "bitmaps/detail_b.png": {
+   "mode": "RGB",
+   "size": [
+    128,
+    128
+   ],
+   "pixels_sha256": "1ba0dac20e99862bd2ecea7dfc9f615e7eede5db4c5d1da6775c3cc86755871d"
+  },
+  "bitmaps/mp_bar.png": {
+   "mode": "RGBA",
+   "size": [
+    16,
+    16
+   ],
+   "pixels_sha256": "a2ca79069c0e13fb2540b86ce1c01dfb3d755dbb36ff909bf598a23cf0e1a2db"
+  },
+  "bitmaps/mp_glow.png": {
+   "mode": "RGBA",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "672edb65bcc1763cb9ba557e835a3d32ae4701d7cd0f52c0f38b5a89f361d67f"
+  },
+  "bitmaps/mp_plain.png": {
+   "mode": "RGBA",
+   "size": [
+    8,
+    8
+   ],
+   "pixels_sha256": "be55c82397f317b0fc754ea347f8d773460b361970d1a3401b3fd349016f78c1"
+  },
+  "models/bomb.jms": {
+   "sha256": "b14cc19eda9bd25e058d231bfe84768f96e0cfb83e118b426078668e7b7b4684"
+  },
+  "shaders.json": {
+   "sha256": "98033e51afe12621713f035f6f85f3f94cfedad60f271098e077fcc4adb67f98"
+  },
+  "sounds/pickup/pickup.wav": {
+   "sha256": "e7968ee08263cebe7cf8d222ba0dabbc2776b8759b52476c6b42e51c364c188b"
+  }
+ },
+ "blast": {
+  "edits": {
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_shell_explosion.effect": [
+    [
+     "erase",
+     "events[0].parts[9-10]"
+    ],
+    [
+     "erase",
+     "events[0].particles[2-3]"
+    ],
+    [
+     "erase",
+     "events[0].parts[0]"
+    ]
+   ],
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect": [
+    [
+     "erase",
+     "events[0].particles[4-5]"
+    ],
+    [
+     "erase",
+     "events[0].parts[7-8]"
+    ],
+    [
+     "erase",
+     "events[0].parts[1]"
+    ]
+   ]
+  }
+ },
+ "donor": {
+  "attachments": [
+   "cmt/vehicles/h1_spirit/scorpion/weapons/scorpion_cannon/effects/scorpion_cannon_shell_explosion.effect",
+   "cmt/vehicles/_shared/warthog/_warthog_chaingun/effects/warthog_chaingun_body_depleted.effect"
+  ]
+ },
+ "expected": {
+  "about": "the pack the owner reviewed (2026-10-28 TEST RUNs) without the super rocket blast look; re-pinned when a step changes",
+  "donor_sha256": "b29741b6115c24ec30515c3e2ffcb79e9f82effbc3238f87d32f7bb554e11682",
+  "donor_size": 20766720,
+  "pack_sha256": "c896c2d187a506203310e20a1fc72547a035aab71a1d4bf6e381f4e709f739b1",
+  "pack_own_sha256": "98fcff289a1a11b86e0f9dc024cd95dff270b040e05c9e4e09fb577328ccb1e9",
+  "pack_size": 2859544,
+  "own_tags": 77,
+  "external_tags": 7
+ }
+}
