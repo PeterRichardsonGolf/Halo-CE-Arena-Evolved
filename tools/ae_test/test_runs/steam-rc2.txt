@@ -1,0 +1,128 @@
+# 1.0.0-rc2 STEAM ACCOUNT: sign in with Steam on the desktop for MCC's shared map files and the Halo 1
+# Workshop, SETTINGS > SYSTEM > MCC > STEAM ACCOUNT, and the first start's MCC FROM STEAM page. Each test opens on its exact
+# scene with DEV MODE's `menu steam <state>`: a made-up Steam state, nothing is sent to Steam, no account needed.
+# The last test is the real sign-in with your account (a signed-out start, the real client). When the shared files are read
+# from Steam, debug.txt gets every halo1/ path of the depot with its size and a total ("steam: manifest halo1: ..."); nothing
+# of it is downloaded.
+# Check each on the pad first, then on mouse + keyboard (typing and Enter signs in).
+list steam-rc2
+revision 3
+title 1.0.0-rc2 STEAM ACCOUNT
+
+test signed-out
+title STEAM ACCOUNT: signed out
+menus
+setup menu steam signed-out
+check Two fields, SIGN IN, and the card's four sections
+check MCC FILES rows grey, "Sign in first" in blue
+check Type a name, click PASSWORD: typing moves, the name stays
+expect 1 cmd menu ok
+
+test typing
+title STEAM ACCOUNT: the password as stars
+menus
+setup menu steam typing
+check The password shows as stars, with no 11 / 100 count
+check Ctrl+C in the password copies nothing
+check Enter signs in: "sign-in asked" in the log, none sent
+expect 1 cmd menu ok
+
+test wrong-password
+title STEAM ACCOUNT: Steam refused the password
+menus
+setup menu steam wrong-password
+check The password field rings blue, Steam's reason under it
+check The password is empty, the account name kept
+check Typing a letter takes the blue ring away
+expect 1 cmd menu ok
+
+test guard-code
+title STEAM GUARD: the code
+menus
+setup menu steam guard-code
+check A types the code; at most 5 characters, "n / 5"
+check Nothing is sent until SIGN IN or START
+check CANCEL SIGN-IN and B stop it
+expect 1 cmd menu ok
+
+test guard-app
+title STEAM GUARD: approve in the app
+menus
+setup menu steam guard-app
+check The bar runs; with REDUCE MOTION it pulses instead
+check ENTER A CODE INSTEAD opens the code page
+check B cancels the sign-in
+expect 1 cmd menu ok
+
+test files-missing
+title SIGNED IN: MCC's shared files missing
+menus
+setup menu steam missing
+check SHARED MAP FILES says DOWNLOAD; the card: 3 MISSING
+check Nothing here is red or amber
+check LOG OUT sits above it, WORKSHOP MAPS under it
+expect 1 cmd menu ok
+
+test files-downloading
+title SIGNED IN: downloading, 37 %
+menus
+setup menu steam downloading 37
+check The row reads DOWNLOADING  37 %, the bar a third full
+check The card: file 1 HERE, 2 DOWNLOADING, 3 NEXT
+check B asks first; WAIT stays, CANCEL AND LEAVE leaves
+expect 1 cmd menu ok
+
+test files-ready
+title SIGNED IN: all three files here
+menus
+setup menu steam ready
+check SHARED MAP FILES: READY; the card: three HERE
+check A once only arms it: "DOWNLOAD AGAIN?"
+check WORKSHOP MAPS says 3 INSTALLED
+expect 1 cmd menu ok
+
+test not-owned
+title SIGNED IN: the account does not own MCC
+menus
+setup menu steam not-owned
+check NOT OWNED, and WORKSHOP MAPS shows why it is off
+check The card head and stripe are blue, never red
+check LOG OUT has the focus
+expect 1 cmd menu ok
+
+test log-out
+title LOG OUT: the confirm
+menus
+setup menu steam logout
+check CANCEL is focused first; LOG OUT is framed red
+check B and CANCEL close it, nothing is sent
+expect 1 cmd menu ok
+
+test workshop
+title WORKSHOP MAPS: a made-up page
+menus
+card bottom
+setup menu steam workshop
+check SEARCH, TYPE chips (LB RB), SORT, 7 rows then "more"
+check The card: a made-up picture, STATE, SIZE, SUBSCRIBERS, TYPE
+check Mixed-case titles; the card's title in capitals
+expect 1 cmd menu ok
+
+test first-start
+title FIRST START: MCC FROM STEAM
+menus
+setup menu steam first-start
+check NOT NOW has the focus; B and START are NOT NOW
+check SIGN IN WITH STEAM opens STEAM ACCOUNT over the menu
+check The card names SETTINGS > SYSTEM > MCC > STEAM ACCOUNT
+expect 1 cmd menu ok
+
+test real-sign-in
+title YOUR ACCOUNT: the real sign-in
+menus
+setup menu steam open
+check Wrong password: Steam's refusal; B cancels at once
+check Sign in; approve or type the code; files download
+check LOG OUT: signed out again, the sign-in forgotten
+expect 1 cmd menu ok
+expect 2 log steam: manifest halo1:

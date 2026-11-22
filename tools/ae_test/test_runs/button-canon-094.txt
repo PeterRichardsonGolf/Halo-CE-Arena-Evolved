@@ -1,0 +1,90 @@
+# 0.9.4 BUTTON CANON: one meaning per button across the AE menus. A accepts, B goes back (Back / Cancel / Leave / Close), X acts on
+# the focused row, Y on the screen, LB / RB move sideways, LT / RT page or jump a section. Keyboard: X = F, Y = R, LB / RB = Q / E,
+# LT / RT = PgUp / PgDn, Delete removes. Each test is checked on the pad first, then on mouse + keyboard (the footer's words are the
+# same, the marks change with the last device used). The footer also sits on a soft dark band now (fades in over the bottom 125 px).
+# Every test opens on its scene from its setup lines: `menu browser` is the internet's SERVER BROWSER (it says INTERNET PLAY IS OFF
+# offline: the chips and the footer are what is checked), `menu gametype` CHANGE GAMETYPE.
+list button-canon-094
+revision 2
+title BUTTON CANON
+
+test browser-pad
+title SERVER BROWSER: footer on the pad
+setup menu browser
+check Footer: A Join, Y Refresh, LB RB Filter, LT RT Page, B Back
+check No X, no Address or invite, no D-pad Empty / Full
+check Y refreshes; LB / RB step the gametype chips
+menus
+
+test browser-keys
+title SERVER BROWSER: keyboard and mouse
+setup menu browser
+check Footer caps: Enter Join, R Refresh, Q E Filter, PgUp PgDn
+check Up from the first row: focus on EMPTY; arrows + Enter flip
+check Click EMPTY, FULL and AE GAMES: each flips; F does nothing
+menus
+
+test browser-lan
+title JOIN LAN GAMES: Search again
+setup menu lan
+check Footer: Y reads Search again (R on keys), no X
+check Y searches again; LB / RB filter, LT / RT page
+check Same chip row: Up from the first row, A flips EMPTY
+menus
+
+test gametype-pad
+title CHANGE GAMETYPE: X Manage / Folders
+setup menu gametype
+check Built-in row: X reads Folders; footer has no View Delete
+check Own gametype row: X reads Manage; menu lists DELETE...
+check DELETE... asks first; B (Cancel) keeps the gametype
+menus
+
+test gametype-keys
+title CHANGE GAMETYPE: the Delete key
+setup menu gametype
+check Own gametype: Delete key asks to delete at once
+check Built-in gametype: Delete key does nothing (error sound)
+check Typing a search: Esc reads Cancel; F manages, no F1
+menus
+
+test options-pad
+title GAME OPTIONS: X Reset, Y Save as new
+setup menu game_options changed change kills_to_win=25 change respawn_time=5
+check Footer: X Reset, Y Save as new, B Back, LB RB, LT RT
+check X puts the focused row back; Y asks for a new name
+check B with changes: Keep / Discard question as before
+menus
+
+test options-keys
+title GAME OPTIONS: F and R
+setup menu game_options changed change kills_to_win=25
+check Footer caps: F Reset, R Save as new, Esc Back
+check F puts the row back; R opens the name field
+check Q E filter chips and PgUp PgDn groups still work
+menus
+
+test settings-player
+title SETTINGS: the player on LB / RB
+setup menu settings player 2
+check Two players: footer LB RB Player, no X
+check LB / RB switch the player; Q / E on keys
+check FIND A SETTING results: LB / RB Player there too
+menus
+
+test b-labels
+title B labels: Back, Cancel, Leave, Close
+setup menu tab
+check TAB menu and CREDITS: B reads Back
+check Search typed anywhere: B reads Cancel, never Clear search
+check Main menu B reads Quit, pause Resume; lobbies Leave
+menus
+
+test footer-band
+title The footer band
+setup menu tournament
+check Soft dark band behind the footer, fading in upward
+check Prompts readable at 100 % and at 130 % UI scale
+check CREDITS, SETTINGS, GAME OPTIONS: same band; not pause
+set display.arena_menus_scale 130
+menus

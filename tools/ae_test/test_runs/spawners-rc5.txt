@@ -1,0 +1,55 @@
+# 1.0 rc5 WEAPON SPAWNERS: GAME OPTIONS > WEAPONS > WEAPON SPAWNS (shown while AE WEAPONS is on) picks RACKS, the
+# spawners' holograms with each spot on its set's logic, or CLASSIC: the same spots with plain weapons on the ground,
+# each on a fixed timer, one weapon a spot, no holograms. Two weapons the map lays together are one spot (Wizard's two
+# pistols by its north-west platform). A map's layout may carry a comp section, AE's comp positions, played under the
+# COMP set alone (Prisoner H1PB: battle rifles on the tower tops, combat ARs below, the shotgun low, the rockets mid).
+# Logs: "look racks)" / "look classic)" on the spawners' line, "merges item 5", "comp section: 5 items".
+list spawners-rc5
+revision 1
+title WEAPON SPAWNERS: RACKS, CLASSIC, COMP
+
+group wizard
+map h1pb_wizard
+gametype AE TEAM SLY
+set debug.weapon_set casual
+set bots.count 0
+
+test merged-spot
+title Wizard: the two pistols lie as one spot
+setup goto -7.6 7.6 -2.75 facing 315
+check One weapon lies where the map put two pistols
+check Take it: one ghost fills on that spot
+expect 1 log merges item 5
+
+test racks
+title RACKS: a taken weapon's ghost fills as it returns
+setup goto -7.6 7.6 -2.75 facing 315
+setup spawner wait 40
+check The weapon's outlined ghost lies on its spot
+check It fills; at 0:00 the weapon lies in it
+expect 1 log look racks)
+
+test classic
+title CLASSIC: plain weapons, a fixed timer, no ghost
+fresh
+setup option weapon_spawns classic
+setup goto -7.6 7.6 -2.75 facing 315
+check Take the weapon: no ghost on the empty spot
+check A plain weapon comes back on its timer
+check Walk over a weapon you hold: ammo refills
+expect 1 log look classic)
+
+group prisoner
+map h1pb_prisoner
+gametype AE COMP TS
+set debug.weapon_set comp
+set bots.count 0
+
+test comp-layout
+title Prisoner COMP: AE's comp positions, CLASSIC
+setup option weapon_spawns classic
+setup goto 7.5 4.0 5.59 facing 45
+check Battle rifles on both tower tops, rockets mid
+check Combat ARs on the walkways, shotgun low
+check No sniper and no plasma weapon anywhere
+expect 1 log comp section: 5 items only under

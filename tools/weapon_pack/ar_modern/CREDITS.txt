@@ -1,0 +1,27 @@
+AE COMBAT AR (weapon pack ae_ar_modern) - credits
+
+The rifle's model, first-person animations, textures, shaders, effects and sounds are the work of CMT (the Custom
+Mapping Team), from the stock-compatible source release of The Silent Cartographer: Evolved 1.4 (the Evolved team:
+Teh Lag, Ifafudafi, Siliconmaster and the contributors their credits.txt names): CMT's individual combat weapon system
+rifle over CMT's assault rifle model. They are used under the release's own terms ("Just don't take credit for things
+you didn't make") and are unchanged but for what an Xbox map needs: the models converted, the multipurpose maps'
+channels reordered, the Ogg Vorbis sounds encoded again as Xbox ADPCM, the high-resolution HUD made the Xbox's.
+
+Made for Arena Evolved (our own work, drawn or computed by the scripts in tools/weapon_pack/):
+- the ammunition counter (2 rows of 18 rounds in groups of 6) and its low-ammo flash;
+- the aiming reticle, drawn from geometry in the SMG pack's form;
+- the ammunition panel's layout: its positions, sizes and references are numbers set by AE, in the structure of
+  the stock assault rifle's HUD (no art of the game's);
+- the weapon's numbers (rate of fire, magazine, error, zoom, aim assist, bullet speed and range) and the damage of a
+  round, set by AE.
+
+The pack holds no pixel, sound or model of the game's own: what the rifle needs of the game (the stock HUD's numbers
+and frames, impact materials, the held weapon's collision and melee) it names, and the map the player owns provides.
+
+The pickup prompt's and kill feed's picture is CMT's own, from CMT's pickup icon sheet (hudv4.1): its assault rifle's.
+
+Kind: community model. CMT's attribution note in the release says its models, textures and shaders are CMT's own
+and that "the only non-custom assets in this release (i.e., from Halo games other than CE) are certain music and sfx
+files": the rifle's model, animations and textures are CMT's. Which sounds those are the note does not say.
+
+Thank you, CMT.

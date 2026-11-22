@@ -1,0 +1,55 @@
+# MODERN ragdoll: a body spinning on the ground. A dummy stands 4 units ahead on the flat floor of octagon_b and
+# the BR kills it; the body's turn after it lies down is the check. The build logs "ragdoll rest:" lines for
+# every body still moving (every half second, then once as it sleeps: speed, turn, touching parts, head height over
+# the lowest part, what the solver added and the ground's friction took). Staged only: nothing here waits for
+# something to happen.
+# spin-mixed: MIXED picks each death by a hash of the body: a full ragdoll at once, or the stock animation that hands
+# off to the ragdoll at 30 to 60 percent of it. The log tells each pick ("ragdoll: mixed pick ...").
+list ragdoll-spin-rc4
+revision 3
+title RAGDOLL: SPIN ON THE GROUND
+
+test spin-flat
+title One kill on flat ground, MODERN
+setup goto 7.6 -3.2 0.6 facing 157
+setup give br
+setup dummy 1 4
+check Kill it with the BR: the body comes to rest, stays still
+check Head down, prone: it turns no more once it lies
+check Spins, creeps or slides off? Say which
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players modern
+set game.ragdoll_ai none
+
+test spin-mixed
+title MIXED: headshots, a full ragdoll or the canned fall
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup give br
+setup dummy 6 5
+check Shoot each dummy in the head: some drop limp at once
+check The others play the canned fall, then go limp smoothly
+check Run DEV MODE dummy 6 5 again for more bodies
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players mixed
+set game.ragdoll_ai mixed
+
+test spin-moving
+title MIXED on runners: bodies that die moving
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup give br
+setup dummy run 3.4 -4.5 0.0 to 3.4 1.0 0.0 loop
+setup dummy run 2.4 1.0 0.0 to 2.4 -4.5 0.0 loop
+check Kill the runners: some drop limp at once, carried on
+check Others play the canned fall, then go limp smoothly
+check Again: DEV MODE dummy run lines, or note what's off
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players mixed
+set game.ragdoll_ai mixed

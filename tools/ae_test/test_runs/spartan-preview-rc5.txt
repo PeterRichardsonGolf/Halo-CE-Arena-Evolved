@@ -1,0 +1,45 @@
+# PROFILES and EDIT: the Spartan's feet. The preview frames him by his rest stance, which cut the stepping foot at the
+# floor line while he walks. The view now follows his lower foot, seen through a long lens, so the foot that is down stays on
+# the line and both feet stay whole. Left alone he walks 5 s and stands 5 s in turn; each test holds him at one moment, so
+# the scene is the same every time: `menu profiles [edit [colours]] [walk <ms>] [turn <deg>]` (walk: that far into his walk;
+# no walk: he stands).
+list spartan-preview-rc5
+revision 1
+title SPARTAN PREVIEW: FEET AND HEAD
+
+test rest
+title EDIT: standing, on the floor line
+menus
+card bottom
+setup menu profiles edit
+check Both boots whole, soles on the line
+check His head is whole at the top
+
+test walk
+title EDIT: in mid-stride, both boots whole
+menus
+card bottom
+setup menu profiles edit walk 0
+check The boot that is down is whole, sole on the line
+check The other boot is whole, above the line
+
+test side-on
+title EDIT: turned side on, walking
+menus
+card bottom
+setup menu profiles edit walk 600 turn 90
+check Boots, rifle and head are whole at every edge
+
+test list-walk
+title PROFILES: in mid-stride on the list page
+menus
+card bottom
+setup menu profiles walk 300
+check Same as EDIT: the boot that is down is whole
+
+test colours-walk
+title EDIT colours: in mid-stride
+menus
+card bottom
+setup menu profiles edit colours walk 450
+check Both boots whole, on the line

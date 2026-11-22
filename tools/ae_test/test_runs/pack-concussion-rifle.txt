@@ -1,0 +1,74 @@
+# The CONCUSSION RIFLE pack (ZTeam's arc launcher; AE's numbers: 6 bolts a magazine at 2 a second, each a 1.5-unit
+# blast of 30 at the centre falling to 10 at the edge: three direct hits strip a shield, five kill; a knockback that
+# throws players and shoves vehicles): spawns with the pack's weapon on every life, as the other pack tests do. No
+# licensed picture of it exists: its NAME is written in the prompts, the kill feed and the HUD in place of a picture.
+# Needs the pack's slot (23: mask 4194304, START 23) registered in the game; until then the lists below cannot run.
+list pack-concussion-rifle
+revision 2
+title CONCUSSION RIFLE PACK
+
+test cr-look
+title Concussion rifle: how it looks and reads
+check In hand: dark red and grey rifle, blue glow, no grey blocks
+check HUD: six rounds, one gone a bolt; ladder reticle, round
+check Dropped or a bot's: the same rifle, held in both hands
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 23
+
+test cr-name
+title Concussion rifle: its name in words, no picture
+check Pickup and swap prompts: CONCUSSION RIFLE in words
+check HUD: CONCUSSION RIFLE in words where a picture would be
+check Kill feed names CONCUSSION RIFLE in words
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 23
+
+test cr-hits
+title Concussion rifle: hits to kill
+check Full bot: 3 direct bolts pop the shield, 2 do not
+check Full bot: 5 direct bolts kill it, 4 leave it alive
+check A near miss (a body's width off) still hurts it
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 23
+
+test cr-knockback
+title Concussion rifle: knockback on players
+check A bolt at a bot's feet shoves it back and up a step
+check A bolt at your own feet hops you back, a little hurt
+check A thrown bot lands and fights on; no one is launched far
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 23
+
+test cr-vehicles
+title Concussion rifle: knockback on an empty Warthog
+check The car just ahead: each bolt shoves and rocks it
+check One bolt rears it up, it lands on its wheels; two flip it
+check The bolts hurt it less than a rocket does
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 23
+setup spawn warthog ahead
+
+test cr-feel
+title Concussion rifle: pace and the bolt
+check Mash the trigger: 2 bolts a second, no faster
+check At range the bolt slows and drops: aim a bit high
+check Pad and mouse: splash catches a strafing bot; pad thumps
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 23
