@@ -1,0 +1,45 @@
+# SPLIT SCREEN JOIN IN PROGRESS: a pad of this PC joins a game already running, as its own view, and leaves again. The
+# host's switch, JOIN IN PROGRESS: SPLIT SCREEN, is on in the casual and Big Team gametypes and off in AE COMP. The pause menu's
+# ADD PLAYER and REMOVE PLAYER rows and the card a pad with no player gets from its START do the same joining and leaving.
+# Each test opens on its scene from its setup lines; nothing waits for a game. DEV MODE's `split` commands stand in for the
+# second and third pads.
+list split-join-10x
+revision 1
+title SPLIT SCREEN: JOIN IN PROGRESS
+
+group casual
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 3
+
+test join-leave
+title Player 2 joins the game under way, then leaves
+setup split pad 3
+setup split join 2
+check Two views, each with its own HUD
+check Player 2's pause, REMOVE PLAYER: one view again
+check Your pause menu's ADD PLAYER brings a third view
+expect 1 cmd split join 2 ok
+expect 2 log split join: controller 2 is in the game
+expect 3 log live rule: split screen join on
+
+test join-card
+title A pad's START opens the join card
+setup split card 3
+check The card: PLAYER 3, PRESS A TO JOIN, A and B prompts
+check The card is upper middle and covers no HUD
+
+group comp
+map beavercreek
+gametype AE COMP TS
+set bots.count 3
+
+test join-off
+title The host keeps joining off
+setup split join 2
+setup split card 2
+check No second view opens
+check The card says the host has turned off joining
+expect 1 cmd split join 2 ok
+expect 2 log split join: controller 2 refused: THE HOST HAS TURNED OFF
+expect 2 log live rule: split screen join off

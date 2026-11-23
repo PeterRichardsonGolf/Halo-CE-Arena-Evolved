@@ -1,0 +1,66 @@
+# ONE ROW PER MAP (rc5): CHANGE MAP lists a map held in several copies (the Steam Workshop item, the stock or community
+# file, our converted stand-in, the CE+ X copy) once, with the best copy shown, a chip saying which copy it is and "N VERSIONS"
+# when there are more. LEFT / RIGHT on the row choose the copy; START lists every copy as its own row. Each test opens on
+# its scene. Needs this PC's maps: Workshop items, maps_smp and maps_pro (the converted copies) and the CE+ X folder.
+list map-dupes-rc5
+revision 2
+title MAP COPIES: ONE ROW PER MAP
+
+test one-row
+title One row for a map held twice or more
+check The map is one row, not one per copy
+check The row has a source chip and the number of versions
+check The panel says in a line which copy this is
+menus
+card bottom
+setup menu changemap intensity
+
+test stock-alone
+title A map with one copy
+check The row has its chip (STOCK) and no versions count
+check The panel's line says it is the stock map
+menus
+card bottom
+setup menu changemap chill
+
+test version-choice
+title Choosing the copy
+check The panel lists the copies as chips, the second one lit
+check The lit chip is the copy the row would play
+check The line under them says what LEFT / RIGHT and START do
+menus
+card bottom
+setup menu changemap version 2 delta ruined
+
+test all-versions
+title Every version listed
+check Each copy is its own row, each with its own chip
+check No row says VERSIONS
+check The footer says ONE OF EACH
+menus
+card bottom
+setup menu changemap all intensity
+
+test pro-edition
+title The Pro Edition map
+check One row: the Workshop copy, else the converted one
+check The chip reads WORKSHOP or CONVERTED, never both rows
+menus
+card bottom
+setup menu changemap better creek
+
+test installed-community
+title MAPS & MODS INSTALLED: SHOW COMMUNITY
+check Only Xbox-format community maps (the demakes) are listed
+check SOURCE reads COMMUNITY, then maps > H2 Demakes
+menus
+card bottom
+setup menu maps installed show-community
+
+test installed-ce
+title MAPS & MODS INSTALLED: SHOW CUSTOM EDITION
+check Only Custom Edition maps are listed, no Xbox-format map
+check The card's SOURCE reads CE MAP
+menus
+card bottom
+setup menu maps installed show-ce

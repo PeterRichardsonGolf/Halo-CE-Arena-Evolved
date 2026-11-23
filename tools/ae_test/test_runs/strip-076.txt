@@ -1,0 +1,91 @@
+# 0.7.6 SCORE STRIP: the right strip on each round mode (HUD STYLE AE). ELIMINATION shows the rounds strip: alive cells,
+# round pips, the round wins as the scores. The Blood Gulch tests share one load, the Chillout test has its own.
+# "round next" keeps the 5 s countdown (the big digit, ROUND 2 under it); "round live" skips it by design.
+list strip-076
+revision 1
+title SCORE STRIP, 0.7.6
+
+group gulch
+map bloodgulch
+gametype AE ELIM TM
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test elim-strip
+title ELIMINATION: the rounds strip
+setup round live
+check Four lit cells a side; pips for the wins to win
+check The goal line says only ROUND 1: no TO bar, no 0-0
+check Red and blue scores read as clearly as each other
+
+test elim-cells
+title ELIMINATION: a cell goes dark when a player falls
+setup round live
+setup kill bots
+check Their cells go dark, yours stay lit
+expect 1 score player 0 team 1
+check Your team's win lights one pip and the score reads 1
+
+test elim-countdown
+title ELIMINATION: the countdown between rounds
+setup round next
+check Big digit counts 5 to 1, ROUND 2 under it (as SND)
+expect 1 round_start round 2
+check The strip is hidden in it and comes back at LIVE
+
+test elim-out-text
+title ELIMINATION: out until the round ends
+setup round live
+setup kill me
+check The text says You are out of lives, not Rejoin in N
+expect 1 death player 0
+check It stays until the next round, then you spawn
+
+test elim-down-status
+title ELIMINATION: DOWN then DEAD on the scoreboard
+setup round live
+setup down me
+check Hold BACK: your row says DOWN while a mate can revive you
+expect 1 down player 0
+check A zone death or the round's end: it says DEAD, not DOWN
+
+group chillout
+map chillout
+gametype AE ELIMX
+set bots.count 5
+set bots.skill easy
+
+test elim-ffa
+title ELIMINATION free for all: the rounds strip
+setup round live
+check Your cell left, the others' cells right, pips under
+check The goal line says ROUND 1
+
+group names
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test name-no-triangle
+title Teammate names without the green triangle
+check Look at a teammate: the name only, no triangle under it
+check The name sits just over the head, not floating high
+check PLAYER NAMES set to NONE: the triangle comes back
+
+group snd
+map h2d_salicreek
+gametype AE SND
+set bots.count 7
+set bots.teams even
+set bots.skill easy
+
+test snd-dead-status
+title SEARCH AND DESTROY: DEAD on the scoreboard
+setup kill me
+check You die: Hold BACK shows DEAD on your row
+expect 1 death player 0
+check Every dead bot's row says DEAD till the round ends
+check The next round: the DEAD marks are gone

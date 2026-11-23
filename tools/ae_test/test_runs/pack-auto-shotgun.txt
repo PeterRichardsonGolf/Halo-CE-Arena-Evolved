@@ -1,0 +1,62 @@
+# The auto-shotgun pack (slot 21, mask bit 20): in hand on every life on Octagon 2, a few bots.
+# Needs the slot registration (slot 21, weapon key auto_shotgun) before it runs. Close = a step or two (inside 2
+# units), range = across the middle (past 9 units). The action: one rack on the draw, no forend stroke on a shot, one
+# stroke at the end of a reload (0.43 s a shell).
+list pack-auto-shotgun
+revision 2
+title AUTO SHOTGUN PACK
+
+test auto-shotgun-look
+title Auto-shotgun: the look
+check A dark modern combat shotgun in hand, not the stock shotgun
+check Ammo meter: 6 shells, emptying one a shot
+check Reticle: a plain ring; red on a bot
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 21
+
+test auto-shotgun-fire
+title Auto-shotgun: fire with no pump
+check Each shot only kicks: the forend never slides
+check No pump sound after a shot, only the shot itself
+check Mashing: a bit under 2 shots a second, no lag on the first
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 21
+
+test auto-shotgun-reload
+title Auto-shotgun: one stroke after a reload
+check Fire 2, reload: shells go in one by one, quick, no stroke
+check Reload end: ONE forend stroke and sound, never two
+check Fire all 6, reload: again one stroke, only at the end
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 21
+
+test auto-shotgun-draw
+title Auto-shotgun: draw, cut-off reload, idle
+check Switch away and back: it racks ONCE as it comes up
+check Empty, reload, fire after 2 shells: no stroke plays
+check Stand still a while: the idle never pulls the forend
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 21
+
+test auto-shotgun-kill
+title Auto-shotgun: 2 shots close, 5 at range
+check A step or two away: 2 shots kill a full bot, 1 never
+check Across the middle: 3 shots pop the shield, 5 kill
+check Far off: pellets spread and fade, no kill
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 21

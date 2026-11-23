@@ -1,0 +1,15 @@
+# AE weapon set BTB (design 3.5): casual's rows with slower refills on the big maps' racks, and the power pads on
+# timed-drop channels (the rocket on its beat, the two snipers of a two-base map alternating).
+weaponset 1 btb
+format 1
+extends casual
+channel DROP_A every 120 variance 25
+channel DROP_B every 180 variance 15
+channel DROP_C every 180 variance 15
+row CLOSE BASE logic pickup respawn 60 weapons auto_shotgun
+row LONG_RANGE BASE logic pickup respawn 90 weapons focus_beam
+row HEAVY BASE logic pickup respawn 90 weapons ravager grenade_launcher
+row CLOSE POWER logic static respawn 120 weapons stock:shotgun
+row HEAVY POWER logic trigger channel DROP_A weapons stock:rocket_launcher brute_shot concussion_rifle
+row LONG_RANGE POWER logic trigger channel DROP_B weapons sniper_bolt stock:sniper_rifle
+row MELEE POWER logic trigger channel DROP_C weapons energy_sword

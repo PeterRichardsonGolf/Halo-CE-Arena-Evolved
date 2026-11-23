@@ -1,0 +1,93 @@
+# 1.0.0-rc2 CAMPAIGN: custom campaigns. A Halo 1 Workshop campaign installed from SETTINGS > SYSTEM > MCC > STEAM ACCOUNT
+# > WORKSHOP MAPS (an MCC package with a CampaignInfo.json in mcc_maps) is listed in CAMPAIGN: its first row, CAMPAIGN,
+# picks the stock campaign or a custom one by its title (A or left / right), and a custom one shows its MISSIONS in the
+# manifest's order. A plays a mission at the difficulty on the right, alone or split screen. Each custom campaign keeps
+# its own saved game, savegame-<package>.bin beside the stock savegame.bin in the profile's folder: its pause's SAVE AND
+# QUIT writes it, its CONTINUE goes on from it, and the stock saved game stays as it was. Each test opens on its scene
+# with DEV MODE's `menu campaign ... workshop [demo|fault|none|saved|damaged]`: workshop shows the first installed custom
+# campaign (a made-up one, marked MADE-UP, when none is installed), fault a made-up fault line, none the page with no
+# custom campaign, saved / damaged the made-up campaign with a made-up saved game (one to go on, one that cannot). The
+# picker, play-quit, keep-stock and split tests need a Workshop campaign installed.
+list campaign-workshop-rc2
+revision 2
+title 1.0.0-rc2 CAMPAIGN: CUSTOM CAMPAIGNS
+
+test picker
+title CAMPAIGN: the custom campaign and its missions
+menus
+setup menu campaign workshop
+check CAMPAIGN row on top shows the Workshop campaign's title
+check MISSIONS lists its missions; no HOST ONLINE
+check Right side: mission, campaign, MISSION n OF n
+expect 1 log ae campaign: staged:
+
+test play-quit
+title A custom mission: SAVE AND QUIT, then CONTINUE
+menus
+setup menu campaign workshop
+check A on the mission; past a checkpoint, START, SAVE AND QUIT
+check CAMPAIGN, the custom one: CONTINUE, MISSION 1 and difficulty
+check A on CONTINUE: the mission goes on from that checkpoint
+expect 1 log ae campaign: staged:
+
+test keep-stock
+title Each campaign's CONTINUE stays its own
+menus
+setup menu campaign
+check CONTINUE (stock) is the stock level it was before
+check A on it, START, SAVE AND QUIT: the menus come back
+check The custom campaign's CONTINUE is as it was
+expect 1 log ae campaign: open
+
+test continue-look
+title A custom campaign's CONTINUE row (made-up saved game)
+menus
+setup menu campaign workshop saved
+check CONTINUE under CAMPAIGN: MISSION 2 and HEROIC
+check Right side: SECOND MISSION, DIFFICULTY HEROIC
+check Help line: Goes on from your saved game, at its difficulty.
+expect 1 log ae campaign: staged:
+
+test continue-fault
+title A saved game that cannot go on says why
+menus
+setup menu campaign workshop damaged
+check CONTINUE shows NOT AVAILABLE
+check Its help: the saved mission's map is missing or damaged
+check A on it does nothing; the MISSIONS still play
+expect 1 log ae campaign: staged:
+
+test split
+title A custom mission in split screen
+menus
+setup menu campaign players 2 workshop
+check PLAYERS shows Player 1 and Player 2 (Guest 2)
+check A on the focused mission: two views; log: 2 players
+expect 1 log ae campaign: staged: player 2 seated
+
+test stock
+title The stock campaign as before, under the picker
+menus
+setup menu campaign
+check CAMPAIGN row shows HALO: COMBAT EVOLVED; CONTINUE, LEVELS
+check Left / right on CAMPAIGN: the custom one, then back
+check Left / right on a level still changes DIFFICULTY
+expect 1 log ae campaign: open
+
+test none
+title No custom campaign installed: where they come from
+menus
+setup menu campaign workshop none
+check No CAMPAIGN row: CONTINUE, SPLIT SCREEN, the ten LEVELS
+check Last line: "No Workshop campaigns installed." (quiet)
+check Its help names SETTINGS > SYSTEM > MCC > ... WORKSHOP MAPS
+expect 1 log ae campaign: staged: no Workshop campaigns
+
+test fault
+title A package with a fault: one quiet line says what
+menus
+setup menu campaign workshop fault
+check Last line: "A Workshop campaign has a fault." (quiet)
+check Its help: MADE-UP PACKAGE, mission 2's map not installed
+check A on it does nothing; up goes back to the rows
+expect 1 log ae campaign: staged: a made-up fault line

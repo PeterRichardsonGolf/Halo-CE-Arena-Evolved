@@ -1,0 +1,116 @@
+# KILL FEED, on testbox: every weapon and vehicle is on it. Kills show as rows at the left, their ticks a little left of the motion
+# sensor's edge, five rows up from a line above the sensor; the game's own kill lines are left out while KILL FEED is on. A guest in a
+# network game, and an older build in the game, are by hand: TEST RUN cannot join.
+list killfeed-1
+revision 1
+title KILL FEED, ROUND 1
+
+test first-look
+title Rows above the sensor
+check Kill a bot: a row (you, weapon, bot) shows left, up
+check Bots killing each other show as rows too
+check Ticks sit left of the sensor's edge; rows clear of it
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test own-rows
+title Your rows and the others'
+check Your kill and your death: faint backing, light tick left
+check Every row goes after 5 s, yours too
+check No game kill message shows beside the rows
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test overflow
+title Five rows at most
+check Kill fast: no sixth row; the oldest goes first
+check With five up, the oldest leaves after 3 s
+check Rows close up in a blink when one goes
+map testbox@ce
+gametype AE FFA SLAY
+set bots.count 11
+set bots.skill easy
+
+test weapon-pictures
+title Weapon pictures
+check Pistol, AR, shotgun, sniper: each a picture, ice ink
+check Rockets, plasma pistol, plasma rifle, needler, fuel rod
+check Note a picture that is wrong, weak or too big
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pack-pictures
+title Battle rifle, SMG, carbine, DMR
+check Kill with the BR, SMG and carbine of the game's packs
+check Each shows its pack's picture; note one that shows text
+check The suppressed AR uses the rifle's picture
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test text-tags
+title No picture: a text tag
+check Melee: a MELEE tag. Plasma grenade: PLASMA. Frag: its icon
+check Fall to your death: a FALL tag and your name
+check Warthog run over: a VEHICLE tag. Note any other tag
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test head-shots
+title Head shots and perfect kills
+check A head shot: a ring after the weapon
+check A perfect kill (host): the tag PERF in place of the ring
+check Never both marks on one row
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test suicide-betrayal
+title Suicide and a teammate's kill
+check Blow yourself up with a grenade: skull, then your name
+check Kill a teammate: both names in your team's colour
+check No mark on a teammate's row
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test assists
+title Kills you helped with
+check Wound a bot; a teammate finishes it: your row is fainter
+check Its tick is blue, not light; it lives 8 s
+check Host only: a guest may show none
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test free-for-all
+title Free for all
+check Other players' kills show; everyone but you is an enemy
+check Your name reads white on your own rows
+map testbox@ce
+gametype AE FFA SLAY
+set bots.count 7
+set bots.skill easy
+
+test split-screen
+title Two players: a line in the messages
+check Each player's kills: Name WEAPON Name, no wrapping
+check HEADSHOT or PERFECT after the weapon; names in colour
+check Lines clear the ammo and the reticle
+map testbox@ce
+gametype AE TEAM SLY
+players 2
+set bots.count 6
+set bots.skill easy
