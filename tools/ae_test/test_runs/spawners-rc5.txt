@@ -1,0 +1,77 @@
+# 1.0 rc5 WEAPON SPAWNERS: GAME OPTIONS > WEAPONS > WEAPON SPAWNS (shown while AE WEAPONS is on) picks RACKS, the
+# spawners' holograms with each spot on its set's logic; CLASSIC + HOLOGRAMS, plain weapons on fixed timers with the
+# ghost of a spot's weapon while it is away; or CLASSIC, the same with no holograms. RANDOMIZE (RACKS only) draws a
+# rack's weapon every game, every round or every spawn. Two weapons the map lays together are one spot (Wizard's two
+# pistols). On RACKS a rack's fresh weapon gives no walk-over ammo to a player holding the same one. Logs: a hologram's
+# "drawn (ghost at", "look classic)", "look classic + holograms)", "(RANDOMIZE every game".
+list spawners-rc5
+revision 4
+title WEAPON SPAWNERS: RACKS, CLASSIC, RANDOMIZE
+
+group wizard
+map h1pb_wizard
+gametype AE TEAM SLY
+set debug.weapon_set casual
+set bots.count 0
+
+test merged-spot
+title Wizard: the two pistols lie as one spot
+setup goto -7.6 7.6 -2.75 facing 315
+check One weapon lies where the map put two pistols
+check Take it: one ghost fills on that spot
+expect 1 log merges item 5
+
+test racks
+title RACKS: a taken weapon's ghost fills as it returns
+setup goto -3.35 3.07 -2.75 facing 120
+setup spawner wait 40
+check The ghost lies on the floor where the weapon lay
+check Walk round it: it stays, never in the air
+check It fills; at 0:00 the weapon lies in it
+expect 1 log : drawn (ghost at
+
+test dropped
+title RACKS: the ghost shows over a dropped weapon
+setup goto -3.35 3.07 -2.75 facing 120
+setup spawner wait 40
+check Drop your weapon on the empty spot
+check The ghost still shows over what you dropped
+check It fills; at 0:00 the rack's weapon lands
+expect 1 log : drawn (ghost at
+
+test walkover
+title RACKS: a rack's fresh weapon gives no walk-over ammo
+setup goto -3.35 3.07 -2.75 facing 120
+check Take the rack's weapon; wait for the next
+check Walk over the new one: no ammo, it stays
+check Hold action on it: you swap for the fresh one
+
+test every-game
+title RANDOMIZE EVERY GAME: a rack keeps its weapon
+fresh
+setup option randomize every_game
+setup goto -3.35 3.07 -2.75 facing 120
+check Take the weapon on this rack
+check It comes back as the same weapon
+check The other racks keep theirs too
+expect 1 log (RANDOMIZE every game, round 0)
+
+test classic-holo
+title CLASSIC + HOLOGRAMS: a plain weapon's ghost
+fresh
+setup option weapon_spawns classic_holograms
+setup goto -3.35 3.07 -2.75 facing 120
+setup spawner wait 40
+check The weapon's ghost lies on the floor here
+check It fills; at 0:00 the plain weapon lies in it
+expect 1 log look classic + holograms)
+
+test classic
+title CLASSIC: plain weapons, a fixed timer, no ghost
+fresh
+setup option weapon_spawns classic
+setup goto -7.6 7.6 -2.75 facing 315
+check Take the weapon: no ghost on the empty spot
+check A plain weapon comes back on its timer
+check Walk over a weapon you hold: ammo refills
+expect 1 log look classic)

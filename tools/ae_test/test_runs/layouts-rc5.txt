@@ -1,0 +1,60 @@
+# Weapon layouts with one weapon to an area (port/assets/ae/layouts.txt; no two weapons within 4 units): H2 FOUNDATION's
+# middle pit now holds only the energy sword, and H2 ASCENSION (Steam Workshop item 3421353354, subscribe to it first) has
+# a layout of its own: the pack's battle rifle on the map's two rifle spots and the bolt sniper on its two sniper spots,
+# the needler, shotgun, plasma pistol and rockets as they were, its magnum, submachine gun and scarab gun out. Each test opens next to one spot in an AE game with
+# AE PICKUPS on and no bots, so nothing takes a weapon before you see it. A spot that drops you into a hole or a wall: say so, the height was read from the map's
+# own items, not from a floor you walked.
+list layouts-rc5
+revision 1
+title WEAPON LAYOUTS: ONE WEAPON TO AN AREA
+
+test foundation-pit
+title H2 FOUNDATION: the middle pit
+setup goto 10.9 -4.6 -1.43 facing -90
+check The weapon in the middle of the pit is the ENERGY SWORD
+check Nothing else lies in the pit: no shotgun, no pistol
+check Walk over it: you take it
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log the game's own is used
+
+test ascension-rifle
+title H2 ASCENSION: the rifle in the south
+fresh
+setup goto 3.0 -16.85 -0.05 facing 0
+check The weapon ahead is the BATTLE RIFLE
+check The plasma pistol further on is the map's own
+check Walk over it: you take it
+map h2-ascension@ws3421353354
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log the game's own is used
+
+test ascension-shotgun
+title H2 ASCENSION: the shotgun
+fresh
+setup goto 3.75 5.9 0.0 facing 90
+check The weapon ahead is the SHOTGUN
+check Below it, beyond: no magnum, only grenades
+map h2-ascension@ws3421353354
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+
+test ascension-sniper
+title H2 ASCENSION: a sniper spot
+fresh
+setup goto 8.96 10.7 -0.35 facing 90
+check The weapon ahead is the BOLT SNIPER
+check Walk over it: you take it
+map h2-ascension@ws3421353354
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true

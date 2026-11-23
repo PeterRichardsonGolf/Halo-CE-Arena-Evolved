@@ -1,0 +1,33 @@
+# FALL STUN: the gametype row that keeps or drops the hard landing's lock on movement and jump (GAME OPTIONS > SPARTAN).
+# Each test opens on Prisoner on the top floor of the west tower (floor 5.59), a step back from the ledge at x -6.5 and
+# facing out over it (east): the drop is 6.0 units to open floor (-0.41) with 2 units of floor to land on, a hard landing.
+# FALL DAMAGE is OFF in both so the fall never hurts; only the stun differs. Step off at a walk; a run carries you far
+# enough to land on the stair block beyond, a shorter fall that does not lock. If that happens, turn back and walk off again.
+list fall-stun-rc5
+revision 2
+title FALL STUN: HARD LANDING LOCK
+
+test stun-on
+title FALL STUN ON: the landing locks you
+setup option fall_damage off
+setup option fall_stun on
+setup goto -6.9 -4.7 5.6 facing 0
+check Walk off the ledge and fall to the floor below
+check On landing you cannot move or jump for a moment
+check After the lock you walk and jump as normal
+map prisoner
+gametype AE COMP TS
+set bots.count 0
+
+test stun-off
+title FALL STUN OFF: the landing never locks you
+fresh
+setup option fall_damage off
+setup option fall_stun off
+setup goto -6.9 -4.7 5.6 facing 0
+check Walk off the ledge and fall to the floor below
+check On landing you move at once: no lock
+check Jump as you land: you jump at once
+map prisoner
+gametype AE COMP TS
+set bots.count 0

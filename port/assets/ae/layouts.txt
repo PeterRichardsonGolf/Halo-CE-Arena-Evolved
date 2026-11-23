@@ -1,0 +1,68 @@
+# AE's map layouts shipped inside the game: used for a map whose file has no layout file of its own beside it. A section
+# starts at its "layout 1 <map file name> <map hash>" line and runs to the next such line; each is read as a layout file
+# (port/linux/game/ae_layout_rules.h) and applies only to the very map file its hash names. A layout file in the map's
+# folder takes the place of its section. The generated port/linux/game/ae_layouts_data.c is made from this file by
+# tools/ae_layouts_data.py (run it after editing).
+layout 1 h2d_foundation f3f9d694
+# One weapon stands in each area and none within 4 units of another (tools/ae_layout_stacking.py checks every section).
+# Every spot is one of the map's own item positions (its item numbers), so each weapon stands on a floor the map already
+# uses. The map's own pistols and shotguns beside a new weapon are removed; its frag grenades stay. The spots are the
+# map's own, mirrored across its middle (10.9 -6.2).
+# middle pit, lower level: the energy sword (the pit's shotgun and the two beside it go)
+remove item 0
+remove item 1
+remove item 2
+item energy_sword like 0 at 10.89 -5.97 -1.48 respawn 120
+# the rifles at the two ends of the long axis (the four pistols on the steps beside them go)
+remove item 3
+remove item 4
+remove item 5
+remove item 6
+remove item 7
+remove item 8
+item battle_rifle like 7 at 10.53 -12.95 0.14 respawn 60
+item battle_rifle like 8 at 10.42 0.66 0.14 respawn 60
+# the four corners: a submachine gun each
+remove item 25
+remove item 26
+remove item 27
+remove item 28
+item smg like 25 at 22.83 -15.32 0.11 respawn 30
+item smg like 26 at 1.04 4.54 0.11 respawn 30
+item smg like 27 at 20.84 4.44 0.11 respawn 30
+item smg like 28 at -0.50 -15.38 0.11 respawn 30
+# the two side floors by the bases: a brute shot each, the one spot mirrored across the middle (the map's own shotguns on
+# the two raised blocks go: the block tops are out of bounds)
+remove item 29
+remove item 30
+item brute_shot like 29 at 17.00 -8.50 0.11 respawn 120
+item brute_shot like 30 at 4.80 -3.90 0.11 respawn 120
+# the two lower-level spots opposite each other: a carbine each (the pistols and the shotguns around each go)
+remove item 31
+remove item 32
+remove item 33
+remove item 34
+remove item 35
+remove item 36
+item carbine like 31 at 6.34 -9.51 -1.49 respawn 60
+item carbine like 34 at 15.86 -3.36 -1.50 respawn 60
+
+# H2 Ascension (Steam Workshop item 3421353354): the map already carries Halo 2's weapon spots, and a Workshop map gets no
+# AE PICKUPS, so the AE weapons are named here: the two battle rifles are the pack's, the two sniper rifles the bolt
+# sniper. Its magnum is out (it stood 3 units under the shotgun) and so is its submachine gun (3.7 units from the battle
+# rifle beside it) and the floating scarab gun. The needler has no layout word and stays the map's, with the shotgun, the
+# plasma pistol, the rocket launcher, the overshield and the grenades.
+layout 1 h2-ascension@ws3421353354 29741628
+remove item 2
+remove item 25
+remove item 4
+remove item 5
+remove item 6
+remove item 9
+remove item 28
+item battle_rifle like 2 at 4.51 -16.85 -0.13 respawn 60
+item battle_rifle like 25 at 11.00 -3.52 0.24 respawn 60
+item sniper_bolt like 4 at 8.96 11.95 -0.42
+item sniper_bolt like 5 at -6.19 3.50 -3.16
+remove item 7
+item ae_needler like 7 at -1.31 3.68 -2.90

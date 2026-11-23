@@ -7,291 +7,314 @@
 
 <p align="center"><b>Halo: Combat Evolved with modern quality of life, on any PC. Every addition optional, CE's balance kept.</b></p>
 
-<p align="center">
-  <a href="https://arenaevolved.com/"><b>Website</b></a> ·
-  <a href="https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest"><b>Download</b></a> ·
-  <a href="https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved"><b>Get it with Quiver</b></a> ·
-  <a href="docs/how-to-play.md"><b>How to play</b></a> ·
-  <a href="docs/faq.md"><b>FAQ</b></a> ·
-  <a href="docs/known-issues.md"><b>Known issues</b></a> ·
-  <a href="docs/host-a-server.md"><b>Host a game or server</b></a>
-</p>
+Arena Evolved (AE) is Halo: Combat Evolved's Xbox engine running natively on modern computers. It is a fork of
+[OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the port of the Halo: Combat Evolved decompilation, and
+grew from [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce). Its focus:
 
-Arena Evolved (AE) is a non-commercial fan project that runs Halo: Combat Evolved's Xbox engine natively on
-modern computers. It is a fork of [OpenCE](https://github.com/OpenCommunityEdition/OpenCE), the port of the Halo:
-Combat Evolved decompilation, and grew from [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce). Its focus:
-
-- **Modern quality of life:** what later games made standard (item timers, a match clock, bots, split screen with
+- **Modern quality of life:** what later Halo games made standard (item timers, a match clock, bots, split screen with
   each player's own profile and settings, map downloads from the host, menus that work with any controller or a mouse
   and keyboard), and fixes for the annoyances the game has always had.
-- **New gameplay:** new gametypes, weapons and vehicle features, tuned to fit Halo CE's sandbox rather than replace it.
-  The magnum stays the magnum; a new weapon earns its place against Halo CE's own.
+- **New gameplay:** new gametypes, weapons and vehicle features in the spirit of the later games, tuned to fit Halo CE's
+  sandbox rather than replace it. The magnum stays the magnum; a new weapon earns its place against Halo CE's own.
 
-**Why Arena Evolved?** OpenCE is the port itself, and Arena Evolved builds on it. Our aim is one place where every
-Halo player can sit down and play CE together: people who played it on LAN in 2002 and people who grew up on the newer
-games. So it keeps CE's classic competitive game and adds what players expect today. If you own Halo: The Master
-Chief Collection on Steam, that's all you need: Arena Evolved finds it and plays CE straight from MCC's own files,
-Workshop maps included. No disc image, nothing to convert. Many of its ideas come from other
-community projects, credited below. Halo CE is still played because its community kept it going; this is our part.
+It is inspired by the grassroots Halo CE community's rules, MLG's and today's HCS settings, with ideas of its own.
 [Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported as an option.
 
-## Play on the official servers
+> **Status: early and in active development.** The current release is 0.7.4-beta. Supported: **Windows, Linux
+> and macOS**. The other platforms OpenCE's automated builds cover (Android and more) build from the same code and are
+> released with major releases, or sooner when players ask for them.
 
-Three Arena Evolved test servers run on the US West Coast, with bots keeping the games going until players join.
-Arena Evolved 0.7.7 lists them in **MULTIPLAYER > SERVER BROWSER**: pick one and join, and a map you lack downloads as
-you join. **JOIN BY ADDRESS** takes these addresses too:
+## Optional by design
 
-| Server | Address | What it plays |
-|---|---|---|
-| AE Official #1 | `play.arenaevolved.com:10660` | 4v4 casual and competitive Arena Evolved modes, map vote |
-| AE BTB+ #1 | `btb.arenaevolved.com:10672` | 16v16 Big Team Battle with vehicles |
-| AE Comp Test | `comp.arenaevolved.com:10683` | The competitive playlist test: AE COMP modes with EVO, battle rifle and pistol starts |
+Nothing Arena Evolved adds is forced on you. If you want Halo CE as it was:
 
-The live list (who's on, map, mode) is on [arenaevolved.com](https://arenaevolved.com/). MCC and Workshop maps also need
-your own MCC install. Want to run your own? See [Host a game or server](docs/host-a-server.md); the server packages for
-Linux and Windows are on the [release page](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest).
-
-> **Status: beta, in active development.** Supported and tested with every release: **Windows and Linux**. macOS on
-> Apple silicon is built with every release. Android and the other platforms OpenCE builds come from the same code and
-> are attached untested.
-
-<p align="center">
-  <img src="docs/screenshots/danger-canyon-evo-rifle.jpg" alt="Danger Canyon played from MCC's files: the EVO RIFLE with its holo sight, a Warthog ahead" width="100%">
-</p>
-
-<table>
-  <tr>
-    <td width="50%"><img src="docs/screenshots/timberland-battle-rifle.jpg" alt="Timberland from MCC's files with the battle rifle"><br><sub>Timberland, from MCC's files, with the battle rifle</sub></td>
-    <td width="50%"><img src="docs/screenshots/evo-rifle-scope.jpg" alt="The EVO RIFLE's scope, showing its zoom and the rounds loaded"><br><sub>The EVO RIFLE's scope shows its zoom and the rounds loaded</sub></td>
-  </tr>
-  <tr>
-    <td><img src="docs/screenshots/game-options.jpg" alt="GAME OPTIONS: every gametype rule in groups"><br><sub>GAME OPTIONS: every rule of a gametype, in groups</sub></td>
-    <td><img src="docs/screenshots/pause-bots.jpg" alt="Pause menu: bots changed mid-game"><br><sub>Bots added or changed mid-game, from the pause menu</sub></td>
-  </tr>
-</table>
-
-This repository holds the releases and the issue tracker. Development happens elsewhere; each release's complete source
-is attached to it.
+- **Play it on another client.** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE),
+  [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce) or the original Xbox give you the classic game, and
+  online Arena Evolved plays with OpenCE builds on its network version, so classic and AE players can still meet in
+  one game ([upstream.md](docs/upstream.md)).
+- **Or turn the additions off in Arena Evolved.** Halo CE's own gametypes play by Halo CE's rules: the AE rules (no
+  fall damage, health styles, weapon packs, controller crouch and more) are on only in the AE gametypes, and each is a
+  row in a gametype's GAME OPTIONS you can switch off. As the host, your gametype decides for everyone in the game.
+  HUD STYLE CE draws Halo CE's own HUD, Settings > System > MENUS brings back the PC version's menus, and callouts,
+  timers, waypoints and the other aids each have their own setting.
 
 ## What's in it
 
-- **MCC maps and Workshop mods, online:** play Halo: The Master Chief Collection's Halo CE maps and the Workshop maps
-  you subscribe to with other players. MCC has no server browser for modded custom games; Arena Evolved does: host from your
-  own install, find games in the server browser or on your LAN, or join by address. Players joining a Workshop map
-  need the same Workshop item, and the game tells them which one. Workshop maps are hosted from a player's own game;
-  dedicated servers serve the stock and Custom Edition maps.
-- **Online and LAN:** server browser, LAN search, invite links, JOIN BY ADDRESS (an IP or a
-  computer's name, with a recent list), dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come
-  from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds 282 to 333 and with ChupathingyCE (see "Play with other
-  builds" below).
-- **Bots** in six levels from RECRUIT to DEMON, up to 31 on one PC and 127 in a game you host, in every mode: a wingman
-  per player, squads that flank, flag crews that escort, bombers that carry, plant and defend. They drive and ride
-  vehicles, know the power items' timers, dodge rockets, take revenge, and stay out of your line of fire. A bot steps
-  aside when a player joins. PLAYFIGHT bots aim but never shoot, for practice.
+- **Competitive rules on any map:** no fall damage, HALO 2 or HALO 3 health, no spread, a pre-game countdown,
+  practice mode, silent movement for split screen, a lethal oddball, all on a gametype's ARENA OPTIONS.
+- **Ready-made gametypes, in playlist folders:** AE FFA, AE 2V2, AE 4V4, AE BTB (big team), AE ACTION SACK and AE
+  PRACTICE (with OCTAGON warm-up drills: infinite ammo, instant respawns), each with its battle rifle version, new
+  modes (Bomb, Grifball, Gun Game, Infection), and Halo 1: NHE's own
+  ([gametypes.md](docs/gametypes.md)).
+- **Item timers and training:** the power items' next spawns by the match clock, waypoints over them, spawn markers
+  coloured by how likely you are to spawn there, spoken callouts.
+- **New weapons, tuned to Halo CE's sandbox:** the battle rifle (three-round bursts, a 3x scope), an SMG, a carbine and
+  suppressed SMG and assault rifle, as weapon packs (in the Windows and Linux downloads) that a gametype puts on any
+  map or turns off. A test pack adds vehicle damage and wrecks.
 - **Split screen on PC:** up to four players on one PC, locally, on a LAN and online, each with their own profile,
-  controller layout, settings and pause menu; a controller picker sorts four pads fast.
-- **Search and Destroy and Bomb, AE's round modes:** one life a round, a real bomb carried on the back, held to pick
-  up, a fuse timer on its face, a blast that hurts by distance; only the attackers hear about it. Built on the
-  ChupathingyCE team's Bomb engine. Grifball, their original mode too, is in ACTION SACK and still a work in progress.
-- **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the EVO RIFLE (single shot, tuned for competitive
-  play, a 2x scope with its zoom and rounds live), the DMR (steady marksman rifle), SMG, carbine, and suppressed SMG and
-  AR, as weapon packs that work on stock, Custom Edition and MCC maps. Each pack turns on or off in a gametype's GAME
-  OPTIONS, and a gametype picks what you start with. 0.7.5 is a testing build that adds the NEEDLER, BOLT SNIPER, COMBAT
-  RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope) and BRUTE SHOT as betas, and the ENERGY SWORD as an alpha.
-- **Second-generation game settings:** GAME OPTIONS gains rounds and round time, respawn time modifiers, damage resistance
-  and extra damage, weapon respawn, flag and bomb carrier rules and hill rules (Halo CE plays as before unless you set
-  them), the TERRITORIES mode (beta), 34 more built-in gametypes in a nested CHANGE GAMETYPE picker, a shield-break pop
-  with sound and flash, a round counter on the score strip, and RESTART ROUND in any rounds game.
-- **In the game:** medals as you play (MCC's pictures when MCC is installed), a kill feed with weapon pictures, and team
-  calls: tap LB (the mark key on a keyboard) to mark what you aim at, double tap to call an enemy, hold for the
-  COMMUNICATION WHEEL (ATTACK, DEFEND, WATCH, GOING HERE, HELP, RIDE and more); bots answer. Hold the action button to
-  get in, flip or leave a vehicle (HOLD TO ACT), and small arms hurt vehicles. In HUD STYLE AE an item prompt names what
-  you stand over. Assists are counted.
-- **Ready-made gametypes in playlist folders:** AE FFA, 2V2, 4V4 (casual and COMP), BTB (big team, with heavy-vehicle
-  versions, and BTB+ versions with banshees), OBJECTIVE (Search and Destroy, Bomb), ACTION SACK (Phantoms, Juggernaut, Stalker, Crazy King, Elimination,
-  Race, Rally, Grifball, SWAT, Snipers, Rockets, Shotguns and more), PRACTICE with OCTAGON warm-up drills; Halo 1: NHE's
-  gametypes as an option.
-- **Rules you can set on any map,** each a row in GAME OPTIONS: fall damage (OFF, CLASSIC or HALO 2), jump height, health styles, COMBAT FEEDBACK (shield pop, recharge, blood pop), no spread, a pre-game countdown, MELEE
-  UNZOOMS, controller crouch, mouse aim assist, silent movement and weapons for split screen, destructible vehicles,
-  friendly splatter, lethal oddball, practice mode, and SPAWNS CLASSIC or MODERN.
-- **Training aids:** item timers and waypoints with pictures, spawn markers and spawn heat, spoken callouts in seven
-  voices (three detail levels), a match clock, dead ally markers, a green ally reticle, an enemies-only motion sensor.
-- **Host tools:** RESTART GAME and RESTART ROUND, bots and skill changed mid-game, CHANGE MAP and GAME OPTIONS from the
-  pause menu, SHUFFLE TEAMS, teams pinned for bots, a gametype changed between games without leaving the lobby, a
-  GAME NAME for the server browser, and HOST TEAM OVERRIDE (move any player to the other team, in the lobby or from the
-  pause menu). In AE's team gametypes a team that empties waits a minute for players instead of ending the game.
-- **Controllers:** many button layouts including MCC's, DualSense adaptive triggers (a profile per weapon) and lightbar, back
-  paddles, Nintendo and PlayStation prompts, gyro aiming, stick deadzones. Mouse and keyboard: KEY BINDINGS, wheel
-  zoom, hold-to-zoom and MCC-style sensitivity.
-- **Menus built from scratch for today's PCs:** fast and controller-first, just as good with a mouse and keyboard, and
-  sized for anything from a handheld to an ultrawide. A live CREATE GAME lobby with MY PARTY, where friends and bots
-  join as you set up. CHANGE MAP and CHANGE GAMETYPE browse folders (STOCK, MCC, WORKSHOP, map packs) with map pictures,
-  search, favourites and RECENT. Its own pause menu, scoreboard and post-game, and every setting explained in a line of
-  help.
-- **HUD and display:** a modern, competitive combat HUD of its own (or Halo CE's) with a score strip, a frame-rate limit you type (30 to
-  1000), a performance line with ping, HUD area and compact HUD, backpack weapons on bodies, pistol colour.
-- **Capture:** screenshots (every split view) and video recording with sound (Windows includes FFmpeg).
-- **Map packs and layouts:** community, Custom Edition and modded-disc maps keep their own folders and pictures;
-  layout files let a pack move, add and remove items, vehicles, spawns and flags, and set a map's jump.
-- **Updates and privacy:** the game checks this page for a signed release and asks first (AUTO UPDATE turns it off).
-  Public game lists and stats stay off until you accept COMMUNITY SERVICES; crash reports are never sent.
-- **For map makers and testers:** layout logs, SHOW COORDINATES, a dev camera, a TEST RUN list runner.
+  controller layout and settings.
+- **Bots** that play every mode like a person of their level, in seven levels from RECRUIT to DEMON: up to 31 in a
+  game on one PC (change how many from the pause menu, mid-game), and in any LAN or internet game you host, up to
+  a big team game's worth and more (120), "BOT " before their names, filling the teams evenly and stepping aside
+  when a player joins a full game. They play as a team:
+  a wingman sticks with each player, they know the power items' timers, regroup when outnumbered, hear gunfire, pace
+  their pistol shots, scope back in after a hit and take the high ground.
+- **LAN nights:** players who lack a map get it from the host as they join, with its progress on the lobby's
+  header (Settings > Network > INTERNET DOWNLOADS turns it off); map packs keep their own folders and pages in the
+  map lists, and community, Custom Edition and HaloMD maps all play.
+- **Controllers:** a PS5 DualSense's adaptive triggers and lightbar, 14 layouts including MCC's, back buttons and
+  paddles, Nintendo Switch Pro controllers.
+- **Menus of its own:** CREATE GAME and its lobby, CHANGE MAP and CHANGE GAMETYPE with folders and filters, a
+  gametype editor, KEY BINDINGS, and every setting with a line of help.
+- **Display:** a combat HUD of its own (or Halo CE's), a match clock and campaign timer like the Master Chief
+  Collection's, waypoint pictures, keyboard keys shown in the game's prompts when you play with a keyboard, a
+  performance overlay.
+- **Privacy first:** public game lists, stats and crash reports stay off unless you turn them on, and updates are
+  signed (AUTO UPDATE turns them off).
 
-## Play it stock if you want
-
-Nothing Arena Evolved adds is forced on you:
-
-- **Halo CE's own gametypes play by Halo CE's rules.** The AE rules (weapon packs, health styles, HALO 2 fall damage,
-  a 120% jump, MODERN spawns and the rest) are on only in the AE gametypes, and each is a row you can switch off.
-  (The drills, training and practice modes keep fall damage off.) As the host, your
-  gametype decides for everyone in the game.
-- **Halo CE's look:** HUD STYLE CE draws the game's own HUD, Settings > System > MENUS brings back the PC version's
-  menus, and callouts, timers, waypoints and the other aids each have their own setting.
-- **Classic menus hide AE's screens.** Most of Arena Evolved's screens exist only in its own menus: the pause menu and
-  post-game, CREATE GAME's live lobby and MY PARTY, CHANGE MAP's MCC, WORKSHOP and pack folders, search and favourites, JOIN BY
-  ADDRESS, KEY BINDINGS, RESTART GAME and RESTART ROUND, and the gametype editor's full GAME OPTIONS. With the classic
-  menus on, those are gone (the gametypes' rules still play). Switch MENUS back to use them.
-- **Stock maps stay stock:** the STOCK folders hold the game's own maps as they shipped, from your disc image or MCC.
-- **Play with other builds:** Arena Evolved 0.7.5 (network version 41) plays online with OpenCE build-334 and later and
-  with ChupathingyCE. Older Arena Evolved builds cannot join 0.7.5 games. To meet a player on another build, host one of Halo CE's own gametypes: AE's extras (weapon
-  packs and the rest) are for AE players.
+Every option in detail: [features.md](docs/features.md). What changed in each release: [CHANGELOG.md](CHANGELOG.md).
 
 ## Download
 
-Take the zip for your system from the [Releases](../../releases) page:
+Releases are on the [Releases](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases) page. Take
+the zip for your system:
 
 | Download | For |
 | --- | --- |
-| `arena-evolved-<version>-windows64.zip` | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing to install (about 110 MB). |
+| `arena-evolved-<version>-windows64.zip` | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing to install. |
 | `arena-evolved-<version>-linux64.zip` | Linux x86-64, most distributions (Ubuntu 22.04 and later, Mint, Zorin, Pop!_OS, Debian 12), SDL3 included. |
 | `arena-evolved-<version>-linux64-arch.zip` | Arch and other rolling distributions (uses the system's `sdl3`). |
-| `arena-evolved-<version>-macos.tar` | macOS 13 or later on Apple silicon. Needs a disc image (MCC does not run on a Mac). |
-| `-android-unsigned.zip` | Android 9 or later on 64-bit ARM, untested. |
-| `-server-linux-<arch>.zip` | The dedicated server. |
+| `arena-evolved-<version>-macos.tar` | macOS 13 or later on Apple silicon. |
+| `-android-unsigned.zip` and other platforms | Android 9 on 64-bit ARM and the other platforms OpenCE builds: with major releases or on request, untested by us. |
+| `-server-linux-<arch>.zip` | The dedicated server ([server/README.md](server/README.md)). |
 
-Only the latest release is kept here.
+Full requirements and versions: [dependencies.md](docs/dependencies.md). The game says its version in its window's
+title and its log.
 
-**Windows may warn you.** `halo.exe` and `ffmpeg.exe` (for recording) are not code-signed, so the browser or Windows can
-say the program is from an unknown publisher ("Windows protected your PC"). Choose **More info**, then **Run anyway**.
-Before you unpack the zip, right-click it, choose **Properties** and tick **Unblock**. An antivirus program may also
-flag an unsigned program by mistake. The complete source is attached to every release.
-
-Or get it with Quiver: [Arena Evolved on Quiver](https://quiverlauncher.com/apps/halo-combat-evolved-halo-ce-arena-evolved).
-
-## You need your own copy of the game
+## You need your own copy of Halo
 
 Arena Evolved includes none of the game's maps, sounds or art. It plays from either of these, or both:
 
 - **Halo: The Master Chief Collection on Steam.** Install MCC with both of its Halo CE pieces of content (Steam's DLC
   list): **Halo: Combat Evolved Anniversary** and **MCC - H1: Multiplayer**. Arena Evolved finds the install by itself
-  and plays its Halo CE multiplayer maps and the Halo CE maps of every Steam Workshop item you subscribe to, straight
-  from MCC's own files. No disc image needed and nothing is converted.
-- **A disc image you made from your own Xbox disc** of Halo: Combat Evolved (`.iso` or `.xiso`). Not needed for MCC's
-  maps. It lets you join games on the original Xbox maps, such as those hosted by OpenCE or ChupathingyCE players, and
-  adds the community's Xbox-era maps and mods. The first time it starts, the game asks for the image and copies its maps
-  out of it (about 2 GB). On a Mac this is the way in: MCC does not run on a Mac.
+  and plays MCC's Halo CE multiplayer maps and the Workshop maps you subscribe to, from MCC's own files: no disc image
+  needed, and the first start asks nothing.
+- **An Xbox disc image** (`.iso` or `.xiso`) of Halo: Combat Evolved, any region. The first time it starts, the game
+  asks for the image and copies its maps out of it (about 2 GB).
 
-Use only a copy of the game you own. Arena Evolved never provides, links to or helps find game files, and issues asking
-for them are closed.
-
-With both, you get the disc's maps and MCC's in one list. A player with MCC alone has MCC's stock maps, not the original
-Xbox ones, so cannot join a game on an original Xbox map; add a disc image to join those. SETTINGS > SYSTEM > FILES >
-MCC FILES turns MCC's files off. To pick another MCC folder, use the first-start window's Choose MCC folder button, or
-set `game.mcc_path` in `config.toml`.
+Custom Edition maps also need `bitmaps.map`, `sounds.map` and `loc.map` from Halo PC or Custom Edition; with MCC
+installed, the game finds them there and asks before using them.
 
 ## Getting started
 
-1. Start the game. With MCC installed on Steam (both pieces of Halo CE content), it finds MCC and opens the menus.
-   Without it, it asks for your Xbox disc image the first time. A new copy then asks about COMMUNITY SERVICES: a page
-   with a LIST GAMES I HOST switch and the buttons DECLINE and ACCEPT. Without ACCEPT the SERVER BROWSER stays empty.
-   On a Steam Deck, if the first-start window does not open in Game Mode, start the game once from Desktop Mode.
+1. Start the game: with MCC installed it opens the menus; otherwise point it at your Halo disc image.
 2. The menus are Arena Evolved's own (Settings > System > MENUS switches to the PC version's). The game's settings are
-   under SETTINGS, each with a line of help; a gametype's rules are in its GAME OPTIONS.
-3. MULTIPLAYER > CREATE GAME. A new lobby starts OFFLINE (this PC only); NETWORK picks LAN or HOST ONLINE. Pick a map
-   and an AE gametype, and set the lobby's BOTS. Extra players on this PC press START on their controllers in the
-   lobby.
+   under SETTINGS; a gametype's rules are in its GAME OPTIONS.
+3. MULTIPLAYER > CREATE GAME, pick LAN or HOST ONLINE, a map and an AE gametype, and set the lobby's BOTS. Extra
+   players on this PC press START on their controllers in the lobby.
+
+Every setting the port adds is in `config.toml` beside the game, written the first time it starts with each one
+explained ([port/linux/README.md](port/linux/README.md)).
+
+## Playing online
+
+Arena Evolved 0.7.7 and later list the online servers in MULTIPLAYER > SERVER BROWSER: pick one and join. A map you
+lack downloads as you join. Our own test servers, on the US West Coast, keep a game going with bots until players join:
+
+- **AE Official #1** `play.arenaevolved.com:10660`: 4v4 Arena Evolved modes, casual and competitive, with a map vote
+- **AE BTB+ #1** `btb.arenaevolved.com:10672`: 16v16 Big Team Battle with vehicles
+- **AE Comp Test** `comp.arenaevolved.com:10683`: the competitive playlist test
+
+JOIN BY ADDRESS takes those addresses too. Who is on and what is playing: [arenaevolved.com](https://arenaevolved.com).
+To run a server of your own: [hosting.md](docs/hosting.md).
 
 ## Playing over LAN
 
 Every computer needs to be on the same network (not a guest Wi-Fi) with UDP ports **5150**, **5151** and **5160**
 and TCP port **5153** open. Windows asks the first time the game starts: allow it. On Linux a firewall blocks LAN
 games silently: open the ports once (`sudo ufw allow 5150:5151/udp`, `sudo ufw allow 5160/udp`,
-`sudo ufw allow 5153/tcp`). A VPN can hide your game from the network: turn it off to host. Players who lack the
-host's Custom Edition or community maps get them from the host as they join.
+`sudo ufw allow 5153/tcp`). Players who lack the host's maps get them from the host. Details, firewalld and map
+sharing: [lan.md](docs/lan.md).
 
 ## Where it's going
 
 More of the same focus: quality of life and the old annoyances ironed out, new gameplay that respects Halo CE's
-balance, and bots good enough to fill any game. Next: the newest OpenCE builds merged in (so Arena Evolved can join them
-again), a team balancer and playlists, a players and controllers screen with drop-in split screen, and more vehicles
-and bot work. What is not finished yet is in [Known issues](docs/known-issues.md).
+balance, and bots good enough to fill any game. Next: an in-game pause menu and post-game results in Arena Evolved's
+style, a scoreboard for big team games, more weapons and vehicles, and the newest OpenCE builds merged in.
 
-## Source and licence
+## For developers
 
-Arena Evolved is free software under the GNU Affero General Public License, version 3 or (at your option) any later
-version (`AGPL-3.0-or-later`). It comes with no warranty. Parts from ChupathingyCE 0.8.0 and later keep their GPL-3.0
-terms.
-
-**Source:** every release has a source tarball asset, the complete source of that release. Third-party code, fonts and
-art keep their own licences, which are beside them in the tarball and in the downloads.
-
-The ORBIT logo and the ARENA EVOLVED wordmark are all rights reserved by the project. You may use them unmodified to
-refer or link to Arena Evolved, but not as another project's branding.
-
-## FFmpeg
-
-The Windows download includes an unmodified FFmpeg static build (`ffmpeg.exe`, GPL v3) for recording, with its licence
-and `FFMPEG-SOURCE.txt`, which says where its source is. Deleting `ffmpeg.exe` turns recording off; screenshots still
-work. On other systems, recording uses your own FFmpeg.
-
-## Issues welcome
-
-Bug reports and ideas are welcome in [Issues](../../issues). Check the [FAQ](docs/faq.md) and
-[Known issues](docs/known-issues.md) first. For a bug, please include:
-
-- your system and the AE version (it is in the window's title);
-- whether the game uses MCC, a disc image or both;
-- what you did and what you saw;
-- `debug.txt`, if you can. It is in the folder that holds `halo.exe` (Windows) or `halo` (Linux), or in the game's folder
-  inside Quiver's Apps folder. It holds your graphics driver name and file paths, and on Windows your user name, so look
-  through it first.
+- **Building:** Python 3, ninja, clang with lld (or gcc on Linux) and SDL3: `python3 configure.py --release` then
+  `ninja linux64`. Every platform and package list: [building.md](docs/building.md).
+- **Upstream:** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is made, and Arena
+  Evolved merges its releases and offers fixes and features back to it, credited to Arena Evolved. Online, Arena
+  Evolved is network version 39 and plays with OpenCE builds on it (build-282 to build-333; later builds are on 40
+  and 41) and ChupathingyCE 0.8.0f and later:
+  [upstream.md](docs/upstream.md).
+- **Contributing:** [CONTRIBUTING.md](CONTRIBUTING.md). Arena Evolved's own code is in `port/linux/game/ae_*`; it
+  changes the upstream files only by single marked lines (`/* AE hook */`, listed in `port/linux/game/ae_hooks.txt`).
 
 ## Credits
 
-**Bungie**, who made Halo: Combat Evolved in 2001: the game all of this exists to keep playing. Thank you.
+- The decompilation: [punpckhdq/halo](https://github.com/punpckhdq/halo) and
+  [bnunu/halo-1](https://github.com/bnunu/halo-1), of the Xbox build 2342.
+- The port: [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) and its
+  contributors (its main contributors are Jonas Volman, @bnunu, and MrBruh,
+  @cybersecurity). The menus' blue arrow mouse cursor (`port/assets/cursor`,
+  from OpenCE build-250) is pugzysixtyfour's art.
+- [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce): Milenko and
+  contributors, and the contributors credited there and in each commit. From
+  ChupathingyCE 0.8.0: ugoboom (Zebouski), HD HUDs on Custom Edition maps
+  (MCC's "0.5 HUD scale" and Chimera's "force HUD use high resolution scale"
+  flags) and the loading screen's sound on the SDL ports. The scoreboard's
+  platform logos are one-colour marks from [Simple Icons](https://simpleicons.org)
+  (CC0) and Wikimedia Commons (public domain), plus ChupathingyCE's own Xbox 360
+  ring and Wii U GamePad; the names and logos are their owners' trademarks, used
+  only to identify platforms. HaloMD map names come from
+  [MacGamingMods](https://macgamingmods.com)' public HaloMD mod list.
+- The Weld map (Search and Destroy): JukkisP and Fuse.
+- A map's shaders made while its loading screen is up (`display.prepare_shaders`): ChupathingyCE #1012 by Milenko, with
+  the first-frame pass of [OpenH1](https://github.com/OpenH1/goath1) (goatbutt and the OpenH1 team; startupfoundry's
+  `render_enumerate`), which was CC0 1.0 at commit 57834197 (2026-10-16) and is AGPL-3.0 since.
+- High-res HUD art on the Xbox maps (HUD STYLE CE): Aerocatia's and Jessie's HUD
+  art from [Halo PC Restored](https://github.com/Aerocatia/halopc-restored)
+  (release r220), brought in by ChupathingyCE and used with Aerocatia's
+  permission on the condition that both are credited;
+  `port/assets/hud/NOTICE.md` lists which files are theirs.
+- Controller button icons by snapchipper, CC0 (`port/assets/prompts`).
+- The medal pictures for the medals MCC has no picture for (`port/assets/medals`) are Arena Evolved's own shapes, CC0, with
+  [game-icons.net](https://game-icons.net) icons by Delapouite, Lorc, Sbed, Lucasms and Faithtoken (CC BY 3.0, recoloured and
+  shaded), the dollar sign, 1x, STOP and 360's digits set in Overpass (SIL OFL), and the weapons' and skull's art from Aerocatia's
+  and Jessie's HUD art credited above, traced to vector; [AUTHORS.md](AUTHORS.md) lists each picture's parts.
+- [Halo 1: Neutral Host Edition (NHE)](https://halo1nhe.com/), the Xbox
+  competitive mod whose rules inspired Arena Evolved: the NHE team. Arena
+  Evolved's versions are its own code; it is not made or endorsed by the NHE
+  team. Download NHE itself from [halo1nhe.com](https://halo1nhe.com/#download).
+- Fonts: [Overpass](https://fonts.google.com/specimen/Overpass) (SIL OFL; the
+  game's text and the logo's wordmark), Cyborg Interface Gothic by fizzy (SIL
+  OFL; made to match Halo's interface font from Overpass and glyphs of their
+  own, ChupathingyCE's high-res text font),
+  [Noto Sans](https://fonts.google.com/noto) (SIL OFL) and
+  [Kenney's Input Prompts](https://kenney.nl/assets/input-prompts) (CC0).
+- The battle rifle's model, textures, animations and sounds are CMT's, from the source release of The Silent
+  Cartographer: Evolved (1.4.1c), used with credit; its scope and gun-screen art are redrawn here, and its aiming
+  reticle follows crosshair 033 of [Kenney's Crosshair Pack](https://kenney.nl/assets/crosshair-pack) (CC0). The
+  pack's own credits file is `packs/ae_battle_rifle.CREDITS.txt`.
+- The SINGLESHOT BR (the CE Digsite Multiplayer maps' battle rifle, one round a pull) wears CE+ X's battle rifle models,
+  the work of the CE+ X team, as the CE Digsite Multiplayer team's maps carry them, used with credit; its sounds,
+  effects and HUD are the battle rifle's (CMT's). Its credits file is `packs/ae_singleshot_br.CREDITS.txt`.
+- The DMR's and the EVO RIFLE's models, textures, animations and sounds are CMT's, from the same TSC:E source release,
+  used with credit; the EVO RIFLE's holographic sight is built from CuiGames' accessory kit (games use allowed; the
+  kit's files themselves are not in this repository). Their packs' credits files are `packs/ae_dmr.CREDITS.txt` and
+  `packs/ae_evo_rifle.CREDITS.txt`. The EVO RIFLE's Digsite look (on the CE Digsite Multiplayer maps) is our own
+  recolour of CMT's pictures.
+- The TACTICAL SMG's model, textures, first-person arms, animations, effects and sounds are CMT's, from the same TSC:E
+  source release (sound design: Beaucephal and Xalener), used with credit; its aiming reticle is drawn here. The pack's
+  credits file is `packs/ae_smg_tactical.CREDITS.txt`.
+- The benchmark run (`port/linux/game/benchmark.c`) is from Halo Content Evolved (Watanoge/halo-content-evolved),
+  AGPL-3.0-or-later, changed for Arena Evolved.
+- The ragdolls (`port/linux/game/biped_ragdoll.c`, `game.ragdoll_players`, `game.ragdoll_ai`) are thelinkin3000's, from
+  Halo Content Evolved (Watanoge/halo-content-evolved), AGPL-3.0-or-later, with its player and AI settings by Sergio
+  Villanueva; hooked into Arena Evolved's sources.
+- The MCC map loading (`port/linux/game/mcc_*.c`, `docs/mcc_maps.md`) is chestahh's, from
+  [GulchCE](https://github.com/chestahh/GulchCE) (AGPL-3.0-or-later), taken in one piece and changed for Arena Evolved.
+- The bots' side lanes and vantage spots (`port/linux/game/ae_bots_lanes*.c`, `ae_bots_vantage*.c`) are adapted from
+  halo-ce-vita's bots (BirchWoodGod, GPL-3.0) through Halo Content Evolved
+  (Watanoge/halo-content-evolved, AGPL-3.0-or-later), used with credit.
+- ChupathingyCE's Bomb engine and Grifball are the base of AE's Search and Destroy, Bomb and Grifball.
+- The callout voices were made for Arena Evolved with Qwen3-TTS (the Qwen team, Apache-2.0) and are CC0: Cori is a
+  clone of Cori Samuel's public-domain LibriVox reading, the others were designed from a text description
+  (`voices/*/CREDITS.md`).
+- The vehicle damage pack's effects and wrecks (`packs/ae_vehicle_damage.aepack`) are CMT's, from the same TSC:E
+  1.4.1c source release (the Evolved team), used with credit; its credits file is
+  `packs/ae_vehicle_damage.CREDITS.txt`.
+- The vehicle horn (`sounds/horn.wav`) is CMT's Warthog horn from the same TSC:E 1.4.1c source release (the Evolved
+  team), used with credit (`port/assets/sounds/CREDITS.md`).
+- The logo (ORBIT) is Arena Evolved's own drawing (`port/assets/branding`,
+  made by `tools/ae_logo.py`); it uses no third-party art. It is not under
+  the code's licence (see "Licence" below).
+- Streamer mode's word list (OpenCE's, `port/assets/text_filter`) is made from Surge AI's "The Obscenity List"
+  (MIT License, Copyright (c) Surge AI: the notice is in [AUTHORS.md](AUTHORS.md)) and the public-domain
+  [english-words](https://github.com/dwyl/english-words) list.
+- Libraries: SDL3, stb (stb_image, stb_vorbis), Mbed TLS, miniupnpc, KCP,
+  tomlc17, musl's maths, Expat, Monocypher, zlib, SMAA, GT7 tone mapping,
+  Opus, jsmn, bcdec, fsbex, Project Nayuki's QR Code generator, and on
+  Android Zstandard and the LZMA SDK's decoder. The Windows downloads also
+  carry an unmodified FFmpeg program for recording clips. Their licenses are
+  beside them in `port/third_party`, and each download carries them (the
+  `*-LICENSE.txt` files and `THIRD-PARTY-LICENSES.txt`).
 
-**The map makers and modders** of the last twenty-plus years: your maps, mods and Workshop items are why there is still
-so much to play. Arena Evolved shows them with their own names, pictures and credits.
+Halo is a trademark of its owner. Halo CE: Arena Evolved is a non-commercial
+fan project, not made or endorsed by the game's owners or developers, and
+includes none of the game's content: you need your own copy of the game. It
+must never be sold.
 
-**Upstream.** Arena Evolved is built on their work, and everything below came with it:
+## Testing
 
-- [punpckhdq/halo](https://github.com/punpckhdq/halo) and [bnunu/halo-1](https://github.com/bnunu/halo-1), the code
-  of the Xbox build 2342 that the port grew from.
-- [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) and its contributors (its main contributors are Jonas
-  Volman, bnunu and MrBruh), including the libraries SDL3, stb, Mbed TLS, miniupnpc, KCP, tomlc17, musl's maths, Expat,
-  Monocypher, zlib, SMAA, opus, jsmn and bcdec, the Overpass font (SIL OFL), lucide icons, pugzysixtyfour's mouse
-  cursor, and streamer mode's word list (Surge AI's "The Obscenity List", MIT, and the public-domain english-words).
-- [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce): Milenko and contributors. Their work includes the
-  Bomb engine and Grifball; the high-res HUD from Aerocatia's and Jessie's
-  [Halo PC Restored](https://github.com/Aerocatia/halopc-restored) art, used with Aerocatia's permission; Kenney's input
-  prompts (CC0), snapchipper's controller icons (CC0), fizzy's Cyborg Interface Gothic, Noto Sans (SIL OFL), Project
-  Nayuki's QR Code generator, the scoreboard's platform marks (Simple Icons, CC0, and Wikimedia Commons), the HaloMD
-  map names from MacGamingMods' list, and ugoboom's (Zebouski) HD HUDs on Custom Edition maps.
+The tests are listed in [AGENTS.md](AGENTS.md) ("Testing"). Most run
+without the game data, in GitHub Actions too.
 
-**Arena Evolved's own additions use:**
+One check needs the retail maps, so it runs on your own computer (or on a
+self-hosted runner), not in GitHub Actions: `tools/net_compare.py` plays
+two builds together in a network game on one computer and checks that they
+stay in step. Run it when a change can alter how a build calculates the
+game, as a change to the simulation, the compiler or the maths does,
+before it is merged. For example, to check a build with such a change
+against a build without it:
 
-- [GulchCE](https://github.com/chestahh/GulchCE): the MCC map loading builds on its work (CC0).
-- CMT: the rifles' and the vehicle damage pack's models, sounds and effects, and the vehicle horn, from the source
-  release of The Silent Cartographer: Evolved, used with credit.
-- CuiGames: the EVO RIFLE's sight. [Kenney](https://kenney.nl): the DMR's reticle base (CC0).
-- The callout voices: made for Arena Evolved with Qwen3-TTS (Apache-2.0) and released under CC0. Cori is a clone of
-  Cori Samuel's public-domain LibriVox reading; the other six are voices designed from a text description.
-- [Halo 1: Neutral Host Edition](https://halo1nhe.com/): the NHE team, whose competitive rules inspired AE. AE's versions
-  are its own code, and AE is not made or endorsed by the NHE team.
+```sh
+python tools/net_compare.py --a build/linux/halo --b <other checkout>/build/linux/halo \
+    --data <folder with maps/> --maps bloodgulch,beavercreek,hangemhigh --swap
+```
 
-The full list and every notice are in each release's download and source tarball.
+Each game prints PASS or FAIL. A FAIL names the first player, tick and
+value that differ. Refer to "Comparing two builds" in
+[port/linux/NETCODE.md](port/linux/NETCODE.md).
 
-## Legal
+## Licence
 
-Halo is a trademark of its owner. Halo CE: Arena Evolved is a non-commercial fan project, not made or endorsed by the
-game's owners or developers, and includes none of the game's content. It must never be sold.
+Arena Evolved is free software: you can give it to others and change it under
+the terms of the GNU Affero General Public License as published by the Free
+Software Foundation, version 3 of the License or (at your option) any later
+version (`AGPL-3.0-or-later`), as OpenCE is. It comes with no warranty. The
+full text is in [LICENSE](LICENSE).
+
+- **From the change.** Arena Evolved follows OpenCE, which moved to the AGPL
+  at its build-237. The AGPL applies from the merge commit that brought
+  OpenCE build-237 into Arena Evolved, and to each release built from that
+  commit or a later one (0.3.5 and after). Earlier releases (0.3.4-beta and
+  before), and the source at every earlier commit, were released under
+  [CC0 1.0](LICENSES/CC0-1.0.txt) and stay that way.
+- **What Arena Evolved builds on.** [OpenCE](https://github.com/OpenCommunityEdition/OpenCE)
+  is under the AGPL 3.0 from its build-237 and under CC0 1.0 before it. The
+  decompilation of [punpckhdq/halo](https://github.com/punpckhdq/halo) is
+  under the AGPL 3.0 from 17 October 2026, and under CC0 1.0 before that
+  date. [bnunu/halo-1](https://github.com/bnunu/halo-1) is under CC0 1.0.
+  ChupathingyCE's code up to its 0.7.5d is under CC0 1.0; its code from
+  0.8.0 (16 October 2026 on) is under the GNU General Public License 3.0 or
+  later (`GPL-3.0-or-later`, the text in [LICENSES/GPL-3.0.txt](LICENSES/GPL-3.0.txt)).
+  Arena Evolved includes ChupathingyCE 0.8.0b; the GPL 3.0 (section 13) lets
+  that code be combined with the AGPL 3.0 work it is in, and those parts keep
+  their GPL terms.
+- **Contributions** are under `AGPL-3.0-or-later`.
+- **Hosts and servers.** If you change the game and let other persons play
+  with your version over a network (for example, as the host of an internet
+  game, or on a web site), the AGPL asks you to offer them the source of
+  your version (section 13). The game as released has its source here, and
+  each release's source is its tag.
+- **Third-party code, fonts and art** keep their own licences, which are
+  next to them (`port/third_party`, `port/assets/fonts`, `port/linux/ui/fonts`,
+  `port/assets/icons`, `port/assets/prompts`, `port/assets/hud`,
+  `port/assets/text_filter`) and listed under Credits
+  above. The release downloads carry their notices.
+- **The logo** is the exception: the ORBIT mark, the ARENA EVOLVED wordmark
+  and the app icons made from them are all rights reserved by the project.
+  You may use them unmodified to refer or link to Arena Evolved (in articles,
+  videos, server lists), but not as another project's branding. The files
+  and terms: [port/assets/branding/LICENSE.md](port/assets/branding/LICENSE.md).
+- **Halo is not covered.** The licence covers the work of Arena Evolved's and
+  OpenCE's authors. It gives no rights in Halo, its maps or anything else
+  that its owner holds.
+
+If you use Arena Evolved's code, a credit is appreciated: "Halo CE: Arena
+Evolved by PeterRichardsonGolf", with a link to this repository.

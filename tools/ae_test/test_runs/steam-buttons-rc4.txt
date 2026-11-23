@@ -1,0 +1,21 @@
+# The STEAM CONTROLLER (2026): its Steam button and its quick access (...) button are bindable on SETTINGS > CONTROLS >
+# BACK PADDLES, like the four grips (STEAM BUTTON and QUICK ACCESS (...) rows, NONE by default). Needs the pad itself,
+# on its own USB receiver. debug.txt shows "back buttons: player 1 ... steam b, quick white". Staged only: nothing here
+# waits for something to happen.
+list steam-buttons-rc4
+revision 1
+title STEAM CONTROLLER BUTTONS
+
+test steam-quick-binding
+title Steam and quick access pressed as buttons
+fresh
+setup goto 7.6 -3.2 0.6 facing 157
+setup give pistol
+setup config input.back_steam b
+setup config input.back_quick white
+check BACK PADDLES shows STEAM BUTTON and QUICK ACCESS rows
+check Press the Steam button: you melee
+check Press the quick access (...) button: the flashlight toggles
+map octagon_b
+gametype AE BR TS
+set bots.count 0

@@ -1,0 +1,41 @@
+# Fireteams: bots belong to squads that take and keep orders. BTB Blood Gulch CTF, one load: the game's squad roles with a
+# DEFEND anchor held for two minutes, FOLLOW ME and a recruit. The host player leads the first squad of the red team. The dev
+# command "fireteam" gives the orders the wheel's calls give (a SMART CALL on the ground by your feet is FOLLOW ME; a mark on a
+# bot of another squad recruits it): marking cannot be scripted headless, so the setup lines use the same host paths.
+# Headless: run_list.py with --after 130 (each test stays that long, so the first spans two minutes).
+list fireteam-1
+revision 1
+title FIRETEAMS, ROUND 1
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 18
+set bots.skill easy
+
+test roles
+title Squad roles and the held anchor
+check A red squad holds its home spot
+expect 1 log anchor ok
+check Another red squad heads for the enemy spot
+expect 2 log team 0 role 2 order 3
+check The holders are never away for twenty seconds
+expect 3 no log anchor lost
+
+test follow-me
+title FOLLOW ME
+setup fireteam follow
+check The dev command is taken
+expect 1 cmd fireteam follow ok
+check Your squad follows and keeps within two leashes of you
+expect 2 log follow ok
+check The squad is never left behind while the order stands
+expect 3 no log follow away
+
+test recruit
+title A mark recruits a bot
+setup fireteam recruit
+check The dev command is taken
+expect 1 cmd fireteam recruit ok
+check A bot of the other red squad joins yours
+expect 2 log recruited into fireteam

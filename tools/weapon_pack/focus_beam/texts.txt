@@ -1,0 +1,5 @@
+# The focus beam's texts in the pack's weapon entry (ae_pack_build --texts; docs/weapon-packs.md).
+# The menu name is the pack's display name. The beam runs on a battery, not rounds; the ammo line (asked of every
+# firing pack) names the charge picked up once, as a decimal.
+weapon_pickup=Picked up a focus beam
+ammo_pickup=Picked up %d charge for focus beam
