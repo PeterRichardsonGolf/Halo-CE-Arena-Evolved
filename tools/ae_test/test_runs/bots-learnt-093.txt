@@ -1,0 +1,36 @@
+# 0.9.3 BOTS: bots keep what they learnt of a map (bots.learn_map, on). Where drivers wedged and where bots on foot got
+# stuck is kept from game to game in the config folder's bots_learnt/<map>.txt, and their routes pay more there from the
+# next game on (never a wall). A jump you land that rises or drops 0.8 units or more, and that you live 5 s after, is a
+# link the bots may take from the next map load (only when it beats walking; a bot that sees you is fighting and
+# takes no short cut that saves under 30 units, so hide from them). The log says "bots: learnt: jump ..." when
+# yours is kept, and "bots: learnt: ... written" at the game's end.
+list bots-learnt-093
+revision 5
+title BOTS: THE MAP LEARNT FROM GAME TO GAME
+
+group temple
+map temple
+gametype AE BR TS
+set bots.count 5
+set bots.teams even
+set bots.skill elite
+set debug.bot_events true
+set bots.learn_map true
+
+test your-jump
+title TEMPLE: a jump of yours is kept
+check Jump up onto a ledge you would walk round to reach
+check Stay alive 5 s: the log says your jump is kept
+expect 2 log bots: learnt: jump
+
+test bots-take-it
+title TEMPLE: the bots take your jump after a reload
+fresh
+check Hide on top of your jump, out of the bots' sight
+check A bot hunting you comes up your jump
+expect 1 log jumps of yours are links
+
+test off-switch
+title TEMPLE: the switch off
+setup config bots.learn_map off
+check Jump again and live: no "learnt" line in the log

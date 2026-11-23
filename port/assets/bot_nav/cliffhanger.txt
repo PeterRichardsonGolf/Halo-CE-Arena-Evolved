@@ -1,0 +1,63 @@
+nav 1 cliffhanger
+made efb41680
+
+# rocks, tree trunks and fallen trunks beside the lanes, and the pit lip north of the middle
+keepout 23.2 3.0 0.18 radius 0.9
+keepout 21.4 -4.9 0.26 radius 1.0
+keepout -21.3 6.2 0.32 radius 1.6
+keepout 10.0 -11.5 0.00 radius 0.9
+keepout -11.4 -11.5 0.17 radius 0.9
+keepout -10.4 11.3 -0.46 radius 0.9
+keepout 9.9 11.4 0.00 radius 0.9
+keepout 11.0 11.2 0.00 radius 1.0
+keepout -12.7 -11.4 0.00 radius 1.0
+keepout -16.6 14.2 0.00 radius 1.0
+keepout 16.5 -15.1 0.00 radius 1.0
+keepout -12.8 -19.6 0.22 radius 0.9
+keepout 0.0 10.0 -0.70 radius 2.5
+
+# north lane: east spawn up through the north gap, over the north platform, down to the west spawn
+route north_lane warthog,ghost
+point 26.0 0.0 -0.01
+point 22.0 1.0 0.00 speed 0.66 turn 9.3
+point 14.5 11.5 0.15 speed 0.77 turn 7.2
+point 10.5 13.5 0.24 speed 0.78 turn 7.0
+point 1.5 13.5 0.60
+point -7.0 13.5 0.60
+point -13.0 12.0 0.07 speed 0.74 turn 7.8
+point -17.0 8.0 0.14
+point -22.0 3.0 0.05
+point -25.0 0.5 0.00
+end
+
+# south lane: east spawn down through the south gap, over the south platform, up to the west spawn
+route south_lane warthog,ghost
+point 25.0 -0.5 0.00
+point 23.0 -1.5 0.01
+point 19.0 -2.5 0.00 speed 0.53 turn 11.9
+point 17.0 -8.0 -0.03 speed 0.87 turn 5.1
+point 13.0 -13.7 -0.10 speed 0.54 turn 11.8
+point 7.0 -13.7 0.60
+point -1.5 -13.5 0.60
+point -8.0 -13.5 0.60
+point -12.5 -13.8 0.00 speed 0.68 turn 9.1
+point -16.5 -11.0 0.13 speed 0.78 turn 7.0
+point -22.0 -1.0 0.09 speed 0.64 turn 9.7
+point -25.0 0.0 0.00
+end
+
+# east crossing: joins the north and south lanes in front of the east base
+route east_cross warthog,ghost
+point 14.5 11.5 0.15
+point 16.5 7.5 0.11 speed 0.83 turn 6.0
+point 17.5 -1.5 0.00
+point 17.0 -8.0 -0.03
+end
+
+# west crossing: joins the north and south lanes in front of the west base
+route west_cross warthog,ghost
+point -13.0 12.0 0.07
+point -19.0 4.0 0.12 speed 0.65 turn 9.6
+point -18.0 -7.0 0.18 speed 0.87 turn 5.2
+point -16.5 -11.0 0.13
+end

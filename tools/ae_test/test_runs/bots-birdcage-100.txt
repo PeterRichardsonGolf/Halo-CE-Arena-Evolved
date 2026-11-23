@@ -1,0 +1,20 @@
+# 1.0 rc2 BIRDCAGE: bots and bulletproof glass. The bots' sight test looks through two-sided surfaces (glass) as the
+# game's own sight test does, and a bullet stops on them, so a target's sight needs the bullet's line too: an
+# unbreakable see-through surface in the way and the enemy is no target (breakable glass is still shot through, a shot
+# breaks it). Places' sight (cover, items) still looks through glass. Log: "bots: sight: surface N at (x y z) is seen
+# through and stops bullets" once a surface a game.
+list bots-birdcage-100
+revision 1
+title BIRDCAGE: NO SHOTS THROUGH GLASS
+
+group birdcage
+map 5@ws3477809506
+gametype PS BTB SLY
+set bots.count 15
+
+test glass
+title BIRDCAGE: bots don't shoot through the glass
+check Watch the bots by the glass a while
+check No bot shoots at a bot behind the glass
+check Bots still fight in the open as before
+expect 1 log stops bullets

@@ -1,0 +1,72 @@
+# H2 FOUNDATION (h2d_foundation) has a weapon layout shipped with the game (port/assets/ae/layouts.txt): the map held only
+# shotguns, pistols and frag grenades, and its spots now hold the sword in the middle pit, a battle rifle at each end of the
+# long axis, an SMG in each of the four corners, a brute shot on each side floor by a base and a carbine on each of two lower-level
+# spots; the map's own pistols and shotguns are gone (one weapon to an area, none within 4 units of another). Each test
+# opens next to one of those spots in an AE game with AE PICKUPS on and no bots, so nothing takes a weapon before you see it. Staged only: nothing here waits for something to
+# happen.
+list foundation-rc5
+revision 4
+title H2 FOUNDATION: ITS WEAPON LAYOUT
+
+test sword-pit
+title H2 FOUNDATION: the middle pit
+setup goto 10.9 -4.6 -1.43 facing -90
+check The weapon in the middle of the pit is the ENERGY SWORD
+check The pit has no shotgun in it
+check Walk over it: you take it
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+expect 1 log the game's own is used
+
+test rifle-end
+title H2 FOUNDATION: a rifle at the end of the long axis
+fresh
+setup goto 10.5 -11.4 0.11 facing -89
+check The rifle on the floor ahead is the BATTLE RIFLE
+check No pistol or shotgun lies on the steps beside it
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+
+test corner-smg
+title H2 FOUNDATION: a corner
+fresh
+setup goto 19.9 3.2 0.11 facing 53
+check The weapon in the corner is the SMG
+check The frag grenades beside it are the map's
+check Walk over it: you take it
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+
+test raised-block
+title H2 FOUNDATION: the brute shot by the base
+fresh
+setup goto 18.75 -10.2 0.11 facing 136
+check The weapon on the floor ahead is the BRUTE SHOT
+check It rests on the floor, in bounds, alone
+check Its waypoint: BRUTE SHOT and its icon, not SHOTGUN
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true
+
+test lower-carbine
+title H2 FOUNDATION: the lower level, a carbine
+fresh
+setup goto 6.3 -8.5 -1.49 facing -88
+check The weapon ahead is the CARBINE
+check No shotgun or pistol lies beside it
+map h2d_foundation
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+set debug.network_test_pack_map_spawns true

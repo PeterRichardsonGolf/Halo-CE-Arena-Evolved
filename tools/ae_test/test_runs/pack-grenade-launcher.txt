@@ -1,0 +1,57 @@
+# The GRENADE LAUNCHER pack (ZTeam's grenade launcher; 6 a magazine, 12 to start; a bouncing grenade that bursts
+# 0.8 s once at rest or at once on a player, 85 at full within 0.6 units: two close bursts kill). Hold the trigger to
+# keep the grenade from bursting, let go to burst it (a tap under 0.2 s leaves it to its fuse). No licensed picture of
+# it exists: its NAME is written in the prompts, the kill feed and the HUD in place of a picture.
+# Spawns with the pack's weapon on every life on Octagon 2, a few bots, as the other pack tests do.
+# Needs the weapon cache (id 22: debug.network_test_cache_weapon names it as everyone's START weapon).
+# Hosted test (two machines, not in this list): host Octagon 2 with the pack (same two sets), a second machine joins.
+# Each player fires, holds and lets go: on both screens the grenade bursts in the air at the same place, the joiner's
+# burst hurts the host's player and the kill feed names GRENADE LAUNCHER on both. Each debug.txt has its own
+# "ae tracked grenade: let go after ..." lines for its own shots and the other's.
+list pack-grenade-launcher
+revision 2
+title GRENADE LAUNCHER PACK
+
+test grenade-launcher-look
+title Grenade launcher: how it looks and reads
+check In hand: textured, its screen lit, no ID text by the arrows
+check HUD: six-grenade meter, reticle, GRENADE LAUNCHER in words
+check Dropped or a bot's: same launcher, nothing missing
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 22
+
+test grenade-launcher-hold
+title Grenade launcher: hold, then let go
+check Hold fire: the grenade rolls on, it does not burst
+check Let go: it bursts at once, in the air or on the floor
+check Quick tap: it bounces and bursts once it stops
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 22
+
+test grenade-launcher-fire
+title Grenade launcher: magazine and direct hits
+check Six grenades, then a reload; 12 to start
+check Straight at a bot: it bursts on the bot at once
+check Kill feed names GRENADE LAUNCHER in words
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 22
+
+test grenade-launcher-hits
+title Grenade launcher: hits to kill
+check Full bot: one burst at its feet pops the shield
+check Full bot: two close bursts kill it
+check A burst a body length away barely hurts
+map octagon_b
+gametype AE BR TS
+set bots.count 3
+set bots.skill normal
+set debug.network_test_cache_weapon 22

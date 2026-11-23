@@ -1,0 +1,20 @@
+# 1.0.0-rc1: the overshield on the arms. The setup gives over_shield (Damnation's item is named "over shield"), and an
+# offline game draws your own OVERSHIELD setting on the arms, not the HOSTING > SHIELD EFFECTS choice. The log says what
+# the arms read, once a second while your shield is over 1 ("arm shield: ...").
+list overshield-arms-rc1
+revision 1
+title RC1 RETEST: OVERSHIELD ON THE ARMS
+
+test overshield-arms
+title Overshield on the arms
+setup goto start 0
+setup config display.viewmodel_shield true
+setup config display.overshield_effect true
+setup powerup over_shield now
+check The overshield rises up your body and onto your arms
+expect 1 cmd powerup over_shield ok
+expect 1 log arm shield: player 0 shield
+check Green while above double shields, reddish-pink as it drains
+map damnation
+gametype slayer
+set bots.count 0
