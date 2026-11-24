@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: GPL-3.0-only
+# Names every tag that shares a path and group with another tag protected_<index>, so extraction writes each to a file
+# of its own. Applies to Invader 0.55.0 (patch -p1).
+--- a/src/map/map.cpp
++++ b/src/map/map.cpp
+@@ -1,5 +1,7 @@
+ // SPDX-License-Identifier: GPL-3.0-only
+ 
++#include <map>
++#include <string>
+ #include "../util/assert.hpp"
+ 
+ #include <invader/hek/map.hpp>
+@@ -492,6 +494,17 @@
+                     }
+                 }
+             }
++
++            // Tags that share a path and group are all given a name of their own, so none of them stands in for the others
++            std::map<std::string, std::size_t> path_uses;
++            for(auto &tag : map.tags) {
++                path_uses[tag.path + "." + HEK::tag_fourcc_to_extension(tag.tag_fourcc)]++;
++            }
++            for(auto &tag : map.tags) {
++                if(path_uses[tag.path + "." + HEK::tag_fourcc_to_extension(tag.tag_fourcc)] > 1) {
++                    tag.path = "protected_" + std::to_string(tag.tag_index);
++                }
++            }
+         };
+ 
+         if(this->cache_version == HEK::CacheFileEngine::CACHE_FILE_NATIVE) {

@@ -1,0 +1,29 @@
+# FALL STUN in the built-in gametypes: AE ones play without the hard landing's lock, CLASSIC COMP (NHE's) keeps it.
+# Each test opens on Prisoner on the top floor of the west tower (floor 5.59), a step back from the ledge at x -6.5 and
+# facing out over it (east): the drop is 6.0 units to open floor with 2 units of floor to land on, a hard landing.
+# Only FALL DAMAGE is set by the test (off, so the fall never hurts); FALL STUN is whatever the gametype brings. Step off at a
+# walk; a run carries you onto the stair block beyond, a shorter fall that does not lock: turn back and walk off again.
+list fall-stun-seeds
+revision 1
+title FALL STUN: THE GAMETYPES' OWN
+
+test ae-comp
+title AE COMP TS: the landing never locks you
+setup option fall_damage off
+setup goto -6.9 -4.7 5.6 facing 0
+check Walk off the ledge and fall to the floor below
+check On landing you move at once: no lock
+map prisoner
+gametype AE COMP TS
+set bots.count 0
+
+test classic-comp
+title CLASSIC COMP TS 50: the landing locks you
+fresh
+setup option fall_damage off
+setup goto -6.9 -4.7 5.6 facing 0
+check Walk off the ledge and fall to the floor below
+check On landing you cannot move or jump for a moment
+map prisoner
+gametype TS 50
+set bots.count 0

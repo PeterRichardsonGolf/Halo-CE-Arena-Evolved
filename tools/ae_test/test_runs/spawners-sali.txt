@@ -1,0 +1,79 @@
+# AE weapon spawners on Sali Creek (h2d_salicreek, its layout applied). Every weapon spot of
+# the map is a spawner (chips over each: class letter, a white ring on a power pad, the weapon it made, its state); the
+# casual and comp sets fill them. AE TEAM SLY (AE SND has no map items at all: nothing to spawn). debug.spawners draws
+# the chips; DEV MODE's "weaponset casual|comp|off" switches the set from the next spawn.
+list spawners-sali
+revision 1
+title Weapon spawners on Sali Creek (spike)
+
+group casual
+map h2d_salicreek
+gametype AE TEAM SLY
+set debug.weapon_set casual
+set debug.spawners true
+set bots.count 3
+set bots.teams even
+set bots.skill easy
+
+test casual-racks
+title CASUAL: a chip over every weapon spot
+setup goto -4.5 -2.75 -1.35
+check A chip floats over each weapon: letter, name, READY
+check Rockets, shotgun, sniper pads count down (white ring)
+expect 1 log spawner: 22 made
+
+test casual-pickup
+title CASUAL: a rack refills 30 s after a pickup
+setup goto -6.7 -2.75 -1.35
+check Swap onto the rack's rifle: its chip counts from 0:30
+expect 1 log spawner: 22 taken
+check At 0:00 a rifle appears (pools rotate), chip READY
+expect 2 log spawner: 22 made
+
+test casual-stays
+title CASUAL: an untaken weapon stays on its rack
+setup goto -8.0 -0.12 -1.35
+check Leave the rack's weapon alone 40 s: still READY
+expect 1 no log spawner: 7 lost
+
+group comp
+map h2d_salicreek
+gametype AE TEAM SLY
+set debug.weapon_set comp
+set debug.spawners true
+set bots.count 3
+set bots.teams even
+set bots.skill easy
+
+test comp-power
+title COMP: power pads wait 60 s for their first spawn
+setup goto 1.2 6.4 -0.76
+check Shotgun, sniper, rocket pads empty, counting 1:00 down
+check At 0:00 the shotgun appears on its pad (SG chip)
+expect 2 log spawner: 39 made
+
+test comp-red
+title COMP: a red rack waits for its old weapon
+setup goto -6.7 -2.75 -1.35
+check Swap onto the rack's battle rifle: its chip turns RED
+expect 1 log spawner: 22 taken
+check Drop it (swap back), walk off: RED till it vanishes
+check Then 0:30 counts down and a new battle rifle appears
+expect 3 log spawner: 22 expired
+
+group switch
+map h2d_salicreek
+gametype AE TEAM SLY
+set debug.weapon_set casual
+set debug.spawners true
+set bots.count 3
+set bots.teams even
+set bots.skill easy
+
+test switch-set
+title The set switches from the next spawn
+setup goto -4.5 -2.75 -1.35
+setup weaponset comp
+check Rack chips now read EXPIRED 30s, pads 120s / 180s
+expect 1 log weapon set now comp
+check Take a rack weapon: RED (comp's rule), not 0:30

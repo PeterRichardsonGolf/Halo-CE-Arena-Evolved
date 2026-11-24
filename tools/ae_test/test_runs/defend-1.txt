@@ -1,0 +1,145 @@
+# Bots hold DEFEND: a fireteam told DEFENDING HERE, and in a BTB game a bot squad in a defend role, take spaced cover around the
+# point, watch the ways in, fight from there without chasing, keep moving where nothing covers them, and fall back together,
+# regroup and come back when it goes badly. The dev command "fireteam defend" gives the order the wheel's call gives; every test
+# sets itself up. The game logs "ae defend:" lines (HALO_BOTS_DEFEND_HOLD=0 turns all of it off).
+# Headless: run_list.py with --after 70 (each test stays that long).
+list defend-1
+revision 2
+title BOTS HOLD DEFEND: ROLES, FALL BACK, ZONES
+
+group gulch
+map bloodgulch
+gametype AE BTB CTF
+set bots.count 18
+set bots.skill easy
+
+test btb-role-hold
+title A bot squad's defend role holds spaced places
+check A red role squad takes places around its home spot
+expect 1 log ae defend: place
+check The places are found from the map's own walls
+expect 2 log ae defend: places fireteam
+check The squad is never away from its point for twenty seconds
+expect 3 no log anchor lost
+
+test bot-squad-breaks
+title A bot squad that breaks falls back together
+setup kill bots
+check The squad pulls out together
+expect 1 log ae defend: fall back
+check It gathers at the fall-back spot first
+expect 2 log ae defend: at fall-back spot
+check Then, regrouped, it returns to its point
+expect 3 log ae defend: return
+
+group arena
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test fireteam-defend
+title DEFENDING HERE in a small game
+setup fireteam defend
+check The dev command is taken
+expect 1 cmd fireteam defend ok
+check The squad holds with the small game's numbers
+expect 2 log profile=arena
+check A small game never takes the big game's numbers
+expect 3 no log profile=btb
+
+test open-ground
+title DEFENDING HERE on open ground
+setup goto start 17
+setup fireteam defend
+check The dev command is taken
+expect 1 cmd fireteam defend ok
+check Defenders with no cover keep moving
+expect 2 log ae defend: open
+check Nobody falls back from nothing
+expect 3 no log ae defend: fall back
+
+test leader-quiet-death
+title A quiet leader death keeps the hold
+setup fireteam defend
+setup kill me
+check The dev command is taken
+expect 1 cmd fireteam defend ok
+check The squad holds with no pressure
+expect 2 log ae defend: start
+check Nobody falls back
+expect 3 no log ae defend: fall back
+
+test leader-dead-pressure
+title A leader dead with his squad down: fall back, then return
+setup fireteam defend
+setup kill me
+setup kill bots
+check The squad falls back together
+expect 1 log ae defend: fall back
+check It gathers at the fall-back spot
+expect 2 log ae defend: at fall-back spot
+check Regrouped, it returns to its point
+expect 3 log ae defend: return
+
+group hill
+map bloodgulch
+gametype AE KING
+set bots.count 18
+set bots.skill easy
+
+test hill-role
+title A squad holds its zone
+check A role squad holds the king zone
+expect 1 log ae defend: start
+check Its defenders take places
+expect 2 log ae defend: place
+check Its places are found for the zone
+expect 3 log ae defend: places fireteam
+
+group arena-ctf
+map bloodgulch
+gametype AE CTF
+set bots.count 8
+set bots.skill easy
+
+test roles-ctf
+title A small game's flag roles are left alone
+check The red squad has its defend role
+expect 1 log role 1 order 4
+check No hold starts for a role in a small game
+expect 2 no log ae defend: start
+check No place is taken
+expect 3 no log ae defend: place
+
+group arena-king
+map bloodgulch
+gametype AE KING
+set bots.count 8
+set bots.skill easy
+
+test roles-king
+title A small game's hill roles are left alone
+check A squad has the hill role
+expect 1 log role 7 order 4
+check No hold starts for a role in a small game
+expect 2 no log ae defend: start
+check No place is taken
+expect 3 no log ae defend: place
+
+group arena-roster
+map bloodgulch
+gametype AE CTF
+set bots.count 9
+set bots.skill easy
+
+test roster-change
+title A bot leaves and another joins in a small game
+setup bots 5
+setup bots 9
+check The red squad has its defend role
+expect 1 log role 1 order 4
+check The roles of a small game are still left alone
+expect 2 no log ae defend: start
+check No place is taken
+expect 3 no log ae defend: place

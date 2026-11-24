@@ -1,0 +1,40 @@
+# The Theater's engine: a bot game recorded, then played back through a player's eyes and a free camera, a seek
+# and the end. The first group's game is the recording (network.record_replays on); the second group's map load ends
+# it, and each of its tests starts the newest recording again (replay play 1), so a test never finds it ended.
+list theater-100
+revision 3
+title THEATER: RECORD A GAME, WATCH IT BACK
+
+group record
+map bloodgulch
+set network.record_replays true
+
+test record
+title BLOOD GULCH: play 30 s with the bots, then pass
+setup bots 7 even normal
+setup replay status
+check Play about 30 seconds: the game plays as usual
+
+group watch
+map chillout
+set network.record_replays false
+
+test eyes
+title BLOOD GULCH replay: through a player's eyes
+setup replay play 1
+setup replay eyes 1
+check The view moves as that player moved
+check Bots move, shoot and die as they did
+
+test free
+title BLOOD GULCH replay: the free camera
+setup replay play 1
+setup replay free
+check The view is behind and above the player
+
+test end
+title BLOOD GULCH replay: seek ahead, then the end
+setup replay play 1
+setup replay seek 20
+check It jumps to near the end, then ends by itself
+check The menus are back, no error shown

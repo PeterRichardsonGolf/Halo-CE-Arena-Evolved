@@ -1,0 +1,71 @@
+# 0.9.4 TAB MENU PAGES: the TAB / START menu has two new pages before QUIT, CREDITS and NETWORK STATUS. CREDITS scrolls a text
+# of headed sections (credits.txt beside the game); NETWORK STATUS lists what the game already knows (the master server, the
+# servers listed, your port, the versions) and says "unknown" for the rest. B, Esc or a right click on a page goes back to the
+# TAB menu. Every test opens on its scene from its setup lines: `menu tab` opens the TAB menu, `menu credits` the credits,
+# `menu network` the live status, `menu network reached|unreached|unknown` the status with made-up facts (the real master and
+# port cannot be staged: nothing here asks the network).
+list tab-pages-094
+revision 1
+title TAB MENU PAGES
+
+test tab-rows
+title TAB menu: the two new rows
+check Rows end SETTINGS, CREDITS, NETWORK STATUS, then QUIT
+check QUIT is alone under the rule, below NETWORK STATUS
+check Footer: pad A Select, B Back; keys the same
+menus
+setup menu tab
+expect 1 log ae tab menu: rows: PLAYER | CONTROLLER | KEYBOARD | SETTINGS | CREDITS
+
+test credits-pad
+title CREDITS: scroll and back, pad
+check Headings ARENA EVOLVED, BUILT ON, FONTS: muted, tracked
+check Stick or D-pad scrolls; LT / RT move a page; text wraps
+check Last section: YOU NEED YOUR OWN HALO FILES; B: the TAB menu
+menus
+setup menu credits
+expect 1 log ae credits: open (credits.txt
+
+test credits-keys-mouse
+title CREDITS: scroll and back, keys and mouse
+check Wheel scrolls; Page Up / Page Down move a page
+check The scroll bar at the right follows; footer shows keys
+check Esc and a right click both go back to the TAB menu
+menus
+setup menu credits
+expect 1 log ae credits: open (credits.txt
+
+test network-reached
+title NETWORK STATUS: master server reached
+check MASTER SERVER: reached (2 of 2 answered, 42 s ago)
+check SERVERS LISTED 5; YOUR PORT 43210, open (UPnP forwarded it)
+check NETWORK VERSION and VERSION show; B: the TAB menu
+menus
+setup menu network reached
+expect 1 log ae network status: open (staged reached)
+
+test network-unreached
+title NETWORK STATUS: master server not reached
+check MASTER SERVER: not reached (none of 2 answered)
+check SERVERS LISTED: unknown; YOUR PORT: 43210, closed
+check Right click goes back to the TAB menu
+menus
+setup menu network unreached
+expect 1 log ae network status: open (staged unreached)
+
+test network-unknown
+title NETWORK STATUS: nothing known
+check ONLINE NAME, MASTER, SERVERS LISTED, YOUR PORT: unknown
+check INTERNET PLAY: off; NETWORK VERSION and VERSION still show
+check Moving up and down shows each row's help line
+menus
+setup menu network unknown
+expect 1 log ae network status: open (staged unknown)
+
+test network-live
+title NETWORK STATUS: this PC's own state
+check MASTER SERVER: unknown (not asked yet), or reached
+check YOUR PORT: unknown until internet play starts
+menus
+setup menu network
+expect 1 log ae network status: open (live)

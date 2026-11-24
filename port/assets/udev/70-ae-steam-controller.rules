@@ -1,0 +1,8 @@
+# Halo CE: Arena Evolved: lets the player at the seat read and write a Steam Controller's (2026) hidraw node (Valve 28DE, product
+# 1302 wired, 1303 Bluetooth, 1304 and 1305 its wireless receiver), so the game can read its trackpad, its extra buttons and its
+# battery. Steam's udev rules do the same; this is for a machine without them. Until the game may open the controller it acts
+# as a mouse and keys.
+# One rule for USB and Bluetooth: it matches the HID device's own name (bus:vendor:product.instance), the same form on both buses.
+# Install (once, as root), then plug the controller in again:
+#   sudo cp 70-ae-steam-controller.rules /etc/udev/rules.d/ && sudo udevadm control --reload
+KERNEL=="hidraw*", KERNELS=="*:28DE:1302.*|*:28DE:1303.*|*:28DE:1304.*|*:28DE:1305.*", MODE="0660", TAG+="uaccess"

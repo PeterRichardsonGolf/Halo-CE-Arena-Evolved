@@ -1,0 +1,28 @@
+# rc2 DIGSITE PLAYLISTS: two casual AE TOURNAMENT playlists on the maps of the "CE Digsite Multiplayer" Steam Workshop pack (item
+# 3477809506), in the maps' own weapons: DIGSITE ARENA (4v4, the small and medium maps, the casual game types with their motion sensor and BR or evo starts) and DIGSITE BIG TEAM
+# (8v8, the big maps with vehicles). Each row is listed only on a PC whose MCC has the pack subscribed (run this list on the PC that
+# has it). `menu tournament focus <id>` opens AE TOURNAMENT on the row; `social start <id> vote` opens the lobby at the map vote.
+list digsite-rc2
+revision 3
+title AE TOURNAMENT: DIGSITE PLAYLISTS
+
+test digsite-arena
+title AE:T: DIGSITE ARENA row and card
+setup menu tournament focus digsite-arena
+check CASUAL list has DIGSITE ARENA, focused, with its rank chip
+check Card: 4 against 4, BR or evo starts, 65 WORKSHOP MAPS
+menus
+
+test digsite-big-team
+title AE:T: DIGSITE BIG TEAM row and card
+setup menu tournament focus digsite-big-team
+check CASUAL list: DIGSITE BIG TEAM focused, with its rank chip
+check Card: 8 against 8, pistol starts, 10 WORKSHOP MAPS
+menus
+
+test digsite-vote
+title AE:T VOTE: three Digsite maps with vehicles
+setup social start digsite-big-team vote seed 7 votes 2,1,1 left 7
+check Three big Digsite maps by their Workshop titles, not numbers
+check Each tile has its picture and game type; A moves YOUR VOTE
+menus

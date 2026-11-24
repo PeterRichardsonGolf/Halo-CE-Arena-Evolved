@@ -1,0 +1,42 @@
+# rc2: the weapon spawners' HOLOGRAM on Sali Creek (h2d_salicreek, its layout applied). No rack and no plate: a returning
+# weapon's outlined ghost lies where and how it will lie and fills as the timer runs; a power pad keeps its waypoint and
+# time. Each test opens on its scene: the player stands by the spawner, DEV MODE's `spawner` stages the state and turns
+# the player to look at the spot.
+list spawners-rc2
+revision 3
+title Weapon spawners: the returning weapon's ghost
+
+group comp
+map h2d_salicreek
+gametype AE TEAM SLY
+set debug.weapon_set comp
+set bots.count 0
+
+test rack-filling
+title A rack: its weapon's ghost fills as it returns
+setup goto -6.7 -2.75 -1.35
+setup spawner wait 40
+check The weapon's outlined ghost lies on its spot, in view
+check It fills stock to muzzle; at 0:00 the weapon lies in it
+
+test pad-filling
+title A power pad: the outline, the waypoint and its time
+setup goto 1.2 6.4 -0.76
+setup spawner wait 60
+check Ghost fills; the waypoint has the name and time
+check Walk 16+ units off: ghost gone, waypoint stays
+
+test rack-ready
+title A rack ready: no ghost
+setup goto -6.7 -2.75 -1.35
+setup spawner ready
+check The weapon lies on its spot, no ghost
+
+test rack-fresh-swap
+title COMP: swap the same weapon for the rack's fresh one
+setup goto -6.7 -2.75 -1.35
+setup give battle_rifle
+setup ammo 50
+check The swap prompt shows with the rack's rifle (same weapon)
+check Swap: the rifle in hand is full again
+check The rack starts its timer: the ghost fills

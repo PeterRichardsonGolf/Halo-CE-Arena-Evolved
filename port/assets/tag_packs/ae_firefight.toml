@@ -1,0 +1,22 @@
+# Firefight's scenery (port/linux/game/randomizer.c, gather_firefight): the
+# Covenant uplink the generators are, the storage crate the ordnance pods
+# are, and the Flood form the Flood's drops grow out of the floor as, with
+# their pictures, which the randomizer's pack leaves out (it keeps no
+# scenery). Built from the player's own campaign maps.
+
+name = "ae_firefight"
+version = 1
+legacy_file_names = []
+maps = ["b30", "c10", "c40", "d20"]
+minimum_bitmaps = 1
+minimum_sounds = 0
+wanted = ["condition:firefight"]
+
+[keep]
+include_prefixes = ["scenery\\c_uplink\\", "scenery\\c_storage\\", "characters\\flood_captain\\", "effects\\flood bit"]
+
+[text]
+notice = "Firefight needs some data\nfrom the campaign maps.\nIt takes a moment."
+building = "Building Firefight data:\n"
+ready = "The Firefight data is ready."
+failed = "The Firefight data could not\nbe built. Is the card full?"
