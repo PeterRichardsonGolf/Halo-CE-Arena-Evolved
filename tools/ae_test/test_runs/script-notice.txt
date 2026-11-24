@@ -1,0 +1,29 @@
+# SCRIPT NOTICE: when the check of an MCC campaign level's scripts switches some off, the level says so once at its start, in
+# the HUD's message list: "N of this map's scripts were switched off;" and "the mission may not play correctly". Nothing when no
+# script is switched off. The first test makes the check refuse one script on purpose (debug.script_refuse, DEV MODE's
+# script_refuse), so the line shows on a Workshop campaign level: it opens on the CAMPAIGN screen with the Workshop campaign
+# (the Crash Site item installed) and A on its first mission starts it.
+list script-notice
+revision 2
+title SCRIPT NOTICE: SWITCHED OFF SCRIPTS
+
+group refused
+set debug.script_refuse subtitles_surveycov
+
+test line-shown
+title One script refused: the line shows
+menus
+setup menu campaign workshop
+check A on the first mission: the level opens
+check In a second the HUD says 1 script was switched off
+check The level plays on after it
+expect 1 log script notice: shown for 1 scripts
+
+group none
+
+test no-line
+title Nothing refused: no line
+menus
+setup menu campaign workshop
+check A on the first mission: the level opens, no line
+expect 1 no log script notice: shown

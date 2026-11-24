@@ -1,0 +1,21 @@
+# AE weapon set COMP (design 3.5 and 9.1): the competitive bundle. One fixed weapon a cell, every rack RED after a
+# pickup until its weapon is out of play, pads on a fixed clock with the first spawn held 60 s, no map times, a rack
+# never refills a held weapon. `rules reference`: a pad skips a beat that comes under 15 s after its weapon was taken,
+# an empty weapon is out of play even in someone's hands, a taken pad never shows red.
+weaponset 1 comp
+format 1
+draw rotate
+map_time off
+rack_ammo fresh
+scan on
+rules reference
+row PRECISION BASE logic expired respawn 30 weapons battle_rifle
+row AUTOMATIC BASE logic expired respawn 30 weapons ar_modern
+row PISTOL BASE logic expired respawn 30 weapons sidearm
+row CLOSE BASE logic expired respawn 60 weapons auto_shotgun
+row LONG_RANGE BASE logic expired respawn 60 weapons focus_beam
+row HEAVY BASE logic expired respawn 60 weapons ravager
+row CLOSE POWER logic static respawn 120 delay 60 weapons stock:shotgun
+row LONG_RANGE POWER logic static respawn 180 delay 60 weapons sniper_bolt
+row HEAVY POWER logic static respawn 120 delay 60 weapons stock:rocket_launcher
+row MELEE POWER logic static respawn 240 delay 60 weapons energy_sword

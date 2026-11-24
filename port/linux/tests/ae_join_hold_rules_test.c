@@ -1,0 +1,61 @@
+/* ae_join_hold_rules.c: the lobby keeps a playerless machine whose map transfer is moving */
+#include <stdio.h>
+
+#include "ae_join_hold_rules.h"
+
+static int failures;
+#define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
+
+int main(void)
+{
+	/* open, serving, sent lately: kept */
+	CHECK(ae_join_hold_transfer_alive(1, 0, 19922944, 0));
+	CHECK(ae_join_hold_transfer_alive(1, 0, 1, AE_JOIN_HOLD_MOVED_MS));
+	/* nothing sent for a while, nothing sent yet, closed, or the host's own download: not kept */
+	CHECK(!ae_join_hold_transfer_alive(1, 0, 19922944, AE_JOIN_HOLD_MOVED_MS + 1));
+	CHECK(!ae_join_hold_transfer_alive(1, 0, 0, 0));
+	CHECK(!ae_join_hold_transfer_alive(1, 0, 100, -1));
+	CHECK(!ae_join_hold_transfer_alive(0, 0, 100, 0));
+	CHECK(!ae_join_hold_transfer_alive(1, 1, 100, 0));
+	/* the event: once per join */
+	CHECK(ae_join_hold_say_event(0, 5000));
+	CHECK(!ae_join_hold_say_event(5000, 5000));
+	CHECK(ae_join_hold_say_event(5000, 9000));
+	/* a download that went quiet before it finished: stalled (its join ends); finished, still moving, never started, or
+	the host's extra files: not */
+	CHECK(ae_join_hold_download_stalled(1, 0, 0, 0));
+	CHECK(!ae_join_hold_download_stalled(1, 1, 0, 0));
+	CHECK(!ae_join_hold_download_stalled(1, 0, 1, 0));
+	CHECK(!ae_join_hold_download_stalled(0, 0, 0, 0));
+	CHECK(!ae_join_hold_download_stalled(1, 0, 0, 1));
+	/* a guest the host's list is not ready for: kept for the list's wait at most (hello, shared, ready, listed, asked,
+	since hello, since ready, since sent) */
+	CHECK(ae_join_hold_list_waiting(1, 1, 0, 0, 0, 0, 0, -1));
+	CHECK(ae_join_hold_list_waiting(1, 1, 0, 0, 0, AE_JOIN_HOLD_LIST_MS, 0, -1));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 0, 0, 0, AE_JOIN_HOLD_LIST_MS + 1, 0, -1));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 0, 0, 0, -1, -1, -1));
+	/* the list ready: the grace from then, not the whole wait */
+	CHECK(ae_join_hold_list_waiting(1, 1, 1, 0, 0, 100000, AE_JOIN_HOLD_LIST_GRACE_MS, -1));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 1, 0, 0, 100000, AE_JOIN_HOLD_LIST_GRACE_MS + 1, -1));
+	/* the list sent: the grace from then, until it asks for a map or a download starts */
+	CHECK(ae_join_hold_list_waiting(1, 1, 1, 1, 0, 100000, 100000, AE_JOIN_HOLD_LIST_GRACE_MS));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 1, 1, 0, 100000, 100000, AE_JOIN_HOLD_LIST_GRACE_MS + 1));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 1, 1, 1, 100000, 100000, 0));
+
+	/* (the times since: none for 0; a time kept as "now | 1" a millisecond ahead in the frame that set it is no time
+	since, so the guest of a first join after a restart, who waited past the playerless limit for the hashing, is kept
+	in the frame the hashing ends: 0, not -1) */
+	CHECK(ae_join_hold_since(5000UL, 0UL) == -1);
+	CHECK(ae_join_hold_since(5000UL, 4001UL) == 999);
+	CHECK(ae_join_hold_since(5000UL, 5001UL) == 0);
+	CHECK(ae_join_hold_since(5000UL, 5000UL) == 0);
+	CHECK(ae_join_hold_list_waiting(1, 1, 1, 0, 0, 18468, ae_join_hold_since(5000UL, 5001UL), -1));
+	CHECK(!ae_join_hold_list_waiting(1, 1, 0, 0, 1, 0, 0, -1));
+	/* told nothing, or not shared with: not kept */
+	CHECK(!ae_join_hold_list_waiting(0, 1, 0, 0, 0, 0, 0, -1));
+	CHECK(!ae_join_hold_list_waiting(1, 0, 0, 0, 0, 0, 0, -1));
+	if (failures)
+		return 1;
+	printf("ae_join_hold_rules: ok\n");
+	return 0;
+}

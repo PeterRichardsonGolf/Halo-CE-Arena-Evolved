@@ -1,0 +1,47 @@
+# FIREFIGHT (a DEV MODE test mode): the wave game on a multiplayer map, with the campaign's enemies copied in from the player's own
+# campaign maps (Settings game.firefight_pack builds that data at the main menu once, then every Firefight game has it).
+# Each test opens on its scene: wave 1 begun at once (no countdown), you cannot die (god).
+# DEV MODE commands used: firefight wave <1-5>, firefight clear (the wave's enemies gone), firefight skull <name>,
+# kill me (the death test: no god there).
+list firefight
+revision 2
+title FIREFIGHT: WAVES AND SKULLS (TEST MODE)
+
+group bloodgulch
+map bloodgulch
+gametype firefight
+set game.firefight_pack true
+
+test enemies
+title WAVE 1: the enemies arrive
+setup god me
+setup firefight wave 1
+check Covenant arrive and fight you
+check The HUD shows SET, ROUND, WAVE, enemies left
+expect 1 log firefight wave
+
+test next-wave
+title A CLEARED WAVE: the next one starts
+fresh
+setup god me
+setup firefight wave 1
+check dev firefight clear: the wave is cleared
+check The next wave starts, and its enemies come in
+expect 1 log firefight wave
+
+test skull
+title A SKULL: Mythic doubles the enemies' health
+fresh
+setup god me
+setup firefight wave 1
+setup firefight skull mythic
+check The enemies take twice the shots to drop
+expect 1 log firefight wave
+
+test death
+title YOU DIE IN A WAVE: the game goes on
+fresh
+setup firefight wave 1
+check dev kill me: you die and the game goes on
+check You come back and the wave is still running
+expect 1 log firefight wave

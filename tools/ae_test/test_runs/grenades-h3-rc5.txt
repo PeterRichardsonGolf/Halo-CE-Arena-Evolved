@@ -1,0 +1,46 @@
+# rc5 GRENADES, the Halo 3 way (SHOOTABLE GRENADES on: every AE casual and BTB gametype). A grenade lying on the ground
+# takes a real hit: it cannot be shot until it has lain 1.5 s, then it goes off at 18 damage (one battle rifle burst; two
+# EVO RIFLE rounds, not one). The damage is forgotten 3 s after the last hit. A thrown grenade still goes off at one
+# round. An item to shoot lies 3 units in front of you (ahead).
+# WHY 18: AE's battle rifle round does 6.5, so a burst does 19.5 and two rounds 13; 18 is "a real hit, about one BR burst".
+# Another number is one constant (AE_GRENADE_SHOT_PICKUP_HEALTH): 25 would need a burst and a round more.
+list grenades-h3-rc5
+revision 1
+title GRENADES: THE HALO 3 WAY
+
+group pickups
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_cache_weapon 1
+
+test burst
+title A grenade on the ground: one BR burst
+setup goto start 1
+setup give battle_rifle
+setup powerup frag_grenade ahead
+check Wait 2 s, then one burst at the grenade: it goes off
+check DEV powerup frag_grenade ahead, burst at once: nothing
+expect 1 log live rule: shootable grenades on
+expect 1 log grenade shot: pickup hit
+
+test single-rounds
+title One round is not enough, two are
+setup goto start 1
+setup give evo_rifle
+setup powerup frag_grenade ahead
+check Wait 2 s, one round at the grenade: nothing
+check A second round: it goes off
+check Again: one round, wait 4 s, one more: nothing
+expect 1 log pickup hit +17.9 (17.9/18)
+
+group thrown
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 0
+
+test thrown
+title A thrown grenade: one round
+setup goto start 1
+check Throw a grenade far, shoot it in the air: it goes off
+check Throw one, shoot it as it lies: it goes off at one round

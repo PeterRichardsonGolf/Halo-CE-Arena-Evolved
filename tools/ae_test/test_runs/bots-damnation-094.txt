@@ -1,0 +1,126 @@
+# 0.9.4 DAMNATION: bots and the pit. The bots do not make their own jumps across a gap with a deadly drop under it
+# (Damnation's pit by the low walkway); a map that needs such a jump gets it as a hand `bot jump` line in its layout.
+# The spawn flip (a team whose base is held spawns away from both flags) needs 4 far points (Damnation has 2, side by
+# side in the low corner, where both teams were sent into you), and a flipped spawn never ignores an enemy's sight.
+# A drop to a ledge is not taken when the ledge has a deadly drop ahead or all round; a bot at a jump's run-up does not
+# back off a ledge; with fall damage on, a hurt bot treats a smaller drop as deadly.
+# A learnt jump with a deadly drop under it is not used, and a jump a bot fell to its death from is off for that game.
+# The short jumps across bottom mid are not taken for deadly drops: the probe goes as deep as the map's lethal drop, so
+# only a gap a bot would die in is refused (the pit is).
+# Bots find the ladders from the level's climbable faces and climb them (face it, look up, hold forward); bottom mid's
+# two ladders are ways out.
+# Bottom mid has a way in for the bots: they drop into it off the bridge level's edge when they want something there.
+# A jump a bot fell to its death off is rested a minute for every bot, and only a second such death takes it off for the
+# game.
+# A bot with rockets that holds its fire logs why (ev=hold_fire).
+# Bots pick up the rockets and fire them: the map's rockets lie on a scrap of floor the map's own path data joins to
+# nothing, so the bots walk on to it from the floor beside it. NORMAL bots go for the rockets from 40 units and are
+# there 3 s before they spawn; a power weapon lying within 10 units is taken in a fight too, a dropped one as well.
+# Rockets fire while the aim is within the blast's reach of the feet, and a press that fired nothing is pressed again at
+# once, not 2 s on. rocket-use hands an enemy bot the rockets (give rocket to bot); rocket-pickup watches the map's
+# rockets at their first spawn (2:00).
+# A bot going for an item takes the bots' links (ladders, drops, jumps): an item on another floor than the bot's takes
+# the links' route there, teleporters aside; an entry left out of reach says why in its line, and a ladder taken or
+# declined says so. rockets does not wait for a drop in (the pit has a way in off the small ladder's landing);
+# small-ladder puts a bot at that ladder's foot.
+list bots-damnation-094
+revision 10
+title DAMNATION: PIT JUMPS AND SPAWNS
+
+group damnation
+map damnation
+gametype AE COMP TS
+set bots.count 7
+set bots.teams even
+set bots.skill normal
+set debug.bot_events true
+
+test pit-falls
+title DAMNATION: no bots into the pit
+check Play 5 minutes near the low walkway by the pit
+check No bot jumps or walks off into the pit there
+expect 1 log bots: travel: jump not made
+
+test bottom-mid
+title DAMNATION: bots get out of bottom mid
+check Watch bottom mid by the rockets and overshield
+check Bots that go down there for them come back out
+check No group stands there doing nothing
+
+test ladders
+title DAMNATION: bots climb the bottom-mid ladders
+check Watch the two ladders at bottom mid
+check Bots climb them, not stand at the bottom
+expect 1 log climbed the ladder
+
+test upper-rim
+title DAMNATION: no drops from the upper level into the hole
+check Play 5 minutes on the upper level above the floor hole
+check No bot drops off it onto the rim and into the hole
+check No bot backs off the ledge by the jump there
+
+test pit-jump
+title DAMNATION: no learnt jump over the hole
+retest 7
+check Fight bots on the upper level by the floor hole
+check No bot jumps from there to the rim and falls in
+expect 1 log has a deadly drop under it (not used)
+
+test hurt-drops
+title DAMNATION: hurt bots and big drops
+check On the top level, shoot bots' shields down and chase
+check Hurt bots run round, never die of a drop
+check Bots with full health still drop down as before
+
+test low-corner
+title DAMNATION: the low corner's spawns
+check Hold the low corner (where you sat 11-15) a while
+check Bots stop spawning in front of you there
+check Push into their base: still no spawns in your face
+
+test rockets
+retest 10
+title DAMNATION: bots go down for the rockets
+check Leave the rockets up at bottom mid; stay upstairs
+check A bot goes down into bottom mid and takes them
+expect 1 log goes for ROCKETS
+expect 1 log item timers: 1 taken
+
+test small-ladder
+title DAMNATION: a bot climbs out by the small ladder
+setup goto bot 2.8 5.9 0.1
+check A bot is put at the small ladder's foot (bottom mid)
+check It climbs out up a ladder within 20 s
+check It does not stand at the foot or jump at it
+expect 1 log climbed the ladder
+
+test rocket-use
+title DAMNATION: a bot fires the rockets it holds
+retest 9
+setup give rocket to bot
+check The nearest enemy bot gets the rockets (a DEV line says so)
+check Show yourself to it 10 or more units off, a few times
+check It fires a rocket soon after it sees you, no holding
+expect 1 log gave weapons\rocket launcher\rocket launcher to player
+expect 1 log ev=shot target=0
+
+test rocket-pickup
+title DAMNATION: a bot goes for the map's rockets
+check Play to 2:00 (the rockets' first spawn), near bottom mid
+check A bot goes down for them and takes them within 20 s
+check No bot stands under them or gives up at the edge
+expect 1 log goes for ROCKETS
+expect 1 log item timers: 1 taken
+
+group damnation-dig
+map damnation_dig
+gametype AE COMP TS
+set bots.count 7
+set bots.teams even
+set bots.skill normal
+set debug.bot_events true
+
+test dig-pit-falls
+title DIGSITE DAMNATION: no bots into the pit
+check Play 5 minutes near the pit
+check No bot jumps or walks off into the pit

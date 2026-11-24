@@ -1,0 +1,1009 @@
+# AE SOCIAL playlists: the offline games against bots (SOCIAL career).
+# One playlist starts at a "# social: <id>" line, its "# key: value" lines follow (label, about, teams or players, party,
+# kind), then its entries: map:file=<GAMETYPE>  # weight 1-5. A map named <file>@ws<item id> is a Steam Workshop map, read from
+# the PC's Steam Workshop folder or download folder; <file>@smp and <file>@pro are the converted copies of the Social Map Pack
+# and Pro Edition maps: the game never ships any of them, and an entry whose map is not on this PC is skipped. An entry with
+# "stand-in for <map>" in its comment names the Workshop entry just above it: it plays only while that map is not here, so a
+# game never has both files of one map. An entry with "fallback" in its comment
+# is a stock map used when this PC has fewer than 3 of the playlist's other maps that are here (pack maps, Workshop maps, or in the
+# AE COMP playlists the community competitive maps, which are plain map names). A line starting "#" with no key is a comment.
+# A "# starts: br 1, evo 1" line makes each game start with one of those loadouts (br the battle rifle, evo the evo rifle, magnum
+# the CE pistol, protomag the Digsite pack's starter pistol over that pistol start; the weight 1-5 is optional): picked by weight from the game's seed, where the game type has that start. A
+# playlist with no starts line plays its game types as they are. "# kind: comp" playlists mirror the social ones with the
+# competitive game types and mix evo and magnum starts. "# starts: none" keeps that default away; "# weapons: map" plays the maps'
+# own weapons (otherwise a tournament game has AE's weapons forced on). A plain map name is a map file of this
+# PC (found in the maps folder or a map share: never shipped): an entry whose map is not here is skipped, like a pack map.
+
+
+# social: team-slayer
+# label: TEAM SLAYER
+# about: Four against four. Slayer. BR or evo starts.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# starts: br 1, evo 1
+ascetic mcc debug flycam pm@ws2899679058:file=AE TEAM SLY  # weight 3
+ascetic@smp:file=AE TEAM SLY  # weight 3  # stand-in for ascetic mcc debug flycam pm@ws2899679058
+blamitemines mcc flycam pm@ws2899709584:file=AE TEAM SLY  # weight 3
+blamitemines@smp:file=AE TEAM SLY  # weight 3  # stand-in for blamitemines mcc flycam pm@ws2899709584
+blood_covenant_mcc flycam pm@ws2899741750:file=AE TEAM SLY  # weight 3
+blood_covenant@smp:file=AE TEAM SLY  # weight 3  # stand-in for blood_covenant_mcc flycam pm@ws2899741750
+co2 mcc debug flycam pm@ws2900166697:file=AE TEAM SLY  # weight 3
+co2@smp:file=AE TEAM SLY  # weight 3  # stand-in for co2 mcc debug flycam pm@ws2900166697
+cold_shoulder mcc flycam pm@ws2899509722:file=AE TEAM SLY  # weight 3
+cold_shoulder@smp:file=AE TEAM SLY  # weight 3  # stand-in for cold_shoulder mcc flycam pm@ws2899509722
+delta_ruined flycam mcc@ws2899747345:file=AE TEAM SLY  # weight 3
+delta_ruined@smp:file=AE TEAM SLY  # weight 3  # stand-in for delta_ruined flycam mcc@ws2899747345
+fissurefall mcc dbug flycam pm@ws2899774877:file=AE TEAM SLY  # weight 3
+fissurefall@smp:file=AE TEAM SLY  # weight 3  # stand-in for fissurefall mcc dbug flycam pm@ws2899774877
+fractured peak mcc flycam pm@ws2900252105:file=AE TEAM SLY  # weight 3
+fractured_peak@smp:file=AE TEAM SLY  # weight 3  # stand-in for fractured peak mcc flycam pm@ws2900252105
+frigid_keep dbug flycam mcc pm@ws2899770689:file=AE TEAM SLY  # weight 3
+frigid_keep@smp:file=AE TEAM SLY  # weight 3  # stand-in for frigid_keep dbug flycam mcc pm@ws2899770689
+gothra mcc debug flycam pm@ws2899688264:file=AE TEAM SLY  # weight 3
+gothra@smp:file=AE TEAM SLY  # weight 3  # stand-in for gothra mcc debug flycam pm@ws2899688264
+gridiron mcc debug flycam pm@ws2900050996:file=AE TEAM SLY  # weight 3
+gridiron@smp:file=AE TEAM SLY  # weight 3  # stand-in for gridiron mcc debug flycam pm@ws2900050996
+gutter mcc debug flycam pm nm@ws2900257741:file=AE TEAM SLY  # weight 3
+gutter_nm@smp:file=AE TEAM SLY  # weight 3  # stand-in for gutter mcc debug flycam pm nm@ws2900257741
+hektik mcc debug flycam pm@ws2900177725:file=AE TEAM SLY  # weight 3
+hektik@smp:file=AE TEAM SLY  # weight 3  # stand-in for hektik mcc debug flycam pm@ws2900177725
+intensity_v2 debug flycam pm@ws2900242317:file=AE TEAM SLY  # weight 3
+intensity_v2@smp:file=AE TEAM SLY  # weight 3  # stand-in for intensity_v2 debug flycam pm@ws2900242317
+nitra_v2 debug flycam pm@ws2900199550:file=AE TEAM SLY  # weight 3
+nitra_v2@smp:file=AE TEAM SLY  # weight 3  # stand-in for nitra_v2 debug flycam pm@ws2900199550
+ruins_of_alph mcc flycam pm@ws2905217149:file=AE TEAM SLY  # weight 3
+ruins_of_alph@smp:file=AE TEAM SLY  # weight 3  # stand-in for ruins_of_alph mcc flycam pm@ws2905217149
+sympathy mcc debug flycam pm@ws2899751222:file=AE TEAM SLY  # weight 3
+sympathy@smp:file=AE TEAM SLY  # weight 3  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+warren_mcc debug flycam pm@ws2900072240:file=AE TEAM SLY  # weight 3
+warren@smp:file=AE TEAM SLY  # weight 3  # stand-in for warren_mcc debug flycam pm@ws2900072240
+damnation:file=AE TEAM SLY  # weight 1  # fallback
+prisoner:file=AE TEAM SLY  # weight 1  # fallback
+hangemhigh:file=AE TEAM SLY  # weight 1  # fallback
+chillout:file=AE TEAM SLY  # weight 1  # fallback
+beavercreek:file=AE TEAM SLY  # weight 1  # fallback
+carousel:file=AE TEAM SLY  # weight 1  # fallback
+wizard:file=AE TEAM SLY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE TEAM SLY  # weight 2
+h2d_desolation:file=AE TEAM SLY  # weight 2
+h2d_ivory_tower:file=AE TEAM SLY  # weight 2
+h2d_midship:file=AE TEAM SLY  # weight 2
+h2_warlock@ce:file=AE TEAM SLY  # weight 2
+h2d_salicreek:file=AE TEAM SLY  # weight 2
+h2d_sanctuary:file=AE TEAM SLY  # weight 2
+h2d_turf:file=AE TEAM SLY  # weight 2
+# Halo CE Pro Edition (Workshop collection 3001370390) and NHE Map Pack (3001717490), weight 2, over the stock fallbacks
+pat_wizard@ws2899666869:file=AE TEAM SLY  # weight 2
+pat_wizard@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_wizard@ws2899666869
+pat_chillout@ws2899343509:file=AE TEAM SLY  # weight 2
+pat_chillout@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_chillout@ws2899343509
+pat_downrush@ws2899270824:file=AE TEAM SLY  # weight 2
+pat_downrush@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_downrush@ws2899270824
+pat_prisoner@ws2899340399:file=AE TEAM SLY  # weight 2
+pat_prisoner@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_prisoner@ws2899340399
+pat_damnation@ws2899341154:file=AE TEAM SLY  # weight 2
+pat_damnation@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_damnation@ws2899341154
+pat_hangemhigh@ws2899339889:file=AE TEAM SLY  # weight 2
+pat_hangemhigh@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_hangemhigh@ws2899339889
+dreadnought@ws2899301014:file=AE TEAM SLY  # weight 2
+dreadnought@pro:file=AE TEAM SLY  # weight 2  # stand-in for dreadnought@ws2899301014
+pat_ratrace@ws2899352017:file=AE TEAM SLY  # weight 2
+pat_ratrace@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_ratrace@ws2899352017
+pat_beavercreek@ws2899342285:file=AE TEAM SLY  # weight 2
+pat_beavercreek@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_beavercreek@ws2899342285
+pat_longest@ws2899345854:file=AE TEAM SLY  # weight 2
+pat_longest@pro:file=AE TEAM SLY  # weight 2  # stand-in for pat_longest@ws2899345854
+atlas@ws2899272390:file=AE TEAM SLY  # weight 2
+calamity@ws2899273793:file=AE TEAM SLY  # weight 2
+decidia@ws2900197649:file=AE TEAM SLY  # weight 2
+doubletake@ws2899298743:file=AE TEAM SLY  # weight 2
+downrush_og@ws2899269216:file=AE TEAM SLY  # weight 2
+exhibit@ws2899285963:file=AE TEAM SLY  # weight 2
+hotbox@ws2899296946:file=AE TEAM SLY  # weight 2
+imminent@ws2899282492:file=AE TEAM SLY  # weight 2
+madhouse@ws2899286494:file=AE TEAM SLY  # weight 2
+outbound@ws2900198928:file=AE TEAM SLY  # weight 2
+overflow@ws2899277913:file=AE TEAM SLY  # weight 2
+redshift@ws2899299390:file=AE TEAM SLY  # weight 2
+tinker@ws2899275294:file=AE TEAM SLY  # weight 2
+zerohour@ws2899291914:file=AE TEAM SLY  # weight 2
+hiatus@ws3730885185:file=AE TEAM SLY  # weight 2
+
+# social: free-for-all
+# label: FREE FOR ALL
+# about: Eight players, every one for themselves. BR or evo starts.
+# players: 8
+# party: 1
+# kind: social
+# starts: br 1, evo 1
+ascetic mcc debug flycam pm@ws2899679058:file=AE FFA SLAY  # weight 2
+ascetic@smp:file=AE FFA SLAY  # weight 2  # stand-in for ascetic mcc debug flycam pm@ws2899679058
+blamitemines mcc flycam pm@ws2899709584:file=AE FFA SLAY  # weight 2
+blamitemines@smp:file=AE FFA SLAY  # weight 2  # stand-in for blamitemines mcc flycam pm@ws2899709584
+blood_covenant_mcc flycam pm@ws2899741750:file=AE FFA SLAY  # weight 2
+blood_covenant@smp:file=AE FFA SLAY  # weight 2  # stand-in for blood_covenant_mcc flycam pm@ws2899741750
+co2 mcc debug flycam pm@ws2900166697:file=AE FFA SLAY  # weight 2
+co2@smp:file=AE FFA SLAY  # weight 2  # stand-in for co2 mcc debug flycam pm@ws2900166697
+cold_shoulder mcc flycam pm@ws2899509722:file=AE FFA SLAY  # weight 2
+cold_shoulder@smp:file=AE FFA SLAY  # weight 2  # stand-in for cold_shoulder mcc flycam pm@ws2899509722
+delta_ruined flycam mcc@ws2899747345:file=AE FFA SLAY  # weight 2
+delta_ruined@smp:file=AE FFA SLAY  # weight 2  # stand-in for delta_ruined flycam mcc@ws2899747345
+fissurefall mcc dbug flycam pm@ws2899774877:file=AE FFA SLAY  # weight 2
+fissurefall@smp:file=AE FFA SLAY  # weight 2  # stand-in for fissurefall mcc dbug flycam pm@ws2899774877
+fractured peak mcc flycam pm@ws2900252105:file=AE FFA SLAY  # weight 2
+fractured_peak@smp:file=AE FFA SLAY  # weight 2  # stand-in for fractured peak mcc flycam pm@ws2900252105
+frigid_keep dbug flycam mcc pm@ws2899770689:file=AE FFA SLAY  # weight 2
+frigid_keep@smp:file=AE FFA SLAY  # weight 2  # stand-in for frigid_keep dbug flycam mcc pm@ws2899770689
+gothra mcc debug flycam pm@ws2899688264:file=AE FFA SLAY  # weight 2
+gothra@smp:file=AE FFA SLAY  # weight 2  # stand-in for gothra mcc debug flycam pm@ws2899688264
+gridiron mcc debug flycam pm@ws2900050996:file=AE FFA SLAY  # weight 2
+gridiron@smp:file=AE FFA SLAY  # weight 2  # stand-in for gridiron mcc debug flycam pm@ws2900050996
+gutter mcc debug flycam pm nm@ws2900257741:file=AE FFA SLAY  # weight 2
+gutter_nm@smp:file=AE FFA SLAY  # weight 2  # stand-in for gutter mcc debug flycam pm nm@ws2900257741
+hektik mcc debug flycam pm@ws2900177725:file=AE FFA SLAY  # weight 2
+hektik@smp:file=AE FFA SLAY  # weight 2  # stand-in for hektik mcc debug flycam pm@ws2900177725
+intensity_v2 debug flycam pm@ws2900242317:file=AE FFA SLAY  # weight 2
+intensity_v2@smp:file=AE FFA SLAY  # weight 2  # stand-in for intensity_v2 debug flycam pm@ws2900242317
+nitra_v2 debug flycam pm@ws2900199550:file=AE FFA SLAY  # weight 2
+nitra_v2@smp:file=AE FFA SLAY  # weight 2  # stand-in for nitra_v2 debug flycam pm@ws2900199550
+ruins_of_alph mcc flycam pm@ws2905217149:file=AE FFA SLAY  # weight 2
+ruins_of_alph@smp:file=AE FFA SLAY  # weight 2  # stand-in for ruins_of_alph mcc flycam pm@ws2905217149
+sympathy mcc debug flycam pm@ws2899751222:file=AE FFA SLAY  # weight 2
+sympathy@smp:file=AE FFA SLAY  # weight 2  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+warren_mcc debug flycam pm@ws2900072240:file=AE FFA SLAY  # weight 2
+warren@smp:file=AE FFA SLAY  # weight 2  # stand-in for warren_mcc debug flycam pm@ws2900072240
+hektik mcc debug flycam pm@ws2900177725:file=AE FFA KING  # weight 1
+hektik@smp:file=AE FFA KING  # weight 1  # stand-in for hektik mcc debug flycam pm@ws2900177725
+co2 mcc debug flycam pm@ws2900166697:file=AE FFA KING  # weight 1
+co2@smp:file=AE FFA KING  # weight 1  # stand-in for co2 mcc debug flycam pm@ws2900166697
+sympathy mcc debug flycam pm@ws2899751222:file=AE FFA KING  # weight 1
+sympathy@smp:file=AE FFA KING  # weight 1  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+nitra_v2 debug flycam pm@ws2900199550:file=AE FFA KING  # weight 1
+nitra_v2@smp:file=AE FFA KING  # weight 1  # stand-in for nitra_v2 debug flycam pm@ws2900199550
+prisoner:file=AE FFA SLAY  # weight 1  # fallback
+wizard:file=AE FFA SLAY  # weight 1  # fallback
+chillout:file=AE FFA SLAY  # weight 1  # fallback
+hangemhigh:file=AE FFA SLAY  # weight 1  # fallback
+longest:file=AE FFA SLAY  # weight 1  # fallback
+ratrace:file=AE FFA SLAY  # weight 1  # fallback
+carousel:file=AE FFA SLAY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE FFA SLAY  # weight 2
+h2d_desolation:file=AE FFA SLAY  # weight 2
+h2d_ivory_tower:file=AE FFA SLAY  # weight 2
+h2d_midship:file=AE FFA SLAY  # weight 2
+h2_warlock@ce:file=AE FFA SLAY  # weight 2
+h2d_salicreek:file=AE FFA SLAY  # weight 2
+h2d_sanctuary:file=AE FFA SLAY  # weight 2
+h2d_turf:file=AE FFA SLAY  # weight 2
+
+# social: doubles
+# label: DOUBLES
+# about: Two against two on the smaller maps. BR or evo starts.
+# teams: 2 x 2
+# party: 2
+# kind: social
+# starts: br 1, evo 1
+hektik mcc debug flycam pm@ws2900177725:file=AE 2V2 SLY  # weight 3
+hektik@smp:file=AE 2V2 SLY  # weight 3  # stand-in for hektik mcc debug flycam pm@ws2900177725
+gutter mcc debug flycam pm nm@ws2900257741:file=AE 2V2 SLY  # weight 3
+gutter_nm@smp:file=AE 2V2 SLY  # weight 3  # stand-in for gutter mcc debug flycam pm nm@ws2900257741
+ruins_of_alph mcc flycam pm@ws2905217149:file=AE 2V2 SLY  # weight 3
+ruins_of_alph@smp:file=AE 2V2 SLY  # weight 3  # stand-in for ruins_of_alph mcc flycam pm@ws2905217149
+co2 mcc debug flycam pm@ws2900166697:file=AE 2V2 SLY  # weight 3
+co2@smp:file=AE 2V2 SLY  # weight 3  # stand-in for co2 mcc debug flycam pm@ws2900166697
+sympathy mcc debug flycam pm@ws2899751222:file=AE 2V2 SLY  # weight 3
+sympathy@smp:file=AE 2V2 SLY  # weight 3  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+intensity_v2 debug flycam pm@ws2900242317:file=AE 2V2 SLY  # weight 3
+intensity_v2@smp:file=AE 2V2 SLY  # weight 3  # stand-in for intensity_v2 debug flycam pm@ws2900242317
+wizard:file=AE 2V2 SLY  # weight 1  # fallback
+longest:file=AE 2V2 SLY  # weight 1  # fallback
+chillout:file=AE 2V2 SLY  # weight 1  # fallback
+beavercreek:file=AE 2V2 SLY  # weight 1  # fallback
+ratrace:file=AE 2V2 SLY  # weight 1  # fallback
+prisoner:file=AE 2V2 SLY  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_desolation:file=AE 2V2 SLY  # weight 2
+h2d_midship:file=AE 2V2 SLY  # weight 2
+h2_warlock@ce:file=AE 2V2 SLY  # weight 2
+
+# social: team-objective
+# label: TEAM OBJECTIVE
+# about: Four against four. Flags, bombs and hills. BR or evo starts.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# starts: br 1, evo 1
+ascetic mcc debug flycam pm@ws2899679058:file=AE CTF  # weight 3
+ascetic@smp:file=AE CTF  # weight 3  # stand-in for ascetic mcc debug flycam pm@ws2899679058
+cold_shoulder mcc flycam pm@ws2899509722:file=AE CTF  # weight 3
+cold_shoulder@smp:file=AE CTF  # weight 3  # stand-in for cold_shoulder mcc flycam pm@ws2899509722
+fissurefall mcc dbug flycam pm@ws2899774877:file=AE CTF  # weight 3
+fissurefall@smp:file=AE CTF  # weight 3  # stand-in for fissurefall mcc dbug flycam pm@ws2899774877
+gutter mcc debug flycam pm nm@ws2900257741:file=AE CTF  # weight 3
+gutter_nm@smp:file=AE CTF  # weight 3  # stand-in for gutter mcc debug flycam pm nm@ws2900257741
+ruins_of_alph mcc flycam pm@ws2905217149:file=AE CTF  # weight 3
+ruins_of_alph@smp:file=AE CTF  # weight 3  # stand-in for ruins_of_alph mcc flycam pm@ws2905217149
+blamitemines mcc flycam pm@ws2899709584:file=AE TEAM OB  # weight 3
+blamitemines@smp:file=AE TEAM OB  # weight 3  # stand-in for blamitemines mcc flycam pm@ws2899709584
+blood_covenant_mcc flycam pm@ws2899741750:file=AE TEAM OB  # weight 3
+blood_covenant@smp:file=AE TEAM OB  # weight 3  # stand-in for blood_covenant_mcc flycam pm@ws2899741750
+delta_ruined flycam mcc@ws2899747345:file=AE TEAM OB  # weight 3
+delta_ruined@smp:file=AE TEAM OB  # weight 3  # stand-in for delta_ruined flycam mcc@ws2899747345
+gothra mcc debug flycam pm@ws2899688264:file=AE TEAM OB  # weight 3
+gothra@smp:file=AE TEAM OB  # weight 3  # stand-in for gothra mcc debug flycam pm@ws2899688264
+co2 mcc debug flycam pm@ws2900166697:file=AE KING  # weight 3
+co2@smp:file=AE KING  # weight 3  # stand-in for co2 mcc debug flycam pm@ws2900166697
+hektik mcc debug flycam pm@ws2900177725:file=AE KING  # weight 3
+hektik@smp:file=AE KING  # weight 3  # stand-in for hektik mcc debug flycam pm@ws2900177725
+nitra_v2 debug flycam pm@ws2900199550:file=AE KING  # weight 3
+nitra_v2@smp:file=AE KING  # weight 3  # stand-in for nitra_v2 debug flycam pm@ws2900199550
+sympathy mcc debug flycam pm@ws2899751222:file=AE KING  # weight 3
+sympathy@smp:file=AE KING  # weight 3  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+fractured peak mcc flycam pm@ws2900252105:file=AE TERRIT  # weight 3
+fractured_peak@smp:file=AE TERRIT  # weight 3  # stand-in for fractured peak mcc flycam pm@ws2900252105
+beavercreek:file=AE CTF  # weight 1  # fallback
+damnation:file=AE CTF  # weight 1  # fallback
+hangemhigh:file=AE CTF  # weight 1  # fallback
+chillout:file=AE KING  # weight 1  # fallback
+carousel:file=AE KING  # weight 1  # fallback
+prisoner:file=AE TEAM OB  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE CTF  # weight 2
+h2d_midship:file=AE CTF  # weight 2
+h2d_sanctuary:file=AE CTF  # weight 2
+h2_warlock@ce:file=AE CTF  # weight 2
+# Pro Edition + NHE Map Pack Workshop maps (weight 2)
+pat_wizard@ws2899666869:file=AE KING  # weight 2
+pat_wizard@pro:file=AE KING  # weight 2  # stand-in for pat_wizard@ws2899666869
+pat_chillout@ws2899343509:file=AE CTF  # weight 2
+pat_chillout@pro:file=AE CTF  # weight 2  # stand-in for pat_chillout@ws2899343509
+pat_downrush@ws2899270824:file=AE KING  # weight 2
+pat_downrush@pro:file=AE KING  # weight 2  # stand-in for pat_downrush@ws2899270824
+pat_prisoner@ws2899340399:file=AE KING  # weight 2
+pat_prisoner@pro:file=AE KING  # weight 2  # stand-in for pat_prisoner@ws2899340399
+pat_damnation@ws2899341154:file=AE CTF  # weight 2
+pat_damnation@pro:file=AE CTF  # weight 2  # stand-in for pat_damnation@ws2899341154
+pat_hangemhigh@ws2899339889:file=AE CTF  # weight 2
+pat_hangemhigh@pro:file=AE CTF  # weight 2  # stand-in for pat_hangemhigh@ws2899339889
+dreadnought@ws2899301014:file=AE CTF  # weight 2
+dreadnought@pro:file=AE CTF  # weight 2  # stand-in for dreadnought@ws2899301014
+pat_ratrace@ws2899352017:file=AE TEAM OB  # weight 2
+pat_ratrace@pro:file=AE TEAM OB  # weight 2  # stand-in for pat_ratrace@ws2899352017
+pat_beavercreek@ws2899342285:file=AE CTF  # weight 2
+pat_beavercreek@pro:file=AE CTF  # weight 2  # stand-in for pat_beavercreek@ws2899342285
+pat_longest@ws2899345854:file=AE KING  # weight 2
+pat_longest@pro:file=AE KING  # weight 2  # stand-in for pat_longest@ws2899345854
+atlas@ws2899272390:file=AE CTF  # weight 2
+calamity@ws2899273793:file=AE CTF  # weight 2
+decidia@ws2900197649:file=AE CTF  # weight 2
+doubletake@ws2899298743:file=AE KING  # weight 2
+downrush_og@ws2899269216:file=AE KING  # weight 2
+exhibit@ws2899285963:file=AE TEAM OB  # weight 2
+hotbox@ws2899296946:file=AE KING  # weight 2
+imminent@ws2899282492:file=AE CTF  # weight 2
+madhouse@ws2899286494:file=AE TEAM OB  # weight 2
+outbound@ws2900198928:file=AE CTF  # weight 2
+overflow@ws2899277913:file=AE CTF  # weight 2
+redshift@ws2899299390:file=AE TEAM OB  # weight 2
+tinker@ws2899275294:file=AE KING  # weight 2
+zerohour@ws2899291914:file=AE CTF  # weight 2
+hiatus@ws3730885185:file=AE CTF  # weight 2
+
+# social: big-team
+# label: BIG TEAM
+# about: Eight against eight with vehicles. BR or evo starts.
+# teams: 2 x 8
+# party: 8
+# kind: social
+# starts: br 1, evo 1
+bloodgulch:file=AE BTB SLY  # weight 3
+bloodgulch:file=AE BTB CTF  # weight 3
+bloodgulch:file=AE BTB KING  # weight 2
+bloodgulch:file=AE BTB HVY  # weight 2
+sidewinder:file=AE BTB SLY  # weight 3
+sidewinder:file=AE BTB CTF  # weight 3
+sidewinder:file=AE BTB KING  # weight 2
+sidewinder:file=AE BTB HVY  # weight 2
+dangercanyon:file=AE BTB SLY  # weight 3
+dangercanyon:file=AE BTB CTF  # weight 3
+dangercanyon:file=AE BTB KING  # weight 2
+dangercanyon:file=AE BTB HVY  # weight 2
+icefields:file=AE BTB SLY  # weight 3
+icefields:file=AE BTB CTF  # weight 3
+icefields:file=AE BTB KING  # weight 2
+icefields:file=AE BTB HVY  # weight 2
+timberland:file=AE BTB SLY  # weight 3
+timberland:file=AE BTB CTF  # weight 3
+timberland:file=AE BTB KING  # weight 2
+timberland:file=AE BTB HVY  # weight 2
+infinity:file=AE BTB SLY  # weight 3
+infinity:file=AE BTB CTF  # weight 3
+infinity:file=AE BTB KING  # weight 2
+infinity:file=AE BTB HVY  # weight 2
+deathisland:file=AE BTB SLY  # weight 3
+deathisland:file=AE BTB CTF  # weight 3
+deathisland:file=AE BTB KING  # weight 2
+deathisland:file=AE BTB HVY  # weight 2
+gephyrophobia:file=AE BTB SLY  # weight 3
+gephyrophobia:file=AE BTB CTF  # weight 3
+gephyrophobia:file=AE BTB KING  # weight 2
+gephyrophobia:file=AE BTB HVY  # weight 2
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_burial_mounds:file=AE BTB SLY  # weight 2
+h2d_coagulation:file=AE BTB SLY  # weight 2
+h2d_containment:file=AE BTB SLY  # weight 2
+h2d_headlong:file=AE BTB SLY  # weight 2
+h2d_terminal:file=AE BTB SLY  # weight 2
+h2d_waterworks:file=AE BTB SLY  # weight 2
+h2d_zanzibar:file=AE BTB SLY  # weight 2
+h2d_burial_mounds:file=AE BTB CTF  # weight 2
+h2d_coagulation:file=AE BTB CTF  # weight 2
+h2d_containment:file=AE BTB CTF  # weight 2
+h2d_headlong:file=AE BTB CTF  # weight 2
+h2d_terminal:file=AE BTB CTF  # weight 2
+h2d_waterworks:file=AE BTB CTF  # weight 2
+h2d_zanzibar:file=AE BTB CTF  # weight 2
+h2d_coagulation:file=AE BTB HVY  # weight 2
+h2d_containment:file=AE BTB HVY  # weight 2
+h2d_waterworks:file=AE BTB HVY  # weight 2
+
+# social: swat-snipers
+# label: ACTION SACK
+# about: Four against four. A different weapon set each game.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# (the id stays swat-snipers so the playlist's rank carries over; each game is SWAT, SNIPERS, SHOTGUNS, ROCKETS or SHOTTY SNIPERS)
+ascetic mcc debug flycam pm@ws2899679058:file=AE SWAT  # weight 2
+ascetic@smp:file=AE SWAT  # weight 2  # stand-in for ascetic mcc debug flycam pm@ws2899679058
+blamitemines mcc flycam pm@ws2899709584:file=AE SHOTGUNS  # weight 2
+blamitemines@smp:file=AE SHOTGUNS  # weight 2  # stand-in for blamitemines mcc flycam pm@ws2899709584
+blood_covenant_mcc flycam pm@ws2899741750:file=AE ROCKETS  # weight 2
+blood_covenant@smp:file=AE ROCKETS  # weight 2  # stand-in for blood_covenant_mcc flycam pm@ws2899741750
+co2 mcc debug flycam pm@ws2900166697:file=AE SHOTSNIP  # weight 2
+co2@smp:file=AE SHOTSNIP  # weight 2  # stand-in for co2 mcc debug flycam pm@ws2900166697
+cold_shoulder mcc flycam pm@ws2899509722:file=AE SNIPERS  # weight 2
+cold_shoulder@smp:file=AE SNIPERS  # weight 2  # stand-in for cold_shoulder mcc flycam pm@ws2899509722
+delta_ruined flycam mcc@ws2899747345:file=AE SWAT  # weight 2
+delta_ruined@smp:file=AE SWAT  # weight 2  # stand-in for delta_ruined flycam mcc@ws2899747345
+fissurefall mcc dbug flycam pm@ws2899774877:file=AE SHOTGUNS  # weight 2
+fissurefall@smp:file=AE SHOTGUNS  # weight 2  # stand-in for fissurefall mcc dbug flycam pm@ws2899774877
+fractured peak mcc flycam pm@ws2900252105:file=AE SHOTSNIP  # weight 2
+fractured_peak@smp:file=AE SHOTSNIP  # weight 2  # stand-in for fractured peak mcc flycam pm@ws2900252105
+frigid_keep dbug flycam mcc pm@ws2899770689:file=AE SWAT  # weight 2
+frigid_keep@smp:file=AE SWAT  # weight 2  # stand-in for frigid_keep dbug flycam mcc pm@ws2899770689
+gothra mcc debug flycam pm@ws2899688264:file=AE SHOTGUNS  # weight 2
+gothra@smp:file=AE SHOTGUNS  # weight 2  # stand-in for gothra mcc debug flycam pm@ws2899688264
+gridiron mcc debug flycam pm@ws2900050996:file=AE ROCKETS  # weight 2
+gridiron@smp:file=AE ROCKETS  # weight 2  # stand-in for gridiron mcc debug flycam pm@ws2900050996
+gutter mcc debug flycam pm nm@ws2900257741:file=AE SHOTSNIP  # weight 2
+gutter_nm@smp:file=AE SHOTSNIP  # weight 2  # stand-in for gutter mcc debug flycam pm nm@ws2900257741
+hektik mcc debug flycam pm@ws2900177725:file=AE SNIPERS  # weight 2
+hektik@smp:file=AE SNIPERS  # weight 2  # stand-in for hektik mcc debug flycam pm@ws2900177725
+intensity_v2 debug flycam pm@ws2900242317:file=AE SWAT  # weight 2
+intensity_v2@smp:file=AE SWAT  # weight 2  # stand-in for intensity_v2 debug flycam pm@ws2900242317
+nitra_v2 debug flycam pm@ws2900199550:file=AE ROCKETS  # weight 2
+nitra_v2@smp:file=AE ROCKETS  # weight 2  # stand-in for nitra_v2 debug flycam pm@ws2900199550
+ruins_of_alph mcc flycam pm@ws2905217149:file=AE SHOTGUNS  # weight 2
+ruins_of_alph@smp:file=AE SHOTGUNS  # weight 2  # stand-in for ruins_of_alph mcc flycam pm@ws2905217149
+sympathy mcc debug flycam pm@ws2899751222:file=AE SHOTSNIP  # weight 2
+sympathy@smp:file=AE SHOTSNIP  # weight 2  # stand-in for sympathy mcc debug flycam pm@ws2899751222
+warren_mcc debug flycam pm@ws2900072240:file=AE SWAT  # weight 2
+warren@smp:file=AE SWAT  # weight 2  # stand-in for warren_mcc debug flycam pm@ws2900072240
+prisoner:file=AE SWAT  # weight 1  # fallback
+hangemhigh:file=AE SHOTGUNS  # weight 1  # fallback
+damnation:file=AE ROCKETS  # weight 1  # fallback
+chillout:file=AE SHOTSNIP  # weight 1  # fallback
+bloodgulch:file=AE SNIPERS  # weight 1  # fallback
+timberland:file=AE SNIPERS  # weight 1  # fallback
+# (the demakes, from AE #1: GET MAPS or a game there brings them)
+h2d_colossus:file=AE SNIPERS  # weight 1
+h2d_desolation:file=AE SNIPERS  # weight 1
+h2d_ivory_tower:file=AE SHOTSNIP  # weight 1
+h2d_midship:file=AE ROCKETS  # weight 1
+h2_warlock@ce:file=AE SWAT  # weight 1
+h2d_salicreek:file=AE SHOTGUNS  # weight 1
+h2d_sanctuary:file=AE SHOTSNIP  # weight 1
+h2d_turf:file=AE ROCKETS  # weight 1
+# Pro Edition + NHE Map Pack Workshop maps (weight 2)
+pat_wizard@ws2899666869:file=AE SWAT  # weight 2
+pat_wizard@pro:file=AE SWAT  # weight 2  # stand-in for pat_wizard@ws2899666869
+pat_chillout@ws2899343509:file=AE SNIPERS  # weight 2
+pat_chillout@pro:file=AE SNIPERS  # weight 2  # stand-in for pat_chillout@ws2899343509
+pat_downrush@ws2899270824:file=AE SHOTGUNS  # weight 2
+pat_downrush@pro:file=AE SHOTGUNS  # weight 2  # stand-in for pat_downrush@ws2899270824
+pat_prisoner@ws2899340399:file=AE ROCKETS  # weight 2
+pat_prisoner@pro:file=AE ROCKETS  # weight 2  # stand-in for pat_prisoner@ws2899340399
+pat_damnation@ws2899341154:file=AE SHOTSNIP  # weight 2
+pat_damnation@pro:file=AE SHOTSNIP  # weight 2  # stand-in for pat_damnation@ws2899341154
+pat_hangemhigh@ws2899339889:file=AE SWAT  # weight 2
+pat_hangemhigh@pro:file=AE SWAT  # weight 2  # stand-in for pat_hangemhigh@ws2899339889
+dreadnought@ws2899301014:file=AE SNIPERS  # weight 2
+dreadnought@pro:file=AE SNIPERS  # weight 2  # stand-in for dreadnought@ws2899301014
+pat_ratrace@ws2899352017:file=AE SHOTGUNS  # weight 2
+pat_ratrace@pro:file=AE SHOTGUNS  # weight 2  # stand-in for pat_ratrace@ws2899352017
+pat_beavercreek@ws2899342285:file=AE ROCKETS  # weight 2
+pat_beavercreek@pro:file=AE ROCKETS  # weight 2  # stand-in for pat_beavercreek@ws2899342285
+pat_longest@ws2899345854:file=AE SHOTSNIP  # weight 2
+pat_longest@pro:file=AE SHOTSNIP  # weight 2  # stand-in for pat_longest@ws2899345854
+atlas@ws2899272390:file=AE SWAT  # weight 2
+calamity@ws2899273793:file=AE SNIPERS  # weight 2
+decidia@ws2900197649:file=AE SHOTGUNS  # weight 2
+doubletake@ws2899298743:file=AE ROCKETS  # weight 2
+downrush_og@ws2899269216:file=AE SHOTSNIP  # weight 2
+exhibit@ws2899285963:file=AE SWAT  # weight 2
+hotbox@ws2899296946:file=AE SNIPERS  # weight 2
+imminent@ws2899282492:file=AE SHOTGUNS  # weight 2
+madhouse@ws2899286494:file=AE ROCKETS  # weight 2
+outbound@ws2900198928:file=AE SHOTSNIP  # weight 2
+overflow@ws2899277913:file=AE SWAT  # weight 2
+redshift@ws2899299390:file=AE SNIPERS  # weight 2
+tinker@ws2899275294:file=AE SHOTGUNS  # weight 2
+zerohour@ws2899291914:file=AE ROCKETS  # weight 2
+hiatus@ws3730885185:file=AE SNIPERS  # weight 2
+
+# social: comp-team-slayer
+# label: AE COMP TEAM SLAYER
+# about: Four against four. Slayer. Evo or pistol starts.
+# teams: 2 x 4
+# party: 4
+# kind: comp
+# starts: evo 1, magnum 1
+birdhouse:file=AE COMP TS  # weight 3
+chilledout:file=AE COMP TS  # weight 3
+dere:file=AE COMP TS  # weight 3
+descent:file=AE COMP TS  # weight 3
+downfall:file=AE COMP TS  # weight 3
+downog:file=AE COMP TS  # weight 3
+dread:file=AE COMP TS  # weight 3
+dread_new:file=AE COMP TS  # weight 3
+fallout:file=AE COMP TS  # weight 3
+h1pb_chillout:file=AE COMP TS  # weight 3
+h1pb_hangemhigh:file=AE COMP TS  # weight 3
+h1pb_prisoner:file=AE COMP TS  # weight 3
+h1pb_wizard:file=AE COMP TS  # weight 3
+hangman:file=AE COMP TS  # weight 3
+jaywalk:file=AE COMP TS  # weight 3
+longshot:file=AE COMP TS  # weight 3
+patrace:file=AE COMP TS  # weight 3
+salvation:file=AE COMP TS  # weight 3
+slammer:file=AE COMP TS  # weight 3
+temple:file=AE COMP TS  # weight 3
+tinkered:file=AE COMP TS  # weight 3
+weld:file=AE COMP TS  # weight 3
+whiskey:file=AE COMP TS  # weight 3
+worthy:file=AE COMP TS  # weight 3
+damnation:file=AE COMP TS  # weight 1  # fallback
+prisoner:file=AE COMP TS  # weight 1  # fallback
+hangemhigh:file=AE COMP TS  # weight 1  # fallback
+chillout:file=AE COMP TS  # weight 1  # fallback
+beavercreek:file=AE COMP TS  # weight 1  # fallback
+carousel:file=AE COMP TS  # weight 1  # fallback
+wizard:file=AE COMP TS  # weight 1  # fallback
+
+# social: comp-free-for-all
+# label: AE COMP FREE FOR ALL
+# about: Eight players, every one for themselves. Evo or pistol starts.
+# players: 8
+# party: 1
+# kind: comp
+# starts: evo 1, magnum 1
+birdhouse:file=AE COMP FFA  # weight 3
+chilledout:file=AE COMP FFA  # weight 3
+dere:file=AE COMP FFA  # weight 3
+descent:file=AE COMP FFA  # weight 3
+downfall:file=AE COMP FFA  # weight 3
+downog:file=AE COMP FFA  # weight 3
+dread:file=AE COMP FFA  # weight 3
+dread_new:file=AE COMP FFA  # weight 3
+fallout:file=AE COMP FFA  # weight 3
+h1pb_chillout:file=AE COMP FFA  # weight 3
+h1pb_hangemhigh:file=AE COMP FFA  # weight 3
+h1pb_prisoner:file=AE COMP FFA  # weight 3
+h1pb_wizard:file=AE COMP FFA  # weight 3
+hangman:file=AE COMP FFA  # weight 3
+jaywalk:file=AE COMP FFA  # weight 3
+longshot:file=AE COMP FFA  # weight 3
+patrace:file=AE COMP FFA  # weight 3
+salvation:file=AE COMP FFA  # weight 3
+slammer:file=AE COMP FFA  # weight 3
+temple:file=AE COMP FFA  # weight 3
+tinkered:file=AE COMP FFA  # weight 3
+weld:file=AE COMP FFA  # weight 3
+whiskey:file=AE COMP FFA  # weight 3
+worthy:file=AE COMP FFA  # weight 3
+prisoner:file=AE COMP FFA  # weight 1  # fallback
+wizard:file=AE COMP FFA  # weight 1  # fallback
+chillout:file=AE COMP FFA  # weight 1  # fallback
+hangemhigh:file=AE COMP FFA  # weight 1  # fallback
+longest:file=AE COMP FFA  # weight 1  # fallback
+ratrace:file=AE COMP FFA  # weight 1  # fallback
+carousel:file=AE COMP FFA  # weight 1  # fallback
+
+# social: comp-doubles
+# label: AE COMP DOUBLES
+# about: Two against two on the smaller maps. Evo or pistol starts.
+# teams: 2 x 2
+# party: 2
+# kind: comp
+# starts: evo 1, magnum 1
+birdhouse:file=AE C2V2 TS  # weight 3
+chilledout:file=AE C2V2 TS  # weight 3
+dere:file=AE C2V2 TS  # weight 3
+descent:file=AE C2V2 TS  # weight 3
+downfall:file=AE C2V2 TS  # weight 3
+downog:file=AE C2V2 TS  # weight 3
+dread:file=AE C2V2 TS  # weight 3
+dread_new:file=AE C2V2 TS  # weight 3
+fallout:file=AE C2V2 TS  # weight 3
+h1pb_chillout:file=AE C2V2 TS  # weight 3
+h1pb_hangemhigh:file=AE C2V2 TS  # weight 3
+h1pb_prisoner:file=AE C2V2 TS  # weight 3
+h1pb_wizard:file=AE C2V2 TS  # weight 3
+hangman:file=AE C2V2 TS  # weight 3
+jaywalk:file=AE C2V2 TS  # weight 3
+longshot:file=AE C2V2 TS  # weight 3
+patrace:file=AE C2V2 TS  # weight 3
+salvation:file=AE C2V2 TS  # weight 3
+slammer:file=AE C2V2 TS  # weight 3
+temple:file=AE C2V2 TS  # weight 3
+tinkered:file=AE C2V2 TS  # weight 3
+weld:file=AE C2V2 TS  # weight 3
+whiskey:file=AE C2V2 TS  # weight 3
+worthy:file=AE C2V2 TS  # weight 3
+wizard:file=AE C2V2 TS  # weight 1  # fallback
+longest:file=AE C2V2 TS  # weight 1  # fallback
+chillout:file=AE C2V2 TS  # weight 1  # fallback
+beavercreek:file=AE C2V2 TS  # weight 1  # fallback
+ratrace:file=AE C2V2 TS  # weight 1  # fallback
+prisoner:file=AE C2V2 TS  # weight 1  # fallback
+
+# social: comp-team-objective
+# label: AE COMP TEAM OBJECTIVE
+# about: Four against four. Flags, bombs and hills. Evo or pistol starts.
+# teams: 2 x 4
+# party: 4
+# kind: comp
+# starts: evo 1, magnum 1
+birdhouse:file=AE COMP CTF  # weight 3
+chilledout:file=AE COMP CTF  # weight 3
+dere:file=AE COMP CTF  # weight 3
+descent:file=AE COMP CTF  # weight 3
+downfall:file=AE COMP CTF  # weight 3
+downog:file=AE COMP CTF  # weight 3
+dread:file=AE COMP CTF  # weight 3
+dread_new:file=AE COMP CTF  # weight 3
+fallout:file=AE COMP CTF  # weight 3
+h1pb_chillout:file=AE COMP CTF  # weight 3
+h1pb_hangemhigh:file=AE COMP CTF  # weight 3
+h1pb_prisoner:file=AE COMP CTF  # weight 3
+h1pb_wizard:file=AE COMP CTF  # weight 3
+hangman:file=AE COMP CTF  # weight 3
+jaywalk:file=AE COMP CTF  # weight 3
+longshot:file=AE COMP CTF  # weight 3
+patrace:file=AE COMP CTF  # weight 3
+salvation:file=AE COMP CTF  # weight 3
+slammer:file=AE COMP CTF  # weight 3
+temple:file=AE COMP CTF  # weight 3
+tinkered:file=AE COMP CTF  # weight 3
+weld:file=AE COMP CTF  # weight 3
+whiskey:file=AE COMP CTF  # weight 3
+worthy:file=AE COMP CTF  # weight 3
+birdhouse:file=AE COMP KOH  # weight 3
+chilledout:file=AE COMP KOH  # weight 3
+dere:file=AE COMP KOH  # weight 3
+descent:file=AE COMP KOH  # weight 3
+downfall:file=AE COMP KOH  # weight 3
+downog:file=AE COMP KOH  # weight 3
+dread:file=AE COMP KOH  # weight 3
+dread_new:file=AE COMP KOH  # weight 3
+fallout:file=AE COMP KOH  # weight 3
+h1pb_chillout:file=AE COMP KOH  # weight 3
+h1pb_hangemhigh:file=AE COMP KOH  # weight 3
+h1pb_prisoner:file=AE COMP KOH  # weight 3
+h1pb_wizard:file=AE COMP KOH  # weight 3
+hangman:file=AE COMP KOH  # weight 3
+jaywalk:file=AE COMP KOH  # weight 3
+longshot:file=AE COMP KOH  # weight 3
+patrace:file=AE COMP KOH  # weight 3
+salvation:file=AE COMP KOH  # weight 3
+slammer:file=AE COMP KOH  # weight 3
+temple:file=AE COMP KOH  # weight 3
+tinkered:file=AE COMP KOH  # weight 3
+weld:file=AE COMP KOH  # weight 3
+whiskey:file=AE COMP KOH  # weight 3
+birdhouse:file=AE COMP OB  # weight 3
+chilledout:file=AE COMP OB  # weight 3
+dere:file=AE COMP OB  # weight 3
+descent:file=AE COMP OB  # weight 3
+downfall:file=AE COMP OB  # weight 3
+downog:file=AE COMP OB  # weight 3
+dread:file=AE COMP OB  # weight 3
+dread_new:file=AE COMP OB  # weight 3
+fallout:file=AE COMP OB  # weight 3
+h1pb_chillout:file=AE COMP OB  # weight 3
+h1pb_hangemhigh:file=AE COMP OB  # weight 3
+h1pb_prisoner:file=AE COMP OB  # weight 3
+h1pb_wizard:file=AE COMP OB  # weight 3
+hangman:file=AE COMP OB  # weight 3
+jaywalk:file=AE COMP OB  # weight 3
+longshot:file=AE COMP OB  # weight 3
+patrace:file=AE COMP OB  # weight 3
+salvation:file=AE COMP OB  # weight 3
+slammer:file=AE COMP OB  # weight 3
+temple:file=AE COMP OB  # weight 3
+tinkered:file=AE COMP OB  # weight 3
+weld:file=AE COMP OB  # weight 3
+whiskey:file=AE COMP OB  # weight 3
+worthy:file=AE COMP OB  # weight 3
+beavercreek:file=AE COMP CTF  # weight 1  # fallback
+damnation:file=AE COMP CTF  # weight 1  # fallback
+hangemhigh:file=AE COMP CTF  # weight 1  # fallback
+chillout:file=AE COMP KOH  # weight 1  # fallback
+carousel:file=AE COMP KOH  # weight 1  # fallback
+prisoner:file=AE COMP OB  # weight 1  # fallback
+
+# social: classic-comp
+# label: CLASSIC COMP
+# about: Halo CE's classic competitive 2v2: the community's own rules and maps.
+# teams: 2 x 2
+# party: 2
+# kind: comp
+# starts: none
+# weapons: map
+birdhouse:file=TS 50  # weight 2
+chilledout:file=TS 50  # weight 2
+dere:file=TS 50  # weight 2
+descent:file=TS 50  # weight 2
+downfall:file=TS 50  # weight 2
+downog:file=TS 50  # weight 2
+dread:file=TS 50  # weight 2
+dread_new:file=TS 50  # weight 2
+fallout:file=TS 50  # weight 2
+h1pb_chillout:file=TS 50  # weight 2
+h1pb_hangemhigh:file=TS 50  # weight 2
+h1pb_prisoner:file=TS 50  # weight 2
+h1pb_wizard:file=TS 50  # weight 2
+hangman:file=TS 50  # weight 2
+jaywalk:file=TS 50  # weight 2
+longshot:file=TS 50  # weight 2
+patrace:file=TS 50  # weight 2
+salvation:file=TS 50  # weight 2
+slammer:file=TS 50  # weight 2
+temple:file=TS 50  # weight 2
+tinkered:file=TS 50  # weight 2
+weld:file=TS 50  # weight 2
+whiskey:file=TS 50  # weight 2
+worthy:file=TS 50  # weight 2
+wizard:file=TS 50  # weight 1  # fallback
+longest:file=TS 50  # weight 1  # fallback
+chillout:file=TS 50  # weight 1  # fallback
+ratrace:file=TS 50  # weight 1  # fallback
+prisoner:file=TS 50  # weight 1  # fallback
+
+# social: digsite-arena
+# label: DIGSITE ARENA
+# about: Four against four on the Digsite maps. BR or evo starts.
+# teams: 2 x 4
+# party: 4
+# kind: social
+# starts: br 1, evo 1
+# weapons: map
+# shown: with maps
+# (the Steam Workshop pack "CE Digsite Multiplayer", item 3477809506: shown only on a PC that has it; the maps' own weapons. The
+# small and medium maps; the casual AE game types (motion sensor on). Slayer on every map, flags where the map has 16 or more flag-game spawns,
+# hills where it has 20 or more hill points; a mirrored map sits with its original)
+# 1 Albatross
+1@ws3477809506:file=AE TEAM SLY  # weight 3
+1@ws3477809506:file=AE CTF  # weight 2
+# 2 Abyss
+2@ws3477809506:file=AE TEAM SLY  # weight 3
+2@ws3477809506:file=AE CTF  # weight 2
+2@ws3477809506:file=AE KING  # weight 1
+# 3 Atlas
+3@ws3477809506:file=AE TEAM SLY  # weight 3
+3@ws3477809506:file=AE CTF  # weight 2
+3@ws3477809506:file=AE KING  # weight 1
+# 4 Battle Creek
+4@ws3477809506:file=AE TEAM SLY  # weight 3
+4@ws3477809506:file=AE CTF  # weight 2
+4@ws3477809506:file=AE KING  # weight 1
+# 6 Calamity
+6@ws3477809506:file=AE TEAM SLY  # weight 3
+6@ws3477809506:file=AE CTF  # weight 2
+6@ws3477809506:file=AE KING  # weight 1
+# 7 Cascade
+7@ws3477809506:file=AE TEAM SLY  # weight 3
+7@ws3477809506:file=AE CTF  # weight 2
+7@ws3477809506:file=AE KING  # weight 1
+# 9 Birdhouse
+9@ws3477809506:file=AE TEAM SLY  # weight 3
+9@ws3477809506:file=AE CTF  # weight 2
+9@ws3477809506:file=AE KING  # weight 1
+# 10 Cornage
+10@ws3477809506:file=AE TEAM SLY  # weight 3
+10@ws3477809506:file=AE CTF  # weight 2
+10@ws3477809506:file=AE KING  # weight 1
+# 11 Damnation
+11@ws3477809506:file=AE TEAM SLY  # weight 3
+11@ws3477809506:file=AE CTF  # weight 2
+11@ws3477809506:file=AE KING  # weight 1
+# 12 Deathtrap
+12@ws3477809506:file=AE TEAM SLY  # weight 3
+12@ws3477809506:file=AE CTF  # weight 2
+# 13 Decidia
+13@ws3477809506:file=AE TEAM SLY  # weight 3
+13@ws3477809506:file=AE CTF  # weight 2
+13@ws3477809506:file=AE KING  # weight 1
+# 14 Downrush
+14@ws3477809506:file=AE TEAM SLY  # weight 3
+14@ws3477809506:file=AE CTF  # weight 2
+14@ws3477809506:file=AE KING  # weight 1
+# 15 Dreadnought
+15@ws3477809506:file=AE TEAM SLY  # weight 3
+15@ws3477809506:file=AE CTF  # weight 2
+15@ws3477809506:file=AE KING  # weight 1
+# 16 Cold Shoulder
+16@ws3477809506:file=AE TEAM SLY  # weight 3
+16@ws3477809506:file=AE CTF  # weight 2
+16@ws3477809506:file=AE KING  # weight 1
+# 17 Exhibit
+17@ws3477809506:file=AE TEAM SLY  # weight 3
+17@ws3477809506:file=AE CTF  # weight 2
+17@ws3477809506:file=AE KING  # weight 1
+# 18 Fallout
+18@ws3477809506:file=AE TEAM SLY  # weight 3
+18@ws3477809506:file=AE CTF  # weight 2
+18@ws3477809506:file=AE KING  # weight 1
+# 19 Chiron TL-34
+19@ws3477809506:file=AE TEAM SLY  # weight 3
+19@ws3477809506:file=AE CTF  # weight 2
+19@ws3477809506:file=AE KING  # weight 1
+# 21 Gridiron
+21@ws3477809506:file=AE TEAM SLY  # weight 3
+21@ws3477809506:file=AE CTF  # weight 2
+21@ws3477809506:file=AE KING  # weight 1
+# 22 Descent
+22@ws3477809506:file=AE TEAM SLY  # weight 3
+22@ws3477809506:file=AE CTF  # weight 2
+22@ws3477809506:file=AE KING  # weight 1
+# 23 Frigid Keep
+23@ws3477809506:file=AE TEAM SLY  # weight 3
+23@ws3477809506:file=AE CTF  # weight 2
+23@ws3477809506:file=AE KING  # weight 1
+# 24 Hearth
+24@ws3477809506:file=AE TEAM SLY  # weight 3
+24@ws3477809506:file=AE CTF  # weight 2
+24@ws3477809506:file=AE KING  # weight 1
+# 26 Hotbox
+26@ws3477809506:file=AE TEAM SLY  # weight 3
+26@ws3477809506:file=AE CTF  # weight 2
+26@ws3477809506:file=AE KING  # weight 1
+# 28 Imminent
+28@ws3477809506:file=AE TEAM SLY  # weight 3
+28@ws3477809506:file=AE CTF  # weight 2
+28@ws3477809506:file=AE KING  # weight 1
+# 29 Dead Weight
+29@ws3477809506:file=AE TEAM SLY  # weight 3
+29@ws3477809506:file=AE CTF  # weight 2
+29@ws3477809506:file=AE KING  # weight 1
+# 30 Ballyhoo
+30@ws3477809506:file=AE TEAM SLY  # weight 3
+30@ws3477809506:file=AE CTF  # weight 2
+# 31 Hang 'Em High
+31@ws3477809506:file=AE TEAM SLY  # weight 3
+31@ws3477809506:file=AE CTF  # weight 2
+31@ws3477809506:file=AE KING  # weight 1
+# 32 Intensity
+32@ws3477809506:file=AE TEAM SLY  # weight 3
+32@ws3477809506:file=AE CTF  # weight 2
+32@ws3477809506:file=AE KING  # weight 1
+# 33 Judgement
+33@ws3477809506:file=AE TEAM SLY  # weight 3
+33@ws3477809506:file=AE CTF  # weight 2
+33@ws3477809506:file=AE KING  # weight 1
+# 34 Delta Ruins
+34@ws3477809506:file=AE TEAM SLY  # weight 3
+34@ws3477809506:file=AE CTF  # weight 2
+34@ws3477809506:file=AE KING  # weight 1
+# 35 Longshot
+35@ws3477809506:file=AE TEAM SLY  # weight 3
+35@ws3477809506:file=AE CTF  # weight 2
+35@ws3477809506:file=AE KING  # weight 1
+# 36 Lucidity
+36@ws3477809506:file=AE TEAM SLY  # weight 3
+36@ws3477809506:file=AE CTF  # weight 2
+36@ws3477809506:file=AE KING  # weight 1
+# 38 Madhouse
+38@ws3477809506:file=AE TEAM SLY  # weight 3
+38@ws3477809506:file=AE CTF  # weight 2
+38@ws3477809506:file=AE KING  # weight 1
+# 39 Magnitude
+39@ws3477809506:file=AE TEAM SLY  # weight 3
+39@ws3477809506:file=AE CTF  # weight 2
+39@ws3477809506:file=AE KING  # weight 1
+# 40 Nitra
+40@ws3477809506:file=AE TEAM SLY  # weight 3
+40@ws3477809506:file=AE CTF  # weight 2
+# 41 Outbound
+41@ws3477809506:file=AE TEAM SLY  # weight 3
+41@ws3477809506:file=AE CTF  # weight 2
+41@ws3477809506:file=AE KING  # weight 1
+# 42 Prisoner
+42@ws3477809506:file=AE TEAM SLY  # weight 3
+42@ws3477809506:file=AE CTF  # weight 2
+42@ws3477809506:file=AE KING  # weight 1
+# 43 Promenade
+43@ws3477809506:file=AE TEAM SLY  # weight 3
+43@ws3477809506:file=AE CTF  # weight 2
+43@ws3477809506:file=AE KING  # weight 1
+# 44 Levee
+44@ws3477809506:file=AE TEAM SLY  # weight 3
+44@ws3477809506:file=AE CTF  # weight 2
+44@ws3477809506:file=AE KING  # weight 1
+# 45 Rat Race
+45@ws3477809506:file=AE TEAM SLY  # weight 3
+45@ws3477809506:file=AE CTF  # weight 2
+45@ws3477809506:file=AE KING  # weight 1
+# 46 Recall
+46@ws3477809506:file=AE TEAM SLY  # weight 3
+46@ws3477809506:file=AE CTF  # weight 2
+46@ws3477809506:file=AE KING  # weight 1
+# 47 Platoe
+47@ws3477809506:file=AE TEAM SLY  # weight 3
+47@ws3477809506:file=AE CTF  # weight 2
+47@ws3477809506:file=AE KING  # weight 1
+# 48 Jaywalk
+48@ws3477809506:file=AE TEAM SLY  # weight 3
+48@ws3477809506:file=AE CTF  # weight 2
+48@ws3477809506:file=AE KING  # weight 1
+# 49 Gothra
+49@ws3477809506:file=AE TEAM SLY  # weight 3
+49@ws3477809506:file=AE CTF  # weight 2
+# 50 Redshift
+50@ws3477809506:file=AE TEAM SLY  # weight 3
+50@ws3477809506:file=AE CTF  # weight 2
+50@ws3477809506:file=AE KING  # weight 1
+# 51 Overflow
+51@ws3477809506:file=AE TEAM SLY  # weight 3
+51@ws3477809506:file=AE CTF  # weight 2
+51@ws3477809506:file=AE KING  # weight 1
+# 52 Double Take
+52@ws3477809506:file=AE TEAM SLY  # weight 3
+52@ws3477809506:file=AE CTF  # weight 2
+52@ws3477809506:file=AE KING  # weight 1
+# 53 Rock Bottom
+53@ws3477809506:file=AE TEAM SLY  # weight 3
+53@ws3477809506:file=AE CTF  # weight 2
+53@ws3477809506:file=AE KING  # weight 1
+# 54 Chill Out
+54@ws3477809506:file=AE TEAM SLY  # weight 3
+54@ws3477809506:file=AE CTF  # weight 2
+54@ws3477809506:file=AE KING  # weight 1
+# 55 Hang 'Em High Mirrored
+55@ws3477809506:file=AE TEAM SLY  # weight 3
+55@ws3477809506:file=AE CTF  # weight 2
+55@ws3477809506:file=AE KING  # weight 1
+# 56 Ruins of Alph
+56@ws3477809506:file=AE TEAM SLY  # weight 3
+56@ws3477809506:file=AE CTF  # weight 2
+56@ws3477809506:file=AE KING  # weight 1
+# 58 Boarding Action
+58@ws3477809506:file=AE TEAM SLY  # weight 3
+58@ws3477809506:file=AE CTF  # weight 2
+58@ws3477809506:file=AE KING  # weight 1
+# 59 Spillway
+59@ws3477809506:file=AE TEAM SLY  # weight 3
+59@ws3477809506:file=AE CTF  # weight 2
+59@ws3477809506:file=AE KING  # weight 1
+# 60 Spillway Mirrored
+60@ws3477809506:file=AE TEAM SLY  # weight 3
+60@ws3477809506:file=AE CTF  # weight 2
+60@ws3477809506:file=AE KING  # weight 1
+# 61 Blamite Mines
+61@ws3477809506:file=AE TEAM SLY  # weight 3
+61@ws3477809506:file=AE CTF  # weight 2
+61@ws3477809506:file=AE KING  # weight 1
+# 63 Stranded
+63@ws3477809506:file=AE TEAM SLY  # weight 3
+63@ws3477809506:file=AE CTF  # weight 2
+63@ws3477809506:file=AE KING  # weight 1
+# 64 Surf's Up
+64@ws3477809506:file=AE TEAM SLY  # weight 3
+64@ws3477809506:file=AE CTF  # weight 2
+64@ws3477809506:file=AE KING  # weight 1
+# 66 Temple
+66@ws3477809506:file=AE TEAM SLY  # weight 3
+66@ws3477809506:file=AE CTF  # weight 2
+66@ws3477809506:file=AE KING  # weight 1
+# 68 Tinker
+68@ws3477809506:file=AE TEAM SLY  # weight 3
+68@ws3477809506:file=AE CTF  # weight 2
+68@ws3477809506:file=AE KING  # weight 1
+# 69 Unchained
+69@ws3477809506:file=AE TEAM SLY  # weight 3
+69@ws3477809506:file=AE CTF  # weight 2
+69@ws3477809506:file=AE KING  # weight 1
+# 70 Vivarium
+70@ws3477809506:file=AE TEAM SLY  # weight 3
+70@ws3477809506:file=AE CTF  # weight 2
+70@ws3477809506:file=AE KING  # weight 1
+# 71 Warren
+71@ws3477809506:file=AE TEAM SLY  # weight 3
+71@ws3477809506:file=AE CTF  # weight 2
+71@ws3477809506:file=AE KING  # weight 1
+# 72 Weld
+72@ws3477809506:file=AE TEAM SLY  # weight 3
+72@ws3477809506:file=AE CTF  # weight 2
+72@ws3477809506:file=AE KING  # weight 1
+# 73 Whiskey
+73@ws3477809506:file=AE TEAM SLY  # weight 3
+73@ws3477809506:file=AE CTF  # weight 2
+73@ws3477809506:file=AE KING  # weight 1
+# 74 Worthy
+74@ws3477809506:file=AE TEAM SLY  # weight 3
+74@ws3477809506:file=AE CTF  # weight 2
+# 75 Zero Hour
+75@ws3477809506:file=AE TEAM SLY  # weight 3
+75@ws3477809506:file=AE CTF  # weight 2
+75@ws3477809506:file=AE KING  # weight 1
+
+# social: digsite-big-team
+# label: DIGSITE BIG TEAM
+# about: Eight against eight with vehicles on the big Digsite maps. SINGLESHOT BR starts.
+# teams: 2 x 8
+# party: 8
+# kind: social
+# starts: singleshot 1
+# weapons: map
+# shown: with maps
+# (the Digsite pack's big maps, the ones that place vehicles and are made for up to 16 players; the BIG TEAM game types set their
+# vehicles; HVY on the maps with tanks)
+# 5 Birdcage
+5@ws3477809506:file=AE BTB SLY  # weight 3
+5@ws3477809506:file=AE BTB CTF  # weight 3
+# 8 Ancient Sanctuary
+8@ws3477809506:file=AE BTB SLY  # weight 3
+8@ws3477809506:file=AE BTB CTF  # weight 3
+8@ws3477809506:file=AE BTB KING  # weight 2
+8@ws3477809506:file=AE BTB HVY  # weight 2
+# 20 Blood Gulch
+20@ws3477809506:file=AE BTB SLY  # weight 3
+20@ws3477809506:file=AE BTB CTF  # weight 3
+20@ws3477809506:file=AE BTB KING  # weight 2
+20@ws3477809506:file=AE BTB HVY  # weight 2
+# 25 Hemoasis
+25@ws3477809506:file=AE BTB SLY  # weight 3
+25@ws3477809506:file=AE BTB CTF  # weight 3
+25@ws3477809506:file=AE BTB KING  # weight 2
+25@ws3477809506:file=AE BTB HVY  # weight 2
+# 27 Ice Fields
+27@ws3477809506:file=AE BTB SLY  # weight 3
+27@ws3477809506:file=AE BTB CTF  # weight 3
+27@ws3477809506:file=AE BTB KING  # weight 2
+27@ws3477809506:file=AE BTB HVY  # weight 2
+# 37 Danger Canyon
+37@ws3477809506:file=AE BTB SLY  # weight 3
+37@ws3477809506:file=AE BTB CTF  # weight 3
+37@ws3477809506:file=AE BTB KING  # weight 2
+# 57 Snowbind
+57@ws3477809506:file=AE BTB SLY  # weight 3
+57@ws3477809506:file=AE BTB CTF  # weight 3
+57@ws3477809506:file=AE BTB HVY  # weight 2
+# 62 Sidewinder
+62@ws3477809506:file=AE BTB SLY  # weight 3
+62@ws3477809506:file=AE BTB CTF  # weight 3
+62@ws3477809506:file=AE BTB KING  # weight 2
+62@ws3477809506:file=AE BTB HVY  # weight 2
+# 65 Synthesis
+65@ws3477809506:file=AE BTB SLY  # weight 3
+65@ws3477809506:file=AE BTB CTF  # weight 3
+65@ws3477809506:file=AE BTB KING  # weight 2
+# 67 Timberland
+67@ws3477809506:file=AE BTB SLY  # weight 3
+67@ws3477809506:file=AE BTB CTF  # weight 3
+67@ws3477809506:file=AE BTB KING  # weight 2
+67@ws3477809506:file=AE BTB HVY  # weight 2

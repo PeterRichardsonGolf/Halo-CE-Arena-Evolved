@@ -1,0 +1,25 @@
+# DEV MODE unseen: "unseen [me|<player>|off]" hides a player from the bots. They do not see, target or hunt that player,
+# and do not count them as an enemy near; a bot they shoot reacts to the hurt (cover, unscoping) but never turns on them.
+# A new game, a reset or "unseen off" ends it. Log: "dev: unseen on for <name>" and "dev: unseen off".
+list dev-unseen-100
+revision 2
+title DEV MODE: UNSEEN BY THE BOTS
+
+group unseen
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 6
+set bots.skill heroic
+
+test unseen-walk
+title Walk up to the bots unseen
+setup unseen me
+check Walk among the enemy bots: none shoots or turns to you
+check Bots on your team still play as before
+expect 1 cmd unseen me ok
+
+test unseen-off
+title Unseen off: the bots see you again
+setup unseen off
+check Stand in view of an enemy bot: it fights you again
+expect 1 cmd unseen off ok
