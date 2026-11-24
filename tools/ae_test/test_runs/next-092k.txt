@@ -1,0 +1,15 @@
+# 0.9.2: the heavy revolver is held back and the weapon cache is the release's. One staged test: the cache weapons play,
+# the revolver is gone.
+list next-092k
+revision 1
+title 0.9.2 ROUND K
+
+test cache-weapons
+title WEAPON CACHE: battle rifle in hand, no revolver
+setup dummy 1 8
+check You hold the pack's BATTLE RIFLE and it kills the dummy
+check HUD, RETICLE, WEAPONS has no HEAVY REVOLVER row
+check GAME OPTIONS, PRIMARY WEAPON lists no HEAVY REVOLVER
+map octagon_b
+gametype AE BR TS
+set bots.count 0

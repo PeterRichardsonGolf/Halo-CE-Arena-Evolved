@@ -1,0 +1,39 @@
+# FIRING RANGE (Content Evolved's, firing_range.c): a level written in code on Blood Gulch's map: a floor and walls, a mirror,
+# an arena to the north, a bench holding each weapon of the Tag Injector profile ae_dev (the one DEV MODE's `inject` fills) with a
+# dummy past its end, and a stand of each AI to the east. The range opens from the menus with DEV MODE's `range [<profile>]`;
+# each test takes a few weapons and AI of a Custom Edition map into the profile first, then opens the range.
+# You start in the middle of the room, facing the arena (north): the benches are to your left, the AI stands to your right.
+list firing-range
+revision 3
+title FIRING RANGE: THE LEVEL IN CODE
+
+test benches
+title BENCHES: the weapon lies on its bench
+check The bench to your left holds the weapon
+check Walk to it: it is yours to pick up
+menus
+setup inject open h2_warlock
+setup inject take 0 0
+setup range
+expect 1 log firing range: 1 weapons laid out
+
+test dummy
+title DUMMY: shoot it, the time to kill is told
+check A dummy stands past the end of the bench, facing you
+check Shoot it dead: DUMMY: killed in ... s shows
+menus
+setup inject open h2_warlock
+setup inject take 0 0
+setup range
+expect 1 log firing range: 1 weapons laid out
+
+test arena
+title ARENA: the AI stand to the east
+check The arena's low walls and door are ahead of you
+check One AI stands to your right; walk to it, press action
+menus
+setup inject open h2_warlock
+setup inject take 1 0
+setup inject take 1 1
+setup range
+expect 1 log and 2 AI stood

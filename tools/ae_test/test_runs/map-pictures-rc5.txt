@@ -1,0 +1,70 @@
+# MAP PICTURES, ONE FRAME (rc5): every map picture is shown in the same 16:9 frame on every screen, filled (a 560 x 456 stock picture
+# loses a strip top and bottom; a wide Workshop picture fills it) with no darkened second copy behind it; a picture far from 16:9
+# shows whole in plain bars. Each test opens on its scene (the lobby card, the vote tiles, CHANGE MAP, MAPS & MODS).
+list map-pictures-rc5
+revision 2
+title MAP PICTURES: ONE 16:9 FRAME
+
+test lobby-card
+title The lobby's game card
+check The picture is 16:9 with the words beside it
+check No blurred second copy behind the picture
+check The card is short: nothing blank beside the picture
+menus
+setup social start team-slayer map prisoner seed 7 hold 6
+
+test vote-tiles
+title The vote's three tiles
+check Three pictures, the same 16:9 frame in each tile
+check A stock map and a Workshop map look the same size
+menus
+setup social start team-slayer vote seed 7 left 8 hold 0
+
+test change-map-digsite
+title CHANGE MAP on a Digsite map
+check The picture fills its 16:9 frame, no bars, no blur
+check The list rows are solid: no ring shows through them
+check The name, facts and chips sit under the picture
+menus
+card bottom
+setup menu changemap dig
+
+test change-map-stock
+title CHANGE MAP on a stock map
+check A stock map: the same 16:9 frame, same place
+check Its words sit at the same height as the Digsite map's
+menus
+card bottom
+setup menu changemap chill
+
+test change-map-folder
+title CHANGE MAP on a folder row
+check The folder shows its first map's picture, 16:9
+check The folder's name and count sit under the picture
+menus
+card bottom
+setup menu changemap folder chill
+
+test maps-card-workshop
+title MAPS & MODS card: a Workshop map
+check The picture fills a 16:9 frame, edges whole
+check No second, darkened copy behind it
+menus
+card bottom
+setup menu maps installed card-workshop
+
+test maps-card-stock
+title MAPS & MODS card: a stock map
+check A 560 x 456 picture loses a strip top and bottom
+check Same frame and place as the Workshop map's
+menus
+card bottom
+setup menu maps installed card-stock
+
+test workshop-card
+title WORKSHOP browse card
+check The picture is a 16:9 frame inside the card
+check The accent line sits on the card's top edge only
+menus
+card bottom
+setup menu maps workshop

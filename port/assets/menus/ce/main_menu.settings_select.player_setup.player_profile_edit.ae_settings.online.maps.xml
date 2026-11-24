@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/ae_settings_page_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/header_hud"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/header_hud" controller="1" left="35" top="11" width="605" height="59" type="text" text="CONNECTION AND MAPS" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_rejoin_after_drop" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_map_download_steam" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_ce_archive" x="54" y="133"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_map_download_limit" x="54" y="163"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_protocol" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_defaults" y="1"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_rejoin_after_drop" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/rejoin_after_drop_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/rejoin_after_drop_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/rejoin_after_drop_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/rejoin_after_drop_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="network.rejoin_after_drop" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_map_download_steam" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_steam_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_steam_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_steam_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_steam_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="network.map_download_steam" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_ce_archive" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/ce_archive_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/ce_archive_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/ce_archive_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/ce_archive_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="game.ce_archive" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_map_download_limit" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_limit_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_limit_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_limit_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/map_download_limit_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="256 MB|512 MB|1 GB|2 GB|4 GB|8 GB|16 GB|64 GB" setting="network.map_download_limit" values="256|512|1024|2048|4096|8192|16384|65536" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/op_protocol" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/protocol_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/protocol_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/protocol_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/protocol_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="AUTO|OPENCE|DELTA" setting="network.protocol" values="auto|opence|delta" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/labels">
+		<string text="REJOIN AFTER DROP:"/>
+		<string text="WORKSHOP DOWNLOADS:"/>
+		<string text="MAP ARCHIVE:"/>
+		<string text="DOWNLOAD LIMIT:"/>
+		<string text="PROTOCOL:"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/maps/help_strings">
+		<string text=""/>
+		<string text="If your connection drops, join the game again by\nitself: 3 tries in 30 seconds."/>
+		<string text="Download a server's Workshop maps from Steam.\nNeeds a Steam account."/>
+		<string text="Show the online map archive in MAPS &amp; MODS.\nOFF: the game never contacts it."/>
+		<string text="The most map data this PC takes from one host."/>
+		<string text="How this PC talks to other players. Leave on\nAUTO unless a host asks for OPENCE or DELTA."/>
+	</strings>
+</menus>

@@ -1,0 +1,36 @@
+# BACKPACK WEAPONS, fuel rod and flamethrower: a holstered fuel rod lies across the back as the rocket launcher does,
+# its flat side on the back plate, centred on the back. A holstered flamethrower lies across the back as a rifle
+# does, centred on it.
+# Everyone starts with a pistol in hand and the weapon on the back (the test host's custom loadout: 3 pistol, 10 fuel
+# rod or 11 flamethrower); a dummy stands ahead facing the way you face; F2 looks at your own back.
+# Staged only: nothing here waits for something to happen.
+list fuel-rod-back-rc6
+revision 5
+title Fuel rod and flamethrower on the back
+
+group fuel-rod
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_loadout 3,10
+
+test dummy-back
+title A dummy with the fuel rod on its back
+setup dummy 1 2.5 away
+check Walk round: across the back, flat, centred, not low
+
+test yours
+title The same on you
+fresh
+check F2 to look at your back: the same as on the dummy
+
+group flamethrower
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+set debug.network_test_loadout 3,11
+
+test flame-back
+title A dummy with the flamethrower on its back
+setup dummy 1 2.5 away
+check Walk round: across the back, centred, not at the hip

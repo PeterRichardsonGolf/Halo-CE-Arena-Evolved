@@ -1,0 +1,45 @@
+# PROFILES and its EDIT page with the profile's Spartan: one centred column on the right side. He stands on a floor
+# line in the profile's colour, a name under the line, and on EDIT the 18 colours under that, nine a row. A on the
+# COLOUR row gives the colours the focus: he shows the focused one, A keeps it, B goes back. Every test opens on its
+# page from DEV MODE's `menu profiles [edit [colours|plain]]` (a PC with no profile gets one named DEV first).
+list menu-chief-11x
+revision 1
+title PROFILES: THE SPARTAN'S SIDE
+
+test edit-page
+title EDIT: he stands on the colours
+menus
+card bottom
+setup menu profiles edit
+check He stands on a line; its colour's name and 18 colours under
+check COLOUR left and right: his armour and the name change
+check Right stick turns him; a mouse drag on him does too
+expect 1 log menu chief: drawn from now on
+
+test edit-colours
+title EDIT: the colours have the focus
+menus
+card bottom
+setup menu profiles edit colours
+check A blue ring on one colour; he and the COLOUR row show it
+check The stick moves the ring over 9 x 2; left of column 1 leaves
+check A keeps the colour (white frame moves); B goes back
+expect 1 log the colours focused
+
+test list-page
+title PROFILES: the focused profile's Spartan
+menus
+card bottom
+setup menu profiles
+check Same place as on EDIT, in the focused profile's colour
+check Its name under the line; its settings in two lines
+check Y edits it: he does not move when EDIT opens
+
+test edit-plain
+title EDIT: a PC with no Spartan model
+menus
+card bottom
+setup menu profiles edit plain
+check A square of the colour stands on the line in his place
+check The name and the 18 colours are as with him
+expect 1 log no model

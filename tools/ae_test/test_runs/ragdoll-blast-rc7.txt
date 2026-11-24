@@ -1,0 +1,25 @@
+# RAGDOLL AI MODERN: a grenade at an AI's feet threw its body out of sight (up to 12 wu/s, 8-12 wu in two seconds), so
+# bodies seemed to vanish. An AI's blast-thrown body now flies at most 6 wu/s, its turn kept; a player's body and
+# EXAGGERATED keep the whole throw. The test puts three grunts ahead of you on the beach (DEV `goto` + `actor`) and
+# sets a grenade's blast off at each one's feet as it opens. They die the moment they are placed, so nothing else
+# kills them first. RAGDOLL AI is set to MODERN for this run only.
+list ragdoll-blast-rc7
+revision 3
+title BLAST BODIES STAY IN SIGHT
+
+group b30
+map b30
+gametype coop
+set game.ragdoll_ai modern
+set game.steam_first_start_asked true
+
+test blast
+title A grenade's blast at three grunts' feet
+setup goto -61.4 38.9 0.8 facing 305
+setup actor grunt_minor_needler 8
+setup actor grunt_minor_needler 10
+setup actor grunt_minor_needler 12
+setup actor kill blast
+check Every body is thrown and lands where you can still see it
+check None flies off out of sight
+check A grenade of your own throws a body the same way

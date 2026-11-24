@@ -1,0 +1,92 @@
+/*
+AE_DEV_DUMMY_RULES.H
+
+DEV MODE's target dummies (ae_dev_dummy.h) as pure rules: where they stand, when they heal and respawn, and which bots
+they are. No engine includes: port/linux/tests/ae_dev_dummy_rules_test.c compiles these alone.
+
+A dummy is a bot of a local game that stands still where it was put, facing the player who made it, never moving or
+shooting. AE_DUMMY_HEAL_TICKS after it was last hurt its body heals to full and its shield starts recharging (the game's own
+recharge), and it respawns at the same spot AE_DUMMY_RESPAWN_TICKS after it died.
+
+A walking dummy (dummy walk: the bots audit's staged spot checks, 11-14) is put at a spot the same way but walks: it
+goes to its goal by the bots' own routes (or roams the map when it has none) and never shoots. Its log says once a life
+when it has left its start, when it has reached its goal, and when it is still near its start AE_DUMMY_WALK_STILL_TICKS
+after it was put there, so a TEST RUN can expect "the bot leaves the spot within 10 s".
+
+A runner (dummy run) is a walking dummy of the other team: it runs from its start to its goal by the bots' own routes,
+and one that loops turns back at each end, so a staged scene has a player who is already moving on a known path (a flag
+carrier running in and out of sight). Its log says where it is once a second.
+*/
+
+#ifndef __AE_DEV_DUMMY_RULES_H
+#define __AE_DEV_DUMMY_RULES_H
+
+/* the most dummies at once, and the distances a dummy may be put at (world units) */
+#define AE_DUMMY_MAXIMUM 8
+#define AE_DUMMY_DISTANCE_DEFAULT 10.0f
+#define AE_DUMMY_DISTANCE_MINIMUM 1.0f
+#define AE_DUMMY_DISTANCE_MAXIMUM 200.0f
+/* the ticks (30 a second) from the last hurt to the heal, and from a death to the respawn */
+#define AE_DUMMY_HEAL_TICKS 90
+#define AE_DUMMY_RESPAWN_TICKS 30
+/* the ticks a dummy's bot is waited for before it is given up (the game had no room, the bot never came) */
+#define AE_DUMMY_JOIN_TICKS 300
+/* the sideways gap between dummies made together (world units) */
+#define AE_DUMMY_SPACING 1.5f
+
+/* a walking dummy: it has left its start beyond this (world units, flat), reached its goal within this, and the ticks
+after it was put at its start that it is said to be still there */
+#define AE_DUMMY_WALK_LEFT 3.0f
+#define AE_DUMMY_WALK_ARRIVED 1.5f
+#define AE_DUMMY_WALK_STILL_TICKS 300
+/* the ticks between a runner's "at x y z" lines in the log */
+#define AE_DUMMY_RUN_SAY_TICKS 30
+/* what a walking dummy's log says (ae_dummy_walk_news's bits) */
+#define AE_DUMMY_WALK_SAY_LEFT 1
+#define AE_DUMMY_WALK_SAY_REACHED 2
+#define AE_DUMMY_WALK_SAY_STILL 4
+
+struct ae_dummy_spot
+{
+	float x, y, z;
+	/* the way the dummy faces (radians), toward the player */
+	float yaw;
+};
+
+/* dummy `index` of `count` for a player at (ox, oy, oz) facing (fx, fy) (not unit length): `distance` ahead (or at the
+player's own spot when `here`), the dummies of a group side by side across the player's line of sight, each facing back
+at the player, or, with `away`, the way the player faces (its back to the player). z is the player's, a little up */
+struct ae_dummy_spot ae_dummy_spot(int index, int count, float ox, float oy, float oz, float fx, float fy,
+	float distance, int here, int away);
+/* whether a dummy hurt at hurt_tick is to heal at now */
+int ae_dummy_heal_due(long hurt_tick, long now);
+/* the respawn timer a dead dummy's player is to have: the engine's own (current) or shorter, so the respawn comes
+AE_DUMMY_RESPAWN_TICKS after the death at dead_tick (never under 1) */
+long ae_dummy_respawn_timer(long dead_tick, long now, long current);
+/* whether a dummy's bot, flagged at join_tick, is given up at now: it never joined the game (present 0, seen 0) in
+AE_DUMMY_JOIN_TICKS, or it joined and has left (seen 1, present 0) */
+int ae_dummy_given_up(int present, int seen, long join_tick, long now);
+/* the bots a new group of `count` dummies are: the bots (0 up) that are not in the game, in the order bots.count lets
+them join, after the `claimed` that are already on their way; up to `maximum` bots. present[i] is non-zero for a bot in
+the game. How many were found (fewer than count: not enough room) */
+int ae_dummy_pick(unsigned char const *present, int maximum, int claimed, int count, int *out);
+/* the dummy that leaves first when bots.count falls: a flagged bot in the game (flag[i], present[i]) before any
+other, the lowest first; `fallback` (the game's own pick) when there is none */
+int ae_dummy_leaver(unsigned char const *flag, unsigned char const *present, int maximum, int fallback);
+
+/* the yaw (radians) from (x, y) toward (tx, ty): a walking dummy put at its start faces its goal; 0 when they are the
+same spot */
+float ae_dummy_yaw_toward(float x, float y, float tx, float ty);
+/* the lines a walking dummy's log says now, as AE_DUMMY_WALK_SAY_* bits, none of those in `said` (each once a life): it
+stands at (x, y), was put at (sx, sy) at placed_tick, and has a goal at (gx, gy) when has_goal. Left: beyond
+AE_DUMMY_WALK_LEFT of its start; reached: within AE_DUMMY_WALK_ARRIVED of its goal; still: not left yet at
+AE_DUMMY_WALK_STILL_TICKS (said once even when it leaves later) */
+int ae_dummy_walk_news(float x, float y, float sx, float sy, int has_goal, float gx, float gy, long placed_tick, long now,
+	int said);
+
+/* the end a runner runs to after this tick. It stands at (x, y) and runs to end `to` (0 or 1) of its two ends, (ex[0],
+ey[0]) its start and (ex[1], ey[1]) its goal: the other end once it is within AE_DUMMY_WALK_ARRIVED of `to` and it loops,
+else `to` (a runner that does not loop stays at its goal) */
+int ae_dummy_run_next(float x, float y, float const *ex, float const *ey, int to, int loops);
+
+#endif

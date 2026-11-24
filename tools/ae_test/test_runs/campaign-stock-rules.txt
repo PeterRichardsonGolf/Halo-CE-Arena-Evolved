@@ -1,0 +1,30 @@
+# A campaign level plays Halo CE's own rules, whatever multiplayer gametype was played before it in the same session:
+# first an AE gametype with shootable grenades, then a campaign level, where a grenade on the ground is not set off by shots.
+# DEV MODE commands used: goto start <n> and goto <x> <y> <z> facing <degrees>, powerup <item> ahead (a pickup on the ground in front of you).
+list campaign-stock-rules
+revision 1
+title CAMPAIGN PLAYS HALO CE'S RULES
+
+group gametype
+map beavercreek
+gametype AE TEAM SLY
+set bots.count 0
+
+test ae-rules
+title AE gametype: a grenade on the ground is shot off
+setup goto start 1
+setup powerup frag_grenade ahead
+check Wait 2 s, shoot the grenade ahead: it goes off
+expect 1 log live rule: shootable grenades on
+
+group campaign
+map b30
+gametype coop
+
+test campaign-rules
+title Campaign after it: Halo CE's rules
+setup goto -62.4 20.7 1.6 facing 90
+setup powerup frag_grenade ahead
+check Shoot the grenade lying ahead: nothing happens
+check Walk over it: you pick it up
+expect 1 no log grenade shot:
