@@ -1,0 +1,47 @@
+# 1.0 rc5 IMMINENT: the map's bot nav file (port/assets/bot_nav/imminent.txt, for this version of the map only). The
+# sniper tower's top is reached by its teleporter only: a jump link takes a bot off the tower's south balcony onto the
+# east bridge's platform (3.9 down, under the map's lethal fall), its run-up from inside the tower. The rocket bridge
+# over the middle (a walkway 1 across, its ends the east platform and the ladder's top) has a jump link off its wide
+# middle north-west over the camo's pit onto the middle floor, 2.4 down. A jump down is pressed only once the bot runs
+# along its line: a bot standing at the edge, or running across the line, goes back to the run-up's start first
+# (ae_bots_travel_jump_start). The railing tops on the map's outer edges are walkable surfaces that lead off the map,
+# and small corner ledges lead nowhere: avoid circles close them, so no route walks them. Log at the load: "bot nav:
+# imminent (built in): 0 routes (0 points), 0 keepouts, 2 links, 26 avoids".
+list bots-imminent-100
+revision 2
+title IMMINENT: BOTS STAY ON THE MAP
+
+group ctf
+map imminent@ws2899282492
+gametype AE CTF
+set bots.count 7
+set debug.bot_events true
+
+test tower
+title IMMINENT: bots come down off the sniper tower
+setup goto 26.0 -12.0 88.4 facing 131
+check Watch the sniper tower's top a while
+check A bot up there jumps down to the east bridge
+check No bot stays stuck up there
+expect 1 log bot nav: imminent (built in)
+expect 1 log 2 layout jumps), 26 avoid zones
+
+test bridge
+title IMMINENT: bots jump off the rocket bridge
+setup goto 14.5 -3.5 86.4 facing 270
+check Watch the rocket bridge in front a while
+check Bots jump off its middle onto this floor
+check No bot stands stuck up on the bridge
+
+test edges
+title IMMINENT: no bot walks off the outer railings
+check Play a few minutes by the map's outer walls
+check No bot climbs a railing and falls off the map
+check Bots still fight along the walls as before
+
+test flags
+title IMMINENT CTF: bots carry the flag home
+setup goto flag_ours
+check Play a few minutes of CTF with the bots
+check Bots take your flag and run it to their base
+check No bot stands stuck at a ladder or a pad

@@ -1,0 +1,46 @@
+# 0.9.3: LOW LATENCY (waits again only under 65% of the refresh; turns itself off for the game with a log line when it
+# keeps missing or learns a wrong refresh), RESET EVERY OPTION after a chained DEV scene, and GRAPHICS PRESET
+# PERFORMANCE's rows. Staged only.
+list next-093c
+revision 1
+title 0.9.3 ROUND C
+
+test low-latency-one
+title LOW LATENCY on: one player
+check Run and aim a lap: no mud, it feels as quick as with it off
+check If it turned itself off, the log says why (F4 notes it)
+map chillout
+gametype AE BR TS
+set bots.count 3
+set display.low_latency on
+set display.target_60_fps false
+
+test low-latency-split
+title LOW LATENCY on: two players side by side
+card bottom
+check Both players run and aim: no mud
+check No worse frame drops than with it off
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+set display.split_target_60_fps false
+set display.low_latency on
+players 2
+
+test options-reset-again
+title CHANGED tab: RESET EVERY OPTION after another scene
+check A on the red row asks first; CANCEL is focused
+check The question names the 3 options that go back
+check Yes empties the tab: "Nothing is changed yet."
+menus
+setup menu game_options changed change kills_to_win=30 change time_limit=10 change respawn_time=5
+expect 1 log dev: menu game_options changed opened, 3 changed
+
+test preset-performance
+title GRAPHICS PRESET: PERFORMANCE
+check Pick PERFORMANCE: SHADOW RESOLUTION 128, PARTICLES 1024
+check DYNAMIC LIGHTS 8 and HDR OFF follow it
+check Pick QUALITY again: HDR stays as PERFORMANCE left it
+menus
+setup menu settings find preset

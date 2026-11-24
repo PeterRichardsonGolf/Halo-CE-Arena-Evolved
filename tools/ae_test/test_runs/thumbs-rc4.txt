@@ -1,0 +1,44 @@
+# MAP PICTURES WHOLE: a map's picture keeps its own proportions and shows whole in the box it is drawn in, nothing cut; a picture
+# of other proportions has the rest of the box filled with its own middle, darkened (stock previews are 560 by 456, Workshop
+# pictures 2048 by 1152 or 668 by 292). Each test opens on its scene from
+# `social start ... map <name>` (the TOURNAMENT LOBBY's game card, any map name) or `social start ... vote` (the vote's three
+# tiles). Nothing in a picture is stretched: a round object stays round, a straight edge straight.
+list thumbs-rc4
+revision 2
+title MAP PICTURES: WHOLE, NEVER CUT OR SQUASHED
+
+test card-digsite-16x9
+title GAME CARD: a 16:9 Digsite picture
+menus
+setup social maps hide none
+setup social start team-objective map 1@ws3477809506
+check Whole picture, Digsite logo complete, not squeezed
+check The rest of the box: the same picture, darkened
+
+test card-stock
+title GAME CARD: a stock map
+menus
+setup social maps hide none
+setup social start team-slayer map chillout
+check Chill Out fills the box, not stretched
+
+test card-workshop-other
+title GAME CARD: another Digsite map
+menus
+setup social maps hide none
+setup social start team-objective map 20@ws3477809506
+check The whole picture shows, nothing cut off, not squeezed
+
+test vote-tiles
+title MAP VOTE: the three tiles and the voters' small pictures
+menus
+setup social maps hide none
+setup social start team-objective vote seed 7 votes 2,2,1 left 7
+check Each tile shows its whole picture, none cut or squeezed
+check The small voted picture in a roster row is not squeezed
+
+test change-map-pictures
+title CHANGE MAP: the panel's picture
+screen 31
+check Y, type dig: whole picture, logo complete
+check Type chill: Chill Out shows whole too

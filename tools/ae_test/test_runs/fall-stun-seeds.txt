@@ -1,0 +1,28 @@
+# FALL STUN in the built-in gametypes: AE ones play without the hard landing's lock, CLASSIC COMP (NHE's) keeps it.
+# Each test opens on Blood Gulch 13 units up in the air by the red base, so you drop straight down: a fall
+# of more than 10 units, the height the longest lock (about a second) needs.
+# Only FALL DAMAGE is set by the test (off, so the fall never hurts); FALL STUN is whatever the gametype brings.
+list fall-stun-seeds
+revision 2
+title FALL STUN: THE GAMETYPES' OWN
+
+test ae-comp
+title AE COMP TS: the landing never locks you
+setup option fall_damage off
+setup goto 95.7 -159.4 13.0 facing 0
+check You drop straight down and land
+check On landing you move at once: no lock
+map bloodgulch
+gametype AE COMP TS
+set bots.count 0
+
+test classic-comp
+title CLASSIC COMP TS 50: the landing locks you
+fresh
+setup option fall_damage off
+setup goto 95.7 -159.4 13.0 facing 0
+check You drop straight down and land
+check On landing you are locked for about a second
+map bloodgulch
+gametype TS 50
+set bots.count 0

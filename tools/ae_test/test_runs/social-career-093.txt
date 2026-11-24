@@ -1,0 +1,153 @@
+# 0.9.3 AE TOURNAMENT: offline games against bots with a rank 1 to 50. It has its own main menu row (above MULTIPLAYER): six
+# playlists, each with your rank, its bot skill (AUTO matches the bots to how you play) and the maps this PC has. A opens a
+# lobby that finds the bots, the post-game shows your EXP, and CAREER (Y on AE TOURNAMENT) keeps the numbers. Only a real crash
+# forgives a game that did not end: closing the window counts as leaving it. Every test opens on its exact scene from its
+# setup lines (menu tournament / social start / social postgame / social pending); nothing waits for a game to happen. The
+# game starts from the menus: a test that plays leaves the menus first.
+list social-career-093
+revision 4
+title AE TOURNAMENT
+
+test tournament-rows
+title AE TOURNAMENT: the screen
+check AE TOURNAMENT, no tabs, six rows with RANK badges, AUTO
+check The card: RANK 14, 37 EXP, 3 WINS TO RANK 15, BOT SKILL AUTO
+check Right on a row: HEROIC; the card: FIXED, Every bot HEROIC
+menus
+setup social exp team-slayer 37
+setup menu tournament focus team-slayer
+expect 1 log ae tournament: open
+
+test tournament-maps-line
+title AE TOURNAMENT: maps missing
+check The card: 0 of 19 SOCIAL MAP PACK + the stock maps
+check The "Get the rest" lines are under it
+menus
+setup social maps hide smp
+setup menu tournament focus team-slayer
+expect 1 log ae tournament: open
+
+test tournament-dev-line
+title AE TOURNAMENT: the DEV line
+check With DEV MODE on the card has the DEV line
+check It names a tier (TIER 9 HEROIC / NORMAL) and a range
+menus
+setup social match team-slayer tier 9
+setup menu tournament focus team-slayer
+expect 1 log ae tournament: open
+
+test lobby-auto
+title TOURNAMENT LOBBY: AUTO
+check FINDING BOTS: the range strip widens around your tick
+check OFFLINE MATCH FOUND: bots join one by one
+check B leaves; nothing changed
+menus
+setup social maps hide none
+setup social match team-slayer tier 7
+setup social start team-slayer map warren@smp seed 7
+expect 1 log ae social lobby: stage FOUND
+
+test lobby-fixed
+title TOURNAMENT LOBBY: FIXED
+check No range strip; "Bots: HEROIC (fixed)"
+check A starts at once and hektik loads
+check Pause: no host rows, no CHANGE TEAMS
+menus
+setup social maps hide none
+setup social mode doubles heroic
+setup social start doubles map hektik@smp
+expect 2 log ae social: start doubles
+
+test roster-spread
+title The roster's tiers
+check The log's roster line holds tiers 8 to 12 only
+menus
+setup social match team-slayer tier 10
+setup social roster team-slayer seed 3
+expect 1 log ae social: roster team-slayer
+
+test fallback-maps
+title No pack maps: a stock map
+check The game loads a stock map (the log names it)
+menus
+setup social maps hide smp
+setup social start team-slayer seed 2 now
+expect 1 log ae social: start team-slayer
+
+test quit-costs
+title QUIT costs 1 EXP
+check Pause, QUIT asks LEAVE THE GAME? with 37 to 36
+check STAY IN THE GAME is focused
+check After LEAVE the card reads 36 EXP
+menus
+setup social exp team-slayer 37
+setup social start team-slayer map prisoner now
+expect 1 log ae social: start team-slayer
+
+test postgame-win
+title Post-game: a win
+check The fifth row EXP reads +1
+check Sub: TEAM SLAYER, RANK 14, 1 TO RANK 15
+check Nothing overlaps Continue
+menus
+setup social postgame win team-slayer exp 38
+expect 1 log ae postgame: open (made up
+
+test postgame-rankup
+title Post-game: rank up
+check RANK UP chip and an ice edge on the row
+check RANK 15 in the sub line
+check Nothing overlaps Continue
+menus
+setup social postgame rankup team-slayer exp 39
+expect 1 log ae postgame: open (made up
+
+test postgame-ffa
+title Post-game: 5th of 8
+check EXP reads 0 in white
+check Sub: 4TH OR BETTER EARNS EXP
+menus
+setup social postgame place 5 8 free-for-all exp 52
+expect 1 log ae postgame: open (made up
+
+test postgame-split
+title Post-game: split screen
+check Each view its own EXP row
+check Player 1 RANK UP, player 2 +1
+check No row touches the prompt
+menus
+setup social postgame win doubles exp 39 player 1
+setup social postgame win doubles exp 13 player 2
+expect 1 log ae postgame: open (made up
+
+test career-view
+title CAREER
+check Ranks 25, 16 and 15 on the three playlists
+check OVERALL RANK 20, 253 EXP
+check No hidden rating anywhere
+menus
+setup social exp team-slayer 160
+setup social exp free-for-all 52
+setup social exp doubles 41
+setup menu career
+expect 1 log ae career: open
+
+test crash-forgiven
+title A game ended by a crash is forgiven
+check The log says the game ended by a crash and was not counted
+check The card's EXP did not change: 37 EXP
+menus
+setup social exp team-slayer 37
+setup social pending team-slayer crashed
+setup menu tournament focus team-slayer
+expect 1 log ae social: a game ended by a crash: not counted
+
+test close-costs
+title A closed game counts as a quit
+check The log: the game was closed, counted as a quit
+check The card's EXP is 36 (it was 37)
+menus
+setup social exp team-slayer 37
+setup social pending team-slayer
+setup menu tournament focus team-slayer
+expect 1 log ae social: a game was not ended (the game was closed): counted as a quit

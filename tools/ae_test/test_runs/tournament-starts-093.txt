@@ -1,0 +1,78 @@
+# 0.9.3 AE TOURNAMENT: mixed starts and AE's weapons. A game of a casual playlist starts with the battle rifle or the evo rifle
+# (picked by weight from the game's seed), a COMP playlist with the evo rifle or the CE pistol, and the tournament plays AE's
+# weapons whatever WEAPON PACKS says (put back after the game). CLASSIC COMP plays the maps' own weapons. The DEV word `variant
+# br|evo|magnum|none` after `social start` names the start so each check opens on it. Nothing waits for a game to happen.
+list tournament-starts-093
+revision 2
+title TOURNAMENT STARTS
+
+test variant-lobby
+title The lobby names the start
+check Under the map: 4 V 4, BATTLE RIFLE, AE WEAPONS
+check Press A: the game loads with the battle rifle in hand
+menus
+setup social maps hide smp
+setup social start team-slayer map prisoner variant br
+expect 1 log ae social lobby: open team-slayer
+
+test evo-in-hand
+title Evo start, AE weapons
+check The evo rifle is in your hands
+check The post-game line ends with EVO RIFLE
+menus
+setup social maps hide smp
+setup social start team-slayer map prisoner variant evo now
+expect 1 log ae social: start team-slayer
+expect 1 weapon evo
+
+test packs-off-back
+title WEAPON PACKS off is forced on, then back
+check You play AE's weapons although WEAPON PACKS is OFF
+check After you leave: SETTINGS, FILES, WEAPON PACKS reads OFF
+menus
+setup config game.weapon_packs off
+setup social maps hide smp
+setup social start team-slayer map prisoner variant evo now
+expect 1 log ae social: AE weapons on
+
+test comp-lobby
+title AE COMP TEAM SLAYER lobby
+check Under the map: 4 V 4, PISTOL, AE WEAPONS
+check The game type reads PS COMP TS
+menus
+setup social maps hide smp
+setup social start comp-team-slayer map prisoner variant magnum
+expect 1 log ae social lobby: open comp-team-slayer
+
+test comp-pistol-hand
+title Comp pistol start
+check The pistol is in your hands
+menus
+setup social maps hide smp
+setup social start comp-team-slayer map prisoner variant magnum now
+expect 1 log ae social: start comp-team-slayer
+expect 1 weapon pistol
+
+test classic-lobby
+title CLASSIC COMP lobby on a classic map
+check Under the map: 2 V 2, MAP WEAPONS (no AE WEAPONS)
+check The game type reads TS 50
+menus
+setup menu tournament focus classic-comp
+setup social start classic-comp map dread
+expect 1 log ae social lobby: open classic-comp
+
+test classic-own-weapons
+title CLASSIC COMP plays the maps' own weapons
+check You start with the pistol the map gives
+menus
+setup social start classic-comp map dread now
+expect 1 log ae social: the maps' own weapons play
+
+test filter-chips
+title CASUAL / COMP chips on AE TOURNAMENT
+check CASUAL lit, six rows; RB lights COMP, five rows
+check LB: CASUAL again; focus on the first row, the card follows
+menus
+setup menu tournament filter comp
+expect 1 log ae tournament: filter comp: 5 playlists

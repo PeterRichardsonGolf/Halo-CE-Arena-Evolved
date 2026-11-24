@@ -1,0 +1,8 @@
+AE SMOKE GRENADE (pack ae_smoke) - credits
+
+The smoke cloud's sprites, their motion and their bitmap are the game's own stock smoke effect, particle and point
+physics tags (Bungie's), which every multiplayer map has: the pack holds our numbers for them (how many, how big, how
+long, how they drift) and names the map's bitmap. It holds no picture, sound or model of the game's.
+
+Made for Arena Evolved: the cloud the AE smoke grenade throws under SEARCH AND DESTROY (port/linux/game/ae_smoke_grenade.c).
+What blocks the bots' sight is the game's smoke volume, not these sprites (ae_smoke_volume.c).

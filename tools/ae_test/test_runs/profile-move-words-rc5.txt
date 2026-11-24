@@ -1,0 +1,29 @@
+# EXPORT PROGRESS and IMPORT PROGRESS (PROFILES > a profile), the words only: the rows' help lines, the questions and the
+# messages after them say what moves, where the file goes and how to take it to another PC, in plain words. Every test opens
+# on its own profile DEVMOVE (made when it is not there; delete it in PROFILES afterwards).
+list profile-move-words-rc5
+revision 1
+title PROFILE PROGRESS: THE WORDS
+
+test export-words
+title EXPORT PROGRESS: what it saves and how to move the file
+check Question: what is saved; the file is safe to copy
+check A on EXPORT: where the file is, the other PC's steps
+check Every line reads clearly (note any that does not)
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup menu profiles progress export
+expect 1 log ae profiles screen: edit 'DEVMOVE'
+
+test import-words
+title IMPORT PROGRESS: MERGE and REPLACE explained
+check The question tells MERGE from REPLACE in one read
+check It says: backed up first, UNDO IMPORT puts it back
+check A on IMPORT: the message offers UNDO IMPORT in plain words
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup profile_move sample devmove 80
+setup menu profiles progress import
+expect 1 log ae profiles screen: import progress into 'DEVMOVE'

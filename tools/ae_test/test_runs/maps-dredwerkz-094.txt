@@ -1,0 +1,39 @@
+# 0.9.4 DREDWERKZ: the pit and the lifts. The map names its pit's floor "Hell" and a lift "TPA" to "TPB" but its own
+# script uses neither. AE kills anyone who falls into a volume named as a kill zone (the host's), puts a player who
+# steps into a lift volume TP<letter> at the next letter's (TPA to TPB), and the bots take the kill zone for deadly from
+# the map's load, so they never walk into the pit. Test launches leave the playlist alone, so the test plays Dredwerkz,
+# not a playlist's UP NEXT.
+list maps-dredwerkz-094
+revision 2
+title DREDWERKZ: THE PIT KILLS, THE LIFT LIFTS
+
+group dredwerkz
+map dredwerkz@smp
+gametype AE BR TS
+set bots.count 7
+set bots.teams even
+set bots.skill heroic
+set debug.bot_events true
+
+test pit
+title DREDWERKZ: the pit kills
+retest 2
+setup goto -21.2 1.0 -0.1
+check Walk off the ledge into the pit below
+check You die as you land in it
+expect 1 log fell into 'Hell'
+
+test lift
+title DREDWERKZ: the lift takes you up
+retest 2
+setup goto -15.0 9.3 2.2
+check Take the teleporter you stand on
+check You come out on the upper floor, not the low pad
+expect 1 log lifted from 'TPA'
+
+test bots-pit
+title DREDWERKZ: no bots in the pit
+retest 2
+check Play a few minutes
+check No bot goes down into the pit
+expect 1 log is the map's kill zone

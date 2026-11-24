@@ -1,0 +1,46 @@
+# ARENA EVOLVED in the PC (classic) menus: the profile menu's row and its pages. Each test opens on its exact classic
+# page with `setup menu classic <page>` (the PC menus' screen named under the profile menu; AE's menus stay the menus).
+# B leaves an empty screen: the next test opens its own. A change is saved by OK and read back after a restart.
+list classic-ae-section
+revision 2
+title CLASSIC MENUS: ARENA EVOLVED SECTION
+
+test profile-row
+title PROFILES: the ARENA EVOLVED row
+menus
+setup menu classic profile
+check 13 rows; ARENA EVOLVED after GAME OPTIONS
+check ABOUT, the last row, ends above OK
+check A on ARENA EVOLVED: seven groups
+
+test groups
+title ARENA EVOLVED: groups and pages
+menus
+setup menu classic ae_settings
+check CONTROLS, HUD, ONLINE, SYSTEM list pages
+check Each page: rows with values, help below
+check B goes back one level each time
+
+test greyed
+title GYRO: rows that wait for GYRO AIMING
+menus
+setup menu classic ae_settings/controls/gyro
+check GYRO AIMING off: the four rows below dim
+check GYRO AIMING to ALWAYS: they light up
+check Their help starts With GYRO AIMING on
+
+test saves
+title VIEW: a change saves
+menus
+setup menu classic ae_settings/view
+check WEAPON SWAY to 50%, OK: back on the list
+check Quit, start again, same page: 50%
+check B on a page without OK: nothing saved
+
+test defaults
+title GRAPHICS AND LOADING: DEFAULTS
+menus
+setup menu classic ae_settings/video/video
+check Change two rows, DEFAULTS
+check Rows show their defaults, not saved yet
+check OK, restart: defaults kept
