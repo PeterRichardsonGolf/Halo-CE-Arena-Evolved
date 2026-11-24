@@ -1,0 +1,25 @@
+# RAGDOLL AI MODERN: an elite's leg has a second joint below the knee (the hock), which the body did not hold: its foot
+# swung round it and the body kicked, crept or spun on the ground for up to ten seconds before it lay still. The hock
+# now bends as a knee does, the way it is bent. The first test puts two elites ahead of you (DEV `actor`); the second
+# opens as they are shot dead. RAGDOLL AI is set to MODERN for this run only.
+list elite-ragdoll-rc6
+revision 1
+title ELITE BODIES LIE STILL
+
+group b30
+map b30
+gametype coop
+set game.ragdoll_ai modern
+
+test elites
+title Two elites ahead of you
+setup actor commander 5
+setup actor commander 8
+check Two elites stand ahead of you (the next test kills them)
+
+test bodies
+title The two elites shot dead
+setup actor kill
+check Both bodies fall and lie still within a few seconds
+check No leg keeps kicking, sliding or spinning on the ground
+check Kill an elite yourself: it lies still the same way

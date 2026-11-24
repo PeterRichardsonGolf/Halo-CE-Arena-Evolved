@@ -1,0 +1,45 @@
+# MAP PICTURES, SHAPE-FOLLOWING BOXES: a wide picture (a Workshop map's 16:9) gets a box of its own proportions, the words around it
+# move to fit, and nothing is cut or squeezed; a stock map's picture keeps the smaller box. Each test opens on its scene from
+# `social start ... map <name>` (the TOURNAMENT LOBBY's game card; the lobby needs about 5 s to show it) or `social start ... vote`
+# (the vote's three tiles), or the screen itself. The card must end well above the buttons at the bottom.
+list thumbs-rc5
+revision 1
+title MAP PICTURES: SHAPE-FOLLOWING BOXES
+
+test card-wide
+title GAME CARD: a 16:9 Digsite picture
+menus
+setup social maps hide none
+setup social start team-objective map 1@ws3477809506
+check Picture spans the card, words start below it
+check Card ends well above Start now / Leave
+check Nothing cut, squeezed or overlapping
+
+test card-stock
+title GAME CARD: a stock map
+menus
+setup social maps hide none
+setup social start team-slayer map chillout
+check Small box, whole picture, words below it
+
+test card-pack
+title GAME CARD: a converted social map
+menus
+setup social maps hide none
+setup social start team-slayer map hektik@smp
+check SOCIAL MAP PACK words fit beside the picture
+check None of the words touches the card's edge
+
+test vote-tiles
+title MAP VOTE: the three tiles
+menus
+setup social maps hide none
+setup social start team-objective vote seed 7 votes 2,2,1 left 7
+check Picture boxes read as boxes, same look on all
+check Help text under the card shows all its lines
+
+test change-map-panel
+title CHANGE MAP: the panel's picture
+screen 31
+check Y, type dig: the box follows the picture, no bars
+check Type chill: the small box, words move back up

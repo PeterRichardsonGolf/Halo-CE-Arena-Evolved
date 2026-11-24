@@ -1,0 +1,33 @@
+# BOT VOTES COUNT HALF: in the AE TOURNAMENT map vote a player's vote is one whole vote and a bot's is half of one, so the
+# tally reads in halves (a bot's square is half as wide as a player's; "1 VOTE", "1.5 VOTES", "0.5 VOTES"). The most weight wins;
+# a tie is drawn at random from the tied maps. Each test opens on its scene from `social start <id> vote`: `votes a,b,c` are the
+# bots already in for the three maps (seat order), `left <s>` the seconds left of the 10. The server's and a hosted game's own
+# map votes have no bots in them: nothing to see there.
+list votes-rc5
+revision 1
+title MAP VOTE: BOTS COUNT HALF
+
+test bots-half
+title AE:T VOTE: bot squares are half squares, tallies in halves
+setup social maps hide none
+setup social start team-objective vote seed 7 votes 2,2,1 left 7
+check A bot's square is half as wide as a player's
+check Tallies: 1 VOTE, 1 VOTE, 0.5 VOTES
+menus
+
+test your-vote-whole
+title AE:T VOTE: your vote is a whole vote
+setup social maps hide none
+setup social start team-objective vote seed 7 votes 3,3,1 left 8
+check All bots in: 1.5, 1.5, 0.5 VOTES
+check A on map 1: your square full width, 2.5 VOTES
+check Map 1 wins: sub reads 2.5 of 4.5 votes
+menus
+
+test bots-tie-weighted
+title AE:T VOTE: weights decide, a tie is drawn
+setup social maps hide none
+setup social start team-objective vote seed 7 votes 3,3,1 left 0
+check Maps 1 and 2 tie: head says a tie, drawn
+check The sub reads 1.5 of 4.5 votes
+menus

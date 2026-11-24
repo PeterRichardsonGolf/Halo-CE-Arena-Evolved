@@ -1,0 +1,30 @@
+# TOURNAMENT LOBBY POLISH (rc5): the corner crumb has a dark plate (readable over bright art), the game card is one layout with the
+# picture and the words beside it, no elapsed clock after FOUND, no gametype file name, your own row says YOU and is brighter, the
+# emblem letter is a whole upper-cased character, no search range at STARTING, and the bar fills the same way in FOUND, VOTE and
+# STARTING. Each test opens on its scene.
+list lobby-polish-rc5
+revision 2
+title TOURNAMENT LOBBY POLISH
+
+test starting-card
+title STARTING: card, bar, no range strip
+check The card: picture, words beside it, no gametype file name
+check The bar fills left to right; no SEARCH RANGE strip
+check No elapsed clock at the top right
+menus
+setup social start team-slayer map prisoner seed 7 hold starting
+
+test your-row
+title Your row: YOU tag, brighter than a bot's
+check PLAYER 1 carries a YOU tag; its row is brighter
+check The emblem letters are upper case
+check The AE TOURNAMENT crumb reads clearly on a dark backing
+menus
+setup social start team-slayer map prisoner seed 7 hold 4
+
+test vote-bar
+title VOTE: the bar fills as the time goes
+check The bar is a quarter full at 7 s left
+check Votes in 0 / 8 and no clock
+menus
+setup social start team-slayer vote seed 7 left 7 hold 0

@@ -1,0 +1,325 @@
+# The 29 Social Map Pack and Pro Edition Workshop items, each hosted from the game's own download layout (mcc_maps): the
+# question is only whether each map loads. One group per map, the scene is the map's spawn.
+list ws-maps-load-11x
+revision 2
+title WORKSHOP MAPS: DOES EACH ONE LOAD
+
+group m01
+map ascetic mcc debug flycam pm@ws2899679058
+gametype AE BR TS
+set bots.count 0
+
+test load01
+title ascetic mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m02
+map blamitemines mcc flycam pm@ws2899709584
+gametype AE BR TS
+set bots.count 0
+
+test load02
+title blamitemines mcc flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m03
+map blood_covenant_mcc flycam pm@ws2899741750
+gametype AE BR TS
+set bots.count 0
+
+test load03
+title blood_covenant_mcc flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m04
+map co2 mcc debug flycam pm@ws2900166697
+gametype AE BR TS
+set bots.count 0
+
+test load04
+title co2 mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m05
+map cold_shoulder mcc flycam pm@ws2899509722
+gametype AE BR TS
+set bots.count 0
+
+test load05
+title cold_shoulder mcc flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m06
+map delta_ruined flycam mcc@ws2899747345
+gametype AE BR TS
+set bots.count 0
+
+test load06
+title delta_ruined flycam mcc
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m07
+map dreadnought@ws2899301014
+gametype AE BR TS
+set bots.count 0
+
+test load07
+title dreadnought
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m08
+map dredwerkz mcc debug flycam pm@ws2900215828
+gametype AE BR TS
+set bots.count 0
+
+test load08
+title dredwerkz mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m09
+map fissurefall mcc dbug flycam pm@ws2899774877
+gametype AE BR TS
+set bots.count 0
+
+test load09
+title fissurefall mcc dbug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m10
+map fractured peak mcc flycam pm@ws2900252105
+gametype AE BR TS
+set bots.count 0
+
+test load10
+title fractured peak mcc flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m11
+map frigid_keep dbug flycam mcc pm@ws2899770689
+gametype AE BR TS
+set bots.count 0
+
+test load11
+title frigid_keep dbug flycam mcc pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m12
+map gothra mcc debug flycam pm@ws2899688264
+gametype AE BR TS
+set bots.count 0
+
+test load12
+title gothra mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m13
+map gridiron mcc debug flycam pm@ws2900050996
+gametype AE BR TS
+set bots.count 0
+
+test load13
+title gridiron mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m14
+map gutter mcc debug flycam pm nm@ws2900257741
+gametype AE BR TS
+set bots.count 0
+
+test load14
+title gutter mcc debug flycam pm nm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m15
+map hektik mcc debug flycam pm@ws2900177725
+gametype AE BR TS
+set bots.count 0
+
+test load15
+title hektik mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m16
+map intensity_v2 debug flycam pm@ws2900242317
+gametype AE BR TS
+set bots.count 0
+
+test load16
+title intensity_v2 debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m17
+map nitra_v2 debug flycam pm@ws2900199550
+gametype AE BR TS
+set bots.count 0
+
+test load17
+title nitra_v2 debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m18
+map pat_beavercreek@ws2899342285
+gametype AE BR TS
+set bots.count 0
+
+test load18
+title pat_beavercreek
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m19
+map pat_chillout@ws2899343509
+gametype AE BR TS
+set bots.count 0
+
+test load19
+title pat_chillout
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m20
+map pat_damnation@ws2899341154
+gametype AE BR TS
+set bots.count 0
+
+test load20
+title pat_damnation
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m21
+map pat_downrush@ws2899270824
+gametype AE BR TS
+set bots.count 0
+
+test load21
+title pat_downrush
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m22
+map pat_hangemhigh@ws2899339889
+gametype AE BR TS
+set bots.count 0
+
+test load22
+title pat_hangemhigh
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m23
+map pat_longest@ws2899345854
+gametype AE BR TS
+set bots.count 0
+
+test load23
+title pat_longest
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m24
+map pat_prisoner@ws2899340399
+gametype AE BR TS
+set bots.count 0
+
+test load24
+title pat_prisoner
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m25
+map pat_ratrace@ws2899352017
+gametype AE BR TS
+set bots.count 0
+
+test load25
+title pat_ratrace
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m26
+map pat_wizard@ws2899666869
+gametype AE BR TS
+set bots.count 0
+
+test load26
+title pat_wizard
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m27
+map ruins_of_alph mcc flycam pm@ws2905217149
+gametype AE BR TS
+set bots.count 0
+
+test load27
+title ruins_of_alph mcc flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m28
+map sympathy mcc debug flycam pm@ws2899751222
+gametype AE BR TS
+set bots.count 0
+
+test load28
+title sympathy mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+
+group m29
+map warren_mcc debug flycam pm@ws2900072240
+gametype AE BR TS
+set bots.count 0
+
+test load29
+title warren_mcc debug flycam pm
+setup god
+check The map loads and is drawn
+expect 1 cmd god ok
+

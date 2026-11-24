@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/ae_settings_group_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/header_hud"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/header_hud" controller="1" left="35" top="11" width="605" height="59" type="text" text="SYSTEM" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/op_game" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/op_recording" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/op_game" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/game/ae_settings_page_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/game/ae_settings_page_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/game_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/game_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/op_recording" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/recording/ae_settings_page_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/recording/ae_settings_page_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/recording_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/recording_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/labels">
+		<string text="GAME AND MCC"/>
+		<string text="RECORDING"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/help_strings">
+		<string text=""/>
+		<string text="Language, intro movies, Workshop and MCC maps."/>
+		<string text="F9 recordings, the recording dot and the version\nmark."/>
+	</strings>
+</menus>

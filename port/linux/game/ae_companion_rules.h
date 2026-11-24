@@ -1,0 +1,104 @@
+/*
+AE_COMPANION_RULES.H
+
+The AI squad's entry into a campaign level (ae_companion.c), as rules with no game state.
+
+ENTRY: the squad is not in the level's intro. Each member appears once the human player has control and is on foot,
+behind them (out of their view), on walkable ground reached from them in a clear line. The candidates are tried in
+order, nearest first; a member's own side of the player first (odd slots left, even right).
+
+INTRO RIDE: on a level of the allow-list the squad rides the intro's vehicle in its seats instead, and gets out to the
+ground beside it with the player. The list holds the levels whose intro the sweep passes; a DEV/config switch forces
+the ride on any level, for the sweep itself.
+*/
+
+#ifndef AE_COMPANION_RULES_H
+#define AE_COMPANION_RULES_H
+
+#define AE_COMPANION_ENTRY_CANDIDATES 8
+/* the floor under a spot: at most this steep (its normal's up part), within this height of the player's feet, and with
+this much room above it */
+#define AE_COMPANION_ENTRY_FLOOR_UP 0.7f
+#define AE_COMPANION_ENTRY_FLOOR_RISE 1.5f
+#define AE_COMPANION_ENTRY_HEADROOM 1.2f
+/* a spot this near another player's body is taken (the squad's rest spacing, ae_bots_squad_rules.h) */
+#define AE_COMPANION_ENTRY_APART 1.3f
+
+/* the candidate spots for a member (its slot 0..3) as offsets from the player's feet along the ground, for a player
+facing (facing_i, facing_j) (any length; none: along x): writes up to AE_COMPANION_ENTRY_CANDIDATES pairs, returns the
+count */
+int ae_companion_entry_candidates(float facing_i, float facing_j, int slot, float offsets[][2]);
+/* whether an offset from the player lies out of their view: more than 100 degrees from where they face */
+int ae_companion_entry_unseen(float facing_i, float facing_j, float offset_i, float offset_j);
+/* whether a floor is one to stand on: its normal's up part, its height and the player's, the room above it */
+int ae_companion_entry_floor(float normal_k, float floor_z, float player_z, float headroom);
+
+/* CATCH-UP, the last resort: a member far from the player (past AE_COMPANION_CATCH_UP_FAR) that has come no nearer for
+AE_COMPANION_CATCH_UP_TICKS (no walk or jump takes it there), and that the player does not see, is put behind them as at its
+entry; never a member in a seat. distance from the player, ticks_without_gain since it last came 1.5 nearer, unseen whether
+the player cannot see it, seated whether it sits in a vehicle */
+#define AE_COMPANION_CATCH_UP_FAR 20.0f
+#define AE_COMPANION_CATCH_UP_TICKS 240
+#define AE_COMPANION_CATCH_UP_GAIN 1.5f
+int ae_companion_catch_up(float distance, long ticks_without_gain, int unseen, int seated);
+
+/* THE PLAYER'S TRACK: the spots the human walked (a crumb each time they are AE_COMPANION_TRACK_STEP from the last, on their
+feet, oldest first, AE_COMPANION_TRACK_MOST kept). On an object's ground (a bridge deck, a lift) a member walks the track in
+single file: from the crumb nearest it (within AE_COMPANION_TRACK_ON in its plane, AE_COMPANION_TRACK_RISE in height) to the
+next newer one once within AE_COMPANION_TRACK_REACH of it. track holds count crumbs (x, y, z): the crumb to walk to, -1 when
+the member is not on the track (it then goes straight to the player) */
+#define AE_COMPANION_TRACK_MOST 48
+#define AE_COMPANION_TRACK_STEP 0.75f
+#define AE_COMPANION_TRACK_ON 3.0f
+#define AE_COMPANION_TRACK_RISE 1.5f
+#define AE_COMPANION_TRACK_REACH 0.9f
+int ae_companion_track_step(float const track[][3], int count, float x, float y, float z);
+/* the crumb an entry (or a catch-up) on an object's ground puts a member at: the newest crumb at least AE_COMPANION_TRACK_BEHIND
+from the player (px, py) along the track, skipping `taken` of them already used; -1 none */
+#define AE_COMPANION_TRACK_BEHIND 2.5f
+int ae_companion_track_behind(float const track[][3], int count, float px, float py, int taken);
+/* NARROW GROUND (a bridge deck, a ledge, a beam): the floor falls away (no floor within AE_COMPANION_NARROW_DROP below) a step
+out (AE_COMPANION_NARROW_PROBE) on two opposite sides. drops: the eight directions, 45 degrees apart, from +x turning left,
+1 where it falls away. On narrow ground (or an object's) the squad keeps to the player's track in single file, and an entry
+takes one of the deck spots below */
+#define AE_COMPANION_NARROW_PROBE 1.2f
+#define AE_COMPANION_NARROW_DROP 1.0f
+int ae_companion_narrow(int const drops[8]);
+/* the entry's spots on narrow ground: 1.5 and 2.5 out in each of the eight directions, the ones furthest behind the player
+(facing (facing_i, facing_j)) first; writes AE_COMPANION_DECK_CANDIDATES pairs, returns the count. A deck spot's floor is
+within AE_COMPANION_DECK_RISE of the player's feet */
+#define AE_COMPANION_DECK_CANDIDATES 16
+#define AE_COMPANION_DECK_RISE 0.5f
+int ae_companion_deck_candidates(float facing_i, float facing_j, float offsets[][2]);
+
+/* whether an entry spot's floor will hold the member: with the player on an object's ground, only a floor that is an object
+(the structure under a bridge deck lies below it, and a member put there falls through the deck) */
+int ae_companion_entry_floor_kind(int player_on_object, int floor_is_object);
+
+/* whether the squad rides the intro of a level (its scenario's name, the path's last part: "b30"); forced: the switch
+that rides every level's intro */
+int ae_companion_intro_ride(char const *level, int forced);
+
+/* WHERE A SQUAD MAY BE: only in a campaign game this machine hosts (a solo scenario, the game's AI running, no game engine
+and so no multiplayer game, not the menus, not a client). A multiplayer lobby, whose engine has not started yet, is not one */
+int ae_companion_may_ask(int scenario_solo, int ai_ready, int engine_running, int menu_active, int network_client, int has_server,
+	int dedicated_server);
+/* the squad's count for the game: a test's or a level start's count for the next level (next_level, -1 none) while the menu's
+AI SQUAD (setting) is still what it was when that count was given (next_level_setting), else a DEV MODE count (override, -1
+none), else the menu's; 0 to most */
+long ae_companion_wanted_count(long next_level, long next_level_setting, long override, long setting, long most);
+/* a player leaves the squad's game only when the squad added it itself and no longer wants it (a bot of the same machine slot
+the squad did not add is never removed) */
+int ae_companion_may_remove(int squad_added_it, int wanted);
+/* a squad player of the network game with no player of the game for AE_COMPANION_REJOIN_TICKS (a checkpoint revert took it
+away) is made again */
+#define AE_COMPANION_REJOIN_TICKS 60
+int ae_companion_rejoin_wanted(int no_player, long missing_ticks);
+/* PLAYER DOWN (game.companions_player_down): whether a living player keeps the game going and is someone a downed player comes
+back beside. CHECKPOINT (the default): the humans only, so with every human down the level goes back to its checkpoint;
+RESPAWN: the squad's members too */
+int ae_companion_player_down_counts(int is_squad_member, int respawn_mode);
+/* the setting's word: 1 for "respawn", 0 for anything else ("checkpoint", the default) */
+int ae_companion_player_down_respawn(char const *word);
+
+#endif

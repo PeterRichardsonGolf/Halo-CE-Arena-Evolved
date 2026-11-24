@@ -1,0 +1,21 @@
+# AE weapon set CASUAL (design 3.5 and 9.1): the default set of the AE casual game types. Racks refill after a pickup;
+# pads keep a fixed clock; a map item's own long time wins on a pad; the classic walk-over ammo refill stays. `rules ae`:
+# a pad spawns on every beat of its clock, an empty weapon stays in play while held, a taken pad shows red.
+weaponset 1 casual
+format 1
+draw rotate
+tier_weight BASE 70 POWER 30
+map_time on
+rack_ammo topup
+scan on
+rules ae
+row PRECISION BASE logic pickup respawn 30 weapons battle_rifle carbine dmr evo_rifle
+row AUTOMATIC BASE logic pickup respawn 30 weapons ar_modern smg smg_silenced smg_tactical spiker needler stock:assault_rifle stock:plasma_rifle
+row PISTOL BASE logic pickup respawn 30 weapons sidearm revolver stock:plasma_pistol
+row CLOSE BASE logic expired respawn 15 weapons auto_shotgun
+row LONG_RANGE BASE logic expired respawn 15 weapons focus_beam
+row HEAVY BASE logic expired respawn 15 weapons ravager grenade_launcher
+row CLOSE POWER logic static respawn 120 weapons stock:shotgun
+row LONG_RANGE POWER logic static respawn 180 weapons sniper_bolt stock:sniper_rifle
+row HEAVY POWER logic static respawn 120 weapons stock:rocket_launcher brute_shot concussion_rifle
+row MELEE POWER logic static respawn 240 weapons energy_sword
