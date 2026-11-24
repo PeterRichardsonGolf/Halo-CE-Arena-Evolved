@@ -1,0 +1,27 @@
+# A BOT DRIVES THE FLAG HOME: a teammate bot at the wheel of a vehicle the flag's carrier rides in drives to the
+# carrier's own stand, where the flag scores. It does not stop for crew or honk for a gunner while the carrier rides.
+# Log with bot events: "bots: ev=drive_carrier bot=N ... goal=stand d=D" every 5 s while it drives you. The scene runs
+# the built-in CTF: its flag is taken by touch.
+list bots-drive-carrier-100
+revision 2
+title A BOT DRIVES THE FLAG HOME
+
+group dangercanyon
+map dangercanyon@mcc
+gametype CTF
+set bots.count 7
+set debug.bot_events true
+
+test flag-ride
+title You hold their flag; a bot drives you home
+setup unseen me
+setup goto flag_theirs
+setup spawn mp_warthog here
+setup seat driver mate
+setup seat passenger
+check You hold their flag in the passenger seat
+check The bot drives you off toward your base
+check It stops at your flag; you score
+expect 1 cmd unseen me ok
+expect 1 log ev=flag_pickup
+expect 2 log ev=drive_carrier

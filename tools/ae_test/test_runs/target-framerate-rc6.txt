@@ -1,0 +1,32 @@
+# TARGET FRAMERATE (was TARGET 60 FPS): VIDEO > PERFORMANCE and SPLIT SCREEN's own; OFF, 60, 90, 120, 144 or DISPLAY.
+# It lowers the 3D picture's resolution while the game runs slower than the target and never limits frames (FRAME
+# RATE LIMIT does); it aims no higher than V-SYNC or FRAME RATE LIMIT lets frames go. The performance line (FULL) shows
+# FPS and, while it is on, RES (the 3D picture's resolution). SSAA 2x for this run only, so the GPU has work to do.
+# Staged only: the restart test is yours to do (quit and start the game again).
+list target-framerate-rc6
+revision 1
+title TARGET FRAMERATE
+
+group testbox
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+set display.performance full
+set display.anti_aliasing ssaa2x
+
+test target-144
+title TARGET FRAMERATE 144
+setup config display.target_framerate 144
+check Look around: RES under 100% only while FPS is below 144
+
+test target-off
+title TARGET FRAMERATE OFF
+setup config display.target_framerate off
+check RES is gone from the line; the picture is sharp again
+
+group settings
+
+test restart-keeps
+title Your pick is kept
+menus
+check VIDEO: set TARGET FRAMERATE 120, restart: still 120

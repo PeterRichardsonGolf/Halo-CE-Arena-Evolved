@@ -1,0 +1,87 @@
+# CAMPAIGN SCREEN rc6 ROWS: the ARENA EVOLVED group (AI SQUAD, SQUAD GEAR, PLAYER DOWN, SKIP TRAINING, AE WEAPONS), SKIP TRAINING
+# (game.campaign_skip_training: live only alone on NORMAL, else dimmed ALREADY SKIPPED), PLAYER DOWN (game.companions_player_down:
+# CHECKPOINT / RESPAWN, only with an AI SQUAD), CONTINUE with an AI SQUAD (SOLO ONLY: A continues alone, the squad joins a new
+# mission), the Workshop campaigns' dimmed squad rows and MY PARTY's count (1 + n AI). Every test opens CAMPAIGN on its scene from the
+# DEV MODE `menu campaign` line and loads no level (a made-up saved game on level 3 where it is needed, the made-up Workshop campaign).
+list campaign-rc6-rows
+revision 4
+title CAMPAIGN SCREEN ROWS
+
+group rows
+menus
+
+test rows-default
+title The group and its rows
+setup config game.companions 3
+setup menu campaign focus squad
+check Menu only: ARENA EVOLVED heads AI SQUAD to PLAYER DOWN
+check SKIP TRAINING is lit and says OFF, AE WEAPONS follows
+check AI SQUAD's help: joins each new mission you start alone
+
+test skip-on
+title SKIP TRAINING alone on NORMAL
+setup config game.companions 0
+setup config game.campaign_skip_training true
+setup menu campaign focus skip difficulty 1
+check Menu only: SKIP TRAINING is lit and says ON
+check The help says the wake-up is short, no look test
+check The right side shows THE PILLAR OF AUTUMN
+
+test skip-squad
+title SKIP TRAINING with an AI SQUAD 3
+setup config game.companions 3
+setup config game.campaign_skip_training false
+setup menu campaign focus skip difficulty 1
+check Menu only: SKIP TRAINING is lit and says OFF
+check The help says what ON does, no squad reason
+check Left / right: ON, and its own help
+
+test skip-easy
+title SKIP TRAINING on EASY
+setup config game.companions 0
+setup config game.campaign_skip_training false
+setup menu campaign focus skip difficulty 0
+check Menu only: SKIP TRAINING is lit on EASY and says OFF
+check The help says ON works alone on EASY or NORMAL
+check Left / right: ON
+
+test skip-dimmed
+title SKIP TRAINING on HEROIC
+setup config game.companions 0
+setup menu campaign focus skip difficulty 2
+check Menu only: SKIP TRAINING says ALREADY SKIPPED, dimmed
+check The help names HEROIC as the reason
+check A and left / right do nothing but fail
+
+test player-down
+title PLAYER DOWN with a squad
+setup config game.companions 2
+setup config game.companions_player_down respawn
+setup menu campaign focus down
+check Menu only: PLAYER DOWN says RESPAWN
+check The help tells who a player comes back beside
+check Left / right: CHECKPOINT and its own help
+
+test continue-solo
+title CONTINUE with a squad set
+setup config game.companions 3
+setup menu campaign save 3 2 focus continue
+check Menu only: CONTINUE reads LEVEL 3 • HEROIC • SOLO ONLY, lit
+check The A prompt says Continue
+check The help: A continues alone, the squad joins new missions
+
+test workshop-squad
+title Workshop campaign: the squad rows are dimmed
+setup config game.companions 3
+setup menu campaign workshop demo focus squad
+check Menu only: AI SQUAD dimmed, STOCK CAMPAIGN ONLY (made-up)
+check The help says Workshop campaigns play without it for now
+check SQUAD GEAR and PLAYER DOWN say the same
+
+test split-squad
+title Split screen: the squad rows are dimmed
+setup config game.companions 3
+setup menu campaign seat focus squad
+check Menu only: AI SQUAD dimmed, SOLO ONLY, 2 players seated
+check The help says the squad joins when you play alone
+check SQUAD GEAR and PLAYER DOWN say the same

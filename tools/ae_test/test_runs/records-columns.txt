@@ -1,0 +1,86 @@
+# rc2 SERVICE RECORD detail window: A on a box of a record page opens it on that box's page (MODES, COMBAT, WEAPONS & MAPS,
+# MEDALS), LB / RB (Tab) change the page, LT / RT (PgUp / PgDn) step to the next record of the list, B goes back. Every test opens
+# on its page from its setup lines: `record_medals ... page 4-7` is a made-up player with the window over its record, `botrecord
+# page #<n> page 4-7` a bot of the made-up store (the first has the most games, the fourth a record from before the update).
+list records-columns
+revision 5
+title RC2 SERVICE RECORD: DETAIL WINDOW
+
+test player-modes
+title PLAYER RECORD: MODES
+check A column for each kind played, chips over
+check Each column: win bar, three big numbers, its medals
+check LB / RB step the pages; B goes back to the record
+menus
+setup record_medals 104 7 page 4
+expect 1 cmd record_medals ok
+
+test player-modes-kinds
+title PLAYER RECORD: MODES, EVERY KIND
+check SLAYER and OTHER have columns: kills, K/D, assists, medals
+check Left / right: the lit chip follows the ring, columns scroll
+check Click a chip: its column is ringed and in view
+menus
+setup record_medals 104 7 page 4 kinds 7
+expect 1 cmd record_medals ok
+
+test player-modes-sparse
+title PLAYER RECORD: MODES, FEW KINDS
+check Kinds not played yet share one NOT PLAYED YET column
+check Times read as clocks (49:30), no raw seconds
+check A record from before the update: no game figure on captures
+menus
+setup record_medals 4 3 page 4 counted 3
+expect 1 cmd record_medals ok
+
+test player-combat
+title PLAYER RECORD: COMBAT
+check ACCURACY, KILL KINDS, DAMAGE, PER GAME as four columns
+check KILL KINDS: seven bars of the share
+check Left / right move the ring between the columns
+menus
+setup record_medals 104 7 page 5
+expect 1 cmd record_medals ok
+
+test player-weapons
+title PLAYER RECORD: WEAPONS & MAPS
+check TOP WEAPONS: bars, SHARE OF ALL KILLS in its head
+check MAPS: every kept map with games, win rate bar and K/D
+menus
+setup record_medals 104 7 page 6
+expect 1 cmd record_medals ok
+
+test player-medals
+title PLAYER RECORD: MEDALS
+check One column a family, rarest first
+check A opens every medal (the MEDALS page)
+menus
+setup record_medals 104 7 page 7
+expect 1 cmd record_medals ok
+
+test bot-modes
+title BOT RECORD: MODES
+check The BOT tag, "Bot" on LT / RT in the footer
+check LT / RT step to the next bot, the page kept
+menus
+setup botrecord demo seed 3
+setup botrecord page #1 page 4
+expect 1 cmd botrecord page ok
+
+test bot-old
+title BOT RECORD: FROM BEFORE THE UPDATE
+check Dashes where a number is not counted yet, never a zero
+menus
+setup botrecord demo seed 3
+setup botrecord page #4 page 4
+expect 1 cmd botrecord page ok
+
+test career-records
+title CAREER: RECORDS, PLAYERS BESIDE BOTS
+# (the records this PC keeps: both lists are empty in a fresh save folder)
+check PLAYERS ON THIS PC left, BOTS YOU HAVE MET right, a card
+check A opens the focused record in the new window
+check Inside, LT / RT step through the same list; B comes back
+menus
+setup menu records
+expect 1 cmd menu ok

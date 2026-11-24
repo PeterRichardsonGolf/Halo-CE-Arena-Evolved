@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/ae_settings_page_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/header_hud"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/header_hud" controller="1" left="35" top="11" width="605" height="59" type="text" text="GYRO AND TRACKPAD" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_aim" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_sensitivity_horizontal" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_sensitivity_vertical" x="54" y="133"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_invert_horizontal" x="54" y="163"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_invert_vertical" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_trackpad_aim" x="54" y="223"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_trackpad_sensitivity" x="54" y="253"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_defaults" y="1"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_aim" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_aim_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_aim_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_aim_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_aim_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ALWAYS|ZOOMED IN" setting="input.gyro_aim" values="false|true|zoom" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_sensitivity_horizontal" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_horizontal_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_horizontal_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_horizontal_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_horizontal_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="0.25|0.5|0.75|1|1.25|1.5|2|2.5|3|4|5|6|8|10" setting="input.gyro_sensitivity_horizontal" values="0.25|0.5|0.75|1.0|1.25|1.5|2.0|2.5|3.0|4.0|5.0|6.0|8.0|10.0" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_sensitivity_vertical" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_vertical_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_vertical_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_vertical_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_sensitivity_vertical_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="0.25|0.5|0.75|1|1.25|1.5|2|2.5|3|4|5|6|8|10" setting="input.gyro_sensitivity_vertical" values="0.25|0.5|0.75|1.0|1.25|1.5|2.0|2.5|3.0|4.0|5.0|6.0|8.0|10.0" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_invert_horizontal" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_horizontal_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_horizontal_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_horizontal_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_horizontal_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="input.gyro_invert_horizontal" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_gyro_invert_vertical" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_vertical_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_vertical_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_vertical_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/gyro_invert_vertical_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="ON|OFF" setting="input.gyro_invert_vertical" values="true|false" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_trackpad_aim" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_aim_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_aim_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_aim_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_aim_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|AIM" setting="input.trackpad_aim" values="false|true" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/op_trackpad_sensitivity" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_sensitivity_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_sensitivity_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_sensitivity_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/trackpad_sensitivity_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="0.25|0.5|0.75|1|1.25|1.5|2|2.5|3|4|5|6|8|10" setting="input.trackpad_sensitivity" values="0.25|0.5|0.75|1.0|1.25|1.5|2.0|2.5|3.0|4.0|5.0|6.0|8.0|10.0" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/labels">
+		<string text="GYRO AIMING:"/>
+		<string text="TURN SENSITIVITY:"/>
+		<string text="TILT SENSITIVITY:"/>
+		<string text="INVERT TURN:"/>
+		<string text="INVERT TILT:"/>
+		<string text="TRACKPAD AIM:"/>
+		<string text="TRACKPAD SPEED:"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/gyro/help_strings">
+		<string text=""/>
+		<string text="Aim by moving the controller (DualSense, Pro\nController, Joy-Con). ZOOMED IN: only in a scope."/>
+		<string text="With GYRO AIMING on. 1 turns you exactly as\nfar as you turn the controller."/>
+		<string text="With GYRO AIMING on. 1 looks up or down as\nfar as you tilt the controller."/>
+		<string text="With GYRO AIMING on: turning the controller right\nlooks left."/>
+		<string text="With GYRO AIMING on: tilting the controller up\nlooks down."/>
+		<string text="Aim with a Steam Controller's right trackpad as\nwell as the stick."/>
+		<string text="With TRACKPAD AIM on: how far a swipe across\nthe right trackpad turns you."/>
+	</strings>
+</menus>
