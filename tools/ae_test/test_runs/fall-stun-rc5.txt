@@ -1,0 +1,32 @@
+# FALL STUN: the gametype row that keeps or drops the hard landing's lock on movement and jump (GAME OPTIONS > SPARTAN).
+# Each test opens on Blood Gulch 13 units up in the air by the red base, so you drop straight down: a fall
+# of more than 10 units, the height the longest lock (about a second) needs. A fall of 6 units locks for 0.4 seconds only.
+# FALL DAMAGE is OFF in both so the fall never hurts; only the stun differs.
+list fall-stun-rc5
+revision 3
+title FALL STUN: HARD LANDING LOCK
+
+test stun-on
+title FALL STUN ON: the landing locks you
+setup option fall_damage off
+setup option fall_stun on
+setup goto 95.7 -159.4 13.0 facing 0
+check You drop straight down and land
+check On landing you are locked for about a second
+check After the lock you walk and jump as normal
+map bloodgulch
+gametype AE COMP TS
+set bots.count 0
+
+test stun-off
+title FALL STUN OFF: the landing never locks you
+fresh
+setup option fall_damage off
+setup option fall_stun off
+setup goto 95.7 -159.4 13.0 facing 0
+check You drop straight down and land
+check On landing you move at once: no lock
+check Jump as you land: you jump at once
+map bloodgulch
+gametype AE COMP TS
+set bots.count 0

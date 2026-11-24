@@ -1,0 +1,64 @@
+# 0.9.2 weapons batch 1: BURST PDW (16), HEAVY REVOLVER (17), SPIKER (19), RAVAGER (20), one test each on Octagon 2.
+# Each pack's weapon is the START weapon on every life (debug.network_test_cache_weapon <slot>), two bots wander the
+# arena, and a dummy stands in front of you (a dummy heals to full 3 s after it was last hurt: wait that long between
+# tries). `ttk on` prints the time to kill after each kill. The packs are held: this list runs only on a test build
+# whose weapon cache holds them. Staged only: nothing here waits for something to happen in a game.
+list weapons-b1-092
+revision 1
+title WEAPONS BATCH 1
+
+test pdw-bursts
+title Burst PDW: 3 bursts close
+setup dummy 1 4
+setup ttk on
+check One pull is 3 rounds; holding the trigger adds none
+check 2 bursts leave the dummy alive; the 3rd kills it
+check Kill feed names it PDW with the pack's picture
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 16
+set debug.objective_log full
+
+test revolver-slugs
+title Heavy revolver: 3 slugs, the last to the head
+setup dummy 1 8
+setup ttk on
+check 2 body slugs pop the shield; the 3rd to the head kills
+check About 1.7 slugs a second however you mash the trigger
+check Kill feed names it REVOLVER with the pack's picture
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 17
+set debug.objective_log full
+
+test spiker-hold
+title Spiker: hold the trigger
+setup dummy 1 6
+setup ttk on
+check Holding the trigger fires about 10 rounds a second
+check The counter reads 40 loaded and empties as you fire
+check The dummy dies in a short burst; TTK prints the time
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 19
+set debug.objective_log full
+
+test ravager-taps
+title Ravager: 3 taps kill
+setup dummy 1 10
+setup ttk on
+check A tap: 3 bolts leave one after another, not together
+check 2 taps pop the shield; the 3rd tap kills the dummy
+check Kill feed names it RAVAGER with the pack's picture
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 20
+set debug.objective_log full

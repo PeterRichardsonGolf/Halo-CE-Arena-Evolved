@@ -1,0 +1,69 @@
+# 0.8.1 ragdoll A/B (players' row): the same BR kill on standing dummies, one group a style. The AI row is NONE, so a body
+# that falls by the wrong row shows as the stock death animation with no ragdoll at all (a wrong pick is visible).
+list ragdoll-ab-081
+revision 1
+title RAGDOLL STYLES A/B (PLAYERS ROW)
+
+group spaghetti-octagon
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players spaghetti_western
+set game.ragdoll_ai none
+
+test ragdoll-spaghetti
+title SPAGHETTI WESTERN: a stiff woody fall
+setup give br
+setup dummy 3 10
+check one BR kill: a stiff woody fall from frame one
+check no stock death animation plays
+check every body falls the same way for the same shot
+expect 1 cmd dummy ok
+
+group exaggerated-octagon
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players exaggerated
+set game.ragdoll_ai none
+
+test ragdoll-exaggerated
+title EXAGGERATED: loose from the first frame, wild
+setup give br
+setup dummy 3 10
+check one BR kill: loose from the first frame
+check the fall looks heavy and wild, limbs swinging
+check no limb flies off a second after the fall
+expect 1 cmd dummy ok
+
+group modern-octagon
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players modern
+set game.ragdoll_ai none
+
+test ragdoll-modern
+title MODERN: limp at once, no stock animation, no spin
+setup give br
+setup dummy 3 10
+check one BR kill: limp at once, no stock animation
+check no spin on its feet first
+check the shot still pushes the body the way it came
+expect 1 cmd dummy ok
+
+group mixed-octagon
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set game.ragdoll_players mixed
+set game.ragdoll_ai none
+
+test ragdoll-mixed
+title MIXED: the stock fall first, then goes loose
+setup give br
+setup dummy 3 10
+check one BR kill: the stock fall plays first
+check then it goes loose near the fall's end
+check it settles like a ragdoll, no limb flung
+expect 1 cmd dummy ok

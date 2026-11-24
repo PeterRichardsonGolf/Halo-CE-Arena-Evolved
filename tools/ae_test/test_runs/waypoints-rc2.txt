@@ -1,0 +1,32 @@
+# ITEM WAYPOINTS rc2: a power item's waypoint shows while the item lies on the map, from the game's start, until it is
+# taken; the countdown 10 s before each respawn stays. Needs the TIMERS option at HUD + WAYPOINTS (or LINE OF SIGHT); it
+# is set here. The log says why each waypoint shows: "item timers: waypoint <n> <name> on at tick ... (on the map)" or
+# "(respawn soon)", and "off" when the item is taken.
+list waypoints-rc2
+revision 1
+title ITEM WAYPOINTS: ON THE MAP UNTIL TAKEN
+
+group damnation
+map damnation
+gametype AE COMP TS
+set bots.count 0
+
+test start
+title WAYPOINTS: on every power item at the start
+setup option timers hud_waypoints
+check At the start: a waypoint on each power item
+expect 1 log (on the map)
+
+test taken
+title WAYPOINTS: take one, its waypoint goes
+setup option timers hud_waypoints
+setup goto 1.5 1.6 -0.1
+check Take one: its waypoint goes; others stay
+expect 1 log item timers: 1 taken
+
+test countdown
+title WAYPOINTS: 10 s before it comes back (item respawn: no waiting)
+setup option timers hud_waypoints
+setup item respawn rockets in 15
+check 10 s before it comes back: the countdown shows
+expect 1 log (respawn soon)

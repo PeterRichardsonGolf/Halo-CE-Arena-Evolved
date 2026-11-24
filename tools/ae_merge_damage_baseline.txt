@@ -1,0 +1,298 @@
+# Warnings tools/ae_merge_damage.py accepts today: file | warning | source line. Rewrite with --update.
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | real_vector3d forward = { 1.f, 0.f, 0.f };
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | real_vector3d up = { 0.f, -sine(radians), cosine(radians) };
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "back", "spine1", { -0.085f, -0.055f, 0.045f }, { 0.f, 0.707f, -0.707f }, { 0.f, -0.707f, -0.707f } },
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "back2", "spine1", { -0.1f, 0.055f, 0.045f }, { 0.f, -0.707f, -0.707f }, { 0.f, 0.707f, -0.707f } },
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "bomb", "spine1", { -0.1376f, 0.f, 0.0322f }, { -0.1045f, 0.f, 0.9945f }, { -0.9945f, 0.f, -0.1045f } },
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "long", "spine1", { -0.085f, -0.04f, -0.1f }, { 0.f, -0.6f, 0.8f }, { 0.f, 0.8f, 0.6f } },
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "thigh", "r thigh", { 0.f, -0.045f, -0.03f }, { 0.f, 0.f, -1.f }, { 1.f, 0.f, 0.f } },
+port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "thigh2", "l thigh", { 0.f, 0.045f, -0.03f }, { 0.f, 0.f, -1.f }, { 1.f, 0.f, 0.f } },
+port/linux/game/ae_blood_decals.inc | -Wmissing-braces | real_rectangle2d sprite_bounds = { 0.f, 1.f, 0.f, 1.f };
+port/linux/game/ae_bomb_assault.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -AE_BOMB_DROP_TEST_DEPTH };
+port/linux/game/ae_bomb_assault.c | -Wmissing-braces | real_vector3d forward = { unit->object.forward.i, unit->object.forward.j, 0.0f };
+port/linux/game/ae_bomb_assault.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 1.0f };
+port/linux/game/ae_bots_cover.inc | -Wmissing-braces | real_vector3d vector = { 0.0f, 0.0f, AE_BOTS_COVER_HEADROOM };
+port/linux/game/ae_bots_fear.inc | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 8.0f };
+port/linux/game/ae_bots_fireteam.inc | -Wmissing-braces | real_vector3d vector = { 0.0f, 0.0f, AE_FIRETEAM_TIGHT_ROOF };
+port/linux/game/ae_bots_lanes.c | -Wmissing-braces | real_point3d middle = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_bots_lanes.c | -Wmissing-braces | real_point3d middle = { lanes.graph.nodes[index].x, lanes.graph.nodes[index].y, lanes.graph.nodes[index].z };
+port/linux/game/ae_bots_lanes.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -6.0f };
+port/linux/game/ae_bots_lanes.c | -Wmissing-braces | real_vector3d normal = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_bots_objective.inc | -Wimplicit-fallthrough | case AE_BOTS_CTF_DEFEND:
+port/linux/game/ae_bots_squads.inc | -Wmissing-braces | real_point3d target = { 0.0f, 0.0f, 0.0f }, point;
+port/linux/game/ae_bots_squads.inc | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 8.0f };
+port/linux/game/ae_bots_travel.inc | -Wmissing-braces | real_point3d first_entry = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_bots_travel.inc | -Wmissing-braces | real_point3d probe, first_ground = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_bots_travel.inc | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, AE_BOTS_TRAVEL_REOPEN_HEADROOM };
+port/linux/game/ae_bots_travel.inc | -Wmissing-braces | real_vector3d vector, down = { 0.0f, 0.0f, -2.0f };
+port/linux/game/ae_bots_vantage.c | -Wmissing-braces | real_point3d a = { spot->x, spot->y, spot->z }, b = { vantage.places[place].x, vantage.places[place].y, vantage.places[place].z };
+port/linux/game/ae_bots_vantage.c | -Wmissing-braces | real_point3d at = { vantage.places[place].x, vantage.places[place].y, vantage.places[place].z };
+port/linux/game/ae_bots_vantage.c | -Wmissing-braces | real_point3d sum = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_bots_vantage.inc | -Wmissing-braces | real_point3d at = { spot->x, spot->y, spot->z };
+port/linux/game/ae_bots_vehicle.inc | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(2.0f * bounding + 6.0f) };
+port/linux/game/ae_bots_vehicle.inc | -Wmissing-braces | real_vector3d vector = { 0.0f, 0.0f, 8.0f };
+port/linux/game/ae_campaign_score.c | -Wmissing-braces | real_vector3d blow = { 0.0f, 0.0f, 0.0f };
+port/linux/game/ae_companion.c | -Wmissing-braces | real_point3d above = { ground.x, ground.y, ground.z + 0.1f };
+port/linux/game/ae_companion.c | -Wmissing-braces | real_point3d probe = { at.x + AE_COMPANION_NARROW_PROBE * (real)cos(angle), at.y + AE_COMPANION_NARROW_PROBE * (real)sin(angle),
+port/linux/game/ae_companion.c | -Wmissing-braces | real_point3d there = { feet.x + offsets[index][0], feet.y + offsets[index][1], chest.z }, ground;
+port/linux/game/ae_companion.c | -Wmissing-braces | real_vector3d across, down = { 0.0f, 0.0f, -(0.6f + AE_COMPANION_ENTRY_FLOOR_RISE + 0.5f) }, up;
+port/linux/game/ae_companion.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(0.5f + AE_COMPANION_NARROW_DROP) };
+port/linux/game/ae_companion.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(0.6f + AE_COMPANION_DECK_RISE + 0.3f) }, across;
+port/linux/game/ae_companion.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -1.2f };
+port/linux/game/ae_companion.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -3.0f };
+port/linux/game/ae_hud_digits.c | -Wmissing-braces | static const real_rgb_color dark = { 6.0f / 255.0f, 10.0f / 255.0f, 18.0f / 255.0f };
+port/linux/game/ae_round.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(AE_ROUND_GROUND_ABOVE + AE_ROUND_GROUND_REACH) };
+port/linux/game/ae_vehicle_death.c | -Wmissing-braces | real_vector3d forward = { 1.0f, 0.0f, 0.0f };
+port/linux/game/ae_vehicle_death.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 1.0f };
+port/linux/game/ae_vehicle_death.c | -Wmissing-braces | } ae_vehicle_death_test = { NONE, NONE, 0, NONE, 0, 0, 0, 0, { 0.0f, 0.0f, 0.0f }, FALSE };
+port/linux/game/bots.c | -Wmissing-braces | real_point3d low = { REAL_MAX, REAL_MAX, REAL_MAX }, high = { -REAL_MAX, -REAL_MAX, -REAL_MAX };
+port/linux/game/bots.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -1.2f };
+port/linux/game/bots.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -6.0f };
+port/linux/game/bots.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 0.35f };
+port/linux/game/bots.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 1.6f };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_point3d body = { floor->x, floor->y, floor->z + SPREAD_STEP_HEIGHT };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(2.0f * SPREAD_STEP_HEIGHT + SPREAD_FLOOR_DIFFERENCE) };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(SPREAD_STEP_HEIGHT + FALLBACK_GROUND_DEPTH) };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, SPREAD_HEADROOM };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_vector3d way = { 0.0f, 0.0f, 0.0f };
+port/linux/game/coop_enemies.c | -Wmissing-braces | real_vector3d way = { spot->x - from->x, spot->y - from->y, 0.0f };
+port/linux/game/coop_pickups.c | -Wmissing-braces | real_vector3d down = {0.0f, 0.0f, -2.0f};
+port/linux/game/coop_vehicles.c | -Wmissing-braces | real_vector3d down = {0.0f, 0.0f, -1.5f};
+port/linux/game/firefight_generators.c | -Wmissing-braces | real_point3d fallback = { 0.0f, 0.0f, 0.5f };
+port/linux/game/firefight_generators.c | -Wmissing-braces | real_vector3d ray_down = { 0.0f, 0.0f, -6.0f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color cyan = { 1.0f, 0.42f, 0.78f, 1.0f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color gold = { 1.0f, 0.96f, 0.98f, 1.0f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color gold = { 1.0f, 1.0f, 0.85f, 0.25f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color green = { 1.0f, 0.35f, 1.0f, 0.45f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color red = { 1.0f, 1.0f, 0.35f, 0.35f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color white = { 1.0f, 0.95f, 0.95f, 0.95f };
+port/linux/game/firefight_hud.c | -Wmissing-braces | real_argb_color white = { 1.0f, 0.96f, 0.98f, 1.0f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_point3d middle = { 0.0f, 0.0f, 0.0f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d deep = { 0.0f, 0.0f, -(step_up + FF_STRAIGHT_LANDING_DEPTH) };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -(step_up + FF_STRAIGHT_DROP) };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -FF_FLOOR_DEPTH };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d down = { 0.0f, 0.0f, -FF_REACH_GROUND_DEPTH };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d ray_down = { 0.0f, 0.0f, -18.0f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d ray_down = { 0.0f, 0.0f, -6.0f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d ray_up = { 0.0f, 0.0f, 10.5f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d ray_up = { 0.0f, 0.0f, 13.0f };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d ray_up = { 0.0f, 0.0f, FF_POD_FALL_HEIGHT };
+port/linux/game/firefight_spawner.c | -Wmissing-braces | real_vector3d step = { along.i * FF_STRAIGHT_STEP, along.j * FF_STRAIGHT_STEP, 0.0f };
+port/linux/game/firing_range.c | -Wmissing-braces | { RANGE_ARENA_X0 + g, -door, RANGE_ARENA_Y0 - t, RANGE_ARENA_Y0, 0.0f, h },
+port/linux/game/firing_range.c | -Wmissing-braces | { RANGE_ARENA_X0 - t, RANGE_ARENA_X0, RANGE_ARENA_Y0 - t, RANGE_ARENA_Y1 - g, 0.0f, h },
+port/linux/game/firing_range.c | -Wmissing-braces | { RANGE_ARENA_X0 - t, RANGE_ARENA_X1 + t, RANGE_ARENA_Y1, RANGE_ARENA_Y1 + t, 0.0f, h },
+port/linux/game/firing_range.c | -Wmissing-braces | { RANGE_ARENA_X1, RANGE_ARENA_X1 + t, RANGE_ARENA_Y0 - t, RANGE_ARENA_Y1 - g, 0.0f, h },
+port/linux/game/firing_range.c | -Wmissing-braces | { door, RANGE_ARENA_X1 - g, RANGE_ARENA_Y0 - t, RANGE_ARENA_Y0, 0.0f, h },
+port/linux/game/first_person_legs.c | -Wmissing-braces | real_point3d sum = { 0.f, 0.f, 0.f };
+port/linux/game/map_share.c | -Wmissing-braces | real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+port/linux/game/mcc_menu_text.c | -Wmissing-braces | real_argb_color color={1,1,1,1};
+port/linux/game/mcc_share.c | -Wmissing-braces | real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+port/linux/game/menu_chief.c | -Wmissing-braces | static real_point3d const origin = { 0.0f, 0.0f, 0.0f };
+port/linux/game/menu_chief.c | -Wmissing-braces | static real_vector3d const forward = { 1.0f, 0.0f, 0.0f };
+port/linux/game/menu_chief.c | -Wmissing-braces | static real_vector3d const up = { 0.0f, 0.0f, 1.0f };
+port/linux/game/menu_functions.c | -Wmissing-braces | static real_argb_color const white = { 1.0f, 1.0f, 1.0f, 1.0f };
+port/linux/game/network_chat.c | -Wmissing-braces | real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+port/linux/game/network_coop.c | -Wmissing-braces | real_point3d epicenter = { event->reals[0], event->reals[1], event->reals[2] };
+port/linux/game/network_coop.c | -Wmissing-braces | real_vector3d level = { forward->i, forward->j, 0.0f };
+port/linux/game/network_distributed.c | -Wmissing-braces | real_euler_angles2d turn = { 0.0f, 0.0f };
+port/linux/game/network_distributed.c | -Wmissing-braces | real_vector3d frame_velocity = { 0.0f, 0.0f, 0.0f };
+port/linux/game/overshield_effect.c | -Wmissing-braces | static real_rgb_color const overshield_effect_outer_rgb = { 0.306f, 0.992f, 0.455f }; /* (78, 253, 116) */
+port/linux/game/overshield_effect.c | -Wmissing-braces | static real_rgb_color const overshield_effect_rgb = { 0.992f, 0.306f, 0.455f }; /* (253, 78, 116) */
+port/linux/game/render_enumerate.c | -Wmissing-braces | real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+port/linux/game/render_enumerate.c | -Wmissing-braces | real_point3d origin = { 0.0f, 0.0f, 0.0f };
+port/linux/game/render_enumerate.c | -Wmissing-braces | real_vector3d up = { 0.0f, 0.0f, 1.0f };
+port/linux/game/skulls.c | -Wmissing-braces | static real_rgb_color const given_shield_colors[] = { { 0.35f, 0.65f, 1.0f }, { 0.6f, 0.85f, 1.0f } };
+port/linux/game/skulls.c | -Wmissing-braces | { 0.04f, 0.04f, 0.04f }, { 1.0f, 1.0f, 1.0f },
+port/linux/game/skulls.c | -Wmissing-braces | { 0.15f, 0.55f, 1.0f }, { 0.85f, 0.25f, 1.0f }, { 1.0f, 0.5f, 0.1f },
+port/linux/game/skulls.c | -Wmissing-braces | { 1.0f, 0.15f, 0.2f }, { 1.0f, 0.8f, 0.1f }, { 0.2f, 0.9f, 0.3f },
+port/linux/game/structure_culling.c | -Wmissing-braces | real_vector3d mean = {0, 0, 0};
+port/linux/game/structure_culling.c | -Wmissing-braces | real_vector3d sum = {0, 0, 0};
+port/linux/game/structure_culling.c | -Wmissing-braces | static real_argb_color const colors[2] = {{0.5, 1, 0, 0}, {0.5, 0, 0, 1}};
+port/linux/game/vehicle_riding.c | -Wmissing-braces | static real_point3d const origin = { 0.f, 0.f, 0.f };
+port/linux/game/vehicle_riding.c | -Wmissing-braces | static struct vehicle_riding_correction const identity = { NONE, { { 0.f, 0.f, 0.f }, 1.f }, { 0.f, 0.f, 0.f } };
+port/linux/src/ae_ds5_rules.c | -Wimplicit-fallthrough | case AE_DS5_EVENT_SHOT:
+port/linux/src/cabinet.c | -Wimplicit-fallthrough | case BLOCK_VERBATIM:
+port/third_party/stb/stb_truetype.h | -Wimplicit-fallthrough | case 0x1D: // callgsubr
+source/ai/actor_combat.c | -Wmissing-braces | real_vector3d const up = {0.0f, 0.0f, 1.0f};
+source/ai/actor_moving.c | -Wimplicit-fallthrough | case _actor_vehicle_driver_nondirectional_ground:
+source/ai/encounters.c | -Wimplicit-fallthrough | case _unique_leader_type_random:
+source/bink/bink_playback.c | -Wmissing-braces | point2d cursor= { 0, 0 };
+source/bitmaps/bitmap_drawing.c | -Wmissing-braces | static union argb_color black = {0xFFFF, 0, 0, 0};
+source/bitmaps/bitmap_drawing.c | -Wmissing-braces | static union argb_color white = {0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF};
+source/bitmaps/bitmap_extract.c | -Wimplicit-fallthrough | case 1:
+source/camera/observer.c | -Wmissing-braces | real_vector3d rotational_displacement = { delta[0], delta[1], delta[2] };
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .0f, .0f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .0f, .0f, 1.f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .0f, .39f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .0f, 1.f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .0f, 1.f, 1.f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .39f, .58f, .93f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .44f, .05f, .43f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .5f, .5f, .5f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .5f, 1.f, .83f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, .81f, .13f, .56f }
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, .0f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, .0f, 1.f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, .41f, .7f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, .5f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, .63f, .48f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, 1.f, .0f },
+source/cseries/cseries.c | -Wmissing-braces | { 1.f, 1.f, 1.f, 1.f },
+source/effects/decals.c | -Wmissing-braces | real_vector3d offset = { 0.0f, 0.0f, 0.0f };
+source/game/game_engine.c | -Wmissing-braces | static real_rgb_color const enemy_red = { 1.0f, 0.3f, 0.25f };
+source/interface/hud_draw.c | -Wimplicit-fallthrough | case _hud_anchor_top_right:
+source/interface/hud_weapon.c | -Wimplicit-fallthrough | case _crosshair_state_charge:
+source/interface/interface.c | -Wmissing-braces | real_rectangle2d entire_bitmap = { 0.0f, 1.0f, 0.0f, 1.0f };
+source/interface/interface.c | -Wmissing-braces | { 0.0f, (real)bitmap->width, 0.0f, (real)bitmap->height };
+source/interface/motion_sensor.c | -Wmissing-braces | { .5f, .5f, 1.f },
+source/interface/motion_sensor.c | -Wmissing-braces | { 0.f, 0.f, 0.f }
+source/interface/motion_sensor.c | -Wmissing-braces | { 1.f, .5f, 0.f },
+source/interface/motion_sensor.c | -Wmissing-braces | { 1.f, 0.f, 0.f },
+source/interface/motion_sensor.c | -Wmissing-braces | { 1.f, 1.f, 0.f },
+source/interface/ui_widget.c | -Wmissing-braces | real_argb_color color = { 1.0f, 0.85f, 0.9f, 1.0f };
+source/interface/ui_widget.c | -Wmissing-braces | real_argb_color color = { 1.0f, 1.0f, 1.0f, 1.0f };
+source/interface/ui_widget.c | -Wmissing-braces | real_rgb_color map_tint = { 0.9f, 0.9f, 0.9f };
+source/interface/ui_widget.c | -Wmissing-braces | { { 0, 0 }, { 0, 0 }, { 0, 0 }, { 0, 0 } },
+source/interface/ui_widget.c | -Wmissing-braces | { { 0, 0 }, { 0, 240 }, { 0, 0 }, { 0, 0 } },
+source/interface/ui_widget.c | -Wmissing-braces | { { 0, 0 }, { 0, 240 }, { 320, 240 }, { 0, 0 } },
+source/interface/ui_widget.c | -Wmissing-braces | { { 0, 0 }, { 320, 0 }, { 0, 240 }, { 320, 240 } }
+source/interface/ui_widget_event_handler_functions.c | -Wimplicit-fallthrough | case 2:
+source/interface/virtual_keyboard.c | -Wmissing-braces | static rectangle2d const keyboard_back_legend_rect= {412, 368, 438, 462};
+source/interface/virtual_keyboard.c | -Wmissing-braces | static rectangle2d const keyboard_enter_legend_rect= {412, 468, 438, 572};
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 112, 190, 208 }, /* done */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 208, 190, 240 }, /* 1 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 240, 190, 272 }, /* 2 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 272, 190, 304 }, /* 3 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 304, 190, 336 }, /* 4 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 336, 190, 368 }, /* 5 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 368, 190, 400 }, /* 6 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 400, 190, 432 }, /* 7 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 432, 190, 464 }, /* 8 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 464, 190, 496 }, /* 9 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 158, 496, 190, 528 }, /* 0 */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 112, 222, 208 }, /* shift */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 208, 222, 240 }, /* a */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 240, 222, 272 }, /* b */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 272, 222, 304 }, /* c */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 304, 222, 336 }, /* d */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 336, 222, 368 }, /* e */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 368, 222, 400 }, /* f */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 400, 222, 432 }, /* g */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 432, 222, 464 }, /* h */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 464, 222, 496 }, /* i */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 190, 496, 222, 528 }, /* j */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 112, 254, 208 }, /* caps */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 208, 254, 240 }, /* k */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 240, 254, 272 }, /* l */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 272, 254, 304 }, /* m */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 304, 254, 336 }, /* n */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 336, 254, 368 }, /* o */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 368, 254, 400 }, /* p */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 400, 254, 432 }, /* q */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 432, 254, 464 }, /* r */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 464, 254, 496 }, /* s */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 222, 496, 254, 528 }, /* t */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 112, 286, 208 }, /* symbols */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 208, 286, 240 }, /* u */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 240, 286, 272 }, /* v */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 272, 286, 304 }, /* w */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 304, 286, 336 }, /* x */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 336, 286, 368 }, /* y */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 368, 286, 400 }, /* z */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 254, 400, 286, 528 }, /* backspace */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 286, 208, 318, 400 }, /* space */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 286, 400, 318, 464 }, /* left */
+source/interface/virtual_keyboard.c | -Wmissing-braces | { 286, 464, 318, 528 }, /* right */
+source/items/projectiles.c | -Wimplicit-fallthrough | case _projectile_action_disappear:
+source/items/projectiles.c | -Wimplicit-fallthrough | case _projectile_detonation_timer_starts_when_at_rest:
+source/main/console.c | -Wimplicit-fallthrough | case _key_down_arrow:
+source/main/console.c | -Wimplicit-fallthrough | default:
+source/main/console.c | -Wmissing-braces | static real_argb_color console_color = {1.f, 1.f, 0.3f, 1.f}; // Pink
+source/main/main.c | -Wmissing-braces | point2d cursor = { 0, 0 };
+source/main/main.c | -Wmissing-braces | real_argb_color color = { 0.4f, 0.8f, 0.8f, 0.8f };
+source/main/main.c | -Wmissing-braces | real_point3d position = { 0.0f, 0.0f, 0.0f };
+source/main/main.c | -Wmissing-braces | real_vector3d forward = { 0.0f, 0.0f, 1.0f };
+source/main/main.c | -Wmissing-braces | real_vector3d up = { 0.0f, 1.0f, 0.0f };
+source/math/geometry.c | -Wmissing-braces | {-1.f, 0.f, 0.f},
+source/math/geometry.c | -Wmissing-braces | {0.f, -1.f, 0.f},
+source/math/geometry.c | -Wmissing-braces | {0.f, 0.f, -1.f}
+source/math/geometry.c | -Wmissing-braces | {0.f, 0.f, 1.f},
+source/math/geometry.c | -Wmissing-braces | {0.f, 1.f, 0.f},
+source/math/geometry.c | -Wmissing-braces | {1.f, 0.f, 0.f},
+source/math/real_math.c | -Wmissing-braces | point->x - center->x,
+source/math/real_math.c | -Wmissing-braces | real_point3d p = {point->x-center->x, point->y-center->y, point->z - center->z};
+source/math/real_math.c | -Wmissing-braces | { -1.f, 0.f, 0.f, 0.f, -1.f, 0.f, 0.f, 0.f, -1.f, 0.f, 0.f, 0.f }
+source/math/real_math.c | -Wmissing-braces | { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f }
+source/memory/zlib/infblock.c | -Wimplicit-fallthrough | case BTREE:
+source/memory/zlib/infblock.c | -Wimplicit-fallthrough | case CODES:
+source/memory/zlib/infblock.c | -Wimplicit-fallthrough | case DONE:
+source/memory/zlib/infblock.c | -Wimplicit-fallthrough | case DRY:
+source/memory/zlib/infblock.c | -Wimplicit-fallthrough | case DTREE:
+source/memory/zlib/infcodes.c | -Wimplicit-fallthrough | case COPY: /* o: copying bytes in window, waiting for space */
+source/memory/zlib/infcodes.c | -Wimplicit-fallthrough | case DIST: /* i: get distance next */
+source/memory/zlib/infcodes.c | -Wimplicit-fallthrough | case END:
+source/memory/zlib/infcodes.c | -Wimplicit-fallthrough | case LEN: /* i: get length/literal/eob next */
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case CHECK1:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case CHECK2:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case CHECK3:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case CHECK4:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case DICT1:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case DICT2:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case DICT3:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case DICT4:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case DONE:
+source/memory/zlib/inflate.c | -Wimplicit-fallthrough | case FLAG:
+source/objects/object_lights.c | -Wmissing-braces | static real_vector3d const lightmap_sample_raycast_down = { 0.0f, 0.0f, -10.0f };
+source/objects/object_lights.c | -Wmissing-braces | { -10.0f, 0.0f, 0.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.0f, -10.0f, 0.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.0f, 0.0f, -1.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.0f, 0.0f, 0.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.0f, 10.0f, 0.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.2f, 0.2f, 0.2f },
+source/objects/object_lights.c | -Wmissing-braces | { 0.5f, 1.0f, 1.0f, 1.0f },
+source/objects/object_lights.c | -Wmissing-braces | { 10.0f, 0.0f, 0.0f },
+source/objects/object_lights.c | -Wmissing-braces | { { 0.4f, 0.4f, 0.5f }, { 0.0f, 0.0f, 1.0f } },
+source/objects/object_lights.c | -Wmissing-braces | { { 1.0f, 1.0f, 1.0f }, { -0.577f, -0.577f, -0.577f } },
+source/objects/objects.c | -Wmissing-braces | real_vector3d right = {forward->j, -forward->i, 0.f};
+source/objects/widgets/flags.c | -Wmissing-braces | point2d const parent_deltas[NUMBER_OF_FLAG_NEIGHBORS] = {{-1, 0}, {0, 1}, {0, -1}};
+source/physics/collision_debug.c | -Wmissing-braces | { -1.0f, -1.0f, -1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { -1.0f, -1.0f, 1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { -1.0f, 1.0f, -1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { -1.0f, 1.0f, 1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { 1.0f, -1.0f, -1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { 1.0f, -1.0f, 1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { 1.0f, 1.0f, -1.0f },
+source/physics/collision_debug.c | -Wmissing-braces | { 1.0f, 1.0f, 1.0f },
+source/physics/physics.c | -Wmissing-braces | real_vector3d angular_acceleration = { 0.0f, 0.0f, 0.0f };
+source/physics/physics.c | -Wmissing-braces | real_vector3d total_force = { 0.0f, 0.0f, -physics->mass*gravity };
+source/physics/physics.c | -Wmissing-braces | real_vector3d total_torque = { 0.0f, 0.0f, 0.0f };
+source/physics/physics.c | -Wmissing-braces | real_vector3d translational_acceleration = { 0.0f, 0.0f, 0.0f };
+source/physics/physics.c | -Wmissing-braces | { 0.0f, 0.0f, 1.0f },
+source/rasterizer/rasterizer.c | -Wmissing-braces | real_point3d node_point0 = { 0.f, 0.f, 0.f };
+source/rasterizer/rasterizer.c | -Wmissing-braces | real_point3d node_point1 = { 0.f, 0.f, 0.f };
+source/rasterizer/rasterizer.c | -Wmissing-braces | real_vector3d node_normal0 = { 0.f, 0.f, 0.f };
+source/rasterizer/rasterizer.c | -Wmissing-braces | real_vector3d node_normal1 = { 0.f, 0.f, 0.f };
+source/rasterizer/rasterizer.c | -Wmissing-braces | struct rasterizer_screen_transform rasterizer_screen_transform = { FALSE, 1.0f, 0.0f, 0.0f, { 0, 0, 0, 0 } };
+source/rasterizer/rasterizer_frame_statistics.c | -Wmissing-braces | point2d cursor = { 0, 0 };
+source/rasterizer/rasterizer_frame_statistics.c | -Wmissing-braces | real_argb_color statistics_color_bold = { 1.0f, 1.0f, 1.0f, 1.0f };
+source/rasterizer/rasterizer_frame_statistics.c | -Wmissing-braces | real_argb_color statistics_color_plain = { 1.0f, 0.66f, 1.0f, 0.66f };
+source/rasterizer/rasterizer_frame_statistics.c | -Wmissing-braces | real_argb_color white = { 1.0f, 1.0f, 1.0f, 1.0f };
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c | -Wmissing-braces | {0.0f, 1.0f, 0.0f, 0.0f}
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c | -Wmissing-braces | {1.0f, 0.0f, 0.0f, 0.0f},
+source/rasterizer/xbox/rasterizer_xbox_active_camouflage.c | -Wmissing-braces | {model->model.detail_map_scale, model->model.detail_map_v_scale*model->model.detail_map_scale, 1.0f, 1.0f},
+source/rasterizer/xbox/rasterizer_xbox_profile.c | -Wmissing-braces | static LARGE_INTEGER rasterizer_profile_performance_counter_frequency = { 1 };
+source/rasterizer/xbox/rasterizer_xbox_shadows.c | -Wmissing-braces | model->detail_map_scale,
+source/rasterizer/xbox/rasterizer_xbox_shadows.c | -Wmissing-braces | {0.0f, 1.0f, 0.0f, 0.0f}
+source/rasterizer/xbox/rasterizer_xbox_shadows.c | -Wmissing-braces | {1.0f, 0.0f, 0.0f, 0.0f},
+source/render/render_debug.c | -Wmissing-braces | decal->yaw * (_pi / 127.0f),
+source/shaders/shader_definitions.c | -Wmissing-braces | 0,
+source/shaders/shader_definitions.c | -Wmissing-braces | { 0.0f, 0.0f, 0.0f },
+source/sound/sound_manager.c | -Wimplicit-fallthrough | case _sound_spatialization_mode_relative:
+source/structures/structure_detail_objects.c | -Wmissing-braces | (real)(cell->cell_x * 8),
+source/structures/structure_runtime_decals.c | -Wmissing-braces | runtime_decal->yaw * (_pi / 127.f),
+source/structures/structure_visibility.c | -Wmissing-braces | { 0.0f, 0.0f, -1.0f },
+source/tool/error_geometry.c | -Wmissing-braces | { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f }
+source/units/bipeds.c | -Wmissing-braces | real_vector2d facing = { 0.f, 0.f };
+source/units/units.c | -Wimplicit-fallthrough | case _unit_add_weapon_replace:
+source/units/units.c | -Wimplicit-fallthrough | case _unit_state_hard_ping:
+source\ai\actor_perception.c | -Wimplicit-fallthrough | ?

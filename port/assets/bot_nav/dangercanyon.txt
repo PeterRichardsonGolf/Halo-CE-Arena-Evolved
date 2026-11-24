@@ -1,0 +1,127 @@
+nav 1 dangercanyon
+made 74d5e6dc
+
+# Each line was placed against the map's collision: every segment is swept at the vehicle's half-width and clears every
+# rock, tree and wall. No keepouts: the game measures each scenery object's footprint at map load and steers round it.
+# The two base halls are 24 units apart but joined for vehicles only by the canyon, so these routes are taken however long
+# the way when a driver's own search finds no way.
+
+# blue base hall, north parking row: the rocket warthog's spot west between the pine and the parked scorpion to the hall mouth
+route blue_hall_north warthog,ghost
+point -18.5 -1.15 -4.03
+point -21 -1.6 -4.02
+point -25 -1.8 -3.67
+point -27 -2.6 -3.26
+end
+
+# blue base hall, south side: the middle warthog's spot round the flag platform's south arm and out north of the yard boulders
+route blue_hall_south warthog,ghost
+point -5.7 -7.5 -4.03
+point -8.5 -10.5 -4.08
+point -14 -10.5 -4.09
+point -17.5 -7.6 -4.03
+point -21 -6.8 -4.02
+point -25 -5 -3.86
+point -29 -3.8 -2.66
+end
+
+# west lane: blue hall mouth out the west gap, west of the gigantic boulder, down the west canyon to the pit
+route west_lane warthog,ghost
+point -27 -2.6 -3.26
+point -29 -3.8 -2.66
+point -35 -2.5 -2.17
+point -38 -0.3 -2.17
+point -42.5 2.5 -2.31
+point -47 7 -4.67
+point -51 14 -8.46
+point -52 20.5 -9.06
+point -50 26.5 -9.98
+point -44 31.5 -8.79
+point -36 34.5 -7.38
+point -28 35.5 -7.00
+point -22 39 -8.48
+point -15 44 -8.57
+end
+
+# west lane scorpion line: the same lane, kept wider of the gigantic boulder; ends short of the pit, too tight for a scorpion
+route west_lane_sc scorpion
+point -24.5 -3.4 -3.96
+point -29 -3.8 -2.66
+point -35 -2.5 -2.17
+point -38 -0.3 -2.17
+point -42.5 2.5 -2.31
+point -47 7 -4.67
+point -47 11 -6.28
+point -51 14 -8.46
+point -52 20.5 -9.06
+point -50 26.5 -9.98
+point -44 31.5 -8.79
+point -36 34.5 -7.38
+point -28 35.5 -7.00
+point -22 39 -8.48
+end
+
+# pit crossing: joins the two lane ends along the bottom of the canyon so drivers can switch sides
+route pit_cross warthog,ghost
+point -15 44 -8.57
+point -8 49.5 -8.18
+point -1 53 -8.41
+point 1 53 -8.41
+point 8 49.5 -8.17
+point 15 44 -8.58
+end
+
+# red base hall, north parking row: the rocket warthog's spot east between the pine and the parked scorpion to the hall mouth
+route red_hall_north warthog,ghost
+point 18.5 -1.15 -4.03
+point 21 -1.6 -4.02
+point 25 -1.8 -3.65
+point 27 -2.6 -3.23
+end
+
+# red base hall, south side: the middle warthog's spot round the flag platform's south arm and out north of the yard boulders
+route red_hall_south warthog,ghost
+point 5.7 -7.5 -4.03
+point 8.5 -10.5 -4.08
+point 14 -10.5 -4.09
+point 17.5 -7.6 -4.03
+point 21 -6.8 -4.02
+point 25 -4.3 -3.83
+point 29 -3 -2.63
+end
+
+# east lane: red hall mouth out the east gap, down the east canyon south of the boulder and pines at the bend, to the pit
+route east_lane warthog,ghost
+point 27 -2.6 -3.23
+point 29 -3 -2.63
+point 35 -2.5 -2.17
+point 38 -0.3 -2.17
+point 42.5 2.5 -2.32
+point 47 7 -4.67
+point 51 14 -8.46
+point 51.5 20.5 -9.05
+point 49.5 26 -9.86
+point 44 30.5 -8.81
+point 40 30.2 -7.29
+point 28 34 -6.42
+point 22 39 -8.42
+point 15 44 -8.58
+end
+
+# east lane scorpion line: the same lane, kept wider of the gigantic boulders; ends short of the pit, too tight for a scorpion
+route east_lane_sc scorpion
+point 24.5 -3.4 -3.95
+point 29 -3 -2.63
+point 35 -2.5 -2.17
+point 38 -0.3 -2.17
+point 42.5 2.5 -2.32
+point 47 7 -4.67
+point 47 11 -6.31
+point 51 14 -8.46
+point 51 20.5 -9.04
+point 49.5 26 -9.86
+point 44 30.5 -8.81
+point 40 30.2 -7.29
+point 28 34 -6.42
+point 22 39 -8.42
+end

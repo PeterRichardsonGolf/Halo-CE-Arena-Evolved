@@ -1,0 +1,42 @@
+nav 1 imminent
+made 28bc82d7
+
+# the sniper tower's top is reached by its teleporter only: a running jump off its south balcony onto the east bridge's
+# platform, 3.9 down; its entry is back from the balcony's lip, so the run-up starts in the tower and the bot is at
+# speed before the edge
+link jump 20.6 -5.9 92.2 to 21.3 -9.6 88.3 oneway
+
+# the rocket bridge over the middle is a walkway 1 across with drops on both sides, its ends the east platform and the
+# ladder's top: off its wide middle (the rockets' dip) a running jump north-west over the camo's pit onto the middle
+# floor, 2.4 down, run up along the dip (slow it lands on that floor's edge, fast it lands farther on the same floor)
+link jump 15.9 -9.45 88.8 to 13.85 -6.99 86.4 oneway
+
+# the railing tops along the map's outer edges (west, south-west, north, east room, east platform) are walkable but lead
+# off the map, and the low ledges in the red base's and the east room's corners lead nowhere: all closed, each circle
+# over the middles of those surfaces only
+avoid 23.76 -23.76 81.72 radius 1.08
+avoid 16.56 -23.76 81.72 radius 1.08
+avoid 32.40 -8.88 89.40 radius 1.08
+avoid 32.40 -16.08 89.40 radius 1.08
+avoid 4.08 -20.88 85.56 radius 1.08
+avoid 23.28 0.72 83.64 radius 1.08
+avoid 30.48 0.72 83.64 radius 1.08
+avoid 6.00 -5.04 85.20 radius 1.08
+avoid 8.40 -20.88 85.20 radius 1.08
+avoid 7.92 0.24 87.12 radius 1.08
+avoid 13.80 3.60 87.48 radius 1.08
+avoid 18.96 -0.72 87.48 radius 1.08
+avoid 12.12 3.60 87.48 radius 1.08
+avoid 4.08 -9.72 84.84 radius 0.10
+avoid 28.68 -10.08 84.48 radius 0.10
+avoid 30.48 -4.32 82.92 radius 0.10
+avoid 32.40 -12.48 88.68 radius 0.10
+avoid 17.22 3.60 86.76 radius 0.10
+avoid 7.92 2.28 86.76 radius 0.10
+avoid 18.96 2.28 86.76 radius 0.10
+avoid 9.18 3.60 86.76 radius 0.10
+avoid 30.48 -8.64 83.70 radius 0.10
+avoid 4.08 -18.24 84.84 radius 0.10
+avoid 6.72 -20.88 84.84 radius 0.10
+avoid 4.68 -5.04 84.84 radius 0.10
+avoid 30.56 -9.92 84.48 radius 0.10

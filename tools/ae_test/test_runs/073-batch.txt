@@ -1,0 +1,85 @@
+# 0.7.3 BATCH, on testbox (its weapons and vehicles are on it): pickup text under KILL FEED, MCC style's long captions, AE's own medal
+# pictures, Straight Balling, the seat panel's rolled lines. KILL FEED, MEDAL STYLE and HUD STYLE are each player's own (Settings > HUD):
+# TEST RUN cannot set them. Tests with the same setup follow each other and share one map load. Medal pictures need MCC's install.
+list 073-batch
+revision 1
+title 0.7.3 BATCH, ROUND 1
+
+test pickup-feed-on
+title KILL FEED on: no pickup text
+check Take ammo, a grenade, a weapon, a powerup: no line
+check The hold-to-pick-up prompt still shows at a weapon
+check Kills still show as feed rows, not as game lines
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test pickup-feed-off
+title KILL FEED off: the old list, whole
+check KILL FEED off: the four pickup lines show again
+check The same in HUD STYLE CLASSIC and in AE
+check The game's own kill lines show again as well
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test mcc-captions
+title MEDAL STYLE MCC: long captions
+check Over 4 medals: pictures 56, places keep their spread
+check A name over 142 px breaks at a word, two lines, same size
+check NO SCOPE with other medals up: no caption over it
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test own-pictures
+title Pictures for medals MCC lacks
+check Quick Draw or Yard Sale: AE's picture, its name under it
+check The name's colour comes from the picture, as MCC's
+check Wingman (10 assists): MCC's picture, named WINGMAN
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test own-pictures-modern
+title UNIVERSAL: the same pictures
+check MEDAL STYLE UNIVERSAL: AE's pictures show at 56
+check Rows keep their gaps; the stack clears the reticle
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+
+test no-mcc-pictures
+title MCC not used: names only
+check A medal MCC lacks: its name, no AE picture
+check Any other medal: its name too
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 8
+set bots.skill easy
+set game.mcc_use no
+
+test straight-balling
+title Straight Balling: once a hold
+check Hold the ball 60 s with no drop: Straight Balling once
+check Keep holding to 120 s: no second medal
+check Drop it before 60 s, take it again: the time starts over
+map testbox@ce
+gametype AE FFA BALL
+set bots.count 7
+set bots.skill easy
+
+test seat-roll
+title The seat panel past 3 seats
+check Drive a vehicle with over 3 other seats, all open
+check One line each kind: GUNNER OPEN, PASSENGER OPEN x6
+check A taken seat keeps its own line with its pips
+map testbox@ce
+gametype AE BTB SLY
+set bots.count 8
+set bots.skill easy

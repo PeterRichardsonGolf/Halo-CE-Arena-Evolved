@@ -1,0 +1,209 @@
+# STEAM CONTROLLER (2026) rc6 TEXT: SETTINGS > CONTROLS' TRACKPAD section and EXTRA BUTTONS row, the details line of SETTINGS' card
+# and of CONTROLS' rail foot, the three worlds (the game reads the pad, Steam Input drives it, Linux has not given access) and the
+# battery notice (every pad: low at 15 % or less) in the menus and in a game. The pad is not needed: DEV MODE's `pad` command stages
+# each scene (world, connection, battery; `pad hold on` keeps the notice on screen so it is looked at, not waited for), and
+# `pad open` opens SETTINGS on it. Nothing here waits for something to happen.
+list steam-controller-rc6
+revision 1
+title STEAM CONTROLLER TEXT AND BATTERY NOTICE
+
+group controls-page
+menus
+
+test controls-direct
+title CONTROLS: the game reads the pad
+setup pad reset
+setup pad world b
+setup pad mode puck
+setup pad battery 80
+setup config input.trackpad_aim true
+setup pad open controls trackpad
+check Menu only: rail CONTROLLER, TRACKPAD, GYRO; TRACKPAD lit
+check The rail foot: STEAM CONTROLLER, then PUCK and BATTERY 80 %
+check TRACKPAD AIM says ON; no row says Needs Steam Input off
+
+test controls-extra-row
+title CONTROLS: the EXTRA BUTTONS row
+setup pad reset
+setup pad world b
+setup pad mode bluetooth
+setup pad battery 64
+setup config input.back_left a
+setup config input.back_steam b
+setup pad open controls extra
+check Menu only: the row says EXTRA BUTTONS, 2 SET, chevron
+check The help names L4, R4, L5, R5, the trackpad click and more
+check The rail foot says BLUETOOTH and BATTERY 64 %
+
+test controls-steam-input
+title CONTROLS: Steam Input drives the pad
+setup pad reset
+setup pad world a
+setup config input.trackpad_aim true
+setup pad open controls trackpad
+check Menu only: EXTRA BUTTONS, TRACKPAD rows, GYRO greyed
+check Each says Needs Steam Input off; the help says what to do
+check The prompts have no A and no Change; the rail foot says so
+
+test controls-greyed-mouse
+title CONTROLS: a mouse cannot change a greyed row
+setup pad reset
+setup pad world a
+setup config input.trackpad_aim true
+setup pad open controls trackpad
+check Menu only: click the TRACKPAD SENSITIVITY track: no change
+check Ctrl and wheel over it: no change, a failure sound
+check Click EXTRA BUTTONS: it does not open
+
+test controls-gyro-greyed
+title CONTROLS: GYRO AIMING under Steam Input
+setup pad reset
+setup pad world a
+setup pad open controls gyro
+check Menu only: GYRO AIMING says Needs Steam Input off
+check The help names Steam's layout and its gyro
+check TRACKPAD is muted in the rail; GYRO is lit (focus)
+
+test controls-dualsense
+title CONTROLS: another pad's details
+setup pad reset
+setup pad world dualsense
+setup pad battery 64
+setup pad open controls extra
+check Menu only: no TRACKPAD section; no Steam rows
+check The rail foot: DUALSENSE, then WIRELESS, BATTERY 64 %
+check The row is BACK PADDLES: a real pad shows DUALSENSE
+
+group settings-card
+menus
+
+test card-direct
+title SETTINGS card: the game reads the pad
+setup pad reset
+setup pad world b
+setup pad mode puck
+setup pad battery 80
+setup pad open settings
+check Menu only (END hides the card): STEAM CONTROLLER, PUCK
+check The description and the sections sit 36 u lower than before
+check The sections are CONTROLLER, TRACKPAD, GYRO; no extra note
+
+test card-steam-input
+title SETTINGS card: Steam Input drives the pad
+setup pad reset
+setup pad world a
+setup pad open settings
+check Menu only (END hides card): THROUGH STEAM INPUT
+check The note tells what to do: Disable Steam Input
+check The note is in the normal text colour, not an error
+
+test card-linux
+title SETTINGS card: no access on Linux
+setup pad reset
+setup pad world c
+setup pad open settings
+check Menu only (END hides card): AS MOUSE AND KEYS
+check The note names steam-devices; no GUIDE.md part
+check The sections are CONTROLLER, MOUSE, KEYBOARD only
+
+test card-unknown-pad
+title SETTINGS card: Steam Input, pad not known
+setup pad reset
+setup pad world other
+setup pad open settings
+check Menu only (END hides card): THROUGH STEAM INPUT alone
+check No TRACKPAD section and no Steam note
+check The DUALSENSE line is the muted note
+
+group extra-buttons
+menus
+
+test extra-buttons
+title EXTRA BUTTONS: BACK and FRONT
+setup pad reset
+setup pad world b
+setup config input.back_left none
+setup config input.back_trackpad none
+setup pad open buttons
+check Menu only: rail BACK 4, FRONT 3; headers BACK, FRONT
+check BACK has L4 to R5; FRONT has the trackpad click and 2 more
+check The focused row's picture and help are on the screen
+
+test extra-buttons-backpack
+title EXTRA BUTTONS: the backpack note
+setup pad reset
+setup pad world b
+setup config input.back_left a
+setup config input.back_right b
+setup config input.back_left_2 x
+setup config input.back_right_2 y
+setup pad open buttons
+check Menu only: BACKPACK MODE note at the rail's foot
+check The note is apart from the picture and the help rule
+check Nothing is cut off; the crumb says NO CHANGES
+
+group notices
+menus
+
+test notice-menu-low
+title Low battery in the menus
+setup pad reset
+setup pad world b
+setup pad mode puck
+setup pad battery 12
+setup pad hold on
+setup pad open controls
+check Menu only: BATTERY LOW 12 % under the crumb, right
+check The battery picture is before the text; nothing overlaps
+check The rail foot says BATTERY LOW 12 %
+
+test notice-menu-charging
+title Charging notice after a low one
+setup pad reset
+setup pad world b
+setup pad battery 12
+setup pad hold on
+setup pad battery charging 14
+setup pad open controls
+check Menu only: CONTROLLER CHARGING 14 % under the crumb
+check The rail foot says CHARGING 14 %
+check No low notice shows with it
+
+test notice-menu-world-c
+title Linux access notice in the menus
+setup pad reset
+setup pad world c
+setup pad hold on
+setup pad open settings
+check Menu only: SETTINGS, ACTING AS A MOUSE under crumb
+expect 1 log dev: pad open: SETTINGS (the back buttons screen is closed)
+check On SETTINGS it has no SEE SETTINGS part
+check It sits clear of the crumb and the rule
+
+group in-game
+set bots.count 0
+
+test notice-game-low
+title Low battery in a game
+map bloodgulch
+gametype AE TEAM SLY
+setup pad reset
+setup pad world b
+setup pad battery 12
+setup pad hold on
+check BATTERY LOW 12 % under the shield meter, right edge
+check The battery picture is before the text
+check Clear of the kill feed, the medals and the centre
+
+test notice-game-split
+title Low battery in a 2-player split
+map bloodgulch
+gametype AE TEAM SLY
+players 2
+setup pad reset
+setup pad world b player 2
+setup pad battery 9 player 2
+setup pad hold on
+check Only player 2's view shows CONTROLLER BATTERY LOW 9 %
+check No PLAYER 2 prefix in the game
+check Player 1's view has no notice

@@ -1,0 +1,952 @@
+{
+ "1 V 1 NR": {
+  "block": "04d0d4ef0d32fb8da56cd7b031bdb62f1fef7340",
+  "content": "cabbc1b5b255e8fa32b3caf75ba679c0521ff145",
+  "file": "ccae8acfbd79d717bc40867e33ee34e268e4de55",
+  "folder": "64F4E82028D1",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "1 V 1 R": {
+  "block": "cfe7e8222fa3c6952683e9e8ac4794e14fb75b81",
+  "content": "def7a514a99cbe47f80c9243e83c35d147d804f4",
+  "file": "22927c995cf46169d26982efa11d3539e15832b6",
+  "folder": "629B570B70CD",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE 2V2 BALL": {
+  "block": "f19692c17e3bbde15577af71a8c8ebe7dd346009",
+  "content": "d885a4474d8645fee9ba45751b8924257ea98544",
+  "file": "c563358f3804d7aac5aab66ebe0cea64bf2481b9",
+  "folder": "3FB29C9874FC"
+ },
+ "AE 2V2 CTF": {
+  "block": "6ee9232075fb8001bf05f592f877f5f34869a844",
+  "content": "eb60033a73c440d390a22f351d0e95c4cfe8d3c3",
+  "file": "41931729db19e78beb85aa2c6ebed44f60586db6",
+  "folder": "E512A1058804"
+ },
+ "AE 2V2 KING": {
+  "block": "445814e4f6f45cf75e53bcb9850f5af0b5ca284d",
+  "content": "c55a3585be5e66c189ca4d55d39930022fc4a714",
+  "file": "f33b318e7f52b9920c51345a11b5a0515b9e5fcc",
+  "folder": "7E6551E2525E"
+ },
+ "AE 2V2 SLY": {
+  "block": "4093199b9a765c7f10d2a2dfa182f49a5bb6c3f8",
+  "content": "8852c2b4745b747c82bfc6d9e81071a6b576d239",
+  "file": "6e16c7807e36b637b53576af6a796d7a4b45cac5",
+  "folder": "5C12529CA751",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE ACCUM": {
+  "block": "366122d414afe93e6ba1cd6a21a31d59817c5e3a",
+  "content": "62e27b6a38e58161f6babdf7b6407bf92f1d5cff",
+  "file": "8f7420872919f916c0ab17ce6ca6801ca42f903a",
+  "folder": "92923E1A82D2"
+ },
+ "AE BOMB": {
+  "block": "73642aede1c9a353e69cc1ecb3281dccb658e1c3",
+  "content": "24722478c4d4e7758d87b25ed809265c66731a8a",
+  "file": "24f125107ad3f490e56062188ccc00a161e6e465",
+  "folder": "3FA3A0F10E33"
+ },
+ "AE BR 2V2 B": {
+  "block": "f38ee2bd9326e0ee9c00fa6c69abcd153dd82578",
+  "content": "f50d8a660fc975974dc2e2acb527c34b6b65e9fb",
+  "file": "d8a5ea0f3968aa5f4a845ff8a2ab49e61afa2c3d",
+  "folder": "C22FD789D55F"
+ },
+ "AE BR 2V2 C": {
+  "block": "0e9b2b79834c52477de4f87247a1f13570b7340f",
+  "content": "0139c4f5689e195f528e656f407a248a2866748a",
+  "file": "d04777e44914b081e7e6a8ebbe00483e09c4b5e1",
+  "folder": "C12FD789D3AC"
+ },
+ "AE BR 2V2 K": {
+  "block": "bb78562455ec7c2601f1d2613baae29aea5f22d5",
+  "content": "12c5406ea9a346a42134dc4cd54d03c3eb05af6d",
+  "file": "c8f5fba7d02a5738c82339571622f254c73705ea",
+  "folder": "C92FD789E144"
+ },
+ "AE BR 2V2 S": {
+  "block": "49e7b846b495d746a1a6d2a3f475f6f94c9fc7d4",
+  "content": "6f74a97bd6e6f09533eb28a34f42d4fdbf06d66d",
+  "file": "5411a9c3a8252db3139b906e6e7c45bced4519be",
+  "folder": "D12FD789EEDC",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR ACCUM": {
+  "block": "9052da1ff58e77228d6c3e03246138fec8519b54",
+  "content": "7d958f11b9b5c58a9e3f666b4d079c2f35f23d37",
+  "file": "d6aff1df37e0509825ca545cde83851f3086277c",
+  "folder": "A7D408D23AB4"
+ },
+ "AE BR BTB B": {
+  "block": "5244b5ef40a85e3a2692e5b7ba02601fb1e30d65",
+  "content": "1ba259a4316afeb8936d538f77bc1c85060c4f7e",
+  "file": "307ed682d3a5a0b575df5d9a871f0e37225b4000",
+  "folder": "11B6114E135D"
+ },
+ "AE BR BTB C": {
+  "block": "e7efbea31b0fa53bb642657e6a8fb91ee9e0a806",
+  "content": "334f46926789f7ea5cd2668405bf8e73b6e9667e",
+  "file": "960449b5fa2d4e5485a04e6bc0d789eb0abb0af5",
+  "folder": "10B6114E11AA"
+ },
+ "AE BR BTB H": {
+  "block": "930ebb6317dc1b950375e0a0f0e4d78759028d02",
+  "content": "4abecc175d504c4405f8bfca16bd0e56e1ca182c",
+  "file": "39c6cdef700428ac52f51542e0b6d703cc941a88",
+  "folder": "07B6114E025F",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR BTB K": {
+  "block": "ff69554f640f5d37b6a5f8044e8417dd0384cbb6",
+  "content": "42466f5120cd069c9a23fafabaac274a8009d533",
+  "file": "7868e929e824e7737b0b1b25b1bba17aa541d179",
+  "folder": "08B6114E0412"
+ },
+ "AE BR BTB S": {
+  "block": "c03a04a8e5676f7db30fa039b25f2ad854a676eb",
+  "content": "290ae2931de679d8b5e110a9d4dc5ffd35c439cb",
+  "file": "5fb408d363d009c753c3a787306f2c5612a10148",
+  "folder": "20B6114E2CDA",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR C CTF": {
+  "block": "36dada2880c74482ab86c2e62c47690e852d63a7",
+  "content": "6be5d6d614f8f892d17cce3cf1e3e7978d673332",
+  "file": "dc035a0eebe9df0f2cf5c168b5792f37b71b7201",
+  "folder": "B00531CDFED9"
+ },
+ "AE BR C FFA": {
+  "block": "aebc595c910ed02890d54093725d1c1ab13f3c45",
+  "content": "af6b508c6713128f9db0f4e58383f8604daa8eed",
+  "file": "0b70e8b6c527eba04317900714f5a252aac8bb3d",
+  "folder": "A0053F30718D",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR C KOH": {
+  "block": "08a94899995199e6550d7fd0a437e3050ebf427d",
+  "content": "fa8df26beaa7465d6dab85141ecd2ef90d46b2cc",
+  "file": "00c2e59960b667f8ecb1beaf5c541213dd77fb47",
+  "folder": "000557A9EBCC"
+ },
+ "AE BR C OB": {
+  "block": "41ce36e0c6928aaf0fe385342dafacb1de7076e7",
+  "content": "ed48d8279a032227ac3af219702637d8eca3303f",
+  "file": "5ea9d02ea3e333ac30a7423970ab2661b034b75d",
+  "folder": "83640EF675EF"
+ },
+ "AE BR C TS": {
+  "block": "d566c024557ab7427a25e0217bba094b8d91dbb6",
+  "content": "28ce2212c9dde52496f5f74a51f05453e8ae819b",
+  "file": "b3e7504439cb5a18475b7a613407fbe261bd1e67",
+  "folder": "AA640F0FB5C3",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR C2 OB": {
+  "block": "3524cf110ee6a61b80303bf3c52266c685bb8980",
+  "content": "ed48d8279a032227ac3af219702637d8eca3303f",
+  "file": "688220a2e8c98358b8d8b81f3bb9e386b8a06f6e",
+  "folder": "086FC2B3DF09"
+ },
+ "AE BR C2 TS": {
+  "block": "5e33ce37333352fd10e50285b73654e78c3ec763",
+  "content": "01f59491be79551b9f0f84a2501b733b6986749d",
+  "file": "170256bbc08988daee26a6498f71298a54c07d7d",
+  "folder": "F76FC2C23559",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR C2CTF": {
+  "block": "1f4f24d88c2a366f581a77b829204613a5529775",
+  "content": "6be5d6d614f8f892d17cce3cf1e3e7978d673332",
+  "file": "ccff92d6fd74588e44f46e68967e8dd055530237",
+  "folder": "D771A98EFA57"
+ },
+ "AE BR C2KOH": {
+  "block": "3d9f0b14f8e729c665662bf6f370ee088a3cdda4",
+  "content": "fa8df26beaa7465d6dab85141ecd2ef90d46b2cc",
+  "file": "2edc53bd430970337c2ce66742593a2110ec1443",
+  "folder": "EB7182972302"
+ },
+ "AE BR CKING": {
+  "block": "59374e9be6e7c26de05b320e644b9a77619c75de",
+  "content": "03f11746cad8da77a9cc282142ed359e61907ae2",
+  "file": "c95883dcd62e5195843239f218eb59b060439540",
+  "folder": "A24CEF4E5871"
+ },
+ "AE BR CTF": {
+  "block": "f67aa23a8fc389e07d112111509200bc59e9e6dc",
+  "content": "0139c4f5689e195f528e656f407a248a2866748a",
+  "file": "0420ef75ed65aba1a67e34b57fb17140a17cde94",
+  "folder": "347557DC2720"
+ },
+ "AE BR ELIM": {
+  "block": "7787f9f554676d217a191ee3df06101735affa07",
+  "content": "22ecfe696b0ec04424ed906a9915fa84bcf1f9c6",
+  "file": "cdf5a2b8ac4219c760673a198027e792b42d707e",
+  "folder": "2872AAEE4802",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR ENDUR": {
+  "block": "b717313d26269ec9430851ff5dc2e154a51b887e",
+  "content": "2776ce5d1b3755a489f7d5e20186076d478cfdf8",
+  "file": "c127de8ddcecdb5e7280be3ea23d5fb49819affc",
+  "folder": "73E669EE0B11",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR FBALL": {
+  "block": "4b220b23f993a76319bcaca70654aa753fc0cc50",
+  "content": "d97051013992a8b8faaf791ebc3967ed67d6f4a2",
+  "file": "8dd87718cca5f5ddafd9f424a11d156cddad3dbb",
+  "folder": "06F5160CA154"
+ },
+ "AE BR FFA": {
+  "block": "a9e2e53b6869b0dca6999b7a3c5146cbedea0730",
+  "content": "2ef2b682c0fcbcd134277dc9132833547e9a192e",
+  "file": "83a807c43f773f42366b51490b29e61d2190c747",
+  "folder": "CC75709821D8",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR FKING": {
+  "block": "be9a683a308b33c07b323a2bf1aa3f7ede467a95",
+  "content": "c74fa1e0976e5e85e28ec3a42f7d548e5f83d39d",
+  "file": "2a0bf76b18c8fa241ec1d3b30a286d4de6df9bc1",
+  "folder": "C631C8301366"
+ },
+ "AE BR JUGG": {
+  "block": "67f2bf9a5357c29cd017dbb185ef5695d31dc98f",
+  "content": "5ddde40be154671f319af023e260d29e625d2b22",
+  "file": "deef5569c4e674b36f966d19aa611527398ecaab",
+  "folder": "4FAD9CEF0A12"
+ },
+ "AE BR KING": {
+  "block": "9cdcac46182061fcfb3b4e87ae1d225e80a48620",
+  "content": "12c5406ea9a346a42134dc4cd54d03c3eb05af6d",
+  "file": "15205b086fd58cba250db555efa118af640de5f2",
+  "folder": "6FA73CAE9042"
+ },
+ "AE BR PHANT": {
+  "block": "e7415403e349a658e68ebfda494ae7ec2b30cc2a",
+  "content": "85fdaf21f384ca4c4f1ad73b192b798dbace8597",
+  "file": "a9c34ef690f04b7fefd2b24846386095a3a37dbe",
+  "folder": "ED82CAC583FA",
+  "slayer": {
+   "kill_in_order": 1,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR PRAC": {
+  "block": "48f1710fcc91e8046cbdb62a4816f3fc555fc0be",
+  "content": "1cec93481d5838c92b8cc7c2b9d02359f0d946d0",
+  "file": "bdf0b1b71347382913e44b0184b4e63dc4b47dd3",
+  "folder": "09D699F2396F",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BR RTAG": {
+  "block": "f2eafb1cb43b0ad5fc6a6887623a03f5dfa2f4ff",
+  "content": "6394c771b7a61b7db21a99a0cd581d7def2e1bb6",
+  "file": "89320b70f6bc99d3f92c29dbb6017edce4058b1e",
+  "folder": "C7E763CCD7DF"
+ },
+ "AE BR STALK": {
+  "block": "1de958e2bc2f120aa2f99c79b68bcc4826a5ba0d",
+  "content": "90fd48f28f38170f024069b9385b1d417b47c826",
+  "file": "c8e13d9afb8ffb0a2436238db0629439f2300902",
+  "folder": "D7A11BC12BB0"
+ },
+ "AE BR TM OB": {
+  "block": "1750bf672f4dd2f5ac03897ac53a9f99b0735946",
+  "content": "f50d8a660fc975974dc2e2acb527c34b6b65e9fb",
+  "file": "6bcfcc9edd82b9d37538de7de70f6d7f092744cf",
+  "folder": "EC50C20E8ACF"
+ },
+ "AE BR TS": {
+  "block": "357885a5df128bc15320303b77aabc81b94e0e30",
+  "content": "2c813cb106cc3b506917c2e7a0ece9ef4d85da8d",
+  "file": "ee88c168111b613fd50f73ba2b42f3fd08b0aa04",
+  "folder": "0BB0D2260B44",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BTB BALL": {
+  "block": "6cff122a9207566bac12d14cbad86518addb4a9d",
+  "content": "e75a2d726ffb1e45780fc149cfc8182cc46e5b15",
+  "file": "ebf97b0b7e94769bf4d9abdfe16b376de4bbc8c9",
+  "folder": "7A25B1FA1F5A"
+ },
+ "AE BTB CTF": {
+  "block": "916b8fad6861a0d7ba35def7d8c1cc5a05f7237b",
+  "content": "15919f980eb1861c88d9435e10b150bb6d23b6c0",
+  "file": "16852c187043b548ac965ef1c236052d994c17de",
+  "folder": "6711B758143A"
+ },
+ "AE BTB HVY": {
+  "block": "8c2cd8cbfcf829e90e49a49ce60902a14626960d",
+  "content": "ed51b0e7f7f65ca2acf3f75ee0280aa42e0eea86",
+  "file": "0d5535fc22d26db52ffd048aebba9554b45be208",
+  "folder": "4D11EF23E268",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE BTB KING": {
+  "block": "3efca6f41ee590670c7866f5f78e11cbc37221c3",
+  "content": "92ee35a62b36566512a8a705608b2393d92724df",
+  "file": "16ea6636b5538bed1bf363bdf150b63580c76545",
+  "folder": "D55DCA9424C4"
+ },
+ "AE BTB SLY": {
+  "block": "a0d7509566178143f3424a0528bf820533884178",
+  "content": "8fc4c173a9476b24765ce358bc2237888921abd6",
+  "file": "e06cd5c905dba3e13da772876ced43548db508d3",
+  "folder": "FA116A60F79B",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE C2V2 CTF": {
+  "block": "f7ce28cef9acbcbb05e8bddf19bb7498cd0c8dd3",
+  "content": "efbc821a80cec3888a76d33728d070da6d5d1fbb",
+  "file": "f5ae8b525961bd940d6c289f557631a80e8af928",
+  "folder": "6323CFEC5611"
+ },
+ "AE C2V2 KOH": {
+  "block": "4b7fa3613fa6d8b03d2923edb26aad67b469ff87",
+  "content": "d5a0760f8ae5aee8f7017a9a2c874ffe0048629a",
+  "file": "3ec326d06e1cc516f75bb02420e0ca26811c1ae5",
+  "folder": "3323A71B1A74"
+ },
+ "AE C2V2 OB": {
+  "block": "63a9941b55d34946b964d73acb9e05f99c0f0eb8",
+  "content": "a87878873b38c14030906584ba9d9e43cb6d9b2c",
+  "file": "930f6829cddb07271d6de2316eff7385ab7cc765",
+  "folder": "B7F0C7EF8D67"
+ },
+ "AE C2V2 TS": {
+  "block": "7f31382664de38fd06ba4e5ffbd03543ecc3c0e9",
+  "content": "a533c9080556368c4e883d14acc787f14387162d",
+  "file": "7ccda804b42eb16b6cc37d44ee7a5fbcafe10200",
+  "folder": "9EF0C837A2EB",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE COMP CTF": {
+  "block": "46a0ce139c770473d79a1cfe7abc70c5141da665",
+  "content": "efbc821a80cec3888a76d33728d070da6d5d1fbb",
+  "file": "9405af99f9a59bb020d2faf652092933e5d0e680",
+  "folder": "677B3BCE075B"
+ },
+ "AE COMP FFA": {
+  "block": "3844ab84034b56b9ef89c7c7158189005397dc70",
+  "content": "96f13ef182a6a324b23a930bd25b118fc1001c12",
+  "file": "f328543ffdda7712d6be2b17ac03b243c34db161",
+  "folder": "737B4AAE7B7F",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE COMP KOH": {
+  "block": "0619196d4ae1ad4834a0b5ed23ea7b68a601f9cc",
+  "content": "d5a0760f8ae5aee8f7017a9a2c874ffe0048629a",
+  "file": "0dbf84b72a04652e55d1fb2c38e196e2283a7269",
+  "folder": "B37B161A943E"
+ },
+ "AE COMP OB": {
+  "block": "9bb83882bb25cc36bd37be5d3d75737686b0247b",
+  "content": "a87878873b38c14030906584ba9d9e43cb6d9b2c",
+  "file": "2c2a15c21eb899043985f0af49e38db1f46f4ffc",
+  "folder": "A6F3ECACE4A5"
+ },
+ "AE COMP TS": {
+  "block": "09c990d0c636829b2a77f3a74fd68e63de88063b",
+  "content": "ec92ab1ee82660db1dc870f0ede73467bab817f0",
+  "file": "0cb818d5c2ee37db86c3d61520c5e8591c383494",
+  "folder": "F5F3ECE96D85",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE CRAZYKNG": {
+  "block": "b7bae7cc64572eada405a3e3b8439becbdf08e44",
+  "content": "133f8ddde255b1bf303191fe825325872f189762",
+  "file": "972cf31d5971bc15ed5cf6623cf9a01219fcd7d0",
+  "folder": "FE831BD68F5A"
+ },
+ "AE CTF": {
+  "block": "ebf397a85fef05d953ca36762942b1aca2840ead",
+  "content": "eb60033a73c440d390a22f351d0e95c4cfe8d3c3",
+  "file": "93ca0df6616da79dc88fb33a3ce63b70929b31e5",
+  "folder": "D3F81FEFF5B6"
+ },
+ "AE ELIM": {
+  "block": "47bdca350c20d077fecf8373aa3a74ec3f7238a1",
+  "content": "e8eb0dd5792d02e9f3824abdf153a39e7e85f850",
+  "file": "7960a21155253a10ef22c9737af2881307b65d79",
+  "folder": "91CD5EF067D4",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE ENDURE": {
+  "block": "a8bd6c11fc9091164fbc2dc220b3ba698144b19b",
+  "content": "9bdcaf61e4a97752a400c6406fceb823f581bc2a",
+  "file": "4bc73167ac963eab32aef89d471a46712560e248",
+  "folder": "453305602DBE",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE FFA BALL": {
+  "block": "6e661e7e2bccf350db8df6ebbec7d03c88f9498f",
+  "content": "cb9bb3a12a20b4ef0307a850132f19d5767dc19b",
+  "file": "4412292a39bf9b728c3db91857d44c38190d45b1",
+  "folder": "D217F14F9FF3"
+ },
+ "AE FFA KING": {
+  "block": "1d6127c9ab157f9577342f31b4338907233a66e5",
+  "content": "2dec18ecc04f23c7e82a4617061cf4a067348a0c",
+  "file": "c2dff03fb4213af7624c8ec948d90815b3ea0fae",
+  "folder": "27605406600D"
+ },
+ "AE FFA ROCK": {
+  "block": "9b025a893ab26d778293549ae6e0ebd222a1566d",
+  "content": "7f1433fac6a83f1f6b985f526cc35927dce6dc5f",
+  "file": "d2fdd297866dadf1d313e2be3c234b9a178c432a",
+  "folder": "6D9D993ABF33",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE FFA SLAY": {
+  "block": "89a3c34b3517cf33edd98b115018da666b14a4ed",
+  "content": "a55549fe73cf9b8544ec83935712be48446a96eb",
+  "file": "b70d114d77124fec87b8c4fc793a65a88a34aa24",
+  "folder": "DEA36CB440D7",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE FFA SNPR": {
+  "block": "4f78da67336d893fb7c0f3ebec1236f174d6dcdc",
+  "content": "ec072efb5cc6f06fec7ed9a24a3b5e2389d4f0b7",
+  "file": "642dfa6417b6fa87c9fb86bcb43c239c611803bc",
+  "folder": "87A362B84515",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE GRIFBALL": {
+  "block": "e46fab56213db35035cf7742777d6916a7049ea5",
+  "content": "790f561b5fd82d90e4f6527ae80d6cba72e90d4d",
+  "file": "1505ba3f0c7d39b908a1b31a8dcc22944edd8bd4",
+  "folder": "EBA2B59637C4"
+ },
+ "AE HEAVIES": {
+  "block": "067e109404fc67f7b691f21d1758335ed9fb9f2c",
+  "content": "7300821931527a5c1cbc4d2393f8b1b7647a4b67",
+  "file": "3df5f9116ed2787b71c082f4daec2fa72d8b2f4f",
+  "folder": "B3AE21AEFBBE",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE JUGGER": {
+  "block": "ba39c94f04fe81073af23855e09f363888b8ea94",
+  "content": "88ff69d2face2f80617701cb24fd2b1f9bfb55f0",
+  "file": "21e56b0ea0eb8608179a1a22ca79b65200aecaa2",
+  "folder": "7AFA8AD965BF"
+ },
+ "AE KING": {
+  "block": "65a9f09f4540ef966653d4c6468a7a07c13bbbd5",
+  "content": "c55a3585be5e66c189ca4d55d39930022fc4a714",
+  "file": "9e7b459091a8dc78121fd4c96094097b6dbc4594",
+  "folder": "5C5B5D0CA918"
+ },
+ "AE OCT BR": {
+  "block": "604ff0744381a4e02b22e6779b20bc346d140a56",
+  "content": "e6320c4bc21bed131edb4b048c56a0966098b83b",
+  "file": "2a073d552c70b3ff96488880066e5ac235970907",
+  "folder": "D4639BC8CFF1",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT BRSN": {
+  "block": "e431d90b0e64f3a74b0c1f25c0725c8a32def9d9",
+  "content": "166c882f0b61d8df3adf39a1b245d0d18e3108fd",
+  "file": "a42188321a3eca3f64202a1ba319910e1cf1d36c",
+  "folder": "DCA8A2897D98",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT MAG": {
+  "block": "55d1ce8dc8108a5a071e91b5fd3bf126a857db3a",
+  "content": "40ed88b12a3ea16b320f6a4857d4594c31afeaab",
+  "file": "0a9b5730b5945d0f9dac85612caf65daed244935",
+  "folder": "DC41E11A8CC8",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT MGSN": {
+  "block": "f770ba2f092b908649e9a661244bcba78b525ee2",
+  "content": "fa4640ba309eb5343d0e58facb240309fc852941",
+  "file": "cc17764cb97c286ecc00c02771079262907d3736",
+  "folder": "97F176359CB0",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT TBR": {
+  "block": "7fc19e5ea0670e7c5e82119023b8f11a2a3ea731",
+  "content": "93a2b5158e22f4317de88a53bfe4642a687f6fba",
+  "file": "8591c00e6c275d24fad66437782d8c026c029ac1",
+  "folder": "72420EAC329F",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT TBSN": {
+  "block": "bcb68712418fc9d3fd9626d072fa754f9657e407",
+  "content": "9ac3e72390d06e1933195919251caa65085386a1",
+  "file": "6e6575fe4c36dd645456ba402b0f1a6dcaad8512",
+  "folder": "153EEE96A346",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT TMAG": {
+  "block": "f7e9b287a4e6a8f73323d85f1834f2ca06ee44f4",
+  "content": "622eb4cf5a1bc028927a3300c8d9c77daf1c8a4d",
+  "file": "c352106516a6f2fd338941904008d08afcbd17d0",
+  "folder": "4B3EB8D95686",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE OCT TMSN": {
+  "block": "2055608ff7337bb847b41780ad29ae9f6f53ddb3",
+  "content": "ae28a7ef936d09969ad412fdfe449235b6b5235c",
+  "file": "aba98084979e247415909c5b9ac08a684dc80805",
+  "folder": "543EB900D693",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE PHANTOMS": {
+  "block": "dceedac49bb511d81d4449ee65c42ccc1d79ef10",
+  "content": "f2b2f1d432d9404461851e9342c4f2088e30102e",
+  "file": "a59d4167f3079ed3f31402471fa8615b893fe1c8",
+  "folder": "6A1D191100CD",
+  "slayer": {
+   "kill_in_order": 1,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE PRACTICE": {
+  "block": "92b8424e13f74fcb1cf50e38544fb88d48dd5ee4",
+  "content": "988c344ec4e785c6b4a4c942cf1b1c21da6b39c0",
+  "file": "c293dda2472a3f99663edd1e4bd76bea915ad077",
+  "folder": "4F8AA5047062",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE RACE": {
+  "block": "491ae00f2d38f7fa06516000180c9cb42a9c82a5",
+  "content": "ecac74d8be66a476fba53d330fc7d77b4cdd08a9",
+  "file": "fdb5e1d1e9b97a9ce39a7504481c886218ec1cfc",
+  "folder": "5A20D093DB26"
+ },
+ "AE RALLY": {
+  "block": "732197daec3d55567f51a61ce3c564e7e87a2e7b",
+  "content": "7b25cbf54b8bdf734ddae867a40fcd5c064b7772",
+  "file": "bfff692e7be9b8ea668c43819906cd6494ba793c",
+  "folder": "E1C233EE5435"
+ },
+ "AE REV TAG": {
+  "block": "782eda117ce0ece509301e86150158e2469f7bd1",
+  "content": "60ed72958dd13026c697d3039d72dd1315021a97",
+  "file": "02482131f9e172b65df012d69a85deb47f16b976",
+  "folder": "8573EDF5BCD4"
+ },
+ "AE ROCKETS": {
+  "block": "52a3214307afe52e359f8244ebc31466706a4d1e",
+  "content": "667102bfe261c5256b2f29b4d843570ebe87b82c",
+  "file": "1deb615189281b6d3bde42f08659d3db3778b2d5",
+  "folder": "87B22E02FB10",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE SHOTGUNS": {
+  "block": "c4bdba5dde877856f3724cf69994dc360d5b2bd6",
+  "content": "714ec96a6e3f08a08c0dfca8605b5cba5be8bbb8",
+  "file": "1dc3ee29e17ddadbe675e9e001bbb8131fc4c752",
+  "folder": "49E9D889C41C",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE SHOTSNIP": {
+  "block": "266819a635d80ef2f89245701dd0aa9325799d3e",
+  "content": "368c7539eefc3ecfa3a9276fd114624a3185246e",
+  "file": "5b9b31b87ff176dbb104bd02dc5a6e721ba9ba57",
+  "folder": "0143712C98B3",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE SND": {
+  "block": "6ef1c0bfe949d4dc3c1c7ad258b651127720f6b7",
+  "content": "3e5684ad5656051f66260a8b536d85fb25a3918e",
+  "file": "ff8002de686b970a44b4eb8c34cf4f4675ece6e8",
+  "folder": "E5F7CFBE21B2"
+ },
+ "AE SNIPERS": {
+  "block": "dfb3b2db58e7fdb02be8d5d2b0cf37bbda52eb61",
+  "content": "712c2ad0d0cb355f9646f752bd1f662e1a3e04a5",
+  "file": "ae8a08095fc3940c34c3fb6f3e725f668ac512fb",
+  "folder": "6E8E821286D9",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE STALKER": {
+  "block": "d0fa86957d2ea275e106616cdc2f11ae3152c8f5",
+  "content": "cfc8ac775819aed885b4362b2a826a5b0d9e966c",
+  "file": "b03a0b76f23718e51fbbaba2e9e30b5b00187369",
+  "folder": "8235CE4D25B1"
+ },
+ "AE SWAT": {
+  "block": "a0aad003fbcc6aae8c92f15d039d92bd8699b770",
+  "content": "88245d20bc074c40aa266d2ab924409cb2d9f605",
+  "file": "76ee007aaba89e2d5b5fa913bb508f3a9f8313ee",
+  "folder": "4715DDAD25C0",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE TEAM OB": {
+  "block": "31869a03f7a9bebc3cee14d3c0ea32b8cf59944a",
+  "content": "d885a4474d8645fee9ba45751b8924257ea98544",
+  "file": "518e7ec97229a4e52643734e9657ad08ea01e674",
+  "folder": "819B3397349B"
+ },
+ "AE TEAM SLY": {
+  "block": "079654f83bc09d1b9e85ebb5b22ff3810de76b01",
+  "content": "3f19a3a4e60bbf543cae05c424f846a7b91f2720",
+  "file": "309ec06329e5dcdc82a4962ede8d8540920fb8cb",
+  "folder": "04B847B13D90",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "AE TRAINING": {
+  "block": "ef054ccca0b38726500bd6d6ec79279ee9b4ce6c",
+  "content": "6b8f9249253b713335040b98967de7e169e55bd6",
+  "file": "2c1b8f5f0170c825cb26d36f5cfae729a22d1e98",
+  "folder": "97F7183D996D",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "BALL 5M 10S": {
+  "block": "7ec875410d9db813e19697e6d446ee5f2d64f19d",
+  "content": "8e546e89e0d223cc9650a610f3dfa70d3d47b4fc",
+  "file": "0e9c6a2ecaae5a4556a7d54e030904b904faf238",
+  "folder": "E19B1A2C7166"
+ },
+ "BALL 5M 7S": {
+  "block": "64464fc1fb779e8574604e7acf172ec923944f17",
+  "content": "8fbe380b423e2673418bc41191e603bf01be3f77",
+  "file": "5e6971fc4a61955065f2f6a3a7ccd01f01528e10",
+  "folder": "42A523709BBA"
+ },
+ "CTF 3 10S R": {
+  "block": "ddfb88830bc8ec211c5798d7001f4bd5dd00d4e2",
+  "content": "7ff27fed045a359a0f77b81da919f94282598e1c",
+  "file": "b6875e7583b1310ebb88b5132f5e0fc7c55e4e48",
+  "folder": "D11A3A57DF9B"
+ },
+ "CTF 3C 10S": {
+  "block": "61b5cdbc44a31733a83dc6652fa3c2102ac8e390",
+  "content": "485bde49400ed2df8fae8608a5bbd79acab6c2a1",
+  "file": "5f49eb76f11d7f77378de9ffad2dc263db9a1577",
+  "folder": "A23D10175876"
+ },
+ "CTF 3C 7S": {
+  "block": "f8414b75bc471b84ffa1c07f611f755a7770d7f3",
+  "content": "cfb214c85059ad1eee16715aad616f5a37d4850a",
+  "file": "ee00754765353b5f5777a590fc9012515a59541a",
+  "folder": "FEB5FD2916CA"
+ },
+ "CTF 3C 7S R": {
+  "block": "4be574ca69ff76ccb1d4155aa25026d21cdbf9ef",
+  "content": "6dd776de359f60389ceedb82793cc62c584f38df",
+  "file": "3950d99973845c4f2fd977d9c61dee9b962e2707",
+  "folder": "8EF328BA77A4"
+ },
+ "CTF 5 10S R": {
+  "block": "bf6b55f9598c643633b89e917d02d6783fb78f24",
+  "content": "b28500d058d750400490c2cca3b00f7584c0ec2e",
+  "file": "469b1fbe474e0b455c73df7a7cc684aa7ce73bd5",
+  "folder": "95BAD4521DDD"
+ },
+ "CTF 5C 10S": {
+  "block": "9660c16225fe3799e424d41a413731b0777f3192",
+  "content": "4fa450e351a1f74c5f478949f667cd4eaa86309b",
+  "file": "e40edf912c6fab26f9fc15902bdaa8739bd70da4",
+  "folder": "795606588BCC"
+ },
+ "CTF 5C 7S": {
+  "block": "047f956d48f4711894fe83f100e1c3fdda8359c9",
+  "content": "d21c3884d18c87fc096e4fbeb9709cb897437848",
+  "file": "0d3e88afb4cd4152a4757db7add79cd77457ee65",
+  "folder": "DA015FDF8F48"
+ },
+ "CTF 5C 7S R": {
+  "block": "d67b6548dc78a03a49b54823f42e343f8450542e",
+  "content": "d1ca70a5a3c1cbe35ebcd42d51ee178121940db2",
+  "file": "d3f7e2a157a247c45906efa6f681e177af26cd13",
+  "folder": "83FAB5C7849E"
+ },
+ "CTF WIZARD": {
+  "block": "b40ef28abdfe18a2efe4be26cc25ef7e529837fa",
+  "content": "79f4bca43c753c4a7f6363d92a05239791730e59",
+  "file": "3b41c221abf8bed49a3b20a36b67362c3a75c4c4",
+  "folder": "281BB82A3965"
+ },
+ "FFA 50 NR": {
+  "block": "f9361c5df6ddb712ec916102534f94340a6b0d2b",
+  "content": "87957c44527d319e82bde792f64d9741cf14cc7a",
+  "file": "d9967c5292e2237a1ec8352e956e45e50e703db4",
+  "folder": "CB78FBC4E7D9",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "FFA 50 R": {
+  "block": "a037df405f5bf1bf5cb14ff534310df9f227fe70",
+  "content": "077219bab7928f007f76e5595ba3c776460a0ae5",
+  "file": "af92eab29382d91c51987bf2830a8cd20b544c17",
+  "folder": "5E1DB412C675",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "KOTH 5M 10S": {
+  "block": "7cf01875e8a2dcdee62fe50000cc3aa1788e5f1f",
+  "content": "469df9df2d6adcc92a415b09b2f0f0f33d25190a",
+  "file": "97957f3872ad28b0f8fdc1f2ed75b5ff5705de55",
+  "folder": "142A1822322F"
+ },
+ "KOTH 5M 7S": {
+  "block": "774b2901ebf59afabaa0658b0a0f97bcee06f230",
+  "content": "88c2cc8353801dfde1fe5830db60e164bc6e2c4a",
+  "file": "5ad909ba8295d28a0a42d8ba19340cbad2ea837c",
+  "folder": "DE68D9BBBD29"
+ },
+ "NHE TS POW": {
+  "block": "c8c2036545e3dcd162df995fc883e707ae1d42fc",
+  "content": "fdd921db0c82bdb3f56d5e100421ba68b854d3de",
+  "file": "6c5412514ffca35bf500a88663c8920ab9a3d3dc",
+  "folder": "FD127351E9F3",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "NHE TS VAN": {
+  "block": "9169ce71c319c704e0d8450ebfdfab30fd10e082",
+  "content": "e102126380cf219098a6244f8e1a093e0eb2ddb4",
+  "file": "88379552de8f9244d8615af160fdeebc0e03b97e",
+  "folder": "1E12577071F0",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "TS 100": {
+  "block": "27e83a438ae9c5bd52d2a95a2b21e12811764d22",
+  "content": "6dde9d2afbbb7c64b4d13302befd0c94ce89a470",
+  "file": "31564149d74cf925191f9e457d68e4f0360f0921",
+  "folder": "C6EAB90E90CD",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "TS 50": {
+  "block": "50b708baca1c0c9d16f5657b6f3e7e167c04c405",
+  "content": "ed85c11390a428ddbe76dade2ab69f25a707accc",
+  "file": "56c9ab72f236fb117d06f34adc15a5fe350aa821",
+  "folder": "4722AC38B38B",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "TS ON-OFF": {
+  "block": "c32de8a1a4450f597135bf1a08a4b3b102ab6cdb",
+  "content": "a8cb6956e24be5abb22f4f33d043935ff4b000ef",
+  "file": "7ee8970683c6a17effb2108d9c025e2c897c053c",
+  "folder": "A378D11361E3",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "TS PRACTICE": {
+  "block": "d7dca42a741d40d7a0dcc8ef6d6f642191c8d8fc",
+  "content": "7e108631645126ac21fc79d5b982d8b66cca792a",
+  "file": "403eb6e830be14692ba58760e88e60ed48ade3a4",
+  "folder": "46A756BD96E3"
+ },
+ "TS SNIPERS": {
+  "block": "d3f1cd6196c1063deeb73dee06150503c8aa2063",
+  "content": "e2aa6483ec31359294026083040ee200286c7a81",
+  "file": "0931dc2d40f4e7bf1eb654d818320e5158178e5b",
+  "folder": "B2E6189A4E2A",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ },
+ "TS TRAINING": {
+  "block": "9591460475132ac3fb3e57f04f67070442aea65d",
+  "content": "9065fa6c4dda9118aac731933596a06ef6c50d3c",
+  "file": "41353931f1783ae993429645e79abf4d3e0bb21c",
+  "folder": "88734D634D0C",
+  "slayer": {
+   "kill_in_order": 0,
+   "no_death_bonus": 1,
+   "no_kill_penalty": 1
+  }
+ }
+}

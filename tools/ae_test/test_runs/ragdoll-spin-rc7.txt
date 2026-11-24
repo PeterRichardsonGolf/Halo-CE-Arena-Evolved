@@ -1,0 +1,26 @@
+# RAGDOLL AI MODERN: a body lying on flat ground turned slowly on the spot, a foot or a knee pushing it round, for up
+# to ten seconds. A joint put right moved only its lower part; both parts now move by their share. The test puts four
+# grunts and an elite ahead of you on the beach (DEV `goto` + `actor`) and shoots them dead as it opens. They die
+# the moment they are placed, so nothing else kills them first. RAGDOLL AI is set to MODERN for this run only.
+list ragdoll-spin-rc7
+revision 3
+title BODIES LIE STILL ON FLAT GROUND
+
+group b30
+map b30
+gametype coop
+set game.ragdoll_ai modern
+set game.steam_first_start_asked true
+
+test bodies
+title Four grunts and an elite shot dead ahead
+setup goto -61.4 38.9 0.8 facing 305
+setup actor grunt_minor_needler 6
+setup actor grunt_minor_needler 8
+setup actor grunt_minor_needler 10
+setup actor grunt_minor_needler 12
+setup actor commander 14
+setup actor kill
+check Five bodies fall ahead of you and lie still in seconds
+check None keeps turning, sliding or kicking on the ground
+check A body you kill yourself lies still the same way
