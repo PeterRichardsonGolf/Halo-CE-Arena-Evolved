@@ -12,6 +12,7 @@ people, read [Host a server](host-a-server.md) after this page.
 - [Menus basics](#menus-basics)
 - [Join a game](#join-a-game)
 - [Host a game](#host-a-game)
+- [AE TOURNAMENT and CAMPAIGN](#ae-tournament-and-campaign)
 - [Bots](#bots)
 - [Split screen](#split-screen)
 - [Maps](#maps)
@@ -51,7 +52,11 @@ Halo CE maps of the Steam Workshop items you subscribe to. Nothing is copied or 
 **Option 2: a disc image of your own Xbox disc.** A `.iso` or `.xiso` file you made from your own original Xbox disc of
 Halo: Combat Evolved. Not needed for MCC's maps. It lets you join games on the original Xbox maps, such as those hosted
 by OpenCE or ChupathingyCE players, and adds the community's maps and mods made for the original Xbox version. The first
-start copies the `maps` folder out of it (about 2 GB). On a Mac this is the way in, because MCC does not run on a Mac.
+start copies the `maps` folder out of it (about 2 GB). On a Mac this is the main way in, because MCC does not run on a Mac.
+
+**Option 3: a STEAM ACCOUNT sign-in.** If you own MCC but have not installed it, **SETTINGS > SYSTEM > MCC > STEAM ACCOUNT**
+signs in to Steam and downloads MCC's shared map files and your Workshop maps, with no MCC install. Your password is
+never saved. It is on Linux 64-bit, Windows 64-bit and macOS; the dedicated server and the web build have no sign-in.
 
 Use only a copy of the game you own. Arena Evolved never provides, links to or helps find game files.
 
@@ -64,7 +69,8 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
 | --- | --- |
 | Windows | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing else to install. |
 | Linux | x86-64. The normal download needs glibc 2.35 or later (Ubuntu 22.04 and later, Mint, Zorin OS, Pop!_OS, Debian 12). Arch and other rolling distributions use their own download. |
-| macOS | macOS 13 or later, on Apple silicon. Needs a disc image of your own Xbox disc (MCC does not run on a Mac). Not tested by the AE team. |
+| macOS | macOS 13 or later, on Apple silicon. MCC does not run on a Mac, so use a disc image of your own Xbox disc or STEAM ACCOUNT. Built with every release, not tested by the AE team. |
+| Android, browser | Android 9 or later on 64-bit ARM (unsigned) and a browser build are attached to releases. Not tested by the AE team. |
 | Graphics | OpenGL 4.5 (macOS: OpenGL 4.1) |
 
 ## Install and update
@@ -76,7 +82,7 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
 | `arena-evolved-<version>-windows64.zip` | Windows 10 or 11, 64-bit |
 | `arena-evolved-<version>-linux64.zip` | Most Linux distributions (SDL3 included) |
 | `arena-evolved-<version>-linux64-arch.zip` | Arch and other rolling distributions (uses the system's `sdl3`) |
-| `arena-evolved-<version>-macos.tar` | macOS 13 or later, Apple silicon |
+| `arena-evolved-<version>-macos.tar` | macOS 13 or later, Apple silicon (untested by us) |
 
 **Install.** There is no installer.
 
@@ -86,7 +92,7 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
 2. Start `halo.exe` (Windows) or `halo` (Linux).
 
 **On a Mac.** Unpack the `.tar` (double-click it) into a folder you own, for example a new folder in your home folder.
-The download holds `ArenaEvolved.app` and, from 0.7.5, the `packs`, `voices` and `sounds` folders beside it. The app is
+The download holds `ArenaEvolved.app` and the `packs`, `voices` and `sounds` folders beside it. The app is
 not notarized, so macOS blocks it the first time.
 
 1. Right-click (or Control-click) `ArenaEvolved.app`, choose **Open**, then **Open** again in the warning. If there is
@@ -103,8 +109,6 @@ not notarized, so macOS blocks it the first time.
 4. The data folder is `~/Library/Application Support/ChupathingyCE` (Finder: **Go > Go to Folder**, paste the path).
    Your maps (`maps`), settings (`config.toml`), saves and `debug.txt` are there, and the `packs`, `voices` and `sounds`
    folders go there too.
-5. **0.7.4 only:** that download has no packs, voices or sounds. Get `arena-evolved-0.7.4-beta-mac-extras.zip` from the
-   release page and put its three folders into the data folder above. From 0.7.5 on, the main download has them.
 
 **Windows warnings.** `halo.exe` and `ffmpeg.exe` (the recorder in the Windows zip) are not code-signed. Your browser or
 Windows may say the download is not commonly downloaded or that the publisher is unknown ("Windows protected your PC").
@@ -314,8 +318,10 @@ If the host does not answer, the screen says:
 
 ### Playing with other builds
 
-Arena Evolved 0.7.5 uses network version 41. It joins ChupathingyCE and OpenCE build-334 and later. OpenCE build-333 and
-older use an older network version and cannot join; Arena Evolved 0.7.4 and older cannot join 0.7.5 games either. Weapon packs and the other AE rules are for AE players: to meet a player on
+Arena Evolved 1.0.0-rc7 uses network version 44. It joins OpenCE build-355 to build-387, which use the same network
+version. Older OpenCE builds use an older network version and cannot join, and Arena Evolved builds older than 0.9.0 cannot
+join either. A game that uses AE's weapons needs the same weapon version on both sides: a player on an older Arena Evolved
+is told to update. Weapon packs and the other AE rules are for AE players: to meet a player on
 another build, host one of Halo CE's own gametypes (the STOCK folder). To join a game on an original Xbox map you need a disc
 image. The game list and the lobby say why a join fails, and the top of `debug.txt` names your network version.
 
@@ -362,6 +368,19 @@ if its switch (LIST GAMES I HOST) on that page is ON.
 
 Ports, UPnP and the firewall are in [Host a server](host-a-server.md).
 
+## AE TOURNAMENT and CAMPAIGN
+
+**AE TOURNAMENT** (a row on the main menu) is matchmaking without the internet. Pick a playlist, play against bots near
+your level, earn EXP and climb from rank 1 to 50. A map vote runs before each game, and after it the players stay together
+in a post-game lobby to vote on the next game or take a rematch. **CAREER** (Y) shows every playlist and the players and
+bots you have met; **SERVICE RECORD** and **BOT RECORD** keep the numbers. **PROFILES > EXPORT PROGRESS** and **IMPORT
+PROGRESS** move a profile's progress to another PC.
+
+**CAMPAIGN** plays Halo CE's missions alone, in split screen for up to four players on one PC, or as online co-op for up to
+16 (X on a level, or HOST ONLINE). A Halo 1 campaign installed from the Workshop is listed by its title on the first row.
+**AI SQUAD** is a squad of allied Spartans, played by the game, that joins each mission you start alone; left and right on
+the row choose how many. It is a test feature: split screen and CONTINUE from a saved game play without it for now.
+
 ## Bots
 
 Bots are computer players. They play every mode, in six levels: **RECRUIT, EASY, NORMAL, HEROIC, LEGENDARY, DEMON**.
@@ -405,6 +424,16 @@ Open **CHANGE MAP** in the lobby (or from the pause menu as host). Maps are in f
 | Map packs and your own folders | Community maps keep their own folders and pages. |
 | **FAVOURITES**, **RECENT** | Maps you starred and maps you played lately. |
 
+A map the PC holds in several copies is listed once, with a chip for the copy (WORKSHOP, STOCK, COMMUNITY, CONVERTED, CE+ X);
+left and right on the row choose the copy to play.
+
+**MAPS & MODS** (a row on the main menu, and **SETTINGS > SYSTEM > FILES > MAPS & MODS**) is one screen with five pages:
+INSTALLED (every map this PC has, with search, a card per map and options to create a game on it, move it to a folder, open
+its folder or delete it), REQUIRED FILES (what Custom Edition and MCC maps need, found or missing), BROWSE CE MAPS, WORKSHOP
+(with collections you can download in one go) and MODS (the mods in load order). BROWSE CE MAPS searches a community map
+archive; it is off until you say yes on a first-use card that names the two hosts it contacts, and it keeps a map only when
+its size and fingerprint match the archive's signed list. **SETTINGS > ONLINE > MAPS > MAP ARCHIVE** turns it off again.
+
 A Workshop map shows its Workshop picture and a **WORKSHOP** badge. A map that Steam is still updating is dimmed and
 says "STEAM IS UPDATING IT". Search and filters are at the top of the screen.
 
@@ -415,8 +444,8 @@ says "STEAM IS UPDATING IT". Search and filters are at the top of the screen.
 3. **Restart AE.** The game finds Workshop maps once, as it starts. A new subscription shows after a restart.
 
 On Windows 10 version 1903 or later, a Steam library in any language's folder name works. On older Windows, a folder with
-characters outside the system's code page may show no Workshop maps. Workshop maps are played on a host's own game: dedicated servers do not serve them yet. Every machine in a game on an MCC map
-needs MCC.
+characters outside the system's code page may show no Workshop maps. A dedicated server can play MCC and Workshop maps too, from the MCC files of the machine it runs on (see [Host a server](host-a-server.md)); it never sends them to players. Every machine in a game on an MCC map
+needs MCC's files, from an MCC install or a STEAM ACCOUNT sign-in. When you join a server whose Workshop map you lack and STEAM ACCOUNT is signed in, the game gets the map from Steam as you join. **SETTINGS > ONLINE > MAPS > WORKSHOP FROM STEAM** (on by default) turns that off.
 
 **Joining a game on an MCC map.** If you lack it, the game tells you what is needed:
 
@@ -698,7 +727,7 @@ If you find a bug:
 2. Say what you did, what you expected and what happened.
 3. Add the log file `debug.txt` (see [Where files are](#where-files-are)): it is in the folder that holds `halo.exe`
    (Windows) or `halo` (Linux), on a Mac in `~/Library/Application Support/ChupathingyCE`, or in the game's folder inside Quiver's Apps folder. It keeps earlier runs, so attach
-   it right after the problem. Its top lines name the network version ("OpenCE network version 39"), which says who you can
+   it right after the problem. Its top lines name the network version ("OpenCE network version 44"), which says who you can
    join. It is plain text. It holds your computer's graphics driver name and
    file paths, and on Windows the paths include your Windows user name (the save folder is under
    `C:\Users\<name>\AppData\Roaming\halo`). Look through it before you share it.

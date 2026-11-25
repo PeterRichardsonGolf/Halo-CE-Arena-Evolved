@@ -5,15 +5,17 @@ Short answers for people who have never heard of Arena Evolved. For the full ste
 
 ## 1. What do I need to play?
 
-Your own copy of Halo: Combat Evolved, in one of two forms:
+Your own copy of Halo: Combat Evolved, in one of these forms:
 
 - **Halo: The Master Chief Collection on Steam**, with its **Halo: Combat Evolved Anniversary** and **MCC - H1: Multiplayer**
   content both installed. Arena Evolved finds the install by itself and plays MCC's Halo CE multiplayer maps and the
   maps of the Steam Workshop items you subscribe to. Nothing is copied or converted.
 - **A disc image (`.iso` or `.xiso`) you made from your own Xbox disc** of Halo: Combat Evolved. The first start copies
   its maps out (about 2 GB).
+- **A STEAM ACCOUNT sign-in** (SETTINGS > SYSTEM > MCC), if you own MCC but have not installed it: the game downloads MCC's
+  shared map files and your Workshop maps from Steam. Your password is never saved.
 
-You can have both. Windows 10 or 11 (64-bit) and most Linux distributions are the supported systems.
+You can have more than one. Windows 10 or 11 (64-bit) and most Linux distributions are the tested systems.
 
 ## 2. Do I need MCC? Can I use only a disc image?
 
@@ -24,7 +26,7 @@ subscribe to, and MCC's medal pictures.
 With MCC alone you have MCC's maps, not the original Xbox ones, so you cannot join a game on an original Xbox
 map (for example one hosted by an OpenCE player). Add a disc image to join those.
 
-On a Mac there is no MCC, so a disc image is the way in.
+On a Mac there is no MCC, so use a disc image or STEAM ACCOUNT.
 
 ## 3. Do I have to buy anything?
 
@@ -64,12 +66,14 @@ player to have MCC (and, for a Workshop map, the same Workshop item).
 
 ## 7. Can I play with OpenCE or ChupathingyCE players?
 
-Sometimes, depending on the build. Arena Evolved 0.7.5 uses **network version 41**.
+Sometimes, depending on the build. Arena Evolved 1.0.0-rc7 uses **network version 44**.
 
-- **ChupathingyCE:** yes, both ways.
-- **OpenCE build-334 and later:** yes. These use network version 41 too.
-- **OpenCE builds 333 and older** (network version 39 and lower): no.
-- **Arena Evolved 0.7.4 and older:** no. Only 0.7.5 joins 0.7.5 games; the host's chat says so.
+- **OpenCE build-355 to build-387:** yes, both ways. These use network version 44 too.
+- **OpenCE builds 354 and older** (network version 43 and lower): no.
+- **Arena Evolved builds older than 0.9.0:** no.
+- **Arena Evolved 1.0.0-rc5 and rc6:** yes. A game that uses AE's weapons needs the same weapon version, and a player on
+  an older version is told to update.
+- **ChupathingyCE:** not checked on this version.
 
 Two more limits:
 
@@ -91,7 +95,7 @@ The game's lobby and server list tell you why a join fails ("Host is on version 
 Players who lack a Custom Edition or community map you play get it from you as they join. Turn any VPN off while you host
 online. Friends who know your address can use **JOIN BY ADDRESS** (press Y on JOIN LAN GAMES or SERVER BROWSER).
 
-Dedicated servers are for Linux; see the "Host a server" guide.
+Dedicated servers run on Linux and Windows; see the "Host a server" guide.
 
 ## 9. LAN or internet? Why can nobody see my game?
 
@@ -139,7 +143,7 @@ Your settings (`config.toml`) are next to the program. Saves and profiles are in
 
 Open an issue in this repository's **Issues** tab and choose **Bug report** (or **Crash or freeze**). Please give:
 
-- your system and the version (it is in the window's title, for example 0.7.5-beta);
+- your system and the version (it is in the window's title, for example 1.0.0-rc7);
 - whether the game uses MCC, a disc image or both;
 - what you did, what you expected and what happened;
 - `debug.txt` (question 13).
@@ -148,17 +152,16 @@ One bug per issue. Do not attach maps or disc images. Questions and ideas go in 
 
 ## 15. Does it run on Mac, Steam Deck or Android?
 
-- **Mac (Apple silicon, macOS 13 or later):** built with every release but not tested by the Arena Evolved team. You need a
-  disc image, because MCC does not run on a Mac. The game keeps its maps, settings and `debug.txt` in
+- **Mac (Apple silicon, macOS 13 or later):** built with every release but not tested by the Arena Evolved team. MCC does
+  not run on a Mac, so you need a disc image or STEAM ACCOUNT. The game keeps its maps, settings and `debug.txt` in
   `~/Library/Application Support/ChupathingyCE` (Finder: Go > Go to Folder).
   - *"Cannot be opened because the developer cannot be verified":* right-click `ArenaEvolved.app` > **Open** > **Open**,
     or **System Settings > Privacy & Security > Open Anyway**. See [how-to-play.md](how-to-play.md) for the full steps.
-  - *Packs, voices and sounds:* from 0.7.5 they come in the download beside the app and the game copies them in on the
-    first start. If `debug.txt` says macOS opened the app "from a temporary copy" (App Translocation), drag the app to
-    Applications once and open it with right-click > Open, or copy the three folders into the data folder yourself. In
-    0.7.4 the download lacks them: get `arena-evolved-0.7.4-beta-mac-extras.zip` from the release and put its folders
-    in the data folder.
+  - *Packs, voices and sounds:* they come in the download beside the app and the game copies them in on the first
+    start. If `debug.txt` says macOS opened the app "from a temporary copy" (App Translocation), drag the app to
+    Applications once and open it with right-click > Open, or copy the three folders into the data folder yourself.
   - *Updates:* Macs only open the download page when there is a new version; download it and replace the app.
 - **Steam Deck / Linux handhelds:** the Linux download is the one to use. If the first-start window does not open in Game
   Mode, start it once from Desktop Mode.
-- **Android:** an untested build is attached to releases.
+- **Android and the browser:** an unsigned Android build and a browser build are attached to releases. Neither is tested by
+  the Arena Evolved team.

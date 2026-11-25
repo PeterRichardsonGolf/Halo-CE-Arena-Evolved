@@ -1,7 +1,7 @@
 # Host a server
 
 How to host a game from Halo CE: Arena Evolved for friends on your network or on the internet, how to play with
-OpenCE and ChupathingyCE players, and how to run the dedicated server on Linux. If you only want to play, read
+OpenCE players, and how to run the dedicated server on Linux or Windows. If you only want to play, read
 [How to play](how-to-play.md) first.
 
 ## On this page
@@ -10,8 +10,8 @@ OpenCE and ChupathingyCE players, and how to run the dedicated server on Linux. 
 - [Host from the game](#host-from-the-game)
 - [Firewall and ports](#firewall-and-ports)
 - [VPNs](#vpns)
-- [Play with OpenCE and ChupathingyCE players](#play-with-opence-and-chupathingyce-players)
-- [The dedicated server on Linux](#the-dedicated-server-on-linux)
+- [Play with OpenCE players](#play-with-opence-players)
+- [The dedicated server](#the-dedicated-server)
 - [Troubleshooting](#troubleshooting)
 
 ## Three ways to host
@@ -21,7 +21,7 @@ OpenCE and ChupathingyCE players, and how to run the dedicated server on Linux. 
 | **OFFLINE** game | You, and split-screen players on your PC | Nothing. The pause menu really pauses. |
 | **LAN** game | Players on your home or LAN-party network | The same network (not a guest Wi-Fi) and open ports (below). |
 | **HOST ONLINE** game | Players anywhere on the internet | Internet play on, no VPN, and your router able to open a port (UPnP, below). |
-| **Dedicated server** | A game that stays up all the time | A Linux machine. No player sits at it. |
+| **Dedicated server** | A game that stays up all the time | A Linux or Windows machine. No player sits at it. |
 
 Hosting needs your own copy of Halo, as playing does. Everyone in the game needs the same maps. The game sends a map
 the others lack. See [How to play: Maps](how-to-play.md#maps).
@@ -50,14 +50,15 @@ Settings that matter, in **SETTINGS > ONLINE**:
 | **UPNP PORT FORWARDING** | ON | Opens the game's port on your router so players can join you. |
 | **LIST HOSTED GAMES** | OFF | Games you host show in the server browser. A game is listed in it only with this ON and **PUBLIC** ON in CREATE GAME. Choosing ACCEPT on the first-start COMMUNITY SERVICES page, with its LIST GAMES I HOST switch ON, turns it on. |
 | **DOWNLOAD MAPS** | ON | Get a map you lack from the host. |
-| **INTERNET SHARING** | OFF | Hosting: also send your maps to players who are not on your local network. |
+| **WORKSHOP FROM STEAM** (MAPS) | ON | Joining a server that plays a Workshop map you lack: with STEAM ACCOUNT signed in, get it from Steam (the game's map first, at most 12 maps and 1 GB a server). |
+| **INTERNET SHARING** | ON | Hosting: also send your maps to players who are not on your local network. |
 | **INTERNET DOWNLOADS** | ON | Also get maps from hosts over the internet. |
 | **DOWNLOAD LIMIT** | 4 GB | The most map data your PC takes from one host, from 256 MB to 64 GB. |
 | **HOSTED GAME STATS** | ON | Send your hosted games' scores to the stats site. It only matters for a listed game, so with LIST HOSTED GAMES off nothing is sent. |
 
-Map sharing speed: up to 16 MB/s to players on your local network, and 1 MB/s when a player is on the internet, so
-your upload stays free for the game. A player takes at most 4 GB (DOWNLOAD LIMIT) from one host. The game's own 13 multiplayer maps are
-never sent.
+Map sharing speed: a game you host at home sends maps at up to 4 MB/s by default (`network.map_share_upload`), and a
+dedicated server at up to 10 MB/s. A player takes at most 4 GB (DOWNLOAD LIMIT) from one host. The game's own multiplayer
+maps and MCC's maps are never sent.
 
 ## Firewall and ports
 
@@ -118,17 +119,17 @@ online." Turn the VPN off while you host.
 The same goes for a VPN running on your **router**: the game cannot see it, so no warning shows, but players still
 cannot reach you. Turn the router's VPN off while you host, or exclude the hosting PC from it in the router's settings.
 
-## Play with OpenCE and ChupathingyCE players
+## Play with OpenCE players
 
 Arena Evolved is made from OpenCE's code and grew from ChupathingyCE. It plays online with builds that use the **same
-network version**. Arena Evolved 0.7.5 uses **network version 41**.
+network version**. Arena Evolved 1.0.0-rc7 uses **network version 44**.
 
-| Other build | Can it join Arena Evolved 0.7.5, and can you join it? |
+| Other build | Can it join Arena Evolved 1.0.0-rc7, and can you join it? |
 | --- | --- |
-| OpenCE build-334 and later | Yes, both ways (network version 41). |
-| OpenCE build-333 and older | No (network version 39 and lower). |
-| Arena Evolved 0.7.4 and older | No. |
-| ChupathingyCE | Yes, both ways (tested with ChupathingyCE 0.8.1). |
+| OpenCE build-355 to build-387 | Yes, both ways (network version 44). |
+| OpenCE build-354 and older | No (network version 43 and lower). |
+| Arena Evolved older than 0.9.0 | No. |
+| Arena Evolved 1.0.0-rc5 and rc6 | Yes. Games that use AE's weapons need the same weapon version; an older player is told to update. |
 
 - The game list and the lobby tell a player who cannot join and why: "Host is on version N and needs to update to M
   or newer" or "Host is on version N, you're on M". The top of `debug.txt` names your network version.
@@ -143,68 +144,55 @@ network version**. Arena Evolved 0.7.5 uses **network version 41**.
 To meet a player on another build, host one of Halo CE's own gametypes (the STOCK folder): the AE rules are on only in AE
 gametypes.
 
-## The dedicated server on Linux
+## The dedicated server
 
-The dedicated server is the game as a program of its own. It has no window, sound or player, and it hosts games by
-itself from a playlist of maps and game types, around the clock.
+A dedicated server is the game as a program of its own: `halo --server` (`halo.exe --server` on Windows). It has no window,
+sound or player, and it hosts games one after another from a rotation of maps and game types, around the clock, with a web
+page and a remote console for the person who runs it. The server package's `GUIDE.md` has the details of everything below
+(rotation lines, bots, listing, backups); the [hosting guide](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/blob/source-1.0.0-rc7/docs/hosting.md)
+in the release source picks the way to run it.
 
-**Download.** The Releases page has `arena-evolved-<version>-server-linux-<arch>.zip` files. Pick your machine's with `uname -m`:
+**Download.** The Releases page has the server packages:
 
-| `uname -m` | Download for |
+| Package | For |
 | --- | --- |
-| `x86_64` | `arena-evolved-<version>-server-linux-x64.zip`: most servers and PCs (Intel, AMD 64-bit) |
-| `aarch64` | `arena-evolved-<version>-server-linux-arm64.zip`: 64-bit ARM: Oracle Cloud's free tier, Raspberry Pi 4 and 5 with a 64-bit OS |
+| `arena-evolved-<version>-server-linux-x64.zip` | A Linux machine or a VPS (Debian 12 or any 64-bit Linux with glibc 2.35 or newer). It has a systemd unit and a Dockerfile. |
+| `arena-evolved-<version>-server-windows-x64.zip` | A Windows PC that has MCC: a start .bat, firewall rules and a startup task |
 
-The program inside is called `chupathingyce-server`.
+**Quick start (Linux).**
 
-A waiting server uses about 2% of one CPU core and about 215 MB of memory.
+```sh
+unzip arena-evolved-<version>-server-linux-x64.zip -d ~
+cd ~/ae-server
+nano rotation.txt
+sh start-server.sh
+```
 
-**Quick start.**
+On Windows, unzip, edit `rotation.txt` and double-click `start-server.bat`; run `firewall-rules.bat` as administrator once.
 
-1. Unpack the zip. You get the server program (`chupathingyce-server`), a `playlists` folder, `blocked_names.txt` and a
-   README.
-2. Make a data folder with a `maps` folder in it. Copy in `ui.map` and all the multiplayer maps (about 300 MB) from
-   your Xbox disc image. Halo PC maps go in folders beside `maps`: `maps_ce` for Custom Edition (with its
-   `bitmaps.map`, `sounds.map` and `loc.map`), `maps_md` for HaloMD and `maps_pc` for Halo PC retail maps.
-3. Put a playlist in the data folder's `playlists` folder (the download's or your own).
-4. Start it from the data folder:
+**What it plays.** The server plays what the machine it runs on has. A `<map>@mcc` rotation entry needs Halo: The Master Chief
+Collection with Halo CE and both its DLC pieces; `<map>@ws<item id>` needs the Workshop item subscribed on that Steam
+account; an Xbox-format or Custom Edition map needs its file in the data folder. A VPS with no Steam can use `sync-mcc.sh`
+(in the Linux package) to copy MCC's Halo CE maps and the Workshop items the rotation names from a PC that has MCC. The server
+never sends MCC's maps or Workshop items to players: players who lack them need their own copy (or STEAM ACCOUNT). It does
+send community and Custom Edition maps. MCC and its Workshop items belong to their owners: copy them only to a server you run
+for yourself.
 
-   ```sh
-   cd /path/to/data
-   HALO_DEDICATED=playlists/free_for_all.txt HALO_DEDICATED_NAME="My Server" /path/to/chupathingyce-server
-   ```
+**The rotation.** `rotation.txt` takes one entry per map and gametype, `map:gametype`, with Arena Evolved's own gametypes
+(`ae_team_sly`, `ae_ctf`, ...) and your saved gametypes. It holds up to 256 entries and 16384 characters (rotations over 128
+entries need a server running 1.0.0-rc7; older servers keep the first 128). The server fills empty seats with bots if you
+ask (`server.bots_fill`), runs the map and gametype vote between games, and can read a playlist from CREATE GAME's HOST A
+SERVER. Arena Evolved players can join any entry; OpenCE players can join the entries that use Halo CE's own gametypes and
+maps they have.
 
-The server prints what it is doing. Leave it running. Ctrl+C stops it and takes its game off the lists.
+**Ports.** Internet play needs only **UDP 2302** (or the port you set with `HALO_NET_TUNNEL_PORT`). The game's LAN ports (UDP
+5150, 5151, 5160, TCP 5150, 5153) are for your own network and stay off the internet. On a cloud server, allow incoming UDP on
+that port in the provider's firewall and on the machine (`sudo ufw allow 2302/udp`). Run the server as an account that has
+nothing else in it (no Steam login you play on, no SSH keys), or in a container: it reads packets from anyone who joins.
 
-- The data folder is the current folder unless `HALO_DATA_ROOT` says otherwise.
-- The log is `debug.txt` in the data folder (`HALO_LOG_ROOT` moves it). At 64 MB it is renamed `debug.old.txt`.
-- Saves go in `~/.local/share/halo-linux` (or `$XDG_DATA_HOME/halo-linux`), unless `HALO_SAVE_ROOT` says otherwise.
-- To keep it running with restarts, or several on one machine, use Docker or systemd. The source download has a
-  Dockerfile and systemd files in its `server/deploy` folder.
-
-**What it does.**
-
-- Hosts a game with no player of its own. It is listed in the in-game server browser (unless
-  `HALO_DEDICATED_PUBLIC` is `false`).
-- Plays the playlist's entries in order. Once enough players join (`HALO_DEDICATED_MINIMUM_PLAYERS`, 1 by default), the
-  lobby counts down by itself.
-- Takes up to `HALO_DEDICATED_MAXIMUM_PLAYERS` players (12 by default).
-- Ends a game nobody has scored in for 5 minutes, or 30 seconds after everyone leaves.
-- Takes commands on its console, a startup file or a control panel (off unless you turn it on with
-  `HALO_DEDICATED_CONTROL`). It has moderators, admins and owners of its own.
-
-Dedicated servers do not serve Steam Workshop maps yet. Workshop maps are played on a host's own game.
-
-**Home or cloud.** On a home connection you do not need to open or forward ports. On a cloud server (Oracle, AWS,
-Google, Azure and the like), open one UDP port:
-
-1. Give internet play a fixed port: `HALO_NET_TUNNEL_PORT=2302` (any free port). The log line `this machine's public
-   address is ...:2302` shows the port in use.
-2. Allow incoming UDP on that port in the provider's firewall (an ingress rule, source `0.0.0.0/0`, protocol UDP).
-3. Allow it on the machine too. With ufw: `sudo ufw allow 2302/udp`. On Oracle's Ubuntu images:
-   `sudo iptables -I INPUT -p udp --dport 2302 -j ACCEPT`, then `sudo netfilter-persistent save`.
-
-A system link (LAN) server uses UDP 5150 and 5160 instead.
+**Listing.** A server started from the game (HOST A SERVER, on Linux and Windows) is found on the local network, by its invite
+link and by its address; the master servers list only server packages that have a publisher key (`halo --server --keygen`
+makes it).
 
 ## Troubleshooting
 
@@ -218,11 +206,8 @@ A system link (LAN) server uses UDP 5150 and 5160 instead.
 | The invite row shows "BEING MADE..." and stays so | The game makes the invite itself, once it is hosting for the internet. If it stays, hosting online did not start: check **INTERNET PLAY** is ON (the row says "INTERNET PLAY IS OFF" when it is not) and look in `debug.txt` for the lines about Internet play. |
 | An invite link says "That is not an invite" | The link is cut off or damaged. Copy it again. |
 | Joiners see "Host is on version N and needs to update to M or newer" | Update your game, or ask them to. |
-| An OpenCE player cannot join | Their build must be on the same network version (41): OpenCE build-334 and later. See "Play with OpenCE and ChupathingyCE players". |
+| An OpenCE player cannot join | Their build must be on the same network version (44): OpenCE build-355 to build-387. See "Play with OpenCE players". |
 | A player without a map gets nothing | **DOWNLOAD MAPS** must be ON for them. Over the internet, your **INTERNET SHARING** and their **INTERNET DOWNLOADS** must be ON. Port 5153/tcp must be open on a LAN. |
-| "Needs ..." for a Workshop map | The map is from a Steam Workshop item. The host plays it on its own game. Players need the same Workshop item subscribed in Steam. |
-| Dedicated server stops at once with "no maps" | The data folder needs `maps/ui.map`. Start the server from the data folder, or set `HALO_DATA_ROOT`. |
-| Dedicated server: "cannot read the playlist" | `HALO_DEDICATED` is a path inside the data folder: `playlists/my_playlist.txt`. |
-| Dedicated server sits in the lobby and never starts | Every multiplayer map must be in `maps`, not just the playlist's. With `HALO_DEDICATED_MINIMUM_PLAYERS` above 1, it waits for that many. |
-| Dedicated server shows, but nobody can join | A cloud firewall is dropping UDP. See "Home or cloud" above. |
-| Dedicated server: "cannot reserve the Xbox address space" (arm64) | The kernel gives the program fewer addresses than it needs. Use a kernel with 39 or more address bits, or tell us your system. |
+| "Needs ..." for a Workshop map | The map is from a Steam Workshop item. Players need the same Workshop item: subscribed in Steam, or fetched by STEAM ACCOUNT as they join. A server plays it only if the item is subscribed on its own Steam account. |
+| Dedicated server shows, but nobody can join | A cloud firewall is dropping UDP. Allow the server's UDP port (2302 by default) in the provider's firewall and on the machine. |
+| A rotation entry is skipped or the server stops at start | `<map>@mcc` entries need MCC with Halo CE and both its DLC pieces on the server's machine, `<map>@ws<item>` entries need the item subscribed on its Steam account, and other maps need their file in the data folder. The server's `debug.txt` names the entry. |

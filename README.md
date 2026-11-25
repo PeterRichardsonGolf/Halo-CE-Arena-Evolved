@@ -37,23 +37,26 @@ community projects, credited below. Halo CE is still played because its communit
 
 ## Play on the official servers
 
-Three Arena Evolved test servers run on the US West Coast, with bots keeping the games going until players join.
-Arena Evolved 0.7.7 lists them in **MULTIPLAYER > SERVER BROWSER**: pick one and join, and a map you lack downloads as
-you join. **JOIN BY ADDRESS** takes these addresses too:
+Five Arena Evolved test servers run on the US West Coast, all on 1.0.0-rc7, with bots keeping the games going until
+players join. Arena Evolved lists them in **MULTIPLAYER > SERVER BROWSER**: pick one and join, and a map you lack
+downloads as you join. **JOIN BY ADDRESS** takes these addresses too:
 
 | Server | Address | What it plays |
 |---|---|---|
-| AE Official #1 | `play.arenaevolved.com:10660` | 4v4 casual and competitive Arena Evolved modes, map vote |
-| AE BTB+ #1 | `btb.arenaevolved.com:10672` | 16v16 Big Team Battle with vehicles |
-| AE Comp Test | `comp.arenaevolved.com:10683` | The competitive playlist test: AE COMP modes with EVO, battle rifle and pistol starts |
+| AE #1 Casual | `play.arenaevolved.com:10660` | 4v4 Arena Evolved modes with a map vote, and the Halo 2 demakes |
+| AE #2 BTB | `btb.arenaevolved.com:10672` | 16v16 Big Team Battle with vehicles |
+| AE #3 Comp | `comp.arenaevolved.com:10683` | Competitive 4v4: AE COMP modes with EVO, battle rifle and pistol starts on the community's competitive maps |
+| AE #4 MCC maps | `mcc.haloae.com:18191` | Halo CE's multiplayer maps from your own MCC, 4v4 modes with a map vote |
+| AE #5 Classic Comp | `nhe.arenaevolved.com:26671` | The community's classic competitive 2v2 on its maps |
 
 The live list (who's on, map, mode) is on [arenaevolved.com](https://arenaevolved.com/). MCC and Workshop maps also need
-your own MCC install. Want to run your own? See [Host a game or server](docs/host-a-server.md); the server packages for
+your own MCC files. Want to run your own? See [Host a game or server](docs/host-a-server.md); the server packages for
 Linux and Windows are on the [release page](https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/releases/latest).
 
-> **Status: beta, in active development.** Supported and tested with every release: **Windows and Linux**. macOS on
-> Apple silicon is built with every release. Android and the other platforms OpenCE builds come from the same code and
-> are attached untested.
+> **Status: in active development.** The current release is **1.0.0-rc7**, a release candidate on the way to 1.0: release
+> candidates keep coming until 1.0, and there is no date for it. **Windows and Linux (64-bit) are tested with every
+> release.** The macOS (Apple silicon) and Android (unsigned) builds and the browser build come from the same code and ship
+> untested: they may not work.
 
 <p align="center">
   <img src="docs/screenshots/danger-canyon-evo-rifle.jpg" alt="Danger Canyon played from MCC's files: the EVO RIFLE with its holo sight, a Warthog ahead" width="100%">
@@ -78,26 +81,41 @@ is attached to it.
 - **MCC maps and Workshop mods, online:** play Halo: The Master Chief Collection's Halo CE maps and the Workshop maps
   you subscribe to with other players. MCC has no server browser for modded custom games; Arena Evolved does: host from your
   own install, find games in the server browser or on your LAN, or join by address. Players joining a Workshop map
-  need the same Workshop item, and the game tells them which one. Workshop maps are hosted from a player's own game;
-  dedicated servers serve the stock and Custom Edition maps.
+  need the same Workshop item, and the game tells them which one; with STEAM ACCOUNT signed in it gets the item from Steam
+  as it joins. Workshop maps are hosted from a player's own game, and dedicated servers can play MCC and Workshop maps too.
+- **MAPS & MODS and STEAM ACCOUNT:** one screen lists every map on your PC, finds Custom Edition maps from a community
+  archive (off until you say yes), manages Workshop collections and puts mods in load order. An owner of MCC who has not
+  installed it can sign in with STEAM ACCOUNT (SETTINGS > SYSTEM > MCC) to get MCC's map files and Workshop maps.
 - **Online and LAN:** server browser, LAN search, invite links, JOIN BY ADDRESS (an IP or a
   computer's name, with a recent list), dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come
-  from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds 282 to 333 and with ChupathingyCE (see "Play with other
-  builds" below).
-- **Bots** in six levels from RECRUIT to DEMON, up to 31 on one PC and 127 in a game you host, in every mode: a wingman
+  from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds 355 to 387 (see "Play with other builds"
+  below).
+- **Bots** in seven levels from RECRUIT to DEMON, up to 31 on one PC and up to 120 in a game you host, in every mode: a wingman
   per player, squads that flank, flag crews that escort, bombers that carry, plant and defend. They drive and ride
-  vehicles, know the power items' timers, dodge rockets, take revenge, and stay out of your line of fire. A bot steps
-  aside when a player joins. PLAYFIGHT bots aim but never shoot, for practice.
+  vehicles, climb ladders, answer your team's calls, know the power items' timers, dodge rockets, take revenge, and stay
+  out of your line of fire. They learn each map between games. A bot steps aside when a player joins. PLAYFIGHT bots aim
+  but never shoot, for practice.
 - **Split screen on PC:** up to four players on one PC, locally, on a LAN and online, each with their own profile,
   controller layout, settings and pause menu; a controller picker sorts four pads fast.
 - **Search and Destroy and Bomb, AE's round modes:** one life a round, a real bomb carried on the back, held to pick
   up, a fuse timer on its face, a blast that hurts by distance; only the attackers hear about it. Built on the
   ChupathingyCE team's Bomb engine. Grifball, their original mode too, is in ACTION SACK and still a work in progress.
-- **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the EVO RIFLE (single shot, tuned for competitive
-  play, a 2x scope with its zoom and rounds live), the DMR (steady marksman rifle), SMG, carbine, and suppressed SMG and
-  AR, as weapon packs that work on stock, Custom Edition and MCC maps. Each pack turns on or off in a gametype's GAME
-  OPTIONS, and a gametype picks what you start with. 0.7.5 is a testing build that adds the NEEDLER, BOLT SNIPER, COMBAT
-  RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope) and BRUTE SHOT as betas, and the ENERGY SWORD as an alpha.
+- **Weapons tuned to Halo CE's sandbox:** the battle rifle (bursts, 3x), the SINGLESHOT BR (one round a pull), the EVO RIFLE
+  (single shot, tuned for competitive play, a 2x scope with its zoom and rounds live), the DMR (steady marksman rifle), SMG,
+  TACTICAL SMG, carbine, and suppressed SMG and AR, as weapon packs that work on stock, Custom Edition and MCC maps. Each
+  pack turns on or off in a gametype's GAME OPTIONS, and a gametype picks what you start with. In testing: the NEEDLER,
+  BOLT SNIPER, COMBAT RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope), BRUTE SHOT and HEAVY REVOLVER as betas, and the
+  ENERGY SWORD as an alpha.
+- **Weapon spawners:** a gametype's weapon spots can play from a CASUAL, COMP or BTB weapon set, as RACKS (a hologram of the
+  coming weapon fills as its timer runs), CLASSIC (plain weapons on a fixed timer, as in Halo CE) or both, with an optional
+  RANDOMIZE of what each rack holds.
+- **AE TOURNAMENT:** matchmaking without the internet. Pick a playlist, play against bots at your level, earn EXP and climb
+  from rank 1 to 50. A CAREER page, a SERVICE RECORD (and a BOT RECORD for each bot you meet) keep your numbers, with an
+  export to move them to another PC. After a game the players stay together in a post-game lobby to vote on the next one
+  or take a rematch.
+- **Campaign:** CAMPAIGN plays Halo CE's missions alone, in split screen for up to four, or online as co-op for up to 16,
+  and plays the Workshop's custom campaigns. A squad of allied Spartans, played by the game, can join each mission you
+  start alone (CAMPAIGN > AI SQUAD, a test feature).
 - **Second-generation game settings:** GAME OPTIONS gains rounds and round time, respawn time modifiers, damage resistance
   and extra damage, weapon respawn, flag and bomb carrier rules and hill rules (Halo CE plays as before unless you set
   them), the TERRITORIES mode (beta), 34 more built-in gametypes in a nested CHANGE GAMETYPE picker, a shield-break pop
@@ -111,7 +129,7 @@ is attached to it.
   versions, and BTB+ versions with banshees), OBJECTIVE (Search and Destroy, Bomb), ACTION SACK (Phantoms, Juggernaut, Stalker, Crazy King, Elimination,
   Race, Rally, Grifball, SWAT, Snipers, Rockets, Shotguns and more), PRACTICE with OCTAGON warm-up drills; Halo 1: NHE's
   gametypes as an option.
-- **Rules you can set on any map,** each a row in GAME OPTIONS: fall damage (OFF, CLASSIC or HALO 2), jump height, health styles, COMBAT FEEDBACK (shield pop, recharge, blood pop), no spread, a pre-game countdown, MELEE
+- **Rules you can set on any map,** each a row in GAME OPTIONS: fall damage (OFF, CLASSIC or HALO 2), JUMP HEIGHT, GRAVITY, PLAYER SPEED, FALL STUN, SHOOTABLE GRENADES, a MODERN melee, health styles, COMBAT FEEDBACK (shield pop, recharge, blood pop), no spread, a pre-game countdown, MELEE
   UNZOOMS, controller crouch, mouse aim assist, silent movement and weapons for split screen, destructible vehicles,
   friendly splatter, lethal oddball, practice mode, and SPAWNS CLASSIC or MODERN.
 - **Training aids:** item timers and waypoints with pictures, spawn markers and spawn heat, spoken callouts in seven
@@ -121,7 +139,7 @@ is attached to it.
   GAME NAME for the server browser, and HOST TEAM OVERRIDE (move any player to the other team, in the lobby or from the
   pause menu). In AE's team gametypes a team that empties waits a minute for players instead of ending the game.
 - **Controllers:** many button layouts including MCC's, DualSense adaptive triggers (a profile per weapon) and lightbar, back
-  paddles, Nintendo and PlayStation prompts, gyro aiming, stick deadzones. Mouse and keyboard: KEY BINDINGS, wheel
+  paddles, the new Steam Controller with its trackpad aim, Nintendo and PlayStation prompts, gyro aiming, stick deadzones. Mouse and keyboard: KEY BINDINGS, wheel
   zoom, hold-to-zoom and MCC-style sensitivity.
 - **Menus built from scratch for today's PCs:** fast and controller-first, just as good with a mouse and keyboard, and
   sized for anything from a handheld to an ultrawide. A live CREATE GAME lobby with MY PARTY, where friends and bots
@@ -129,7 +147,7 @@ is attached to it.
   search, favourites and RECENT. Its own pause menu, scoreboard and post-game, and every setting explained in a line of
   help.
 - **HUD and display:** a modern, competitive combat HUD of its own (or Halo CE's) with a score strip, a frame-rate limit you type (30 to
-  1000), a performance line with ping, HUD area and compact HUD, backpack weapons on bodies, pistol colour.
+  1000), TARGET FRAMERATE and LOW LATENCY, a performance line with ping, HUD area and compact HUD, backpack weapons on bodies, pistol colour.
 - **Capture:** screenshots (every split view) and video recording with sound (Windows includes FFmpeg).
 - **Map packs and layouts:** community, Custom Edition and modded-disc maps keep their own folders and pictures;
   layout files let a pack move, add and remove items, vehicles, spawns and flags, and set a map's jump.
@@ -142,19 +160,19 @@ is attached to it.
 Nothing Arena Evolved adds is forced on you:
 
 - **Halo CE's own gametypes play by Halo CE's rules.** The AE rules (weapon packs, health styles, HALO 2 fall damage,
-  a 120% jump, MODERN spawns and the rest) are on only in the AE gametypes, and each is a row you can switch off.
+  a higher jump, MODERN spawns and the rest) are on only in the AE gametypes, and each is a row you can switch off.
   (The drills, training and practice modes keep fall damage off.) As the host, your
   gametype decides for everyone in the game.
 - **Halo CE's look:** HUD STYLE CE draws the game's own HUD, Settings > System > MENUS brings back the PC version's
   menus, and callouts, timers, waypoints and the other aids each have their own setting.
 - **Classic menus hide AE's screens.** Most of Arena Evolved's screens exist only in its own menus: the pause menu and
-  post-game, CREATE GAME's live lobby and MY PARTY, CHANGE MAP's MCC, WORKSHOP and pack folders, search and favourites, JOIN BY
+  post-game, AE TOURNAMENT, MAPS & MODS, CREATE GAME's live lobby and MY PARTY, CHANGE MAP's MCC, WORKSHOP and pack folders, search and favourites, JOIN BY
   ADDRESS, KEY BINDINGS, RESTART GAME and RESTART ROUND, and the gametype editor's full GAME OPTIONS. With the classic
   menus on, those are gone (the gametypes' rules still play). Switch MENUS back to use them.
 - **Stock maps stay stock:** the STOCK folders hold the game's own maps as they shipped, from your disc image or MCC.
-- **Play with other builds:** Arena Evolved 0.7.5 (network version 41) plays online with OpenCE build-334 and later and
-  with ChupathingyCE. Older Arena Evolved builds cannot join 0.7.5 games. To meet a player on another build, host one of Halo CE's own gametypes: AE's extras (weapon
-  packs and the rest) are for AE players.
+- **Play with other builds:** Arena Evolved 1.0.0-rc7 (network version 44) plays online with OpenCE build-355 to
+  build-387. Arena Evolved builds older than 0.9.0 cannot join. To meet a player on another build, host one of Halo CE's own
+  gametypes: AE's extras (weapon packs and the rest) are for AE players.
 
 ## Download
 
@@ -165,9 +183,9 @@ Take the zip for your system from the [Releases](../../releases) page:
 | `arena-evolved-<version>-windows64.zip` | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing to install (about 110 MB). |
 | `arena-evolved-<version>-linux64.zip` | Linux x86-64, most distributions (Ubuntu 22.04 and later, Mint, Zorin, Pop!_OS, Debian 12), SDL3 included. |
 | `arena-evolved-<version>-linux64-arch.zip` | Arch and other rolling distributions (uses the system's `sdl3`). |
-| `arena-evolved-<version>-macos.tar` | macOS 13 or later on Apple silicon. Needs a disc image (MCC does not run on a Mac). |
+| `arena-evolved-<version>-macos.tar` | macOS 13 or later on Apple silicon. MCC does not run on a Mac, so it needs a disc image or STEAM ACCOUNT. Built, untested by us. |
 | `-android-unsigned.zip` | Android 9 or later on 64-bit ARM, untested. |
-| `-server-linux-<arch>.zip` | The dedicated server. |
+| `-server-linux-x64.zip`, `-server-windows-x64.zip` | The dedicated server. |
 
 Only the latest release is kept here.
 
@@ -180,12 +198,14 @@ Or get it with Quiver: [Arena Evolved on Quiver](https://quiverlauncher.com/apps
 
 ## You need your own copy of the game
 
-Arena Evolved includes none of the game's maps, sounds or art. It plays from either of these, or both:
+Arena Evolved includes none of the game's maps, sounds or art. It plays from any of these:
 
 - **Halo: The Master Chief Collection on Steam.** Install MCC with both of its Halo CE pieces of content (Steam's DLC
   list): **Halo: Combat Evolved Anniversary** and **MCC - H1: Multiplayer**. Arena Evolved finds the install by itself
   and plays its Halo CE multiplayer maps and the Halo CE maps of every Steam Workshop item you subscribe to, straight
   from MCC's own files. No disc image needed and nothing is converted.
+- **A STEAM ACCOUNT sign-in** (SETTINGS > SYSTEM > MCC), if you own MCC but have not installed it: the game downloads MCC's
+  shared map files and your Workshop maps from Steam. Your password is never saved.
 - **A disc image you made from your own Xbox disc** of Halo: Combat Evolved (`.iso` or `.xiso`). Not needed for MCC's
   maps. It lets you join games on the original Xbox maps, such as those hosted by OpenCE or ChupathingyCE players, and
   adds the community's Xbox-era maps and mods. The first time it starts, the game asks for the image and copies its maps
@@ -222,9 +242,9 @@ host's Custom Edition or community maps get them from the host as they join.
 ## Where it's going
 
 More of the same focus: quality of life and the old annoyances ironed out, new gameplay that respects Halo CE's
-balance, and bots good enough to fill any game. Next: the newest OpenCE builds merged in (so Arena Evolved can join them
-again), a team balancer and playlists, a players and controllers screen with drop-in split screen, and more vehicles
-and bot work. What is not finished yet is in [Known issues](docs/known-issues.md).
+balance, and bots good enough to fill any game. The release candidates (1.0.0-rc1 and on) keep adding tested features
+until 1.0, with the newest OpenCE builds merged in as they are released. What is not finished yet is in
+[Known issues](docs/known-issues.md).
 
 ## Source and licence
 
