@@ -163,5 +163,4 @@ One bug per issue. Do not attach maps or disc images. Questions and ideas go in 
   - *Updates:* Macs only open the download page when there is a new version; download it and replace the app.
 - **Steam Deck / Linux handhelds:** the Linux download is the one to use. If the first-start window does not open in Game
   Mode, start it once from Desktop Mode.
-- **Android and the browser:** an unsigned Android build and a browser build are attached to releases. Neither is tested by
-  the Arena Evolved team.
+- **Android:** an unsigned Android build is attached to releases. It is not tested by the Arena Evolved team.

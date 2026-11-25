@@ -43,7 +43,7 @@ downloads as you join. **JOIN BY ADDRESS** takes these addresses too:
 
 | Server | Address | What it plays |
 |---|---|---|
-| AE #1 Casual | `play.arenaevolved.com:10660` | 4v4 Arena Evolved modes with a map vote, and the Halo 2 demakes |
+| AE #1 Casual | `play.arenaevolved.com:10660` | 4v4 Arena Evolved modes with a map vote, and community demakes of classic maps |
 | AE #2 BTB | `btb.arenaevolved.com:10672` | 16v16 Big Team Battle with vehicles |
 | AE #3 Comp | `comp.arenaevolved.com:10683` | Competitive 4v4: AE COMP modes with EVO, battle rifle and pistol starts on the community's competitive maps |
 | AE #4 MCC maps | `mcc.haloae.com:18191` | Halo CE's multiplayer maps from your own MCC, 4v4 modes with a map vote |
@@ -55,8 +55,8 @@ Linux and Windows are on the [release page](https://github.com/PeterRichardsonGo
 
 > **Status: in active development.** The current release is **1.0.0-rc7**, a release candidate on the way to 1.0: release
 > candidates keep coming until 1.0, and there is no date for it. **Windows and Linux (64-bit) are tested with every
-> release.** The macOS (Apple silicon) and Android (unsigned) builds and the browser build come from the same code and ship
-> untested: they may not work.
+> release.** The macOS (Apple silicon) and Android (unsigned) builds come from the same code and ship untested: they may
+> not work.
 
 <p align="center">
   <img src="docs/screenshots/danger-canyon-evo-rifle.jpg" alt="Danger Canyon played from MCC's files: the EVO RIFLE with its holo sight, a Warthog ahead" width="100%">
@@ -87,7 +87,7 @@ is attached to it.
   archive (off until you say yes), manages Workshop collections and puts mods in load order. An owner of MCC who has not
   installed it can sign in with STEAM ACCOUNT (SETTINGS > SYSTEM > MCC) to get MCC's map files and Workshop maps.
 - **Online and LAN:** server browser, LAN search, invite links, JOIN BY ADDRESS (an IP or a
-  computer's name, with a recent list), dedicated servers for Linux, text and voice chat. Custom Edition and community maps you lack come
+  computer's name, with a recent list), dedicated servers for Linux and Windows, text and voice chat. Custom Edition and community maps you lack come
   from the host as you join, with its layout. OFFLINE games on one PC pause for real. Plays with OpenCE builds 355 to 387 (see "Play with other builds"
   below).
 - **Bots** in seven levels from RECRUIT to DEMON, up to 31 on one PC and up to 120 in a game you host, in every mode: a wingman
@@ -107,7 +107,7 @@ is attached to it.
   BOLT SNIPER, COMBAT RIFLE, SIDEKICK, HJ MAGNUM (suppressed, 2x scope), BRUTE SHOT and HEAVY REVOLVER as betas, and the
   ENERGY SWORD as an alpha.
 - **Weapon spawners:** a gametype's weapon spots can play from a CASUAL, COMP or BTB weapon set, as RACKS (a hologram of the
-  coming weapon fills as its timer runs), CLASSIC (plain weapons on a fixed timer, as in Halo CE) or both, with an optional
+  coming weapon fills as its timer runs), CLASSIC (plain weapons on a fixed timer, as in Halo CE) or CLASSIC + HOLOGRAMS, with an optional
   RANDOMIZE of what each rack holds.
 - **AE TOURNAMENT:** matchmaking without the internet. Pick a playlist, play against bots at your level, earn EXP and climb
   from rank 1 to 50. A CAREER page, a SERVICE RECORD (and a BOT RECORD for each bot you meet) keep your numbers, with an
@@ -118,7 +118,7 @@ is attached to it.
   start alone (CAMPAIGN > AI SQUAD, a test feature).
 - **Second-generation game settings:** GAME OPTIONS gains rounds and round time, respawn time modifiers, damage resistance
   and extra damage, weapon respawn, flag and bomb carrier rules and hill rules (Halo CE plays as before unless you set
-  them), the TERRITORIES mode (beta), 34 more built-in gametypes in a nested CHANGE GAMETYPE picker, a shield-break pop
+  them), the TERRITORIES mode (beta), more than 250 built-in gametypes in a nested CHANGE GAMETYPE picker, a shield-break pop
   with sound and flash, a round counter on the score strip, and RESTART ROUND in any rounds game.
 - **In the game:** medals as you play (MCC's pictures when MCC is installed), a kill feed with weapon pictures, and team
   calls: tap LB (the mark key on a keyboard) to mark what you aim at, double tap to call an enemy, hold for the

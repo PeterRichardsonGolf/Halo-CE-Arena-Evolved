@@ -56,7 +56,7 @@ start copies the `maps` folder out of it (about 2 GB). On a Mac this is the main
 
 **Option 3: a STEAM ACCOUNT sign-in.** If you own MCC but have not installed it, **SETTINGS > SYSTEM > MCC > STEAM ACCOUNT**
 signs in to Steam and downloads MCC's shared map files and your Workshop maps, with no MCC install. Your password is
-never saved. It is on Linux 64-bit, Windows 64-bit and macOS; the dedicated server and the web build have no sign-in.
+never saved. It is on Linux 64-bit, Windows 64-bit and macOS; the dedicated server has no sign-in.
 
 Use only a copy of the game you own. Arena Evolved never provides, links to or helps find game files.
 
@@ -70,7 +70,7 @@ Edition. With MCC installed, AE reads them from MCC's `custom_edition` folder.
 | Windows | Windows 10 or 11, 64-bit, with OpenGL 4.5. Nothing else to install. |
 | Linux | x86-64. The normal download needs glibc 2.35 or later (Ubuntu 22.04 and later, Mint, Zorin OS, Pop!_OS, Debian 12). Arch and other rolling distributions use their own download. |
 | macOS | macOS 13 or later, on Apple silicon. MCC does not run on a Mac, so use a disc image of your own Xbox disc or STEAM ACCOUNT. Built with every release, not tested by the AE team. |
-| Android, browser | Android 9 or later on 64-bit ARM (unsigned) and a browser build are attached to releases. Not tested by the AE team. |
+| Android | Android 9 or later on 64-bit ARM (unsigned) is attached to releases. Not tested by the AE team. |
 | Graphics | OpenGL 4.5 (macOS: OpenGL 4.1) |
 
 ## Install and update
@@ -383,7 +383,7 @@ the row choose how many. It is a test feature: split screen and CONTINUE from a 
 
 ## Bots
 
-Bots are computer players. They play every mode, in six levels: **RECRUIT, EASY, NORMAL, HEROIC, LEGENDARY, DEMON**.
+Bots are computer players. They play every mode, in seven levels: **RECRUIT, EASY, NORMAL, HEROIC, ELITE, LEGENDARY, DEMON**.
 
 - In **CREATE GAME**, the **BOTS** row sets how many (OFF, 1 to 31, then 47, 63, 95 and 127) and **BOT SKILL** sets the level.
   Bots fill any LAN or internet game you host. Past 31 the game runs, but the bots get lost and stuck on big maps and

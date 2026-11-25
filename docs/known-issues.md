@@ -38,12 +38,12 @@ we already know. Report anything else in Issues (a bug report with your `debug.t
 
 ## Installing and first start
 
-- **Platforms.** Windows and Linux (64-bit) are tested with every release. The macOS (Apple silicon) build, the Android build
-  (unsigned) and the browser build come from the same code and are not tested by us; they may not work.
+- **Platforms.** Windows and Linux (64-bit) are tested with every release. The macOS (Apple silicon) build and the Android build
+  (unsigned) come from the same code and are not tested by us; they may not work.
 - **Windows warns about an unknown publisher.** `halo.exe` and `ffmpeg.exe` are not code-signed. See the [FAQ](faq.md).
 - **Steam Deck:** if the first-start window does not open in Game Mode, start the game once from Desktop Mode.
 - **A Mac has no MCC.** Use a disc image of your own Xbox disc, or a STEAM ACCOUNT sign-in (also untested on a Mac).
-- **STEAM ACCOUNT** has no sign-in on the dedicated server, the web build or the 32-bit builds. A busy Steam keeps the sign-in
+- **STEAM ACCOUNT** has no sign-in on the dedicated server or the 32-bit builds. A busy Steam keeps the sign-in
   and waits, up to 10 minutes between tries.
 - **MCC in an unusual place:** the first-start window's Choose MCC folder button is the way to point the game at it. Later, set
   `game.mcc_path` in `config.toml`.
@@ -56,14 +56,13 @@ we already know. Report anything else in Issues (a bug report with your `debug.t
   Evolved's own menus.
 - **Scoreboard:** with split screen it can sit off centre, and the PING column is crowded at 2 or 4 players.
 - **Some ultrawide screens:** weapon models can look stretched at the edges at a high field of view.
-- **Split screen** campaign and Workshop campaigns play without the AI SQUAD for now (see Campaign).
+- **Split screen** campaigns (stock and Workshop) play without the AI SQUAD for now (see Campaign).
 
 ## Bots
 
 - **Bots can get stuck** on some maps and spots, and at times while they fight.
-- **Bots drive on a few maps only.** They take vehicles where a map's route file has routes (MCC's Blood Gulch, Danger Canyon,
-  Death Island, Ice Fields, Sidewinder, Timberland, Gephyrophobia, Infinity and the Workshop map Cliffhanger); on other maps
-  they stay on foot until their driving is tuned.
+- **Bots drive on Blood Gulch only.** On other maps they take a Warthog's or a turret's gun and ride with a teammate, but do
+  not drive until their driving is tuned.
 - Bots do not use every mode's tricks yet. They play, but plainly.
 
 ## Maps and weapons
@@ -82,8 +81,8 @@ we already know. Report anything else in Issues (a bug report with your `debug.t
 
 ## Controllers
 
-- **Steam Input** hides a controller's back paddles from the game while it drives the controller; the rows Steam's layout owns
-  are greyed in the menus with the reason. Set them in Steam, or start the game outside Steam.
+- **Steam Input** hides a controller's back paddles from the game while it drives the controller (for the Steam Controller, the rows
+  Steam's layout owns are greyed in the menus with the reason). Set them in Steam, or start the game outside Steam.
 - **DualSense triggers and lightbar on Linux** need the included udev rule (`70-ae-dualsense.rules`) once. The new Steam
   Controller on Linux needs the system to give the game access to it; a note in the menus says how.
 - **Switch 2 Pro controller:** works over USB; HD rumble is not done.

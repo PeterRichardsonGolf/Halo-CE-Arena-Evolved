@@ -56,8 +56,8 @@ Settings that matter, in **SETTINGS > ONLINE**:
 | **DOWNLOAD LIMIT** | 4 GB | The most map data your PC takes from one host, from 256 MB to 64 GB. |
 | **HOSTED GAME STATS** | ON | Send your hosted games' scores to the stats site. It only matters for a listed game, so with LIST HOSTED GAMES off nothing is sent. |
 
-Map sharing speed: a game you host at home sends maps at up to 4 MB/s by default (`network.map_share_upload`), and a
-dedicated server at up to 10 MB/s. A player takes at most 4 GB (DOWNLOAD LIMIT) from one host. The game's own multiplayer
+Map sharing speed: a game you host at home sends maps at up to 16 MB/s when every player is on your local network and 4 MB/s
+otherwise (`network.map_share_upload`), and a dedicated server at up to 10 MB/s. A player takes at most 4 GB (DOWNLOAD LIMIT) from one host. The game's own multiplayer
 maps and MCC's maps are never sent.
 
 ## Firewall and ports
@@ -156,7 +156,7 @@ in the release source picks the way to run it.
 
 | Package | For |
 | --- | --- |
-| `arena-evolved-<version>-server-linux-x64.zip` | A Linux machine or a VPS (Debian 12 or any 64-bit Linux with glibc 2.35 or newer). It has a systemd unit and a Dockerfile. |
+| `arena-evolved-<version>-server-linux-x64.zip` | A Linux machine or a VPS (Debian 12 or any 64-bit Linux with glibc 2.35 or newer). It has a systemd unit and a container compose example. |
 | `arena-evolved-<version>-server-windows-x64.zip` | A Windows PC that has MCC: a start .bat, firewall rules and a startup task |
 
 **Quick start (Linux).**
