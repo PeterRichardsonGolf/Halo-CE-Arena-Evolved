@@ -1,0 +1,1 @@
+# Symbols the game's objects reference that no object or library of the link defines. One per line: name # reason.

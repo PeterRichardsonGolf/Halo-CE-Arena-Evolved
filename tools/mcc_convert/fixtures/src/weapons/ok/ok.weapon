@@ -1,0 +1,2 @@
+rounds (4)   int16
+prediction_type (1)   enum

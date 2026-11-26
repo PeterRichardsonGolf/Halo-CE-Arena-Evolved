@@ -1,0 +1,13 @@
+# MENU TEXT rc8: the AE menus measure each letter once and remember it. Each test opens on its scene; the checks say
+# where to go.
+# - the main menu, a settings page's help lines and WHAT'S NEW's paragraphs: letters spaced and lines broken as before
+list text-cache-rc8
+revision 1
+title MENU TEXT rc8: THE TEXT LOOKS THE SAME
+
+test menu-text
+title AE MENUS: the text looks as it did
+check Main menu: letters evenly spaced, none overlapping
+check SETTINGS > VIDEO: help lines break between words
+check WHAT'S NEW: paragraphs break between words
+menus

@@ -1,0 +1,58 @@
+# 0.9.4 weapons polish, part 2: the TACTICAL SMG (15) fires the BURST PDW's bursts with its own 2x zoom, the SUPPRESSED
+# SMG's fire sound, a scope lens that glints as the BR's and DMR's, and no stray magazine on its holster; the CONCUSSION
+# RIFLE (23) sits further back; the indoor reverb rings shorter and quieter. The weapon tests: the pack's weapon is the
+# START weapon on every life (debug.network_test_cache_weapon <slot>), no bots (two in the scope-and-holster test, to
+# see one holstered), a dummy stands in front of you (it heals to full 3 s after it was last hurt), `ttk on` prints the
+# time to kill. REVERB LEVEL is in Settings > Audio > Advanced. The packs are held: this list runs only on a test build
+# whose weapon cache holds them (a cache without the TACTICAL SMG falls its start weapon back to the assault rifle). DEV
+# MODE's `viewmodel place <right> <up> <forward> 0 0 0 1` moves the arms and gun live, `viewmodel save` keeps them.
+# Staged only: nothing here waits for something to happen.
+list weapons-polish-094b
+revision 2
+title WEAPONS POLISH 2
+
+test tac-smg-fire
+title Tactical SMG: the PDW's bursts
+setup dummy 1 6
+setup ttk on
+check Each pull fires a 3-round burst; 4 bursts kill the dummy
+check It sounds suppressed, as the SUPPRESSED SMG does
+check The zoom is still its own (2x)
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 15
+set debug.objective_log full
+
+test tac-smg-look
+title Tactical SMG: scope and holster
+setup dummy 1 6
+check The scope's lens glints blue, as the BR's does
+check Holstered on a bot's thigh: nothing trails behind it
+check Nothing looks unfinished in hand or on the ground
+map octagon_b
+gametype AE BR TS
+set bots.count 2
+set bots.skill normal
+set debug.network_test_cache_weapon 15
+set debug.objective_log full
+
+test concussion-view
+title Concussion rifle: further back
+setup dummy 1 8
+check It sits further back, toward the camera
+check Fire and reload: nothing clips or leaves view
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 23
+set debug.objective_log full
+
+test reverb-indoor
+title Indoor reverb: mixed down
+check Fire indoors: the ring after is shorter and quieter
+check REVERB LEVEL shows 35% (if 50%, set 35% and fire again)
+check Outdoors the gunfire sounds as before
+map carousel
+gametype AE BR TS
+set bots.count 0

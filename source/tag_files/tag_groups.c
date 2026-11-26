@@ -1,0 +1,254 @@
+/*
+TAG_GROUPS.C
+*/
+
+/* ---------- headers */
+
+#include "cseries.h"
+#include "errors.h"
+#include "tag_files.h"
+#include "byte_swapping.h"
+#include "tag_groups.h"
+
+#ifdef HALO_CUSTOM_EDITION
+void *ce_tags_pointer(unsigned long address, long size);
+boolean cache_file_tags_are_ce(void);
+boolean tag_index_is_group(long tag_index, long group_tag);
+/* (whether the map being loaded, or loaded, is a Custom Edition map:
+cache_files.c) */
+extern boolean cache_file_is_ce;
+#endif
+/* port: (cache_files.c) */
+long tag_index_holding_address(void const *address, unsigned long *offset);
+unsigned long tag_get_group_tag(long tag_index);
+
+/* ---------- constants */
+
+enum
+{
+	/* port: the most bytes of the empty data (tag_empty_data): more than
+	any tag's root or any block's element */
+	TAG_EMPTY_DATA_SIZE = 0x10000,
+};
+
+/* ---------- globals */
+
+/* port: (tag_empty_data; in the Xbox address space on the 64-bit builds,
+where a tag's pointers to it are Xbox addresses: xbox_address.h) */
+#ifdef HALO_64BIT
+static unsigned long *tag_empty_data_bytes;
+#else
+static unsigned long tag_empty_data_bytes[TAG_EMPTY_DATA_SIZE / sizeof(unsigned long)];
+#endif
+
+/* ---------- private code */
+
+/* port: an index past what it indexes, logged once */
+static void tag_index_error(
+	char const *what,
+	long index,
+	long count)
+{
+	static boolean logged = FALSE;
+
+	if (!logged)
+	{
+		logged = TRUE;
+		error(_error_silent, "#%ld is not a %s index in [#0,#%ld): an empty one is used", index, what, count);
+	}
+
+	return;
+}
+
+/* ---------- public code */
+
+/* port: what an index into a tag block, a tag's data or the tags that is
+not one gives (tag_block_get_element_with_size, tag_data_get_pointer,
+tag_get): TAG_EMPTY_DATA_SIZE bytes of zeros, zeroed again each time, in
+place of whatever lies past the block, the data or the tags. Whatever
+reads it reads an element or tag with nothing in it (no elements in its
+blocks, no tags referenced, every index 0); whatever writes it writes
+nowhere that matters */
+void *tag_empty_data(
+	void)
+{
+#ifdef HALO_64BIT
+	if (!tag_empty_data_bytes)
+		tag_empty_data_bytes = malloc(TAG_EMPTY_DATA_SIZE);
+	if (!tag_empty_data_bytes)
+		return NULL;
+	csmemset(tag_empty_data_bytes, 0, TAG_EMPTY_DATA_SIZE);
+#else
+	csmemset(tag_empty_data_bytes, 0, sizeof(tag_empty_data_bytes));
+#endif
+
+	return tag_empty_data_bytes;
+}
+
+/* port (Arena Evolved): an empty string a tag's pointer can name: in the
+Xbox's address space in the 64-bit builds (cseries/xbox_address.h), as the
+empty data is */
+char const *tag_empty_string(
+	void)
+{
+#ifdef HALO_64BIT
+	static char *empty_string;
+
+	if (!empty_string)
+		empty_string = malloc(1);
+	if (empty_string)
+	{
+		empty_string[0] = 0;
+		return empty_string;
+	}
+#endif
+
+	return "";
+}
+/* port: (cache_files.c) */
+boolean tag_index_is_group(long tag_index, long group_tag);
+
+long verify_tag_reference(
+	const struct tag_reference *reference)
+{
+	long index;
+
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3055, reference);
+#ifdef HALO_CUSTOM_EDITION
+	/* port: a Custom Edition map's tags are not found by name. A "protected"
+	map (made with a map protector) has its tags' names replaced, most with
+	the same one, and its references' emptied, so the name finds no tag or
+	another; the reference's index, a tag of its group, is the tag
+	(cache_files.c's tag_index_is_group) */
+	if (cache_file_tags_are_ce())
+		return tag_index_is_group(reference->index, reference->group_tag) ? reference->index : NONE;
+#endif
+#ifdef HALO_ADDRESS_TRANSLATED
+	index = tag_loaded(reference->group_tag, TAG_REFERENCE_NAME(reference));
+#else
+	index = tag_loaded(reference->group_tag, reference->name);
+#endif
+	
+	match_vassert(
+		"c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3061, reference->index==index,
+		csprintf(temporary,
+			"tag reference \"%s\" and actual index do not match: is %08lX but should be %08lX",
+#ifdef HALO_ADDRESS_TRANSLATED
+			TAG_REFERENCE_NAME(reference),
+#else
+			reference->name,
+#endif
+			reference->index,
+			index));
+
+	return index;
+}
+
+void* tag_data_get_pointer(
+	const struct tag_data *data,
+	long offset, 
+	long size) 
+{
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3073, size>=0);
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3074, offset>=0 && offset+size<=data->size);
+	/* port: bytes past the data are the empty data's (tag_empty_data), as
+	far as they go */
+	if (size < 0 || offset < 0 || offset > data->size || size > data->size - offset || (size && !data->address))
+	{
+		tag_index_error("data", offset, data->size);
+		return size <= TAG_EMPTY_DATA_SIZE ? tag_empty_data() : NULL;
+	}
+
+#ifdef HALO_CUSTOM_EDITION
+	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c;
+	the other maps' as below, without the call) */
+	if (cache_file_is_ce)
+		return ce_tags_pointer((unsigned long)data->address + offset, size);
+#endif
+#ifdef HALO_ADDRESS_TRANSLATED
+	return (void *)((byte *)TAG_DATA_ADDRESS(data) + offset);
+#else
+	return (void *)((byte *)data->address + offset);
+#endif
+}
+
+void *tag_block_get_element_with_size(
+	const struct tag_block *block,
+	long index, 
+	long element_size) 
+{
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3084, block);
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3085, block->count>=0);
+#ifndef HALO_64BIT
+#ifdef HALO_CUSTOM_EDITION
+	/* port: a Custom Edition map's blocks keep the definitions' addresses in
+	Halo PC's executable, not this one's (cache_files.c) */
+	if (!cache_file_is_ce)
+#endif
+	match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3086, !block->definition || block->definition->element_size==element_size);
+#endif
+
+	/* port: as tag_data_get_pointer, a Custom Edition map's index past a
+	block's end (which Halo PC never checked: foundation@ce, 13 seconds in)
+	gets the empty data below without an assertion. This build's maps keep
+	theirs */
+	{
+#ifdef HALO_CUSTOM_EDITION
+		extern boolean cache_file_tags_are_ce(void);
+
+		if (!cache_file_tags_are_ce())
+#endif
+		{
+			match_vassert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3089, index>=0 && index<block->count,
+				csprintf(temporary,
+					"#%d is not a valid %s index in [#0,#%d)",
+					index,
+#ifdef HALO_64BIT
+					"<unknown>", block->count));
+#else
+					block->definition ? block->definition->name : "<unknown>", block->count));
+#endif
+			match_assert("c:\\halo\\SOURCE\\tag_files\\tag_groups.c", 3090, block->address);
+		}
+	}
+	/* port: an element past the block (an index a map's data gave, which
+	nothing checked) is the empty data (tag_empty_data), not whatever lies
+	past the block */
+	if (index < 0 || index >= block->count || !block->address)
+	{
+		tag_index_error("block element", index, block->count);
+		/* port: a block that gives elements but no address has none from
+		here on, so that a loop over its elements ends after this one rather
+		than running on through its count (Halo PC maps' timberland and
+		infinity, in a release build: a block of 1065353216, 1.0f's bits, the
+		game asserting on it until it was closed as their games began) */
+		if (!block->address && block->count > 0)
+		{
+			/* (said once a block, naming the tag it is in and where: its
+			definition is not this executable's in a Custom Edition map, nor
+			on the 64-bit builds) */
+			unsigned long offset = 0;
+			long tag_index = tag_index_holding_address(block, &offset);
+			unsigned long group_tag = tag_index != NONE ? tag_get_group_tag(tag_index) : 0;
+
+			error(_error_silent, "tag block in %c%c%c%c %s (+0x%lx): %ld elements without an address, read as none",
+				tag_index != NONE ? (char)(group_tag >> 24) : '?', tag_index != NONE ? (char)(group_tag >> 16) : '?',
+				tag_index != NONE ? (char)(group_tag >> 8) : '?', tag_index != NONE ? (char)group_tag : '?',
+				tag_index != NONE ? tag_get_name(tag_index) : "<no tag>", offset, block->count);
+			((struct tag_block *)block)->count = 0;
+		}
+		return element_size <= TAG_EMPTY_DATA_SIZE ? tag_empty_data() : NULL;
+	}
+
+#ifdef HALO_CUSTOM_EDITION
+	/* port: (a Custom Edition map's, only in its tag cache: ce_map_checks.c;
+	the other maps' as below, without the call) */
+	if (cache_file_is_ce)
+		return ce_tags_pointer((unsigned long)block->address + index * element_size, element_size);
+#endif
+#ifdef HALO_ADDRESS_TRANSLATED
+	return (void *)((byte *)TAG_BLOCK_ADDRESS(block) + (index * element_size));
+#else
+	return (void *)((byte *)block->address + (index * element_size));
+#endif
+}

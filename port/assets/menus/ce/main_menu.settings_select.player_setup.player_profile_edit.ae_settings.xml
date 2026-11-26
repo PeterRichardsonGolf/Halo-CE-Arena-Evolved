@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/ae_settings_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/header_hud"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/header_hud" controller="1" left="35" top="11" width="605" height="59" type="text" text="ARENA EVOLVED" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_controls" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_hud" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_view" x="54" y="133"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_video" x="54" y="163"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_audio" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_online" x="54" y="223"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_system" x="54" y="253"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_controls" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/ae_settings_group_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls/ae_settings_group_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/controls_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_hud" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/hud/ae_settings_group_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/hud/ae_settings_group_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/hud_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/hud_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_view" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/view/ae_settings_page_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/view/ae_settings_page_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/view_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/view_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_video" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/ae_settings_group_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/ae_settings_group_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_audio" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/audio/ae_settings_page_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/audio/ae_settings_page_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/audio_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/audio_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_online" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/ae_settings_group_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online/ae_settings_group_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/online_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/op_system" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/ae_settings_group_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system/ae_settings_group_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system_label"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/system_label" type="text" controller="1" width="512" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/labels">
+		<string text="CONTROLS"/>
+		<string text="HUD"/>
+		<string text="VIEW"/>
+		<string text="VIDEO"/>
+		<string text="AUDIO"/>
+		<string text="ONLINE"/>
+		<string text="SYSTEM"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/help_strings">
+		<string text=""/>
+		<string text="Controller, gyro, mouse and keyboard. Key bindings\nare in the AE menus' SETTINGS."/>
+		<string text="HUD, reticles and training aids. The crosshair\neditor is in the AE menus' SETTINGS."/>
+		<string text="Weapon sway, pistol colors, backpack weapons,\nblood and ragdolls."/>
+		<string text="Frame rate, draw distance, split screen and the\ngraphics extras."/>
+		<string text="Reverb, speakers and the NHE sound filter."/>
+		<string text="Map downloads, Discord and what you host. Banned\nplayers are in the AE menus' SETTINGS."/>
+		<string text="Language, MCC and recording. Weapon packs and\nmaps are in the AE menus."/>
+	</strings>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_profile_item" type="text" left="51" top="303" width="232" height="25" bitmap="bitmaps/list_item_bkd" string_list="main_menu/settings_select/player_setup/player_profile_edit/profile_edit_options" string_index="13" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="3" platform="desktop">
+		<on event="a" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/ae_settings_screen"/>
+		<on event="start" open="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/ae_settings_screen"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+</menus>

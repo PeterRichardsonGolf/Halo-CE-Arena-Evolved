@@ -1,0 +1,99 @@
+# MAPS & MODS, the actions that were not wired: CREATE A GAME ON IT and PLAY IT open CREATE GAME and CAMPAIGN on the map, NEW FOLDER takes
+# a typed name, OPEN ITS FOLDER opens the map's own folder, installing a map this PC has asks first, Cancel stops the install whatever
+# row has the focus, OPEN ON STEAM opens a Workshop map's Steam page, the signed-out WORKSHOP footer offers only what works, and a click
+# on a row moves the mod being moved. Every test opens on its scene from DEV MODE's `menu maps <page> <state>`, from made-up data: the
+# create and play tests open the real screens on a map of the game's own list, the others read no map folder, change no file and ask the
+# network for nothing. An expect line is the log line the action writes when it really happened. Run the list at 16:9 and at 4:3.
+list maps-hub-11x
+revision 1
+title MAPS & MODS: THE ACTIONS
+
+test create-game
+title CREATE A GAME ON IT opens CREATE GAME on the map
+menus
+card bottom
+setup menu maps installed create
+check CREATE GAME is open, its MAP row says Blood Gulch
+check The lobby is hosted; B goes back to MAPS & MODS
+check The gametype row is the lobby's own
+expect 1 log ae create game: open on map
+
+test play-it
+title PLAY IT opens CAMPAIGN on that level
+menus
+card bottom
+setup menu maps installed play
+check CAMPAIGN is open with Pillar of Autumn focused
+check A plays it; B goes back to MAPS & MODS
+check The levels list is the campaign's ten
+expect 1 log ae campaign: open on level
+
+test new-folder
+title NEW FOLDER takes a typed name
+menus
+card bottom
+setup menu maps installed new-folder
+check A field says new_folder with the caret in it
+check Enter moves Coldwater there; the help line says so
+check A name with a slash is refused in blue; Esc cancels
+expect 1 log ae maps hub: staged: Coldwater moved to new_folder
+
+test open-folder
+title OPEN ITS FOLDER opens the map's own folder
+menus
+card bottom
+setup menu maps installed open-folder
+check The help line names Coldwater's folder: .../maps_ce/comp
+check It is not the maps_ce folder of the data root
+check Y on the list opens the focused map's folder too
+expect 1 log ae maps hub: staged: would open folder /staged/maps_ce/comp
+
+test install-again
+title Installing a map this PC has asks first
+menus
+card bottom
+setup menu maps browse again
+check A question: Install Arcadia Ridge again? CANCEL first
+check INSTALL AGAIN is the second choice
+check B or CANCEL installs nothing
+expect 1 log ae maps hub: asked to install Arcadia Ridge again
+
+test cancel-any-row
+title Cancel stops the install from any row
+menus
+card bottom
+setup menu maps browse download
+check The focus is Arcadia Ridge; Coldwater shows 42 %
+check The footer says A Cancel
+check A cancels the install: the help line says nothing was kept
+expect 1 log ae maps hub: install cancelled
+
+test steam-page
+title OPEN ON STEAM on a made-up map (the page is not opened)
+menus
+card bottom
+setup menu maps installed steam
+check Delta Ruins' options: a fifth row, OPEN ON STEAM
+check The help names the steamcommunity.com page
+check The row is missing for a Custom Edition map
+expect 1 log ae maps hub: staged: would open the Steam page https://steamcommunity.com/
+
+test signed-out-footer
+title Signed-out WORKSHOP offers only what works
+menus
+card bottom
+setup menu maps workshop signed-out
+check The footer says A Select, Pages, B Back
+check No Install, Search or Page prompt
+check STEAM ACCOUNT SIGN IN and WORKSHOP MAPS ON INSTALLED work
+expect 1 log ae maps hub: staged: WORKSHOP
+
+test mod-mouse
+title A click moves the mod being moved
+menus
+card bottom
+setup menu maps mods moving
+check The second mod shows the moving mark
+check Click the fourth row: the mod goes there
+check A puts it down; B puts it back
+expect 1 log ae maps hub: staged: mod moved to place

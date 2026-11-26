@@ -1,0 +1,45 @@
+# The own flag's waypoint WHEN SPOTTED (the AE CTF seeds): away from home it shows; carried by an enemy it shows to the defenders
+# only while one of them has a line of sight to the carrier, and 1.5 s after. Each test opens on its scene from its setup lines:
+# you stand in the open in front of your base, looking at its door (a player start's point), and the carrier is a runner
+# (dummy run) that already runs your flag on a fixed path, left of the card. The base is the host's own in a local game. debug.waypoint_log says each change
+# in the log ("flag spotted: ...", "own flag waypoint: ...").
+# The third test keeps a runner in the other base, out of the way: a team left empty ends the game in 60 s.
+list flag-spotted
+revision 3
+title FLAG WHEN SPOTTED
+
+group ctf
+map beavercreek
+gametype AE CTF
+set bots.count 0
+set debug.waypoint_log true
+
+test carrier-seen
+title Enemy runs your flag out of your base and back in
+setup goto 11.38 18.55 -0.22 facing -40
+setup dummy run 27.8 13.5 -0.2 to 15.9 16.3 -0.3 loop
+setup flag ours carry
+check The carrier runs your flag out of your base, and back
+check In view: a waypoint over him
+check Behind the walls: the waypoint goes 1.5 s later
+expect 1 cmd flag ours carry ok
+expect 2 log flag carrier seen
+
+test carrier-hidden
+title Enemy runs your flag behind your base's walls
+setup goto start 4
+setup dummy run 27.9 17.0 -0.2 to 27.8 10.6 -0.2 loop
+setup flag ours carry
+check He runs your flag inside your base, out of sight
+check No waypoint for your flag: nobody sees its carrier
+expect 1 cmd flag ours carry ok
+expect 2 no log flag carrier seen
+
+test flag-dropped
+title Your flag dropped: its waypoint shows without sight
+setup goto start 4
+setup dummy run 0.3 10.5 -0.2 to 0.4 16.9 -0.2 loop
+setup flag ours stand
+check Your flag lies loose in your base, walls between
+check Its waypoint shows from here: a loose flag needs no sight
+expect 1 cmd flag ours stand ok

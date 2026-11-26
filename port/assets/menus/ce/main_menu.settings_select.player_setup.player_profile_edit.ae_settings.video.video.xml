@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- The port's settings screen, in the PC version's style (tools/port_settings.py) -->
+<menus>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/ae_settings_page_screen" width="640" height="480" flags="pass_unhandled_to_focused_child pause_game" bitmap="bitmaps/gradient">
+		<on event="b" back="true"/>
+		<on event="back" back="true"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/header_hud"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/options_menu"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/header_hud" controller="1" left="35" top="11" width="605" height="59" type="text" text="GRAPHICS AND LOADING" font="ui\large_ui" color="#FFFFFFFF" text_x="30" text_y="20">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/help" type="text" controller="1" left="68" top="350" width="482" height="60" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/help_strings" font="ui\large_ui" color="#FFFFFFFF">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/options_menu" type="column_list" width="640" height="480" flags="pass_unhandled_to_focused_child up_down_tabs_children" description="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/help">
+		<data input="port settings help"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_low_latency" x="54" y="73"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_far_clip_distance" x="54" y="103"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_target_framerate" x="54" y="133"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_particle_limit" x="54" y="163"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_dynamic_light_limit" x="54" y="193"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_loading_screen_campaign_seconds" x="54" y="223"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_loading_screen_multiplayer_seconds" x="54" y="253"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_bar" y="414"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_bar" type="column_list" width="640" height="28" flags="pass_unhandled_to_focused_child left_right_tabs_items">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_defaults" y="1"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_ok" x="380" y="1"/>
+		<child widget="common_button_cancel" x="510" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_low_latency" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/low_latency_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/low_latency_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/low_latency_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="0" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/low_latency_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|ON|BOOST" setting="display.low_latency" values="off|on|boost" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_far_clip_distance" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/far_clip_distance_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/far_clip_distance_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/far_clip_distance_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="1" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/far_clip_distance_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="1024|2048|4096|10000" setting="display.far_clip_distance" values="1024|2048|4096|10000" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_target_framerate" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/target_framerate_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/target_framerate_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/target_framerate_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="2" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/target_framerate_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="OFF|60|90|120|144|DISPLAY" setting="display.target_framerate" values="off|60|90|120|144|display" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_particle_limit" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/particle_limit_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/particle_limit_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/particle_limit_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="3" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/particle_limit_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="1024|2048|4096|8192" setting="display.particle_limit" values="1024|2048|4096|8192" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_dynamic_light_limit" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/dynamic_light_limit_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/dynamic_light_limit_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/dynamic_light_limit_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="4" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/dynamic_light_limit_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="4|8|16|NO LIMIT" setting="display.dynamic_light_limit" values="4|8|16|0" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_loading_screen_campaign_seconds" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_campaign_seconds_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_campaign_seconds_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_campaign_seconds_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="5" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_campaign_seconds_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO WAIT|2 S|5 S|10 S|15 S|20 S|30 S" setting="display.loading_screen_campaign_seconds" values="0|2|5|10|15|20|30" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/op_loading_screen_multiplayer_seconds" width="512" height="28" flags="pass_unhandled_to_focused_child" bitmap="bitmaps/option_bkds" color="#FF2896FF">
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_multiplayer_seconds_label"/>
+		<child widget="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_multiplayer_seconds_spinner" x="300" y="1"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_multiplayer_seconds_label" type="text" controller="1" width="300" height="22" string_list="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels" string_index="6" font="ui\large_ui" color="#FF2896FF" text_x="13" text_y="4">
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/loading_screen_multiplayer_seconds_spinner" type="spinner" left="3" top="2" width="187" height="20" flags="pass_unhandled_to_focused_child left_right_tabs_items" strings="NO WAIT|1 S|2 S|3 S|5 S" setting="display.loading_screen_multiplayer_seconds" values="0|1|2|3|5" font="ui\large_ui" color="#FF2896FF" align="center" text_y="1" header_bitmap="bitmaps/arrow_sm_left" footer_bitmap="bitmaps/arrow_sm_right" header_bounds="7 -6 19 0" footer_bounds="7 190 19 196">
+		<on event="created" run="port setting load"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_defaults" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="3" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings defaults"/>
+		<on event="start" run="port settings defaults"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<widget name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/button_ok" type="text" width="128" height="24" bitmap="bitmaps/text_button_background" string_list="strings/common_button_captions" string_index="1" font="ui\small_ui" color="#FFFFFFFF" align="center" text_y="2">
+		<on event="a" run="port settings save" back="true"/>
+		<on event="start" run="port settings save" back="true"/>
+		<on event="left_mouse" run="mouse emit accept event"/>
+	</widget>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/labels">
+		<string text="LOW LATENCY:"/>
+		<string text="DRAW DISTANCE:"/>
+		<string text="TARGET FRAMERATE:"/>
+		<string text="PARTICLE LIMIT:"/>
+		<string text="LIGHT LIMIT:"/>
+		<string text="CAMPAIGN LOADING:"/>
+		<string text="MATCH LOADING:"/>
+	</strings>
+	<strings name="main_menu/settings_select/player_setup/player_profile_edit/ae_settings/video/video/help_strings">
+		<string text=""/>
+		<string text="Each frame ends just before the screen's refresh:\nless delay. BOOST can lower fps on a weak GPU."/>
+		<string text="How far the game draws. Bigger maps can need more."/>
+		<string text="Lowers the 3D resolution when the game runs\nslower than this, and never limits frame rate.\nFRAME RATE LIMIT rises to match."/>
+		<string text="The most sparks, smoke and debris alive at once.\nFewer is easier on the PC."/>
+		<string text="The most muzzle flashes, plasma and explosions\nthat light the level at once."/>
+		<string text="The least time a campaign level's loading screen\nstays up."/>
+		<string text="The least time any other game's loading screen\nstays up. Network games wait for it."/>
+	</strings>
+</menus>

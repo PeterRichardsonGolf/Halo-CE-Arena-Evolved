@@ -1,0 +1,64 @@
+# MAP VOTE rc2: the AE TOURNAMENT lobby's vote (three maps of the playlist, 10 s, the bots vote by their weights, the most votes
+# wins, a tie is drawn). Each test opens on its scene: `social start <id> vote` opens the lobby straight at the vote; `left <s>` is
+# the time left of the 10 s, `votes a,b,c` the bots' votes for the three maps already in, `party <n>` the players on this PC.
+# (a dev command takes 10 words after its name: the two-player test gives no `left`, its vote runs the whole 10 s.)
+# Controls: pad d-pad up / down and A, keyboard Up / Down and Enter, mouse click on a map. START ends the vote now.
+# The last test is the player-hosted lobby: it has no map vote (the row says the vote runs on a dedicated server).
+list vote-rc2
+revision 2
+title MAP VOTE: AE TOURNAMENT AND HOSTED LOBBY
+
+test aet-vote-open
+title AE:T VOTE: three maps, you vote, bots voted
+setup social start team-objective vote seed 7 votes 2,2,1 left 7
+check Three maps with game type and loadout; first one lit
+check A on another map: YOUR VOTE moves, your square, your row
+check Squares and roster rows match each map's vote count
+menus
+
+test aet-vote-late
+title AE:T VOTE: 3 s left, every bot in
+setup social start team-objective vote seed 7 votes 3,2,2 left 3
+check Bar is blue (warning), head reads VOTE ENDS IN 3
+check No lobby clock and no search range strip
+check Votes in 7 / 8 (one seat is you) and counts agree
+menus
+
+test aet-vote-winner
+title AE:T VOTE: the winner, then STARTING IN 5
+setup social start team-objective vote seed 7 votes 4,2,1 left 0
+check NEXT MAP lit with its badge, the other two dimmed
+check Head NEXT MAP: <map>; sub gives the votes
+check STARTING IN 5 follows with that map's card
+menus
+
+test aet-vote-tie
+title AE:T VOTE: a tie is drawn
+setup social start team-objective vote seed 7 votes 3,3,1 left 0
+check Head says a tie, drawn at random; one of the two wins
+check The winner's badge reads NEXT MAP
+menus
+
+test aet-vote-split
+title AE:T VOTE: two players on this PC
+setup social start team-objective vote seed 7 party 2 votes 1,1,0
+check Red frame outside, blue inside on the first map; no bar
+check Each pad's A votes: that player's emblem at the top right
+check Help line: each player votes with their own controller
+menus
+
+test aet-vote-43
+title AE:T VOTE: narrow card at 4:3
+set display.resolution 1440x1080
+setup social start team-objective vote seed 7 votes 2,1,1 left 7
+check Smaller picture and caption; nothing cut, nothing overlaps
+check Roster rows keep the map name and the tag whole
+menus
+
+test hosted-lobby-vote
+title HOSTED LOBBY: no map vote (a server runs it)
+setup playlists demo
+setup menu playlist edit 4V4 ARENA
+check MAP VOTE row: A says it runs on a dedicated server
+check Help line: a hosted lobby has no map vote yet
+menus

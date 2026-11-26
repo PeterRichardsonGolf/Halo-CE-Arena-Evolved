@@ -1,0 +1,191 @@
+# Top-level tools/test_*.py that .github/workflows/build.yml does not run.
+# One 'file reason' per line. Reasons: needs a built binary, needs game data, needs a built binary and game data, manual, unknown.
+# Classified from what each file reads (a build dir, a headless run, game data paths); 'unknown' = no such signal, not yet checked.
+# tools/test_ci_coverage.py keeps this list exact: a file that gains a workflow runner must leave it.
+
+test_ae_action_sack.py unknown
+test_ae_banned.py needs a built binary
+test_ae_bot_flow.py unknown
+test_ae_bot_scorecard.py unknown
+test_ae_bots.py needs a built binary and game data
+test_ae_builtin_gametypes.py needs a built binary
+test_ae_cache_reader.py needs a built binary
+test_ae_ce_archive.py needs game data
+test_ae_ce_maps.py needs a built binary and game data
+test_ae_change_gametype.py needs a built binary
+test_ae_change_map.py needs a built binary and game data
+test_ae_community.py needs a built binary
+test_ae_create_game.py needs a built binary and game data
+test_ae_crosshair_editor.py needs a built binary
+test_ae_crosshair_screen.py needs a built binary
+test_ae_custom_layout.py needs a built binary
+test_ae_dev_cmd.py needs a built binary and game data
+test_ae_ds5.py needs game data
+test_ae_errors.py needs a built binary and game data
+test_ae_gallery.py needs a built binary
+test_ae_game_options.py needs a built binary
+test_ae_gametype_groups.py unknown
+test_ae_grenades.py unknown
+test_ae_host_server.py needs a built binary
+test_ae_key_bindings.py needs a built binary
+test_ae_lan_lobby.py needs a built binary
+test_ae_layouts_data.py unknown
+test_ae_lobby.py needs a built binary
+test_ae_logo.py unknown
+test_ae_main_menu.py needs a built binary
+test_ae_map_folders.py needs a built binary and game data
+test_ae_map_share_all.py needs a built binary and game data
+test_ae_master_listing.py needs a built binary and game data
+test_ae_match_metrics.py unknown
+test_ae_matchmaking.py needs a built binary
+test_ae_mcc.py needs a built binary and game data
+test_ae_menus.py needs a built binary
+test_ae_menus_swap.py needs a built binary and game data
+test_ae_motd.py needs a built binary
+test_ae_obj_report.py unknown
+test_ae_party.py needs a built binary
+test_ae_party_online.py needs a built binary
+test_ae_pause.py needs a built binary
+test_ae_player_settings_registry.py unknown
+test_ae_postgame.py needs a built binary
+test_ae_postgame_game.py needs a built binary
+test_ae_replay_read.py unknown
+test_ae_server_lobby.py needs a built binary
+test_ae_server_pause.py needs a built binary
+test_ae_settings.py needs a built binary
+test_ae_silent.py needs a built binary
+test_ae_smoke.py needs a built binary and game data
+test_ae_social_start_run_only.py unknown
+test_ae_steam_pad.py unknown
+test_ae_stock_map_pictures.py unknown
+test_ae_test_list_index.py unknown
+test_ae_vote.py needs a built binary
+test_bot_nav_assets.py unknown
+test_bots.py needs a built binary and game data
+test_cache_compat.py unknown
+test_cache_file_formats.py needs a built binary and game data
+test_campaign_score_values.py unknown
+test_checkpoint_timing.py unknown
+test_cinematic_video_borders.py unknown
+test_compare_stock_maps.py needs game data
+test_config_upgrade.py unknown
+test_death_timing.py unknown
+test_game_zlib.py unknown
+test_halo_nav.py unknown
+test_halo_nav_render.py unknown
+test_jms_cut.py unknown
+test_jms_rig.py unknown
+test_join_request_size.py unknown
+test_log_address.py unknown
+test_map_fuzz.py needs game data
+test_map_library_game.py needs a built binary and game data
+test_map_names.py needs game data
+test_mcc_avoidance.py unknown
+test_mcc_bitmap_flags.py unknown
+test_mcc_cache_format.py needs game data
+test_mcc_cameras.py unknown
+test_mcc_campaign.py unknown
+test_mcc_change_colors.py unknown
+test_mcc_chicago.py unknown
+test_mcc_damage_tags.py unknown
+test_mcc_effects_gain.py unknown
+test_mcc_environment_shader.py unknown
+test_mcc_geometry.py needs game data
+test_mcc_grenades.py unknown
+test_mcc_hud.py unknown
+test_mcc_hud_layout.py unknown
+test_mcc_hud_meter_render.py unknown
+test_mcc_hud_scale.py unknown
+test_mcc_identity.py unknown
+test_mcc_identity_candidates.py unknown
+test_mcc_keyboard_glyphs.py unknown
+test_mcc_lifecycle.py unknown
+test_mcc_loading.py unknown
+test_mcc_local_package.py needs game data
+test_mcc_maps.py needs game data
+test_mcc_media.py unknown
+test_mcc_memory.py unknown
+test_mcc_menu.py unknown
+test_mcc_metadata_importer.py needs a built binary
+test_mcc_movement.py unknown
+test_mcc_native_smoke.py unknown
+test_mcc_network.py unknown
+test_mcc_object_names.py unknown
+test_mcc_parameters.py unknown
+test_mcc_pause.py unknown
+test_mcc_pause_runtime.py unknown
+test_mcc_precache.py unknown
+test_mcc_projectiles.py unknown
+test_mcc_recordings.py unknown
+test_mcc_resources.py needs game data
+test_mcc_saved_games.py unknown
+test_mcc_scripts.py unknown
+test_mcc_seats.py unknown
+test_mcc_shader_channels.py unknown
+test_mcc_share_menu.py unknown
+test_mcc_sprites.py unknown
+test_mcc_syntax.py unknown
+test_mcc_tag_validation.py unknown
+test_mcc_texture_bridge.py unknown
+test_mcc_ui.py unknown
+test_mcc_ui_network.py unknown
+test_mcc_ui_teams.py unknown
+test_mcc_validation.py needs game data
+test_mcc_vorbis.py unknown
+test_mcc_weapon_camera.py unknown
+test_memory_watch.py unknown
+test_menu_pause_tags.py unknown
+test_model_obscurer.py unknown
+test_model_parts.py unknown
+test_mods.py needs a built binary and game data
+test_network_messages.py unknown
+test_perf_scorecard.py unknown
+test_player_key.py unknown
+test_powerup_bounds.py unknown
+test_release_packs.py unknown
+test_server_accounts.py unknown
+test_server_ingame.py needs a built binary and game data
+test_server_tls.py unknown
+test_shader_keys.py unknown
+test_text_filter_terms.py needs game data
+test_update_install.py needs a built binary and game data
+test_viewmodel_fit.py unknown
+test_weapon_cache_base_pixels.py needs game data
+test_weapon_cache_format.py unknown
+test_weapon_cache_link.py unknown
+test_weapon_cache_lock.py unknown
+test_weapon_cache_merge.py unknown
+test_weapon_cache_registry.py unknown
+test_weapon_pack_add.py needs a built binary
+test_weapon_pack_apply_tune.py unknown
+test_weapon_pack_ar_modern.py unknown
+test_weapon_pack_auto_shotgun.py unknown
+test_weapon_pack_brute_shot.py unknown
+test_weapon_pack_checks.py needs a built binary and game data
+test_weapon_pack_concussion_rifle.py unknown
+test_weapon_pack_digsite_looks.py needs game data
+test_weapon_pack_dmr.py needs game data
+test_weapon_pack_done.py unknown
+test_weapon_pack_energy_sword.py unknown
+test_weapon_pack_focus_beam.py unknown
+test_weapon_pack_gate.py unknown
+test_weapon_pack_gravity_hammer.py needs game data
+test_weapon_pack_grenade_launcher.py unknown
+test_weapon_pack_load.py unknown
+test_weapon_pack_look.py needs a built binary
+test_weapon_pack_magnum_scoped.py unknown
+test_weapon_pack_mcc6_steps.py unknown
+test_weapon_pack_needler.py needs game data
+test_weapon_pack_pdw.py unknown
+test_weapon_pack_ravager.py unknown
+test_weapon_pack_recipe_from_map.py needs game data
+test_weapon_pack_revolver.py unknown
+test_weapon_pack_rifle.py needs a built binary
+test_weapon_pack_sidearm.py unknown
+test_weapon_pack_smg_tactical.py unknown
+test_weapon_pack_sniper_bolt.py needs game data
+test_weapon_pack_spiker.py unknown
+test_weapon_pack_starter_pistol.py unknown
+test_weapon_pack_storage.py unknown
+test_weaponsets.py unknown
+test_wsl_sync_tree.py unknown

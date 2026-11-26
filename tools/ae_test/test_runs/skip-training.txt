@@ -1,0 +1,26 @@
+# SKIP TRAINING (game.campaign_skip_training, off by default; DEV MODE `skip_training status|on|off`): the first campaign level
+# (Pillar of Autumn) opens with a cryo wake-up, a look calibration with prompts and the walk to the bridge when it is played alone
+# on normal. With the setting on, alone on normal the level takes the short start its own script uses in co-op and on heroic and up:
+# the cryo exit, then play, with no calibration prompts and no first-contact scene. The setting off plays the training as before
+# (it holds the player's controls off for a minute, so no staged test waits for it).
+list skip-training
+revision 3
+title SKIP TRAINING
+
+group on
+map a10
+gametype coop
+set game.campaign_skip_training true
+
+test skip-on
+title Setting on: the training is skipped
+check You stand free after the cryo exit, with control
+check No LOOK AT THE LIGHTS prompt, no calibration choice
+check Walk, look and fire: all work at once
+expect 1 log skip training: mission_a10 is told heroic
+
+test skip-squad
+title With the AI squad: both stand with you
+setup companion 2
+check After the cryo exit two Spartans stand beside you
+check They follow when you walk on
