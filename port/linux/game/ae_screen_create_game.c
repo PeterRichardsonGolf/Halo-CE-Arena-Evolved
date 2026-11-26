@@ -59,6 +59,12 @@ refused); START does nothing. A joiner's B is refused (only the host cancels). B
 (ae_countdown_beep: a tick a number and GO at 0, or one soft tick a number when the gametype has PRE-GAME COUNTDOWN,
 whose 3-2-1 beeps in the game). Test launches keep starting at once.
 
+(rc8) FIREFIGHT: the same lobby on a Firefight variant (ae_screen_create_game_firefight_open, the main menu's FIREFIGHT): the game's rows are
+MAP, VARIANT, NETWORK and RULES (GAME OPTIONS on the variant's five pages), then the QUICK OPTIONS (SET LIMIT, STARTING LIVES, AI DIFFICULTY,
+SCALE WITH PLAYERS, STARTING SKULLS, SCORING) and the MAP's (MAP CONTENT, OBJECTIVES, VEHICLES: each shown where the map has it); no playlist,
+no MORE OPTIONS, no bots rows. The variant is a copy of its own (a Firefight variant is never a multiplayer gametype), the multiplayer copy
+put back as the lobby is left; START GAME waits on Firefight's data (the campaign maps' tags) and says why.
+
 Its log: "ae create game: open", "hosting (<network>, '<map>', '<gametype>')", "hosted, player 1 in", "open failed:
 <why>", lobby: open", "lobby: quick <label> <value>", "lobby: more open", "lobby: more <label> <value>", "lobby: bots <count>", "lobby: bot skill <level>",
 "lobby: players <people>, bots <bots>" (as they change), "lobby: setup open", "lobby: public on|off", "lobby: max
@@ -109,6 +115,13 @@ countdown N", "ae lobby: countdown held at 0 (machines loading the map)", "ae lo
 #include "ae_screen_change_map.h"
 #include "ae_moderation.h"
 #include "ae_screen_coop_lobby.h"
+#include "ae_firefight_doors.h"
+#include "ae_firefight_doors_rules.h"
+#include "ae_firefight_menus_rules.h"
+#include "ae_firefight_variants.h"
+#include "ae_glue_firefight.h"
+#include "ae_screen_firefight_content.h"
+#include "ae_screen_skulls.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_server_lobby.h"
 #include "ae_server_lobby.h"
@@ -166,7 +179,8 @@ serves them all: owner 2026-10-22. OFFLINE (owner 2026-10-26, issue #1): upstrea
 that takes no other machine: nothing listed, nobody joins, the network bots as everywhere, and the pause stops it) */
 enum { NETWORK_OFFLINE, NETWORK_LAN, NETWORK_ONLINE, NETWORKS };
 enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_OPTION = AE_FLOW_ROW_OPTION, ROW_MAP = AE_FLOW_ROW_OWN, ROW_GAMETYPE,
-	ROW_OPTIONS, ROW_START, ROW_INFO, ROW_NETWORK, ROW_PUBLIC, ROW_MAXIMUM, ROW_INVITE, ROW_MORE, ROW_GAME_NAME, ROW_RULES, ROW_PLAYLIST, ROW_UP_NEXT };
+	ROW_OPTIONS, ROW_START, ROW_INFO, ROW_NETWORK, ROW_PUBLIC, ROW_MAXIMUM, ROW_INVITE, ROW_MORE, ROW_GAME_NAME, ROW_RULES, ROW_PLAYLIST, ROW_UP_NEXT,
+	ROW_FF_VARIANT, ROW_FF_SCALE, ROW_FF_SKULLS, ROW_FF_SCORING, ROW_FF_CONTENT, ROW_FF_OBJECTIVES, ROW_FF_VEHICLES };
 /* the session: none yet, this PC's client joining it, live, its hosting failed, to be hosted again next frame (a
 NETWORK change: the old one closed this frame) */
 enum { START_IDLE, START_JOINING, START_DONE, START_FAILED, START_REOPEN };
@@ -213,7 +227,7 @@ internet don't reach the game. Said in place of HOST ONLINE's rows' help (looked
 #define MORE_HELP "The start weapons and the rules hosts change most between games. {A} opens them."
 /* (BOTS, BOT SKILL and BOT SETUP's four rows: ae_bot_settings.h, shared with the pause menu's BOTS) */
 static const short maximum_players[] = { 2, 4, 8, 12, 16, 24, 32, 48, 64, 96, 128 };
-enum { MAXIMUM_PLAYERS_COUNT = sizeof(maximum_players) / sizeof(maximum_players[0]), MAXIMUM_PLAYERS_DEFAULT = 10 };
+enum { MAXIMUM_PLAYERS_COUNT = sizeof(maximum_players) / sizeof(maximum_players[0]), MAXIMUM_PLAYERS_DEFAULT = 10, FIREFIGHT_PLAYERS_COUNT = 2 };
 /* the party's and the popover's spacing (u: the mockups' 1080p numbers) */
 #define PARTY_SECTION_MORE_U 4.0f     /* BOTS' section: this more above it than PLAYERS' */
 #define ALL_STATUS_U 20.0f            /* LOBBY: the status line's middle under the content's top */
@@ -259,7 +273,17 @@ static struct
 	char next_map_name[64];
 	/* (0.7.4) GAME NAME as typed, "" = player 1's profile name (kept over the lobby's reopenings) */
 	char game_name[GAME_NAME_LIMIT + 1];
+	/* (rc8) the FIREFIGHT lobby: this is its mode, the variant's place in ae_firefight_variants.h's list, and the map's content byte
+	last loaded for (its file name) */
+	int firefight;
+	short ff_entry;
+	char ff_loaded_for[96];
+	int ff_dev_map;              /* (DEV MODE's staged scene) the map's content is ae_glue_firefight.h's made-up map's */
 } create;
+/* the variant the FIREFIGHT lobby opened on last in this run (the list's place) */
+static short ff_last_entry;
+/* (DEV MODE's staged scene, ae_screen_create_game_firefight_open_staged) what the next FIREFIGHT lobby opens with */
+static struct { int lan, dev_map; } ff_stage;
 
 /* a test launch's map (ae_screen_create_game_test_open), its file name; empty: none */
 static char test_map[64];
@@ -435,6 +459,10 @@ static int live(void)
 	return !lobby.joiner && create.start_step == START_DONE && ae_lobby_owns_session();
 }
 
+/* (rc8, the FIREFIGHT lobby's: a map's content loaded for the lobby's map, the copy applied when live) */
+static void ff_content_load_for_map(void);
+static void ff_apply_now(void);
+
 /* the engine's score row */
 static short score_option(int engine)
 {
@@ -523,6 +551,11 @@ static void map_picked(short list_index, char const *name)
 	/* (live: the server's map now; else chosen as the lobby opens) */
 	if (live() && ui_widget_port_multiplayer_map_choose(list_index))
 		platform_log("ae create game: lobby: map '%s'", name);
+	if (create.firefight)
+	{
+		ff_content_load_for_map();
+		ff_apply_now();
+	}
 }
 
 static void gametype_picked(short index, void *context)
@@ -713,7 +746,8 @@ static void session_open(void)
 
 	ae_setup_edit_name(name, sizeof(name));
 	platform_log("ae create game: hosting (%s, '%s', '%s')", network_names[create.network], create.map_name, name);
-	last_network = create.network;
+	if (!create.firefight)
+		last_network = create.network;
 	lobby.invite[0] = 0;
 	lobby.invite_shown[0] = 0;
 	lobby.have_roster = 0;
@@ -802,6 +836,8 @@ static void session_update(void)
 		return;
 	}
 	choosing = 0;
+	if (create.firefight)
+		ff_content_load_for_map();
 	ae_setup_edit_apply();
 	server_settings(&roster);
 	create.start_step = START_DONE;
@@ -838,6 +874,16 @@ static void lobby_start(int pressed)
 	if (!live())
 	{
 		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	/* (Firefight's data is built from the campaign maps: a game does not start before it is there) */
+	if (create.firefight && !ae_firefight_doors_data_startable(ae_firefight_doors_data()))
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		snprintf(refusal_text, sizeof(refusal_text), "%s", ae_firefight_doors_data_help(ae_firefight_doors_data()));
+		refusal_until = system_milliseconds() + REFUSAL_MS;
+		platform_log("ae create game: lobby: start refused: Firefight's data is %s",
+			ae_firefight_doors_data_reason(ae_firefight_doors_data()));
 		return;
 	}
 	/* (rc2: START GAME while the vote runs: the vote is dropped, the playlist's own next game plays) */
@@ -1108,6 +1154,226 @@ static const char *online_help(const char *help, char *text, int size)
 	return text;
 }
 static void rules_summary(char *text, int size);
+
+/* ---------- FIREFIGHT (rc8): the lobby's rows on a Firefight variant */
+
+static void dropdown_open(short row, const char *const *values, short count, short current,
+	void (*picked)(short, void *), void *context);
+
+/* the lobby's map as the game's list names it (the engine's content functions ask by it); "" when there is none */
+static const char *ff_map_file(void)
+{
+	char const *const *names = NULL;
+
+	if (create.ff_dev_map)
+		return AE_FFG_DEV_MAP;
+	short count = ui_widget_port_multiplayer_maps(&names, NULL);
+
+	return create.map_index >= 0 && create.map_index < count && names ? names[create.map_index] : "";
+}
+
+/* the copy's MAP CONTENT byte for the lobby's map: the one kept for it (once for each map the lobby is on) */
+static void ff_content_load(void)
+{
+	const char *file = ff_map_file();
+	unsigned char content = 0;
+
+	if (!create.firefight || !file[0] || !strcmp(create.ff_loaded_for, file))
+		return;
+	snprintf(create.ff_loaded_for, sizeof(create.ff_loaded_for), "%s", file);
+	if (!ae_ffg_content_saved(file, &content))
+		content = 0;
+	ae_setup_edit_firefight_content_set(ae_ffg_map_kinds(file) ? content : 0);
+	platform_log("ae create game: firefight: map content for '%s' is %02x", file, content);
+}
+
+/* the copy's rules applied to the server while the lobby is live (a Firefight copy is applied as any is) */
+static void ff_apply(void)
+{
+	if (live())
+		ae_setup_edit_apply();
+}
+
+static void ff_apply_now(void)
+{
+	ff_apply();
+}
+
+static void ff_content_load_for_map(void)
+{
+	create.ff_loaded_for[0] = 0;
+	ff_content_load();
+}
+
+/* VARIANT: the copy begun again from entry n of the list (a built-in's or a saved one's), the map's content kept for the map */
+static void ff_variant_set(short entry)
+{
+	char names[AE_FFV_LIST][24];
+	int count = ae_ffv_entries(names, NULL, AE_FFV_LIST);
+
+	if (count <= 0)
+		return;
+	entry = (short)((entry % count + count) % count);
+	if (!ae_setup_edit_begin_firefight(entry))
+		return;
+	create.ff_entry = entry;
+	ff_last_entry = entry;
+	create.ff_loaded_for[0] = 0;
+	ff_content_load();
+	platform_log("ae create game: firefight: variant '%s'", names[entry]);
+	ff_apply();
+}
+
+static void ff_variant_step(short direction)
+{
+	/* (a held repeat is dropped on a live lobby: each step makes a new copy and applies it) */
+	if (ae_ui_event_repeat() && live())
+		return;
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	ff_variant_set((short)(create.ff_entry + direction));
+}
+
+static void ff_variant_picked(short index, void *context)
+{
+	(void)context;
+	ff_variant_set(index);
+}
+
+static void ff_variant_dropdown(short row)
+{
+	static char names[AE_FFV_LIST][24];
+	static const char *texts[AE_FFV_LIST];
+	short count = (short)ae_ffv_entries(names, NULL, AE_FFV_LIST), index;
+
+	for (index = 0; index < count; index++)
+		texts[index] = names[index];
+	dropdown_open(row, texts, count, create.ff_entry, ff_variant_picked, NULL);
+}
+
+/* SCALE WITH PLAYERS stepped: the percent the game keeps for the next games */
+static void ff_scale_step(short direction)
+{
+	int index = ae_ffm_scale_index(ae_ffg_scale_get());
+
+	index = (index + direction + AE_FFM_SCALES) % AE_FFM_SCALES;
+	ae_ffg_scale_set(ae_ffm_scale_percent(index));
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	platform_log("ae create game: firefight: scale with players %s", ae_ffm_scale_text(index));
+}
+
+static void ff_scoring_step(void)
+{
+	int on = config_boolean("game.campaign_score");
+
+	if (ae_ffm_key_allowed("game.campaign_score") && config_write("game.campaign_score", on ? "false" : "true"))
+	{
+		ae_sound_request(AE_SOUND_CURSOR, 0);
+		platform_log("ae create game: firefight: scoring %s", on ? "off" : "on");
+	}
+}
+
+static void ff_vehicles_step(short direction)
+{
+	int mode = ae_setup_edit_firefight_vehicles();
+
+	mode = (mode + direction + AE_FFM_VEHICLE_MODES) % AE_FFM_VEHICLE_MODES;
+	ae_setup_edit_firefight_vehicles_set((unsigned char)mode);
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	platform_log("ae create game: firefight: vehicles %s", ae_ffm_vehicles_name(mode));
+	ff_apply();
+}
+
+/* the data START GAME waits on: AE_FFD_DATA_* (the tag pack's, read once a second) */
+static int ff_data(void)
+{
+	return ae_firefight_doors_data();
+}
+
+static short ff_rows(struct ae_flow_screen *flow)
+{
+	static const short quick[] = { AE_SO_FF_SET_LIMIT, AE_SO_FF_START_LIVES, AE_SO_FF_DIFFICULTY };
+	struct ae_setup_access access = access_now();
+	char names[AE_FFV_LIST][24];
+	short count = 0, index, changes = ae_setup_changes(&access);
+	const char *map = ff_map_file();
+	unsigned char has = ae_ffg_map_kinds(map), content = ae_setup_edit_firefight_content();
+	int entries = ae_ffv_entries(names, NULL, AE_FFV_LIST), health = ae_ffg_health_detect(map) != 0;
+
+	ff_content_load();
+	flow->rows[count] = (struct ae_flow_row){ ROW_MAP, -1, "MAP", create.map_name[0] ? create.map_name : "CHOOSE",
+		"The maps that can hold a Firefight, in folders. Left and right step through them." };
+	count++;
+	if (create.ff_entry >= entries)
+		create.ff_entry = 0;
+	flow->rows[count] = (struct ae_flow_row){ ROW_FF_VARIANT, -1, "VARIANT", entries > 0 ? names[create.ff_entry] : "FIREFIGHT",
+		"Firefight's variants: the ones it comes with and the ones you saved. Left and right step through them, A opens the list." };
+	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", flow->rows[count].value);
+	flow->rows[count].value = flow->value_texts[count];
+	count++;
+	flow->rows[count++] = (struct ae_flow_row){ ROW_NETWORK, -1, "NETWORK", network_names[create.network],
+		create.network == NETWORK_ONLINE ? online_help(NETWORK_HELP, lobby.vpn_help_network, (int)sizeof(lobby.vpn_help_network)) :
+		NETWORK_HELP };
+	if (changes)
+		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%d CHANGED", changes);
+	else
+		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "AS SAVED");
+	flow->rows[count] = (struct ae_flow_row){ ROW_OPTIONS, -1, "RULES", flow->value_texts[count],
+		"The variant's rules, in five groups. Changes are for these games; SAVE AS NEW keeps them as a variant of your own." };
+	count++;
+	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "QUICK OPTIONS", NULL, NULL };
+	for (index = 0; index < (short)(sizeof(quick) / sizeof(quick[0])); index++)
+	{
+		if (ae_setup_visible(&access, quick[index]))
+			flow->rows[count++] = option_row(quick[index]);
+	}
+	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", ae_ffm_scale_text(ae_ffm_scale_index(ae_ffg_scale_get())));
+	flow->rows[count] = (struct ae_flow_row){ ROW_FF_SCALE, -1, "SCALE WITH PLAYERS", flow->value_texts[count], ae_ffm_scale_help };
+	count++;
+	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", ae_setup_value_text(AE_SO_FF_START_SKULLS, 0));
+	flow->rows[count] = (struct ae_flow_row){ ROW_FF_SKULLS, -1, "STARTING SKULLS", flow->value_texts[count],
+		"Add skulls for this game. Those the variant starts with stay on. {A} opens them." };
+	flow->rows[count].subscreen = 1;
+	count++;
+	snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", config_boolean("game.campaign_score") ? "ON" : "OFF");
+	flow->rows[count] = (struct ae_flow_row){ ROW_FF_SCORING, -1, "SCORING", flow->value_texts[count],
+		"Turn Campaign and Firefight scoring on or off for these games." };
+	count++;
+	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "MAP", NULL, NULL };
+	if (has || health)
+	{
+		ae_screen_firefight_content_value(map, flow->value_texts[count], (int)sizeof(flow->value_texts[count]));
+		flow->rows[count] = (struct ae_flow_row){ ROW_FF_CONTENT, -1, "MAP CONTENT", flow->value_texts[count],
+			"Play the map's own enemies, weapons and vehicles in this game, beside the game's or alone. {A} opens them." };
+		flow->rows[count].subscreen = 1;
+		count++;
+	}
+	ae_screen_firefight_objectives_value(flow->value_texts[count], (int)sizeof(flow->value_texts[count]));
+	flow->rows[count] = (struct ae_flow_row){ ROW_FF_OBJECTIVES, -1, "OBJECTIVES", flow->value_texts[count],
+		"Optional challenges beside the waves: a wave's, and a round's set pieces. {A} opens them." };
+	flow->rows[count].subscreen = 1;
+	count++;
+	if (ae_ffg_vehicles_shown(map, content))
+	{
+		snprintf(flow->value_texts[count], sizeof(flow->value_texts[count]), "%s", ae_ffm_vehicles_name(ae_setup_edit_firefight_vehicles()));
+		flow->rows[count] = (struct ae_flow_row){ ROW_FF_VEHICLES, -1, "VEHICLES", flow->value_texts[count], ae_ffm_vehicles_help };
+		count++;
+	}
+	return count;
+}
+
+static void ff_content_open(void)
+{
+	char caption[64];
+	const char *map = ff_map_file();
+
+	snprintf(caption, sizeof(caption), "%s", create.map_name);
+	if (ae_screen_firefight_content_open(map, caption))
+	{
+		lobby.options_open = 1;
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+	}
+}
+
 static void lobby_rows(void)
 {
 	static const short quick[] = { AE_SO_TIME_LIMIT, -1, AE_SO_SHIELDS, AE_SO_GRENADES_ON_MAP, AE_SO_SENSOR_RANGE,
@@ -1144,6 +1410,10 @@ static void lobby_rows(void)
 		flow->focus = (short)(count - 1);
 		return;
 	}
+	if (create.firefight)
+		count = ff_rows(flow);
+	else
+	{
 	/* (0.7.6, owner: mockups-076-ui2 case 7 A) PLAYLIST... first: A edits it in MY PARTY's place, as HOST RULES... does;
 	its value is the playlist's name when it plays, else OFF */
 	{
@@ -1176,11 +1446,13 @@ static void lobby_rows(void)
 	flow->rows[count].subscreen = 1;
 	flow->rows[count].marquee_ms = ae_motion_now() - lobby.more_since;
 	count++;
+	}
 	/* (0.4.2) the lobby's own, after the game's rules: who can join, and how many */
 	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "LOBBY", NULL, NULL };
-	flow->rows[count++] = (struct ae_flow_row){ ROW_NETWORK, -1, "NETWORK", network_names[create.network],
-		create.network == NETWORK_ONLINE ? online_help(NETWORK_HELP, lobby.vpn_help_network,
-		(int)sizeof(lobby.vpn_help_network)) : NETWORK_HELP };
+	if (!create.firefight)
+		flow->rows[count++] = (struct ae_flow_row){ ROW_NETWORK, -1, "NETWORK", network_names[create.network],
+			create.network == NETWORK_ONLINE ? online_help(NETWORK_HELP, lobby.vpn_help_network,
+			(int)sizeof(lobby.vpn_help_network)) : NETWORK_HELP };
 	/* (0.7.4) GAME NAME: listed games only, the name the lists show; its value the typed name, else player 1's */
 	if (create.network != NETWORK_OFFLINE)
 	{
@@ -1239,6 +1511,12 @@ static void lobby_rows(void)
 		else
 			snprintf(lobby.countdown_help, sizeof(lobby.countdown_help), "The game is starting. {B} cancels it.");
 		start.help = lobby.countdown_help;
+	}
+	else if (create.firefight && live() && !ae_firefight_doors_data_startable(ff_data()))
+	{
+		/* (Firefight's data is not there: the reason, in words, and what it is) */
+		start.reason = ae_firefight_doors_data_reason(ff_data());
+		start.help = ae_firefight_doors_data_help(ff_data());
 	}
 	else if (live())
 		start.help = "Starts the game for everyone in the lobby. After it, everyone comes back here.";
@@ -1307,6 +1585,13 @@ static void leave_now(void)
 	if (joiner)
 		return;
 	platform_log("ae create game: closed");
+	/* (the FIREFIGHT lobby left: no Firefight game may start from here on, and the multiplayer copy is the open one again) */
+	if (create.firefight)
+	{
+		create.firefight = 0;
+		ae_firefight_doors_lobby_set(0);
+		ae_setup_edit_firefight_leave();
+	}
 	/* (the test screen's: the game's menus back; AE's MULTIPLAYER is under one opened from it, and AE's main menu
 	comes back by itself on an empty stack after a game) */
 	if (!create.from_menu)
@@ -1500,7 +1785,7 @@ static void privacy_step(short direction)
 
 static void maximum_set(short next)
 {
-	if (next < 0 || next >= MAXIMUM_PLAYERS_COUNT || next == create.players_index)
+	if (next < 0 || next >= (create.firefight ? FIREFIGHT_PLAYERS_COUNT : MAXIMUM_PLAYERS_COUNT) || next == create.players_index)
 		return;
 	create.players_index = next;
 	platform_log("ae create game: lobby: max players %d", maximum_players[next]);
@@ -1516,7 +1801,7 @@ static void maximum_picked(short index, void *context)
 
 static void maximum_step(short direction)
 {
-	short next = ae_value_step(MAXIMUM_PLAYERS_COUNT, create.players_index, direction);
+	short next = ae_value_step(create.firefight ? FIREFIGHT_PLAYERS_COUNT : MAXIMUM_PLAYERS_COUNT, create.players_index, direction);
 
 	ae_sound_request(next == create.players_index ? AE_SOUND_FAILURE : AE_SOUND_CURSOR, 0);
 	maximum_set(next);
@@ -1583,14 +1868,14 @@ static void network_dropdown(short row)
 
 static void maximum_dropdown(short row)
 {
-	short index;
+	short index, shown = create.firefight ? FIREFIGHT_PLAYERS_COUNT : MAXIMUM_PLAYERS_COUNT;
 
-	for (index = 0; index < MAXIMUM_PLAYERS_COUNT; index++)
+	for (index = 0; index < shown; index++)
 	{
 		snprintf(maximum_texts[index], sizeof(maximum_texts[index]), "%d", maximum_players[index]);
 		maximum_values[index] = maximum_texts[index];
 	}
-	dropdown_open(row, maximum_values, MAXIMUM_PLAYERS_COUNT, create.players_index, maximum_picked, NULL);
+	dropdown_open(row, maximum_values, shown, create.players_index, maximum_picked, NULL);
 }
 
 /* the lobby's own rows are the host's player 1's (a split-screen guest's pad sees them) */
@@ -1611,6 +1896,9 @@ static char const *host_row_what(short kind)
 	case ROW_MAP: return "the map";
 	case ROW_GAMETYPE: return "the gametype";
 	case ROW_OPTIONS: case ROW_OPTION: case ROW_MORE: return "the game's rules";
+	case ROW_FF_VARIANT: case ROW_FF_SCALE: case ROW_FF_SKULLS: case ROW_FF_SCORING: case ROW_FF_CONTENT: case ROW_FF_OBJECTIVES:
+	case ROW_FF_VEHICLES:
+		return "the game's rules";
 	case ROW_RULES: return "the host rules";
 	}
 	return NULL;
@@ -1669,6 +1957,32 @@ static void left_accept(short row)
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		}
 		break;
+	case ROW_FF_VARIANT:
+		ff_variant_dropdown(row);
+		break;
+	case ROW_FF_SCALE:
+		ff_scale_step(1);
+		break;
+	case ROW_FF_SKULLS:
+		if (ae_screen_skulls_open_firefight())
+		{
+			lobby.options_open = 1;
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		}
+		break;
+	case ROW_FF_SCORING:
+		ff_scoring_step();
+		break;
+	case ROW_FF_CONTENT:
+		ff_content_open();
+		break;
+	case ROW_FF_OBJECTIVES:
+		if (ae_screen_firefight_objectives_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
+	case ROW_FF_VEHICLES:
+		ff_vehicles_step(1);
+		break;
 	case ROW_START:
 		if (!guest_start_blocked())
 			lobby_start(1);
@@ -1713,6 +2027,11 @@ static void map_step(short direction)
 	ae_sound_request(AE_SOUND_CURSOR, 0);
 	if (live() && ui_widget_port_multiplayer_map_choose(next))
 		platform_log("ae create game: lobby: map '%s'", create.map_name);
+	if (create.firefight)
+	{
+		ff_content_load_for_map();
+		ff_apply_now();
+	}
 }
 
 static void gametype_step(short direction)
@@ -1751,6 +2070,14 @@ static void left_step(short row, short direction)
 		gametype_step(direction);
 	else if (r->kind == ROW_OPTION)
 		option_step(r->option, direction);
+	else if (r->kind == ROW_FF_VARIANT)
+		ff_variant_step(direction);
+	else if (r->kind == ROW_FF_SCALE)
+		ff_scale_step(direction);
+	else if (r->kind == ROW_FF_SCORING)
+		ff_scoring_step();
+	else if (r->kind == ROW_FF_VEHICLES)
+		ff_vehicles_step(direction);
 }
 
 /* ---------- the panel */
@@ -2157,7 +2484,8 @@ static void party_build(void)
 
 	memset(&rules, 0, sizeof(rules));
 	rules.view = lobby.party_view;
-	rules.host = !lobby.joiner;
+	/* (Firefight's allies are its AI REINFORCEMENTS rule: no BOTS rows) */
+	rules.host = !lobby.joiner && !create.firefight;
 	rules.add = ae_lobby_local_players() < 4;
 	rules.shuffle = live() && ae_team_shuffle_shown();
 	rules.bot_setup = ae_bot_count() > 0;
@@ -2579,7 +2907,11 @@ static void party_where(char *where, int where_size, char *count, int count_size
 			snprintf(count, count_size, "%d/%d", players, lobby.roster.maximum_players);
 		return;
 	}
-	if (create.network == NETWORK_ONLINE)
+	if (create.firefight && create.network == NETWORK_ONLINE)
+		snprintf(where, where_size, "Firefight \xE2\x80\xA2 online \xE2\x80\xA2 %s", create.privacy == PRIVACY_PUBLIC ? "public" : "invite only");
+	else if (create.firefight)
+		snprintf(where, where_size, "Firefight \xE2\x80\xA2 %s", create.network == NETWORK_LAN ? "LAN" : "offline");
+	else if (create.network == NETWORK_ONLINE)
 		snprintf(where, where_size, "In Custom Games Lobby \xE2\x80\xA2 ONLINE \xE2\x80\xA2 %s", privacy_words[create.privacy]);
 	else
 		snprintf(where, where_size, "In Custom Games Lobby \xE2\x80\xA2 %s", network_words[create.network]);
@@ -3491,6 +3823,9 @@ static struct ae_playlist *playlist_in_use(void)
 {
 	struct ae_playlists *set;
 
+	/* (the FIREFIGHT lobby has no playlist: Firefight plays one game) */
+	if (create.firefight)
+		return NULL;
 	playlist_load();
 	set = playlist_ui.set;
 	return set->in_use >= 0 && set->in_use < set->count && set->lists[set->in_use].count > 0 ? &set->lists[set->in_use] : NULL;
@@ -5093,7 +5428,7 @@ static void lobby_draw(struct ae_screen *instance)
 		snprintf(crumb, sizeof(crumb), "%s", lobby.joined_how[0] ? lobby.joined_how : "JOINED BY INVITE");
 	else
 		snprintf(crumb, sizeof(crumb), "%s", network_words[create.network]);
-	ae_flow_title(flow, lobby.joiner ? "LOBBY" : "CREATE GAME", crumb);
+	ae_flow_title(flow, lobby.joiner ? "LOBBY" : create.firefight ? "FIREFIGHT" : "CREATE GAME", crumb);
 	/* (the party view has the focus: no row on the left lit, nor its help) */
 	{
 		short focus = flow->focus;
@@ -6978,6 +7313,7 @@ static void create_reset(void)
 	short last = 0, count;
 
 	memset(&create, 0, sizeof(create));
+	ae_firefight_doors_lobby_set(0);
 	create.network = initial_network();
 	/* (owner: the lobby opens private, invite only; PUBLIC lists it) */
 	create.privacy = PRIVACY_INVITE_ONLY;
@@ -7006,13 +7342,83 @@ static void create_reset(void)
 	map_name_of(create.map_index);
 }
 
+/* the multiplayer copy a lobby opens on: the one open, else the last used gametype's. A Firefight copy left open (its lobby gone another
+way than B) is put away first: it is never a multiplayer lobby's */
+static int mp_edit_ready(void)
+{
+	if (ae_setup_edit_is_firefight())
+	{
+		ae_firefight_doors_lobby_set(0);
+		ae_setup_edit_firefight_leave();
+	}
+	return ae_setup_edit_open() || ae_setup_edit_begin_named(NULL);
+}
+
 int ae_screen_create_game_from_menu(void)
 {
-	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+	if (!mp_edit_ready())
 		return 0;
 	create_reset();
 	create.from_menu = 1;
 	return host_open();
+}
+
+int ae_screen_create_game_firefight_open(void)
+{
+	short entry = ff_last_entry;
+
+	if (!ae_setup_edit_begin_firefight(entry) && !(entry = 0, ae_setup_edit_begin_firefight(0)))
+		return 0;
+	create_reset();
+	create.from_menu = 1;
+	create.firefight = 1;
+	create.no_playlist = 1;
+	create.ff_entry = entry;
+	/* (a Firefight game takes four players at most: MAX PLAYERS starts at 4 and steps between 2 and 4) */
+	create.players_index = FIREFIGHT_PLAYERS_COUNT - 1;
+	/* (CE's SOLO first: the lobby opens offline, whatever the last multiplayer lobby was) */
+	create.network = ff_stage.lan ? NETWORK_LAN : NETWORK_OFFLINE;
+	create.ff_dev_map = ff_stage.dev_map;
+	ae_firefight_doors_lobby_set(1);
+	ff_content_load_for_map();
+	if (!host_open())
+	{
+		create.firefight = 0;
+		ae_firefight_doors_lobby_set(0);
+		ae_setup_edit_firefight_leave();
+		return 0;
+	}
+	platform_log("ae create game: firefight: open on variant %d", (int)entry);
+	return 1;
+}
+
+static short open_map_find(char const *name);
+
+int ae_screen_create_game_firefight_open_staged(short entry, char const *map, int lan, int dev_content)
+{
+	int ok;
+
+	if (entry >= 0)
+		ff_last_entry = entry;
+	ff_stage.lan = lan;
+	ff_stage.dev_map = dev_content;
+	ok = ae_screen_create_game_firefight_open();
+	ff_stage.lan = ff_stage.dev_map = 0;
+	if (ok && map && map[0])
+	{
+		short index = open_map_find(map);
+		char listed[AE_PLAYLIST_MAP], caption[64];
+
+		if (index >= 0)
+		{
+			playlist_map_id(index, listed, sizeof(listed));
+			playlist_caption(listed, caption, sizeof(caption));
+			map_picked(index, caption);
+		}
+		else
+			platform_log("ae create game: firefight: staged map '%s' is not in the map list", map);
+	}
+	return ok;
 }
 
 /* the list index of a map named as the map library names its list entry (a Custom Edition map also by its name with the "@ce" suffix
@@ -7048,7 +7454,7 @@ int ae_screen_create_game_open_on_map(char const *name)
 		platform_log("ae create game: open on map: '%s' is not in the map list", name ? name : "");
 		return 0;
 	}
-	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+	if (!mp_edit_ready())
 		return 0;
 	create_reset();
 	create.from_menu = 1;
@@ -7066,7 +7472,7 @@ int ae_screen_create_game_open_on_map(char const *name)
 /* (0.7.9) HOST A SERVER's PLAYLIST: the same editor and playlist.txt, in an offline lobby that closes with it */
 int ae_screen_create_game_playlist_only(void)
 {
-	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+	if (!mp_edit_ready())
 		return 0;
 	create_reset();
 	create.from_menu = 1;
@@ -7083,7 +7489,7 @@ int ae_screen_create_game_playlist_only(void)
 named; the lobby stays behind it, so B shows the lobby's row */
 int ae_screen_create_game_playlists_open(char const *edit_name)
 {
-	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+	if (!mp_edit_ready())
 		return 0;
 	create_reset();
 	create.from_menu = 1;
@@ -7115,7 +7521,7 @@ void ae_screen_create_game_playlists_restaged(void)
 
 int ae_screen_create_game_hostvote_open(int lan, int when)
 {
-	if (!ae_setup_edit_open() && !ae_setup_edit_begin_named(NULL))
+	if (!mp_edit_ready())
 		return 0;
 	create_reset();
 	create.from_menu = 1;

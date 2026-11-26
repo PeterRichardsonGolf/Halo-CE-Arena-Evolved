@@ -447,6 +447,25 @@ void game_state_save_to_persistent_storage(
 	return;
 }
 
+/* port: the game state as it is now, written to the saved game file (game_state_save_to_persistent_storage without
+the revert to the checkpoint first): the TEST RUN's start point of a campaign level (ae_test_start.h). FALSE when
+more than one player is spawned, which a saved game is not taken for */
+boolean game_state_port_write_live_to_persistent_storage(
+	void)
+{
+	if (player_spawn_count != 1 || game_state_globals.header == NULL)
+		return FALSE;
+	game_state_call_before_save_procs();
+	main_stop_time();
+	game_state_write_to_persistent_storage(
+		game_state_globals.base_address,
+		&game_state_globals.header->checksum,
+		sizeof(*game_state_globals.header),
+		GAME_STATE_SIZE);
+	main_start_time();
+	return TRUE;
+}
+
 boolean game_state_test_persistent_storage(
 	char *map_name,
 	short *difficulty,

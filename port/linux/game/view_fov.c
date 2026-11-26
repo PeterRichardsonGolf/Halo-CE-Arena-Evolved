@@ -55,14 +55,15 @@ static real render_fov_adjust(short local_player_index, real native_vertical_fie
 	static boolean initialized;
 	static unsigned long read_at;
 	static real requested_tangent;
-	unsigned long changes = ae_config_player_changes(); /* AE hook */
+	/* (read again when the number of local players crosses one: SPLIT SCREEN FOV is for two to four) */
+	unsigned long changes = ae_config_player_changes() ^ (local_player_count() > 1 ? 0x80000000ul : 0ul); /* AE hook */
 	long unit_index, weapon_index;
 	struct unit_datum *unit;
 	real unzoomed_angle, unzoomed_tangent, native_tangent, adjusted_tangent;
 
 	if (!initialized || read_at != changes)
 	{
-		double degrees = config_real("display.fov");
+		double degrees = ae_split_layout_fov_degrees(); /* AE hook */
 
 		initialized = TRUE;
 		read_at = changes;

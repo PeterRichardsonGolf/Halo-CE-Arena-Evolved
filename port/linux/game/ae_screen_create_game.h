@@ -17,6 +17,13 @@ int ae_screen_create_game_open(void);
 /* opened from AE's MULTIPLAYER (the copy open stays, else the last used gametype's), its lobby hosted at once. B
 closes the lobby and goes back to MULTIPLAYER */
 int ae_screen_create_game_from_menu(void);
+/* (rc8) the FIREFIGHT lobby: CREATE GAME on a Firefight variant, offline first (the main menu's FIREFIGHT; ae_setup_edit_begin_firefight's copy,
+the multiplayer copy put back as it is left); the game's rows, the data START GAME waits on and the rest are in ae_screen_create_game.c's
+header. 0 when the stack is full or the lobby did not open */
+int ae_screen_create_game_firefight_open(void);
+/* (DEV MODE `menu firefight lobby ...`) the FIREFIGHT lobby opened on variant entry (-1: the last), the map named (NULL: the list's), on the
+LAN when lan, with dev_content the made-up map's content (ae_glue_firefight.h) in place of the map's own */
+int ae_screen_create_game_firefight_open_staged(short entry, char const *map, int lan, int dev_content);
 /* whether the game's map list has the map the map library names `name` (the lists' own name: bloodgulch, coldwater@ce, a pack's map as
 <map>@<pack>) */
 int ae_screen_create_game_map_listed(char const *name);

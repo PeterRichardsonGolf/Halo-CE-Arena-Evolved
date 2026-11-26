@@ -51,6 +51,8 @@ answer 5): AE_COLOR_SCRIM is drawn behind dialogs only.
 #define AE_COLOR_CHIP_DISABLED  0xC8D6E029u   /* outline .16 */
 #define AE_COLOR_CHIP_DISABLED_TEXT 0x84939F96u   /* a disabled chip's text, muted .59 (preflight P9) */
 #define AE_COLOR_RING           0xE8EEF2FFu   /* the 2 u white focus ring, the selection's colour (preflight P9) */
+/* a challenge's reward drawn after the career bar's fill: the post-game's "this game's gain" ice blue at .5 over the track */
+#define AE_COLOR_CAREER_GHOST   0x788BA3FFu
 #define AE_COLOR_SELECTION_MUTED 0x0F171EADu  /* the selection text at .68: a quiet word on the bar (5.4:1 on it) */
 #define AE_DISABLED_ROW_ALPHA   0.43f
 /* a button's glyph, one white set for every device and button in the menus and on the HUD (the HUD's key sheets draw it

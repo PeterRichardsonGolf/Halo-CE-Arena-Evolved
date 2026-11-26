@@ -1,0 +1,36 @@
+# Staging spots on a10 (campaign level, collision BSP 0). The cryo hall is the only part of the level with 7 or more
+# units of clear floor: the rest is crates and pillars. quiet 5 / ally 5: marines and the first enemy squad are placed
+# inside the hall's neighbourhood.
+map = "a10"
+geometry_bsp = 0
+quiet = 5
+need = 7
+ally = 5
+
+[[spot]]
+name = "a10-cryo-south"
+x = -61
+y = -4
+z = 0.05
+facing = 90
+bsp = 0
+flat_room = 8.5
+enemy_dist = 11.0
+ally_dist = 7.0
+ground_dz = 0.05
+rating = "GOOD"
+notes = "Cryo hall, south wall, facing across the hall."
+
+[[spot]]
+name = "a10-cryo-north"
+x = -61
+y = 4
+z = 0.05
+facing = 270
+bsp = 0
+flat_room = 8.0
+enemy_dist = 13.0
+ally_dist = 7.1
+ground_dz = 0.05
+rating = "GOOD"
+notes = "Cryo hall, north wall, facing across the hall."

@@ -472,3 +472,880 @@ def test_a_setup_line_longer_than_the_game_reads_fails(tmp_path):
     # (the game's own count)
     rules = (HERE.parent / "port" / "linux" / "game" / "ae_dev_cmd_rules.h").read_text()
     assert f"#define AE_DEV_CMD_WORDS {test_run_lint.COMMAND_WORDS}\n" in rules
+
+
+def test_expect_stat_rule_judges_the_squads_counter_lines(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Warps\ncheck Too many\ncheck Pair\ncheck Pair close\ncheck None\n"
+                              "expect 1 stat warps stuck max 0\nexpect 2 stat path failed max 1\n"
+                              "expect 3 stat slots pair min 0.5\nexpect 4 stat slots pair min 0.7\n"
+                              "expect 5 stat cost rays max 10\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: squad warps: stuck 2 catchup 0\n"
+                   "arena-evolved: squad path: reached 5 partial 0 failed 3\n"
+                   "arena-evolved: squad slots: replans 1 pair 0.90\n"
+                   "arena-evolved: squad warps: stuck 2 catchup 1\n"
+                   "arena-evolved: squad path: reached 9 partial 1 failed 6\n"
+                   "arena-evolved: squad slots: replans 3 pair 0.60\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    # (a counter: its rise over the test, the first line to the last; a distance: its least or most in the test)
+    assert rows[("one", 1)]["verdict"] == "PASS"
+    assert rows[("one", 2)]["verdict"] == "FAIL" and "3" in rows[("one", 2)]["reason"]
+    assert rows[("one", 3)]["verdict"] == "PASS" and rows[("one", 4)]["verdict"] == "FAIL"
+    assert rows[("one", 5)]["verdict"] == "FAIL" and "no squad cost line" in rows[("one", 5)]["reason"]
+    assert expect.validate("stat warps stuck max 0") is None
+    assert expect.validate("stat warps stuck most 0") and expect.validate("stat warps stuck max x")
+
+
+def test_expect_member_and_crossed_rules_judge_each_member(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Stuck\ncheck Lip\ncheck Gap\ncheck Across\ncheck Across fast\ncheck Back\n"
+                              "expect 1 member stuck max 2\nexpect 2 member lip max 1\nexpect 3 member gap90 max 4\n"
+                              "expect 4 crossed x gt -47.6 2 within 20\nexpect 5 crossed x gt -47.6 3 within 20\n"
+                              "expect 6 crossed y gt 5 1 within 10\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: squad member 1: stuck 0.5 lip 0.0 gap90 2.50\n"
+                   "arena-evolved: squad member 2: stuck 1.0 lip 0.2 gap90 3.00\n"
+                   "arena-evolved: companion: positions t+10s human -50.0 0.0 0.0 (bsp 1), 1 -51.0 0.0 0.0 (bsp 2), "
+                   "2 -52.0 0.0 0.0 (bsp 3), 3 -53.0 0.0 0.0 (bsp 4)\n"
+                   "arena-evolved: companion: positions t+12s human -47.0 0.0 0.0 (air, ray bsp 0.2), 1 -48.0 0.0 0.0 (bsp 2), "
+                   "2 -50.0 0.0 0.0 (bsp 3), 3 -51.0 0.0 0.0 (bsp 4)\n"
+                   "arena-evolved: companion: positions t+18s human -45.0 0.0 0.0 (bsp 1), 1 -46.0 0.0 0.0 (bsp 2), "
+                   "2 -47.9 0.0 0.0 (bsp 3), 3 dead\n"
+                   "arena-evolved: companion: positions t+40s human -44.0 0.0 0.0 (bsp 1), 1 -45.0 0.0 0.0 (bsp 2), "
+                   "2 -47.0 0.0 0.0 (bsp 3), 3 not in\n"
+                   "arena-evolved: squad member 1: stuck 1.5 lip 0.4 gap90 3.50\n"
+                   "arena-evolved: squad member 2: stuck 4.0 lip 1.6 gap90 5.50\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    # (a member's seconds: their rise over the test, the worst member's; its gap: the worst member's last)
+    assert rows[("one", 1)]["verdict"] == "FAIL" and "member 2" in rows[("one", 1)]["reason"]
+    assert rows[("one", 2)]["verdict"] == "FAIL" and "1.4" in rows[("one", 2)]["reason"]
+    assert rows[("one", 3)]["verdict"] == "FAIL" and "5.5" in rows[("one", 3)]["reason"]
+    # (across: the player's first line past the plane, then each member past it within the seconds; 1 at once, 2 after 28 s)
+    assert rows[("one", 4)]["verdict"] == "FAIL" and "member 2" in rows[("one", 4)]["reason"]
+    assert rows[("one", 5)]["verdict"] == "FAIL"
+    assert rows[("one", 6)]["verdict"] == "FAIL" and "never" in rows[("one", 6)]["reason"]
+    assert expect.validate("member stuck max 2") is None and expect.validate("member stuck most 2")
+    assert expect.validate("member speed max 2") and expect.validate("crossed x gt -47.6 3 within 20") is None
+    assert expect.validate("crossed z lt 1 3 within 20") and expect.validate("crossed x lt -47.6 3 in 20")
+
+
+def test_expect_crossed_rule_passes_members_across_in_time(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Across\nexpect 1 crossed x gt -47.6 2 within 20\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: companion: positions t+12s human -47.0 0.0 0.0 (bsp 1), 1 -48.0 0.0 0.0 (bsp 2), "
+                   "2 -50.0 0.0 0.0 (bsp 3)\n"
+                   "arena-evolved: companion: positions t+30s human -45.0 0.0 0.0 (bsp 1), 1 -46.0 0.0 0.0 (bsp 2), "
+                   "2 -47.0 0.0 0.0 (bsp 3)\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    assert rows[("one", 1)]["verdict"] == "PASS" and "18" in rows[("one", 1)]["reason"]
+
+
+def test_route_from_log_walks_the_players_logged_positions(tmp_path):
+    import route_from_log
+
+    log = tmp_path / "debug.txt"
+    log.write_text("arena-evolved: companion: positions t+0s human -55.4 0.4 0.0 (air, ray bsp -0.00), 1 not in\n"
+                   "arena-evolved: companion: positions t+2s human -55.3 0.4 -0.0 (bsp 7371, ray bsp -0.00), 1 not in\n"
+                   "arena-evolved: squad walk: follow ticks 3\n"
+                   "arena-evolved: companion: positions t+4s human -53.5 1.4 -0.0 (bsp 935, ray bsp -0.00), 1 -55.0 0.1 0.2 (bsp 1)\n"
+                   "arena-evolved: companion: positions t+6s human -50.0 -0.2 -0.0 (bsp 15, ray bsp -0.00), 1 -53.0 0.1 0.2 (bsp 1)\n"
+                   "arena-evolved: companion: positions t+8s human -48.6 -0.1 0.2 (bsp 4546, ray bsp -0.00), 1 -51.0 0.1 0.2 (bsp 1)\n"
+                   "arena-evolved: companion: positions t+10s human -47.1 -0.4 0.6 (air, ray bsp 0.25), 1 -50.0 0.1 0.2 (bsp 1)\n"
+                   "arena-evolved: companion: positions t+12s human -46.8 0.8 -0.0 (bsp 12, ray bsp -0.00), 1 -49.0 0.1 0.2 (bsp 1)\n")
+    lines = route_from_log.route_lines(log.read_text().splitlines())
+    text = " ".join(lines)
+    # (each line a setup line of at most 119 characters; the first point the first one on the ground, a point under 0.4 from
+    # the last left out, the point before he is in the air marked for a crouch jump)
+    assert all(line.startswith("setup player route ") and len(line) <= 119 for line in lines)
+    assert text.split("route ")[1].startswith("-55.3 0.4 0.1")
+    assert "-48.6 -0.1 0.3 crouch jump -47.1 -0.4 0.7" in text and "-46.8 0.8 0.1" in text
+    assert text.count("-55.") == 1
+    many = ["arena-evolved: companion: positions t+%ds human %.1f 0.0 0.0 (bsp 1), 1 not in" % (i, -80.0 + i) for i in range(50)]
+    lines = route_from_log.route_lines(many)
+    assert sum(line.count(" 0.0 0.1") for line in lines) == 32
+
+
+def test_member_and_crossed_expects_lint(tmp_path):
+    good = write(tmp_path, "list case\nrevision 1\ntitle Outcome\ngroup g\nmap a10\ngametype coop\n"
+                           "test one\ntitle One\nsetup goto 0 0 0\ncheck They cross\n"
+                           "expect 1 crossed x gt -47.6 3 within 20\nexpect 1 member stuck max 2\n")
+    assert messages(good) == []
+    bad = write(tmp_path, "list case\nrevision 1\ntitle Outcome\ngroup g\nmap a10\ngametype coop\n"
+                          "test one\ntitle One\nsetup goto 0 0 0\ncheck They cross\nexpect 1 crossed z gt 0 3 within 20\n", "bad")
+    assert any("crossed needs" in line for line in messages(bad))
+
+
+def test_stat_expects_lint(tmp_path):
+    good = write(tmp_path, "list case\nrevision 1\ntitle Stats\ngroup g\nmap a10\ngametype coop\n"
+                           "test one\ntitle One\nsetup goto 0 0 0\ncheck They keep up\nexpect 1 stat warps stuck max 0\n")
+    assert messages(good) == []
+    bad = write(tmp_path, "list case\nrevision 1\ntitle Stats\ngroup g\nmap a10\ngametype coop\n"
+                          "test one\ntitle One\nsetup goto 0 0 0\ncheck They keep up\nexpect 1 stat warps stuck most 0\n", "bad")
+    assert any("stat needs" in line for line in messages(bad))
+
+
+def test_expect_hurt_rule_counts_hits_on_the_player():
+    import expect
+
+    assert expect.validate("hurt blocked min 1 taken max 0") is None
+    assert expect.validate("hurt player 0 taken max 0") is None
+    assert expect.validate("hurt") and expect.validate("hurt taken most 0") and expect.validate("hurt player x taken max 0")
+    window = [{"ev": "test", "t": 0, "_line": 1},
+              {"ev": "hurt", "player": 0, "blocked": 1, "t": 1000, "_line": 2},
+              {"ev": "hurt", "player": 0, "blocked": 1, "t": 2000, "_line": 3},
+              {"ev": "hurt", "player": 1, "blocked": 0, "t": 3000, "_line": 4},
+              {"ev": "test", "t": 20000, "_line": 5}]
+    passed, reason, evidence = expect.judge("hurt player 0 blocked min 1 taken max 0", window)
+    assert passed and reason == "taken 0, blocked 2 in 20 s" and evidence == [2, 3]
+    passed, reason, _ = expect.judge("hurt taken max 0", window)
+    assert not passed and reason.startswith("taken 1 (wanted max 0)")
+    # (no hit at all: god is not shown working, unseen passes on its window's seconds)
+    quiet = [window[0], window[-1]]
+    assert not expect.judge("hurt blocked min 1 taken max 0", quiet)[0]
+    assert expect.judge("hurt taken max 0", quiet)[0]
+
+
+def test_hurt_expects_lint(tmp_path):
+    text = GOOD.format(name="hu") + "expect 1 hurt blocked min 1 taken max 0\n"
+    assert messages(write(tmp_path, text, "hu")) == []
+    assert messages(write(tmp_path, GOOD.format(name="hu") + "expect 1 hurt\n", "hu"))
+
+
+def test_expect_setup_error_is_not_run(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Never\nexpect 1 no log died at\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "SKIP"}]) + "\n")
+    log = tmp_path / "game.log"
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: test run: case one SETUP ERROR: god me: no game running\n"
+                   "arena-evolved: test run: case one SKIP\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    # (a test whose setup failed judged nothing: a "no" rule would pass on an empty window)
+    assert rows[("one", 1)]["verdict"] == "NOT RUN" and "setup" in rows[("one", 1)]["reason"]
+
+
+# ---------- the test environment: the gate, deploy, run by hand, preflight and remote copy
+
+import json  # noqa: E402
+
+import testenv  # noqa: E402
+import deploy_latest  # noqa: E402
+import preflight  # noqa: E402
+import run_list  # noqa: E402
+import scenario_dump  # noqa: E402
+import spots  # noqa: E402
+
+LEFT_LIST = """list left
+revision 2
+test a
+check A
+map bloodgulch
+test b
+check B
+map bloodgulch
+retest 2
+test c
+check C
+map bloodgulch
+"""
+
+
+def record(test, verdict, revision, list_id="left"):
+    return json.dumps({"list": list_id, "test": test, "verdict": verdict, "revision": revision})
+
+
+def test_tests_left_follows_the_runner():
+    # (a: passed at revision 1, kept; b: passed before its retest 2, played again; c: an old FAIL is stale, a new
+    # revision is the fix, so it is played; a NOTE and another list's records count for nothing)
+    results = "\n".join([record("a", "PASS", 1), record("b", "PASS", 1), record("c", "FAIL", 1),
+                         record("a", "NOTE", 2), record("c", "PASS", 2, "other")])
+    assert testenv.tests_left(LEFT_LIST, results) == ["b", "c"]
+    assert testenv.tests_left(LEFT_LIST, record("c", "PASS", 1)) == ["a", "b"]
+    # (the last record that counts wins: a FAIL after a PASS at this revision plays it again)
+    assert testenv.tests_left(LEFT_LIST, "\n".join([record("a", "PASS", 2), record("a", "FAIL", 2),
+                                                    record("b", "PASS", 2), record("c", "PASS", 2)])) == ["a"]
+    assert testenv.tests_left(LEFT_LIST, "\n".join(record(t, "PASS", 2) for t in "abc")) == []
+    # (a torn last line is skipped)
+    assert testenv.tests_left(LEFT_LIST, record("a", "PASS", 2) + "\n{\"list\": \"le") == ["b", "c"]
+
+
+def fake_install(tmp_path, list_text=LEFT_LIST, results=""):
+    install = tmp_path / "install"
+    (install / "test-runs").mkdir(parents=True)
+    (install / testenv.PROGRAM).write_bytes(b"program 1234abcd")
+    (install / "social.txt").write_text("playlists\n")
+    (install / "test-runs" / "left.txt").write_text(list_text)
+    if results:
+        (install / "test-runs" / "left.results.jsonl").write_text(results + "\n")
+    facts = {name: testenv.file_facts(install / name) for name in (testenv.PROGRAM, "social.txt")}
+    (install / testenv.RECORD).write_text(json.dumps({"commit": "1234abcd", "source": "host:tree", "time": "t",
+                                                      "files": facts}))
+    return install
+
+
+def gate(install, *words, lists=("left",)):
+    rows = testenv.Rows()
+    commit = testenv.check_build(install, rows)
+    testenv.check_files(install, rows)
+    for list_id in lists:
+        testenv.check_list(install, list_id, commit, rows, *words)
+    return {(row[0], row[1]) for row in rows.rows}, rows
+
+
+def test_gate_build_and_files(tmp_path):
+    install = fake_install(tmp_path)
+    found, _ = gate(install, "", "waived")
+    assert ("OK", "build") in found and ("OK", "files") in found
+    # (a binary swapped by hand, or a playlist file changed, fails the gate)
+    (install / "social.txt").write_text("older playlists\n")
+    assert ("FAIL", "files") in gate(install, "", "waived")[0]
+    (install / testenv.PROGRAM).write_bytes(b"another program")
+    assert ("FAIL", "build") in gate(install, "", "waived")[0]
+    # (no record: the build is not known)
+    (install / testenv.RECORD).unlink()
+    assert ("FAIL", "build") in gate(install, "", "waived")[0]
+
+
+def test_gate_unknown_commit_fails(tmp_path):
+    install = fake_install(tmp_path)
+    data = json.loads((install / testenv.RECORD).read_text())
+    data["commit"] = "unknown"
+    (install / testenv.RECORD).write_text(json.dumps(data))
+    assert ("FAIL", "build") in gate(install, "", "waived")[0]
+
+
+def test_gate_nothing_left_fails(tmp_path):
+    install = fake_install(tmp_path, results="\n".join(record(t, "PASS", 2) for t in "abc"))
+    assert ("FAIL", "left") in gate(install, "", "waived")[0]
+    install = fake_install(tmp_path / "two")
+    assert ("OK", "left") in gate(install, "", "waived")[0]
+
+
+def preflight_record(folder, text, **change):
+    data = {"list": "left", "list_sha256": __import__("hashlib").sha256(text.encode()).hexdigest(), "mode": "owner",
+            "result": "PASS", "passed": True, "build": "1234abcd", "time": "t"}
+    data.update(change)
+    folder.mkdir(exist_ok=True)
+    (folder / "left.preflight.json").write_text(json.dumps(data))
+
+
+@pytest.mark.parametrize("change, state", [
+    ({}, "OK"), ({"mode": "automatic"}, "FAIL"), ({"passed": False, "result": "FAIL"}, "FAIL"),
+    ({"list_sha256": "0" * 64}, "FAIL"), ({"build": "99999999"}, "FAIL"),
+])
+def test_gate_wants_the_owner_way_preflight(tmp_path, change, state):
+    install = fake_install(tmp_path)
+    preflight_record(tmp_path / "pf", LEFT_LIST, **change)
+    assert (state, "preflight") in gate(install, str(tmp_path / "pf"), "")[0]
+
+
+def test_gate_preflight_missing_or_waived(tmp_path):
+    install = fake_install(tmp_path)
+    assert ("FAIL", "preflight") in gate(install, "", "")[0]
+    assert ("FAIL", "preflight") in gate(install, str(tmp_path / "none"), "")[0]
+    assert ("WAIVED", "preflight") in gate(install, "", "a menus list checked an hour ago")[0]
+
+
+def test_gate_deployed_copy_is_the_repo_list(tmp_path):
+    install = fake_install(tmp_path)
+    repo = LISTS / "theater.txt"
+    (install / "test-runs" / "theater.txt").write_text(testenv.deployed_text(repo.read_text()))
+    found, _ = gate(install, "", "waived", lists=("theater",))
+    assert ("OK", "deployed") in found
+    (install / "test-runs" / "theater.txt").write_text(repo.read_text() + "\n# an edit by hand\n")
+    assert ("FAIL", "deployed") in gate(install, "", "waived", lists=("theater",))[0]
+
+
+def test_owner_way_auto_text_and_problems():
+    class Args:
+        auto, owner, after = "", True, 6
+    assert run_list.auto_text(Args) == "OWNER,PASS:6"
+    Args.owner = False
+    assert run_list.auto_text(Args) == "PASS:6"
+    log = "arena-evolved: test run: verdicts pressed as in a run by hand, on the first pad, after 6 s\n"
+    results = __import__("pathlib").Path
+    assert run_list.owner_problems(LEFT_LIST, results("/nonexistent"), log) == [
+        f"BY HAND {t}: no verdict: the pressed BACK + A never reached TEST RUN (a screen or dialog held the pad, the run "
+        f"stopped, or the test never came up)" for t in "abc"]
+    assert run_list.owner_problems(LEFT_LIST, results("/nonexistent"), "")[0].startswith("BY HAND the game did not take")
+
+
+def test_owner_way_problems_read_the_records(tmp_path):
+    path = tmp_path / "left.results.jsonl"
+    path.write_text("\n".join([record("a", "PASS", 2), record("b", "SKIP", 2), record("c", "NOTE", 2)]) + "\n")
+    log = "test run: verdicts pressed as in a run by hand, on the first pad, after 6 s"
+    assert run_list.owner_problems(LEFT_LIST, path, log) == ["BY HAND c: recorded NOTE, not the pressed PASS"]
+
+
+def test_preflight_owner_word_and_record(tmp_path):
+    assert preflight.summary_word(3) == "STAGED, EXPECT FAILED"
+    assert preflight.summary_word(3, owner=True) == "FAIL, EXPECT NOT MET BY THE SETUP ALONE"
+    assert preflight.summary_word(0, owner=True) == "PASS"
+    assert preflight.game_build("arena-evolved: test run: left started, run x, 3 of 3 tests, build 1234abcd-dirty\n") \
+        == "1234abcd-dirty"
+    listed = tmp_path / "left.txt"
+    listed.write_text(LEFT_LIST)
+    (tmp_path / "root" / "left").mkdir(parents=True)
+    (tmp_path / "root" / "left" / "game.log").write_text("test run: left started, run x, 3 of 3 tests, build 1234abcd\n")
+    target = preflight.write_record(tmp_path / "root", listed, "PASS", True, [])
+    data = json.loads(target.read_text())
+    assert data["mode"] == "owner" and data["passed"] and data["build"] == "1234abcd"
+    assert data["list_sha256"] == __import__("hashlib").sha256(testenv.deployed_text(LEFT_LIST).encode()).hexdigest()
+
+
+def test_deploy_refuses_a_build_with_no_commit(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(deploy_latest, "STAGING", tmp_path / "staging")
+    tree = tmp_path / "tree"
+    (tree / "build" / "linux64").mkdir(parents=True)
+    (tree / "build" / "linux64" / "halo").write_bytes(b"program unknown")
+    assert deploy_latest.main(["--from", str(tree), "--to", str(tmp_path / "install")]) == 1
+    assert "no BUILD_COMMIT" in capsys.readouterr().out
+    # (the staging folder goes when the run ends)
+    assert not any((tmp_path / "staging").iterdir())
+
+
+def test_deploy_uses_the_install_environment_when_to_is_omitted(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(deploy_latest, "STAGING", tmp_path / "staging")
+    monkeypatch.setenv("AE_TEST_INSTALL", str(tmp_path / "install"))
+    tree = tmp_path / "tree"
+    tree.mkdir()
+    assert deploy_latest.main(["--from", str(tree)]) == 1
+    assert f"-> {tmp_path / 'install'}" in capsys.readouterr().out
+
+
+def test_deploy_requires_to_without_the_install_environment(tmp_path, monkeypatch):
+    monkeypatch.delenv("AE_TEST_INSTALL", raising=False)
+    with pytest.raises(SystemExit):
+        deploy_latest.main(["--from", str(tmp_path)])
+
+
+def test_deploy_puts_a_build_in_place_with_its_record(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(deploy_latest, "STAGING", tmp_path / "staging")
+    tree = tmp_path / "tree"
+    build = tree / "build" / "linux64"
+    build.mkdir(parents=True)
+    (tree / "BUILD_COMMIT").write_text("1234abcd\n")
+    (tree / "CHANGELOG.md").write_text("# changes\n")
+    (build / "halo").write_bytes(b"program 1234abcd")
+    for name in ("social.txt", "matchmaking.txt", "credits.txt"):
+        (build / name).write_text(name)
+    install = tmp_path / "install"
+    install.mkdir()
+    (install / "social.txt").write_text("old playlists")
+    # (a dry run changes nothing)
+    assert deploy_latest.main(["--from", str(tree), "--to", str(install), "--label", "t"]) == 0
+    assert (install / "social.txt").read_text() == "old playlists" and not (install / testenv.PROGRAM).exists()
+    assert deploy_latest.main(["--from", str(tree), "--to", str(install), "--label", "t", "--go"]) == 0
+    assert (install / "social.txt").read_text() == "social.txt"
+    assert [p.name for p in install.glob("social.txt.prev-t-*")]
+    assert json.loads((install / testenv.RECORD).read_text())["commit"] == "1234abcd"
+    rows = testenv.Rows()
+    assert testenv.check_build(install, rows) == "1234abcd"
+    testenv.check_files(install, rows)
+    assert all(row[0] == "OK" for row in rows.rows)
+    # (a program that does not hold its BUILD_COMMIT's commit is refused)
+    (build / "halo").write_bytes(b"program unknown")
+    assert deploy_latest.main(["--from", str(tree), "--to", str(install), "--go"]) == 1
+    assert "does not hold the commit" in capsys.readouterr().out
+
+
+def test_box_sync_commit_stamp_and_command(tmp_path):
+    import box_sync
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "a.c").write_text("int a;\n")
+    (tmp_path / ".gitignore").write_text("build/\n")
+    (tmp_path / "build").mkdir()
+    (tmp_path / "build" / "x.o").write_text("object")
+    env = dict(GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+    subprocess.run(["git", "-C", str(tmp_path), "add", "."], check=True)
+    subprocess.run(["git", "-C", str(tmp_path), "commit", "-qm", "x"], check=True, env={**__import__("os").environ, **env})
+    stamp = box_sync.commit_stamp(tmp_path)
+    assert len(stamp) == 8 and not stamp.endswith("-dirty")
+    (tmp_path / "a.c").write_text("int b;\n")
+    (tmp_path / "new.c").write_text("int c;\n")
+    assert box_sync.commit_stamp(tmp_path).endswith("-dirty")
+    assert box_sync.file_list(tmp_path) == [".gitignore", "a.c", "new.c"]
+    command = box_sync.rsync_command(tmp_path, "host:tree", tmp_path / "list", False)
+    assert "--no-times" in command and "--checksum" in command and "--delete" not in command
+
+
+CAMPAIGN_GROUP = """list camp
+revision 1
+group b30
+map b30
+gametype coop
+test first
+check A
+setup goto 1 2 3
+test second
+check B
+setup goto 4 5 6
+{fresh}
+"""
+
+
+def test_lint_warns_a_campaign_goto_after_the_tester_walked_on(tmp_path):
+    path = write(tmp_path, CAMPAIGN_GROUP.format(fresh=""), "camp")
+    found = [message for _, message in test_run_lint.warnings(path)]
+    assert any("test second: a goto in b30" in message for message in found)
+    assert not any("test first:" in message for message in found)
+    path = write(tmp_path, CAMPAIGN_GROUP.format(fresh="fresh"), "camp")
+    assert not any("a goto in b30" in message for _, message in test_run_lint.warnings(path))
+
+
+def test_lint_warns_a_kill_with_none_placed_in_the_test(tmp_path):
+    text = """list kills
+revision 1
+group b30
+map b30
+gametype coop
+test place
+check A
+setup actor commander 5
+test kill
+check B
+setup actor kill
+test both
+check C
+setup actor commander 5
+setup actor kill
+setup companion 2
+setup companion kill
+"""
+    found = [message for _, message in test_run_lint.warnings(write(tmp_path, text, "kills"))]
+    assert [m for m in found if "kill with none placed" in m] == [
+        "test kill: actor kill with none placed in this test: those an earlier test placed may be dead when the tester "
+        "gets here. Place and kill in one test"]
+
+
+def test_runner_paths_ask_automatic_path():
+    """ae_test_run.c: a place where an automatic run goes another way than a run by hand asks automatic_path(), so an
+    OWNER run (preflight.py --owner) takes the owner's path. A bare `automatics` is allowed only in the verdict script's
+    own functions and scripted_run() (what every scripted run does: the scene's picture, a list's presses). An `if (automatics && test->menus)` once gave
+    automatic runs a screen reset that runs by hand did not get, and the preflight passed what failed in front of the
+    owner."""
+    import re
+    source = (HERE.parent / "port" / "linux" / "game" / "ae_test_run.c").read_text(errors="replace")
+    # (the comments out, their lines kept)
+    source = re.sub(r"/\*.*?\*/", lambda found: "\n" * found.group(0).count("\n"), source, flags=re.S)
+    allowed = {"parse_automatic", "automatic_key", "automatic_path", "scripted_run"}
+    function, bare = "", []
+    for number, line in enumerate(source.splitlines(), 1):
+        match = re.match(r"^(?:static\s+)?[A-Za-z_][\w\s\*]*?\b(\w+)\s*\(", line)
+        if match and not line.startswith((" ", "\t")) and not line.rstrip().endswith(";"):
+            function = match.group(1)
+        if re.search(r"\bautomatics\b", line) and function not in allowed and not line.startswith("static int"):
+            bare.append((number, function, line.strip()))
+    assert bare == [], bare
+
+
+def test_lint_retired_lines(tmp_path):
+    good = GOOD.format(name="ret") + "retired 1 measured the command, not the effect | cmd unseen ok\n"
+    assert messages(write(tmp_path, good, "ret")) == []
+    for line, words in (("retired 2 why | log x", "retired names no check"), ("retired 1 no bar here", "retired is"),
+                        ("retired 1 | log x", "retired is"), ("retired 1 why |", "retired is")):
+        found = messages(write(tmp_path, GOOD.format(name="ret") + line + "\n", "ret"))
+        assert len(found) == 1 and words in found[0], (line, found)
+
+
+def test_join_scores_the_testers_verdicts_on_the_same_build():
+    text = LEFT_LIST + "retired 1 measured the command | cmd x ok\n"
+    report = [{"test": "a", "check": 1, "verdict": "PASS", "rule": "log a"},
+              {"test": "b", "check": 1, "verdict": "FAIL", "rule": "log b"},
+              {"test": "c", "check": 1, "verdict": "LOOK", "rule": ""}]
+    rows = [json.dumps({"list": "left", "test": "a", "verdict": "FAIL", "build": "1234abcd"}),
+            json.dumps({"list": "left", "test": "b", "verdict": "FAIL", "build": "1234abcd-dirty"}),
+            json.dumps({"list": "left", "test": "c", "verdict": "PASS", "build": "1234abcd"}),
+            json.dumps({"list": "left", "test": "a", "verdict": "PASS", "build": "unknown"})]
+    joined = testenv.join(text, "\n".join(rows), report, "1234abcd")
+    by = {row["test"]: row for row in joined["tests"]}
+    assert (by["a"]["predicted"], by["a"]["own" "er"]) == ("PASS", "FAIL")
+    assert (by["b"]["predicted"], by["b"]["own" "er"]) == ("FAIL", "FAIL")
+    assert (by["c"]["predicted"], by["c"]["own" "er"]) == ("not measured", "PASS")
+    assert joined["other_builds"] == 1
+    lines = testenv.join_lines("left", joined, testenv.retired_lines(text))
+    assert "automated PASS -> your PASS: 0/1; automated FAIL -> your FAIL: 1/1; " \
+           "your FAILs the automation passed: a" in lines[-2]
+    assert lines[-1].startswith("  retired expect lines: 1") and "c #1: measured the command (cmd x ok)" in lines[-1]
+
+
+def test_testenv_uses_the_install_environment_when_install_is_omitted(tmp_path, monkeypatch, capsys):
+    install = fake_install(tmp_path)
+    monkeypatch.setenv("AE_TEST_INSTALL", str(install))
+    assert testenv.main(["left", "left"]) == 0
+    assert "left: 3 of 3" in capsys.readouterr().out
+
+
+def test_testenv_requires_install_without_the_environment(monkeypatch):
+    monkeypatch.delenv("AE_TEST_INSTALL", raising=False)
+    with pytest.raises(SystemExit):
+        testenv.main(["left", "left"])
+
+
+def test_spots_output_has_no_private_default(tmp_path, monkeypatch):
+    monkeypatch.setenv("HALO_SPOTS_OUT", str(tmp_path))
+    assert spots.out_dir() == tmp_path
+    monkeypatch.delenv("HALO_SPOTS_OUT")
+    with pytest.raises(SystemExit, match="HALO_SPOTS_OUT"):
+        spots.out_dir()
+
+
+def test_scenario_reader_is_found_by_argument_or_path(tmp_path, monkeypatch):
+    tool = tmp_path / "xreader.py"
+    tool.write_text("# reader\n")
+    assert scenario_dump.reader_folder(tmp_path) == tmp_path
+    monkeypatch.setattr(scenario_dump.shutil, "which", lambda name: str(tool) if name == "xreader.py" else None)
+    assert scenario_dump.reader_folder(None) == tmp_path
+
+
+def test_bot_gate_score_only_does_not_need_a_maps_folder(tmp_path, monkeypatch, capsys):
+    import bot_gate
+
+    monkeypatch.delenv("AE_TEST_MAPS", raising=False)
+    monkeypatch.setattr(sys, "argv", ["bot_gate.py", "--game", "unused", "--out", str(tmp_path),
+                                      "--score-only", "--scenes", "missing"])
+    assert bot_gate.main() == 1
+    assert "no logs: the scene did not run" in capsys.readouterr().out
+
+
+import report_words  # noqa: E402
+
+
+@pytest.mark.parametrize("rule, check, proxy", [
+    ("cmd unseen me ok", "Enemies do not see you", True),
+    ("cmd give dmr ok", "You hold a DMR", True),
+    ("log ae randomizer: delete dialog opened", "X deletes the seed after a yes", True),
+    ("log ae skulls: open", "The skull grid shows", True),
+    ("log ae theater: open", "One row: NO RECORDINGS YET", True),
+    ("log ae theater: open", "A on THEATER opens the Theater screen", False),
+    ("log ae randomizer: deleted seed", "X deletes the seed after a yes", False),
+    ("weapon sniper rifle loaded 4", "You pick up the sniper", False),
+])
+def test_proxy_reason(rule, check, proxy):
+    assert bool(report_words.proxy_reason(rule, check)) == proxy
+
+
+def test_report_words_never_say_a_bare_pass():
+    rows = [{"test": "a", "check": 1, "rule": "log x", "verdict": "PASS", "text": "x shows"},
+            {"test": "a", "check": 2, "rule": "cmd god ok", "verdict": "PASS", "text": "You take no damage"},
+            {"test": "b", "check": 1, "rule": "log y", "verdict": "FAIL", "text": "y"},
+            {"test": "b", "check": 2, "rule": "", "verdict": "LOOK", "text": "looks right"}]
+    counts = report_words.count(rows, ["a", "b", "c"], ["c"], retired=1)
+    assert counts == {"staged": 2, "tests": 3, "measured_passed": 1, "measured": 2, "proxy": 1, "look": 1, "retired": 1}
+    assert report_words.words(counts) == "STAGED 2/3 · MEASURED 1/2 · PROXY 1 · LOOK 1 · RETIRED 1"
+    assert "PASS" not in report_words.words(counts)
+
+
+def test_lint_warns_a_proxy_expect(tmp_path):
+    text = GOOD.format(name="px").replace("check Look at it\n", "check Enemies do not see you\n") + \
+        "expect 1 cmd unseen me ok\n"
+    found = [message for _, message in test_run_lint.warnings(write(tmp_path, text, "px"))]
+    assert any("expect 1 is a proxy" in message for message in found)
+
+
+def test_snapshot_keeps_his_settings_not_the_machine():
+    text = """# comment
+[display]
+hud_style = "classic"
+window_size = "1920x1080"
+max_fps = 240
+fov = 90
+[paths]
+data = "/x"
+[input]
+layout = "reclaimer"
+[network]
+online = true
+"""
+    snap = testenv.snapshot(text)
+    assert snap.splitlines() == ["[display]", 'hud_style = "classic"', "fov = 90", "", "[input]", 'layout = "reclaimer"']
+
+
+def test_gate_settings_row(tmp_path):
+    install = fake_install(tmp_path)
+    (install / "config.toml").write_text('[display]\nhud_style = "classic"\n')
+    mine = testenv.snapshot_digest(install)
+    preflight_record(tmp_path / "pf", LEFT_LIST, config_sha256=mine)
+    assert ("OK", "settings") in gate(install, str(tmp_path / "pf"), "")[0]
+    preflight_record(tmp_path / "pf", LEFT_LIST, config_sha256="0" * 64)
+    assert ("WARN", "settings") in gate(install, str(tmp_path / "pf"), "")[0]
+    preflight_record(tmp_path / "pf", LEFT_LIST)
+    assert ("WARN", "settings") in gate(install, str(tmp_path / "pf"), "")[0]
+
+
+def test_preflight_fails_placed_ai_out_of_view():
+    import preflight
+
+    log = PREFLIGHT_LOG.replace(
+        "arena-evolved: test run setup ready first\n",
+        "arena-evolved: test run setup ready first\n"
+        "arena-evolved: test run: pre first scene picture test-runs/preflight/pre-first.png, actors placed 3, in view 0\n")
+    rows = preflight.staging(PREFLIGHT_LIST, log, preflight_events())
+    assert rows[0]["actors"] == (3, 0)
+    assert any("none of the 3 placed AI" in words for test, words in preflight.problems(rows) if test == "first")
+    rows = preflight.staging(PREFLIGHT_LIST, log.replace("in view 0", "in view 2"), preflight_events())
+    assert not any("placed AI" in words for _, words in preflight.problems(rows))
+
+
+def test_lint_press_lines(tmp_path):
+    good = GOOD.format(name="pr") + "press 1 x a\n"
+    assert messages(write(tmp_path, good, "pr")) == []
+    for line, words in (("press 2 a", "press names no check"), ("press 1", "press has no button"),
+                        ("press 1 jump", "press: 'jump' is not a button"), ("press 1 " + "a " * 30, "press is")):
+        found = messages(write(tmp_path, GOOD.format(name="pr") + line + "\n", "pr"))
+        assert len(found) == 1 and words in found[0], (line, found)
+
+
+import frame_lint  # noqa: E402
+
+
+def frame_box(kind, i, x, y, w, h, **more):
+    box = {"k": kind, "i": i, "x": x, "y": y, "w": w, "h": h, "clip": [0, 0, 1000, 1000]}
+    box.update(more)
+    return box
+
+
+def test_frame_lint_findings():
+    panel = frame_box("shape", 0, 100, 100, 200, 50, thickness=0, top=0x202830FF, bottom=0x202830FF)
+    fits = frame_box("text", 1, 110, 110, 150, 20, color=0xCDD6DDFF, text="FITS")
+    past = frame_box("text", 2, 110, 130, 220, 15, color=0xCDD6DDFF, text="RUNS PAST")
+    dim = frame_box("text", 3, 110, 100, 50, 10, color=0x30383FFF, text="DIM")
+    over = frame_box("text", 4, 120, 112, 100, 18, color=0xCDD6DDFF, text="ON TOP")
+    shadow = frame_box("text", 5, 111, 111, 150, 20, color=0xCDD6DDFF, text="FITS")
+    cut = frame_box("text", 6, 500, 500, 300, 20, color=0xFFFFFFFF, text="CUT", clip=[500, 500, 600, 600])
+    found = {(kind, text) for kind, text, _ in frame_lint.findings([panel, fits, past, dim, over, shadow, cut])}
+    assert ("PAST", "RUNS PAST") in found and ("CONTRAST", "DIM") in found and ("CUT", "CUT") in found
+    assert ("OVERLAP", "FITS") in found
+    # (a shadow of the same text, the panel's own fitting text, white on the dark panel: none)
+    assert not any(text == "FITS" and kind != "OVERLAP" for kind, text in found)
+    assert frame_lint.findings([panel, fits]) == []
+
+
+def test_frame_lint_contrast_numbers():
+    assert round(frame_lint.contrast((1, 1, 1), (0, 0, 0)), 1) == 21.0
+    assert round(frame_lint.contrast((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)), 1) == 1.0
+
+
+def test_test_page_renders_first_and_counts(tmp_path):
+    import test_page
+
+    info = {"id": "left", "revision": 2, "title": "LEFT", "tests": [{"id": "a", "title": "A"}, {"id": "b", "title": "B"}]}
+    report = [{"test": "a", "check": 1, "text": "x deletes it", "rule": "cmd x ok", "verdict": "PASS", "reason": "ok"},
+              {"test": "b", "check": 1, "text": "shows", "rule": "", "verdict": "LOOK", "reason": ""}]
+    his = {"a": {"verdict": "FAIL", "note": "did <not> work", "build": "1234abcd"}}
+    joined = testenv.join(LEFT_LIST, "", report, "1234abcd")
+    joined["retired"] = []
+    page = test_page.render(info, {"build": "1234abcd", "mode": "owner", "time": "2026-11-25T20:15:00"}, report,
+                            {"proxies": [{"test": "a", "check": 1, "why": "a dev command's answer"}]}, his, {}, {},
+                            joined, "left-1234abcd")
+    assert "Look here first" in page and 'href="#a"' in page and "did &lt;not&gt; work" in page
+    assert "only a proxy passed: #1" in page and "the automation passed it" not in page
+    assert '<span class="chip proxy">PROXY</span>' in page and "your eyes only" in page
+    assert "MEASURED<b>0/1</b>" not in page and "2026-11-25 20:15" in page
+
+
+def test_test_page_uses_install_and_pages_environments(tmp_path, monkeypatch, capsys):
+    import test_page
+
+    install = fake_install(tmp_path)
+    preflight = tmp_path / "preflight"
+    preflight_record(preflight, LEFT_LIST)
+    (preflight / "left").mkdir()
+    (preflight / "left" / "report.json").write_text("[]")
+    (preflight / "left" / "summary.json").write_text("{}")
+    pages = tmp_path / "pages"
+    monkeypatch.setenv("AE_TEST_INSTALL", str(install))
+    monkeypatch.setenv("AE_TEST_PAGES", str(pages))
+    assert test_page.main(["left", "--preflight", str(preflight)]) == 0
+    assert (pages / "left-1234abcd.html").is_file()
+    assert str(pages / "left-1234abcd.html") in capsys.readouterr().out
+
+
+def test_test_page_explicit_pages_folder_overrides_the_environment(tmp_path, monkeypatch):
+    import test_page
+
+    install = fake_install(tmp_path)
+    preflight = tmp_path / "preflight"
+    preflight_record(preflight, LEFT_LIST)
+    (preflight / "left").mkdir()
+    (preflight / "left" / "report.json").write_text("[]")
+    (preflight / "left" / "summary.json").write_text("{}")
+    monkeypatch.setenv("AE_TEST_INSTALL", str(install))
+    monkeypatch.setenv("AE_TEST_PAGES", str(tmp_path / "environment-pages"))
+    explicit = tmp_path / "explicit-pages"
+    assert test_page.main(["left", "--preflight", str(preflight), "--out", str(explicit)]) == 0
+    assert (explicit / "left-1234abcd.html").is_file()
+    assert not (tmp_path / "environment-pages").exists()
+
+
+def test_test_page_requires_missing_install_and_pages_paths(tmp_path, monkeypatch):
+    import test_page
+
+    monkeypatch.delenv("AE_TEST_INSTALL", raising=False)
+    monkeypatch.delenv("AE_TEST_PAGES", raising=False)
+    with pytest.raises(SystemExit):
+        test_page.main(["left", "--preflight", str(tmp_path)])
+    install = fake_install(tmp_path)
+    with pytest.raises(SystemExit):
+        test_page.main([str(install), "left", "--preflight", str(tmp_path)])
+
+
+def test_frame_lint_leaves_the_card_and_key_caps_alone():
+    panel = frame_box("shape", 0, 0, 0, 1000, 600, thickness=0, top=0x202830FF, bottom=0x202830FF)
+    cap = frame_box("shape", 1, 100, 500, 24, 22, thickness=0, top=0xC9D3DAFF, bottom=0xC9D3DAFF)
+    hint = frame_box("text", 2, 130, 502, 300, 18, color=0xCDD6DDFF, text="Wheel scroll   Tab move")
+    under = frame_box("text", 3, 700, 100, 200, 20, color=0xCDD6DDFF, text="SERGEANT MAJOR")
+    card_text = frame_box("text", 4, 690, 95, 250, 20, color=0xCDD6DDFF, text="TEST 1 / 4")
+    glyph = frame_box("text", 5, 106, 503, 10, 16, color=0x10161CFF, text="P")
+    found = frame_lint.findings([panel, cap, hint, under, card_text, glyph], overlay=[680, 80, 1000, 300])
+    assert found == [], found
+
+
+def test_frame_lint_reads_a_dialog_over_a_screen():
+    row = frame_box("shape", 0, 60, 300, 600, 40, thickness=0, top=0x202830BD, bottom=0x202830BD)
+    behind = frame_box("text", 1, 600, 305, 30, 20, color=0xCDD6DDFF, text="38")
+    dialog = frame_box("shape", 2, 420, 250, 440, 220, thickness=0, top=0x10161CF2, bottom=0x10161CF2)
+    body = frame_box("text", 3, 436, 300, 400, 18, color=0xCDD6DDFF, text="This PC's 2 found skulls are forgotten")
+    assert frame_lint.findings([row, behind, dialog, body]) == []
+    # (the same body text wider than its dialog is past it)
+    wide = dict(body, w=520)
+    assert [kind for kind, _, _ in frame_lint.findings([row, behind, dialog, wide])] == ["PAST"]
+
+
+def test_lint_warns_hurt_without_player_in_coop_and_with_nothing_placed(tmp_path):
+    text = """list hu2
+revision 1
+group b30
+map b30
+gametype coop
+set game.companions 3
+test a
+check Not hurt
+setup actor commander 4
+expect 1 hurt taken max 0
+test b
+check Not hurt
+expect 1 hurt player 0 taken max 0
+"""
+    found = [message for _, message in test_run_lint.warnings(write(tmp_path, text, "hu2"))]
+    assert any("test a: hurt without `player N`" in message for message in found)
+    assert any("test b: hurt ... taken max 0 with no AI placed" in message for message in found)
+    assert not any("test b: hurt without" in message or "test a: hurt ... taken max 0" in message for message in found)
+
+
+def test_gate_host_unreachable_warns_and_brief_line(tmp_path, monkeypatch):
+    install = fake_install(tmp_path)
+    monkeypatch.setattr(testenv, "read_preflight", lambda source, list_id: testenv.UNREACHABLE)
+    found, rows = gate(install, "host:/preflight", "")
+    assert ("WARN", "preflight") in found and rows.failed() == 0
+    assert testenv.brief_line(rows, ["left"]).startswith("TEST RUN left ready (2 warning(s): left: host did not answer")
+    monkeypatch.setattr(testenv, "read_preflight", lambda source, list_id: None)
+    _, rows = gate(install, "host:/preflight", "")
+    line = testenv.brief_line(rows, ["left"])
+    assert line.startswith("TEST RUN left not started: left: no record in host:/preflight. To fix: ")
+
+
+def test_deploy_copies_a_standalone_test_tree(tmp_path):
+    target = tmp_path / "testenv-tree"
+    assert deploy_latest.fetch_tree(str(HERE.parent), target)
+    for name in deploy_latest.TREE_FILES + ["tools/ae_test/testenv.py", "tools/ae_test/test_runs/pve-menus.txt"]:
+        assert (target / name).exists(), name
+    # (the copy runs alone: its lint finds its tables beside it)
+    done = subprocess.run([sys.executable, str(target / "tools" / "ae_test" / "test_run_lint.py"),
+                           str(target / "tools" / "ae_test" / "test_runs" / "rc8-smalls.txt")],
+                          capture_output=True, text=True, cwd=tmp_path)
+    assert done.returncode == 0, done.stdout + done.stderr
+
+
+def test_requires_lines(tmp_path):
+    good = GOOD.format(name="rq") + "requires mcc\nrequires workshop 3007701381\nrequires map bloodgulch\n"
+    assert messages(write(tmp_path, good, "rq")) == []
+    assert any("requires is" in m for m in messages(write(tmp_path, GOOD.format(name="rq") + "requires a steam pc\n", "rq")))
+    needs = run_list.requirements(good)
+    assert needs == [("mcc", ""), ("workshop", "3007701381"), ("map", "bloodgulch")]
+    maps = tmp_path / "maps"
+    maps.mkdir()
+    assert run_list.unmet(needs, maps, "", []) == ["MCC (--mcc <its folder>)", "the Workshop item 3007701381 (in MCC's Steam library)",
+                                                  "the map bloodgulch"]
+    library = tmp_path / "steamapps"
+    (library / "workshop" / "content" / "976730" / "3007701381").mkdir(parents=True)
+    (library / "common" / "MCC").mkdir(parents=True)
+    (maps / "bloodgulch.map").write_bytes(b"")
+    assert run_list.unmet(needs, maps, str(library / "common" / "MCC"), []) == []
+    assert preflight.summary_word(4, owner=True) == "NOT RUN, REQUIRES NOT MET"
+
+
+def test_preflight_fails_a_fall_staged_too_low():
+    import preflight
+
+    text = PREFLIGHT_LIST.replace("test first\ncheck Look", "test first\ncheck Walk off and land: a hard landing lock")
+    log = PREFLIGHT_LOG.replace(
+        "arena-evolved: test run setup ready first\n",
+        "arena-evolved: test run setup ready first\n"
+        "arena-evolved: test run: pre first scene picture test-runs/preflight/pre-first.png, actors placed 0, in view 0, "
+        "drop below 0.0, ahead 6.0\n")
+    rows = preflight.staging(text, log, preflight_events())
+    assert rows[0]["drops"] == (0.0, 6.0) and rows[0]["fall_check"]
+    assert any("deepest drop here is 6.0 wu" in words for test, words in preflight.problems(rows) if test == "first")
+    rows = preflight.staging(text, log.replace("ahead 6.0", "ahead 13.2"), preflight_events())
+    assert not any("deepest drop" in words for _, words in preflight.problems(rows))
+
+
+def test_join_does_not_count_a_proxy_as_a_prediction():
+    report = [{"test": "a", "check": 1, "verdict": "PASS", "rule": "cmd god me ok", "text": "You take no damage"},
+              {"test": "b", "check": 1, "verdict": "PASS", "rule": "log b", "text": "b shows"}]
+    rows = "\n".join([json.dumps({"list": "left", "test": "a", "verdict": "FAIL", "build": "1234abcd"}),
+                      json.dumps({"list": "left", "test": "b", "verdict": "PASS", "build": "1234abcd"})])
+    by = {row["test"]: row for row in testenv.join(LEFT_LIST, rows, report, "1234abcd")["tests"]}
+    assert by["a"]["predicted"] == "not measured" and by["a"]["proxy"] == {1: True}
+    assert by["b"]["predicted"] == "PASS"
+
+
+def test_gate_frame_switch(tmp_path):
+    install = fake_install(tmp_path)
+    preflight_record(tmp_path / "pf", LEFT_LIST, counts={"staged": 3, "tests": 3, "measured_passed": 0, "measured": 0,
+                                                         "proxy": 0, "look": 3, "frame": 2})
+    assert ("WARN", "frame") in gate(install, str(tmp_path / "pf"), "")[0]
+    rows = testenv.Rows()
+    commit = testenv.check_build(install, rows)
+    testenv.check_list(install, "left", commit, rows, str(tmp_path / "pf"), "", frame_fails=True)
+    assert ("FAIL", "frame") in {(row[0], row[1]) for row in rows.rows}

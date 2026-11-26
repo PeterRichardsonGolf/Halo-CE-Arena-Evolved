@@ -116,6 +116,7 @@ symbols in this file:
 #include "ae_dev_hit_markers.h" /* AE hook */
 #include "ae_crosshair.h" /* AE hook */
 #include "ae_hud_safe_rules.h" /* AE hook */
+#include "ae_split_layout.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -1624,7 +1625,8 @@ boolean hud_split_screen_layout(
 	static unsigned long read_at = (unsigned long)-1;
 	static boolean compact = FALSE;
 
-	if (local_player_count() > 1)
+	/* (two players side by side with SPLIT SCREEN HUD at SAME AS ONE PLAYER fall through to COMPACT HUD's value) */
+	if (local_player_count() > 1 && !ae_split_layout_hud_one_player()) /* AE hook */
 		return TRUE;
 	/* (read again when Settings changes it) */
 	if (read_at != ae_config_player_changes()) /* AE hook */

@@ -19,7 +19,13 @@ AE's post-game (ae_screen_postgame.h; the approved design). Its facts and its tw
 #include "ae_screen_pgcr.h"
 #include "ae_hooks.h"
 #include "ae_screen_postgame.h"
+#include "ae_party_follow.h"
 #include "ae_social_rules.h"
+#include "ae_career_draw.h"
+#include "ae_career_view_rules.h"
+#include "ae_mcc_career.h"
+#include "ae_mcc_rank.h"
+#include "ae_glue_career_xp.h"
 #include "ae_sound.h"
 #include "ae_style.h"
 #include "ae_test_hooks.h"
@@ -69,6 +75,8 @@ width, the title's top; the card's left, right and top */
 #define CARD_TOP 302.0f
 #define CARD_GAP 40.0f
 #define PROMPTS_FROM_FOOT 96.0f
+/* the result footer's right edge in the 1920-wide frame */
+#define PROMPTS_RIGHT 1754.0f
 /* a split view's: the mockup's 0.62 of the full size (a half view's floors: row words 16 px and up), its column at
 most 900 wide, the title 24 from the view's top, the prompts 32 from its foot */
 #define SPLIT_SCALE 0.62f
@@ -136,12 +144,29 @@ static struct ae_prompt prompt_of(int button, const char *label, int action)
 }
 
 /* the rows of a seat's GAME RESULT: RESULT, KILLS, ASSISTS, and BEST SPREE when it is known */
+/* whether a challenge paid in the seat's last game */
+static int last_paid(struct ae_postgame_seat const *seat)
+{
+	struct ae_career_last last;
+
+	return ae_career_xp_last((short)(seat->slot - 1), &last) && last.paid_count > 0;
+}
+
+/* the career rows after the others: CAREER XP, CHALLENGE when one paid, CAREER RANK */
+static short career_row_count(struct ae_postgame_seat const *seat)
+{
+	struct ae_career_last last;
+
+	return ae_career_xp_last((short)(seat->slot - 1), &last) ? (short)(2 + (last.paid_count > 0 ? 1 : 0)) : 0;
+}
+
 static short row_count(struct ae_postgame_seat const *seat)
 {
 	struct ae_social_pg social;
 
 	/* (0.9.3 a social game's fifth row, EXP, after BEST SPREE; with no spree known it takes that row's place) */
-	return (short)((seat->spree >= 0 ? 4 : 3) + (ae_social_game_postgame_seat((short)(seat->slot - 1), &social) ? 1 : 0));
+	return (short)((seat->spree >= 0 ? 4 : 3) + (ae_social_game_postgame_seat((short)(seat->slot - 1), &social) ? 1 : 0) +
+		career_row_count(seat));
 }
 
 /* a player's view: the game's, or (a made-up post-game) the players present in order */
@@ -356,6 +381,170 @@ static float column_height(short rows, float s)
 	return (84.0f + 48.0f + 36.0f + 20.0f + 18.0f + rows * 100.0f - 8.0f) * s;
 }
 
+/* a sub line whose parts are joined by the middle dot: drawn with the separator dots of the other rows, left edge x, centre cy */
+static void sub_dots_draw(float s, float x, float cy, unsigned int color, char const *text)
+{
+	char parts[4][96];
+	char const *pieces[4];
+	int count = 0;
+	float u = 20.0f * s > 14.0f ? s : 14.0f / 20.0f;
+
+	while (text && *text && count < 4)
+	{
+		char const *end = strstr(text, " \xC2\xB7 ");
+		size_t length = end ? (size_t)(end - text) : strlen(text);
+
+		if (length >= sizeof(parts[0]))
+			length = sizeof(parts[0]) - 1;
+		memcpy(parts[count], text, length);
+		parts[count][length] = 0;
+		pieces[count] = parts[count];
+		count++;
+		text = end ? end + 4 : NULL;
+	}
+	ae_career_dots_draw(u, AE_FONT_BODY, 20.0f, 0.0f, x, cy, AE_ALIGN_LEFT, color, pieces, count);
+}
+
+/* one of the career rows after the skill rank: CAREER XP, then CHALLENGE (when one paid), then CAREER RANK; n counts from the first;
+   returns the y of the next row */
+static float career_row_draw(struct ae_postgame_seat const *seat, int n, float x, float y, float w, float s, float row_h, float alpha,
+	float rise, float count)
+{
+	struct ae_career_last last;
+	struct ae_career_view view;
+	char text[160], name[48], grouped[24];
+	float cy, top = y + rise, right = x + w - 28.0f * s, label_x = x + 28.0f * s;
+	int kind = n == 0 ? 0 : (n == 1 && last_paid(seat)) ? 1 : 2, rankup, each;
+
+	if (!ae_career_xp_last((short)(seat->slot - 1), &last) || !ae_career_xp_view((short)(seat->slot - 1), &view) || view.guest)
+		return y + row_h + 8.0f * s;
+	rankup = last.step_after > last.step_before && kind == 2;
+	ae_draw_rect(x, top, w, row_h, 2.0f * s, with_alpha(RESULT_ROW, alpha * (float)(RESULT_ROW & 0xFF) / 255.0f));
+	/* (a stripe means this row changed: the rank row only when the rank rose) */
+	if (rankup)
+		ae_draw_rect(x, top, 6.0f * s, row_h, 0.0f, with_alpha(EXP_ICE, alpha));
+	cy = top + row_h * 0.5f;
+	if (kind == 0 || kind == 1)
+	{
+		/* CAREER XP / CHALLENGE: the label, its sources, "+136" with its unit */
+		char const *label = "CAREER XP";
+		char const *pieces[6];
+		char parts[5][32];
+		int count_pieces = 0;
+		long value = kind == 0 ? last.gained - last.challenge_xp : last.challenge_xp;
+		float unit_w = ae_draw_text_width(AE_FONT_ROW, 24.0f * s, "XP"), number_w;
+
+		if (kind == 1)
+			label = last.challenge[0] ? last.challenge : "CHALLENGE";
+		else
+		{
+			if (last.award.finish)
+				snprintf(parts[count_pieces++], sizeof(parts[0]), "Finish +%ld", last.award.finish);
+			if (last.award.win)
+				snprintf(parts[count_pieces++], sizeof(parts[0]), "win +%ld", last.award.win);
+			if (last.award.kills)
+				snprintf(parts[count_pieces++], sizeof(parts[0]), "kills +%ld", last.award.kills);
+			if (last.award.medals)
+				snprintf(parts[count_pieces++], sizeof(parts[0]), "medals +%ld", last.award.medals);
+			if (last.award.objectives)
+				snprintf(parts[count_pieces++], sizeof(parts[0]), "objectives +%ld", last.award.objectives);
+			for (each = 0; each < count_pieces; each++)
+				pieces[each] = parts[each];
+		}
+		ae_draw_text(AE_FONT_ROW, 30.0f * s, label_x, cap_top(AE_FONT_ROW, 30.0f * s, cy - 13.0f * s), AE_ALIGN_LEFT, with_alpha(AE_COLOR_TITLE, alpha), label);
+		if (kind == 0 && count_pieces)
+			ae_career_dots_draw(s, AE_FONT_BODY, 20.0f, 0.0f, label_x, cy + 20.0f * s, AE_ALIGN_LEFT, with_alpha(AE_COLOR_MUTED, alpha), pieces, count_pieces);
+		else if (kind == 1)
+			ae_draw_text(AE_FONT_BODY, 20.0f * s, label_x, cap_top(AE_FONT_BODY, 20.0f * s, cy + 20.0f * s), AE_ALIGN_LEFT,
+				with_alpha(AE_COLOR_MUTED, alpha), last.paid_count > 1 ? "2 challenges done" : "Challenge done");
+		snprintf(text, sizeof(text), "+%ld", (long)((float)value * count + 0.5f));
+		number_w = ae_draw_text_width(AE_FONT_ROW, 52.0f * s, text);
+		ae_draw_text(AE_FONT_ROW, 24.0f * s, right, cap_top(AE_FONT_ROW, 24.0f * s, cy + 12.0f * s), AE_ALIGN_RIGHT, with_alpha(AE_COLOR_MUTED, alpha), "XP");
+		ae_draw_text(AE_FONT_ROW, 52.0f * s, right - unit_w - 12.0f * s, cap_top(AE_FONT_ROW, 52.0f * s, cy), AE_ALIGN_RIGHT,
+			with_alpha(AE_COLOR_ACCENT, alpha), text);
+		(void)number_w;
+		return y + row_h + 8.0f * s;
+	}
+	/* CAREER RANK */
+	for (each = 0; view.name[each] && each < (int)sizeof(name) - 1; each++)
+		name[each] = view.name[each] >= 'a' && view.name[each] <= 'z' ? (char)(view.name[each] - 32) : view.name[each];
+	name[each] = 0;
+	{
+		char fitted[48];
+		float room = right - label_x - (ae_career_art_shown() ? 90.0f * s : 0.0f) - (rankup ? 130.0f * s : 0.0f);
+		float label_w;
+
+		ae_fit_text(AE_FONT_ROW, 30.0f * s, name, room, fitted, sizeof(fitted));
+		ae_draw_text(AE_FONT_ROW, 30.0f * s, label_x, cap_top(AE_FONT_ROW, 30.0f * s, cy - 13.0f * s), AE_ALIGN_LEFT, with_alpha(AE_COLOR_TITLE, alpha), fitted);
+		label_w = ae_draw_text_width(AE_FONT_ROW, 30.0f * s, fitted);
+		if (rankup)
+		{
+			float ch = 24.0f * s, cw = ae_draw_text_tracked_width(AE_FONT_ROW, 15.0f * s, 0.08f, "RANK UP") + 20.0f * s;
+			float chip_x = label_x + label_w + 14.0f * s, chip_y = cy - 13.0f * s - ch * 0.5f;
+
+			ae_draw_rect(chip_x, chip_y, cw, ch, 0.0f, with_alpha(EXP_ICE, alpha));
+			ae_draw_text_tracked(AE_FONT_ROW, 15.0f * s, 0.08f, chip_x + cw * 0.5f, cap_top(AE_FONT_ROW, 15.0f * s, chip_y + ch * 0.5f),
+				AE_ALIGN_CENTER, with_alpha(AE_COLOR_SELECTION_TEXT, alpha), "RANK UP");
+		}
+	}
+	ae_cv_number(view.to_next, grouped, sizeof(grouped));
+	{
+		char next[48];
+
+		if (view.step >= AE_XP_STEPS - 1)
+			snprintf(text, sizeof(text), "Career rank \xC2\xB7 the last rank");
+		else
+		{
+			snprintf(next, sizeof(next), "%s", view.rank < AE_XP_RANKS ? ae_xp_rank_name(view.rank + 1) : "tour");
+			if (view.rank >= AE_XP_RANKS)
+				snprintf(next, sizeof(next), "tour %d", view.tour + 1);
+			if (rankup)
+				snprintf(text, sizeof(text), "Up from %s \xC2\xB7 %s XP to %s", ae_xp_rank_name(ae_xp_rank(last.step_before)), grouped, next);
+			else
+				snprintf(text, sizeof(text), "Career rank \xC2\xB7 tour %d of %d \xC2\xB7 %s XP to %s", view.tour, AE_XP_TOURS, grouped, next);
+		}
+	}
+	{
+		float sub = 20.0f * s > 14.0f ? 20.0f * s : 14.0f;
+
+		(void)sub;
+		sub_dots_draw(s, label_x, cy + 20.0f * s, with_alpha(AE_COLOR_MUTED, alpha), text);
+	}
+	if (ae_career_art_shown())
+	{
+		int image = ae_mcc_career_menu_image(0, view.rank);
+
+		if (image)
+			ae_draw_image(image, right - 64.0f * s, cy - 32.0f * s, 64.0f * s, 64.0f * s, with_alpha(0xFFFFFFFFu, alpha));
+	}
+	/* (the foot bar: the XP held in the accent, this game's and its challenge's in the ice blue) */
+	{
+		long cost = view.step >= AE_XP_STEPS - 1 ? 0 : ae_xp_step_start(view.step + 1) - ae_xp_step_start(view.step);
+		float bar_y = top + row_h - 4.0f * s, bar_w = w - 56.0f * s, fill, gain;
+
+		if (cost > 0 && !rankup)
+		{
+			long before = view.xp - last.gained - ae_xp_step_start(view.step);
+
+			fill = bar_w * (float)(before < 0 ? 0 : before) / (float)cost;
+			gain = bar_w * (float)(last.gained) / (float)cost * count;
+			if (fill + gain > bar_w)
+				gain = bar_w - fill;
+			ae_draw_rect(label_x, bar_y, bar_w, 4.0f * s, 0.0f, with_alpha(AE_COLOR_RULE, alpha));
+			ae_draw_rect(label_x, bar_y, fill, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
+			ae_draw_rect(label_x + fill, bar_y, gain, 4.0f * s, 0.0f, with_alpha(EXP_ICE, alpha));
+		}
+		else if (cost > 0)
+		{
+			long into = view.xp - ae_xp_step_start(view.step);
+
+			ae_draw_rect(label_x, bar_y, bar_w, 4.0f * s, 0.0f, with_alpha(AE_COLOR_RULE, alpha));
+			ae_draw_rect(label_x, bar_y, bar_w * (float)into / (float)cost, 4.0f * s, 0.0f, with_alpha(EXP_ICE, alpha));
+		}
+	}
+	return y + row_h + 8.0f * s;
+}
+
 /* a seat's column: the title, MODE ON MAP, the player, the rows (as far as the clock has them in); returns its foot */
 static float draw_column(struct ae_postgame_seat const *seat, float x, float y, float w, float s, int full)
 {
@@ -365,6 +554,7 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 	short rows = row_count(seat), index;
 	struct ae_social_pg social;
 	int has_social = ae_social_game_postgame_seat((short)(seat->slot - 1), &social);
+	short career_rows = career_row_count(seat);
 
 	/* the title (OpenCE, as SETTINGS' titles) in the result's colour; the gametype on the map under it */
 	{
@@ -415,8 +605,9 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 	/* the rows, one by one */
 	for (index = 0; index < rows; index++)
 	{
-		static const char *const labels[ROWS] = { "RESULT", "KILLS", "ASSISTS", "BEST SPREE", "EXP" };
-		int is_exp = has_social && index == rows - 1;
+		static const char *const labels[ROWS] = { "RESULT", "KILLS", "ASSISTS", "BEST SPREE", "SKILL RANK" };
+		int is_exp = has_social && index == rows - 1 - career_rows;
+		int career_n = index - (rows - career_rows);
 		unsigned long at = ROW_FIRST_MS + (unsigned long)index * ROW_EVERY_MS;
 		float in, alpha, rise, count;
 		const char *sub = NULL;
@@ -435,9 +626,8 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 		case 4:
 			/* (0.9.3 EXP: "+1" in the accent, "0" in white, never red; the sub line says the rank) */
 			sub = social.sub;
-			snprintf(number, sizeof(number), social.delta > 0 ? "+%d" : "%d", social.delta);
-			if (social.delta > 0)
-				value_color = AE_COLOR_ACCENT;
+			/* (the skill rank now is the value; MCC's picture replaces its number) */
+			snprintf(number, sizeof(number), "%d", social.rank_after);
 			break;
 		case 0:
 			sub = seat->result_sub;
@@ -459,6 +649,11 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 			sub = "kills in one life";
 			break;
 		}
+		if (career_n >= 0)
+		{
+			y = career_row_draw(seat, career_n, x, y, w, s, row_h, alpha, rise, count);
+			continue;
+		}
 		if (index > 0 && !is_exp)
 			snprintf(number, sizeof(number), "%ld", (long)((float)value * count + 0.5f));
 		ae_draw_rect(x, y + rise, w, row_h, 2.0f * s, with_alpha(RESULT_ROW, alpha * (float)(RESULT_ROW & 0xFF) / 255.0f));
@@ -478,15 +673,21 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 			float sub_size = full ? 20.0f * s : (20.0f * s > 14.0f ? 20.0f * s : 14.0f);
 
 			ae_draw_text(AE_FONT_ROW, 30.0f * s, x + 28.0f * s, cap_top(AE_FONT_ROW, 30.0f * s, cy - 13.0f * s),
-				AE_ALIGN_LEFT, with_alpha(AE_COLOR_TITLE, alpha), labels[index]);
-			ae_draw_text(AE_FONT_BODY, sub_size, x + 28.0f * s, cap_top(AE_FONT_BODY, sub_size, cy + 20.0f * s),
-				AE_ALIGN_LEFT, with_alpha(AE_COLOR_MUTED, alpha), sub);
+				AE_ALIGN_LEFT, with_alpha(AE_COLOR_TITLE, alpha), labels[is_exp ? 4 : index]);
+			if (strstr(sub, " \xC2\xB7 "))
+				sub_dots_draw(s, x + 28.0f * s, cy + 20.0f * s, with_alpha(AE_COLOR_MUTED, alpha), sub);
+			else
+				ae_draw_text(AE_FONT_BODY, sub_size, x + 28.0f * s, cap_top(AE_FONT_BODY, sub_size, cy + 20.0f * s),
+					AE_ALIGN_LEFT, with_alpha(AE_COLOR_MUTED, alpha), sub);
 		}
 		else
 			ae_draw_text(AE_FONT_ROW, 30.0f * s, x + 28.0f * s, cap_top(AE_FONT_ROW, 30.0f * s, cy), AE_ALIGN_LEFT,
-				with_alpha(AE_COLOR_TITLE, alpha), labels[index]);
-		ae_draw_text(AE_FONT_ROW, 52.0f * s, x + w - 28.0f * s, cap_top(AE_FONT_ROW, 52.0f * s, cy), AE_ALIGN_RIGHT,
-			with_alpha(value_color, alpha), number);
+				with_alpha(AE_COLOR_TITLE, alpha), labels[is_exp ? 4 : index]);
+		if (is_exp && !social.guest && ae_skill_picture_draw(social.rank_after, x + w - 28.0f * s - 32.0f * s, cy, 64.0f * s, alpha))
+			;
+		else
+			ae_draw_text(AE_FONT_ROW, 52.0f * s, x + w - 28.0f * s, cap_top(AE_FONT_ROW, 52.0f * s, cy), AE_ALIGN_RIGHT,
+				with_alpha(value_color, alpha), number);
 		if (is_exp)
 		{
 			/* (the RANK UP chip after the label, 14 u of gap; a 4 u bar at the row's foot: the EXP held in the accent,
@@ -496,7 +697,7 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 
 			if (social.rank_after > social.rank_before && !social.guest)
 			{
-				float label_w = ae_draw_text_width(AE_FONT_ROW, 30.0f * s, labels[4]), ch = 24.0f * s;
+				float label_w = ae_draw_text_width(AE_FONT_ROW, 30.0f * s, "SKILL RANK"), ch = 24.0f * s;
 				float cw = ae_draw_text_tracked_width(AE_FONT_ROW, 15.0f * s, 0.08f, "RANK UP") + 20.0f * s;
 				float chip_x = x + 28.0f * s + label_w + 14.0f * s, chip_y = cy - 13.0f * s - ch * 0.5f;
 
@@ -506,19 +707,24 @@ static float draw_column(struct ae_postgame_seat const *seat, float x, float y, 
 			}
 			if (!social.guest)
 			{
-				float bar_x = x + 30.0f * s, bar_w = w * 0.78f, bar_y = y + rise + row_h - 10.0f * s;
+				/* (the bar is the row's foot edge, 4 s high, from the label's left to 24 s before the value) */
+				float value_w = ae_career_art_shown() ? 64.0f * s : ae_draw_text_width(AE_FONT_ROW, 52.0f * s, number);
+				float bar_x = x + 28.0f * s, bar_w = x + w - 28.0f * s - value_w - 24.0f * s - bar_x, bar_y = y + rise + row_h - 4.0f * s;
 				int percent_before = social.rank_before == social.rank_after ? ae_social_rank_percent(social.exp_before) : 0;
 				int percent_after = ae_social_rank_percent(social.exp_after);
 				float held = bar_w * (float)percent_before / 100.0f, total = bar_w * (float)percent_after / 100.0f;
 
-				ae_draw_rect(bar_x, bar_y, bar_w, 4.0f * s, 0.0f, with_alpha(AE_COLOR_RULE, alpha));
-				if (total > held)
+				if (total > 0.0f)
 				{
-					ae_draw_rect(bar_x, bar_y, held, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
-					ae_draw_rect(bar_x + held, bar_y, (total - held) * count, 4.0f * s, 0.0f, with_alpha(EXP_ICE, alpha));
+					ae_draw_rect(bar_x, bar_y, bar_w, 4.0f * s, 0.0f, with_alpha(AE_COLOR_RULE, alpha));
+					if (total > held)
+					{
+						ae_draw_rect(bar_x, bar_y, held, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
+						ae_draw_rect(bar_x + held, bar_y, (total - held) * count, 4.0f * s, 0.0f, with_alpha(EXP_ICE, alpha));
+					}
+					else
+						ae_draw_rect(bar_x, bar_y, total, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
 				}
-				else
-					ae_draw_rect(bar_x, bar_y, total, 4.0f * s, 0.0f, with_alpha(AE_COLOR_ACCENT, alpha));
 			}
 		}
 		y += row_h + 8.0f * s;
@@ -583,12 +789,12 @@ static void draw_card(short local, float x, float right, float y, float u)
 		AE_COLOR_TEXT, pg.facts.played);
 }
 
-static void result_prompts(float x, float center_y, float bottom)
+static void result_prompts(float x, float right, float center_y, float bottom)
 {
 	pg.prompts[0] = prompt_of(AE_BUTTON_A, counting() ? "Skip" : "Continue", AE_ACTION_ACCEPT);
 	pg.prompt_count = 1;
 	ae_widget_footer_band(&pg.density, bottom);
-	ae_widget_prompts(&pg.density, x, center_y, pg.prompts, pg.prompt_count, NULL, x + 1600.0f, -1, HIT_PROMPTS);
+	ae_widget_prompts(&pg.density, x, center_y, pg.prompts, pg.prompt_count, NULL, right, -1, HIT_PROMPTS);
 }
 
 static void draw_result(void)
@@ -623,9 +829,17 @@ static void draw_result(void)
 		if (card_x < x + w + CARD_GAP * k)
 			card_x = x + w + CARD_GAP * k;
 		ae_density_full(layout.height * layout.scale, scale, &pg.density);
-		draw_column(&pg.facts.seats[local], x, COLUMN_TOP, w, u, 1);
+		/* (the career rows make a tall column: it shrinks to end above the prompts, as a split view's does) */
+		{
+			float room = layout.height - PROMPTS_FROM_FOOT - COLUMN_TOP - 24.0f, fit = u;
+			short count = row_count(&pg.facts.seats[local]);
+
+			if (column_height(count, u) > room)
+				fit = room / column_height(count, 1.0f);
+			draw_column(&pg.facts.seats[local], x, COLUMN_TOP, w, fit, 1);
+		}
 		draw_card(local, card_x, card_right, CARD_TOP, u);
-		result_prompts(x, layout.height - PROMPTS_FROM_FOOT, layout.height);
+		result_prompts(x, ae_frame_x(&frame, PROMPTS_RIGHT / 1920.0f), layout.height - PROMPTS_FROM_FOOT, layout.height);
 		return;
 	}
 	/* split screen: each player's own result in their own view (R-2p), no card; one prompt line per view */
@@ -785,6 +999,13 @@ int ae_screen_postgame_dev_open(struct ae_postgame_facts const *facts)
 	pg.step = STEP_RESULT;
 	pg.step_ms = ae_motion_now();
 	pg.skipped = ae_settings_reduce_motion() ? 1 : 0;
+	/* (a staged scene with career rows (DEV `social career last`) shows every row at once: it is looked at, not waited for) */
+	{
+		struct ae_career_last staged;
+
+		if (ae_career_xp_last(0, &staged))
+			pg.skipped = 1;
+	}
 	platform_log("ae postgame: open (made up, %d players, %s)", (int)facts->players, facts->teams ? "teams" : "ffa");
 	ae_test_capture("pg_counting", ROW_FIRST_MS + ROW_EVERY_MS + COUNT_MS / 2);
 	ae_test_capture("pg_result", (int)counting_ms() + 600);
@@ -805,6 +1026,7 @@ void ae_screen_postgame_dev_close(void)
 void ae_screen_postgame_tick(void)
 {
 	ae_social_game_tick();
+	ae_party_follow_tick();
 	if (pg.dev)
 	{
 		/* (a made-up post-game stays until A closes it) */

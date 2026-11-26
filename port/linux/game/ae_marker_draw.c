@@ -37,6 +37,7 @@ numbers are the design's at 1080 lines, kept with the view's scale s (the strip'
 #include "ae_score_strip.h"
 #include "ae_waypoint_icons.h"
 #include "ae_waypoint_ink.h"
+#include "ae_split_layout.h"
 
 real hud_item_timers_ae_waypoint_scale(real world_units);
 struct bitmap_data const *hud_item_timers_ae_glyph(short glyph);
@@ -280,7 +281,7 @@ static boolean view_get(struct view *view)
 	view->s = ae_score_strip_view_scale();
 	view->width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * view->ppu;
 	view->height = (real)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0) * view->ppu;
-	view->split = (boolean)(local_player_count() > 1);
+	view->split = ae_split_layout_hud_small();
 	if (!(view->s > 0.0f) || view->width <= 0.0f || view->height <= 0.0f)
 		return FALSE;
 	/* (HUD STYLE AE's inks; any other style draws the same forms in CE's own: its message colour for the line and the label) */

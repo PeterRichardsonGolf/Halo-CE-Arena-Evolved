@@ -22,10 +22,13 @@
 #include "ae_glue_social.h"
 #include "ae_glue_recent_maps.h"
 #include "ae_glue_party.h"
+#include "ae_party_follow.h"
 #include "ae_party_model_rules.h"
 #include "ae_rematch_rules.h"
 #include "ae_glue_setup_options.h"
 #include "ae_glue_social_game.h"
+#include "ae_glue_profiles.h"
+#include "interface/player_ui.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_main_menu.h"
 #include "ae_screen_matchmaking.h"
@@ -99,6 +102,10 @@ static struct
 	int force_start;            /* ae_social_plan_force_start's, one time (-1 none) */
 	struct ae_social_last last;   /* the finished game, for the post-game lobby */
 	int rematch;                /* games played in a row by the same lobby: 0 the first */
+	/* each local player's profile before the game (the game's teardown clears them all: a split screen player 2 would come
+	   back as a guest), -1 for none, and whether it is to be put back once the menus are up */
+	long profile_saved[AE_SOCIAL_LOCAL];
+	int profiles_back;
 } game = { .force_start = -1 };
 
 /* ---------- who */
@@ -493,6 +500,25 @@ static void packs_put_back(void)
 	}
 }
 
+/* the profiles the game's teardown took, put back once the menus are up and no game is (a guest has none, and keeps being one) */
+static void profiles_put_back(void)
+{
+	short local;
+
+	if (!game.profiles_back || game_in_progress() || !main_menu_is_active())
+		return;
+	for (local = 0; local < AE_SOCIAL_LOCAL; local++)
+	{
+		long now = player_ui_get_active_player_profile_index(local);
+
+		if (ae_social_profile_put_back(game.profile_saved[local], now, ae_profile_is_guest(local)) &&
+			ae_profile_switch(local, (int)game.profile_saved[local]).ok)
+			platform_log("ae social: player %d's profile put back after the game", (int)local + 1);
+	}
+	if (!game.active)
+		game.profiles_back = 0;
+}
+
 static char const *skill_word(int step)
 {
 	static char word[16];
@@ -560,6 +586,8 @@ int ae_social_plan_start(struct ae_social_plan const *plan)
 	config_set("bots.skill", skill_word(first_shooting));
 	game.plan = *plan;
 	game.rematch = plan->rematch_no;
+	for (seat = 0; seat < AE_SOCIAL_LOCAL; seat++)
+		game.profile_saved[seat] = seat < roster->humans ? player_ui_get_active_player_profile_index((short)seat) : NONE;
 	game.counted = 0;
 	game.running = 0;
 	game.pending_written = 0;
@@ -704,7 +732,7 @@ static void fill_pg(short local, struct ae_postgame_seat const *seat, int outcom
 	if (!game.has_key[local])
 	{
 		pg->guest = 1;
-		snprintf(pg->sub, sizeof(pg->sub), "Sign in a profile to keep EXP");
+		snprintf(pg->sub, sizeof(pg->sub), "Sign in a profile to keep a career");
 		return;
 	}
 	/* (a result not counted or not written to career.txt is not claimed: the row says so, as a guest's does) */
@@ -720,7 +748,7 @@ static void fill_pg(short local, struct ae_postgame_seat const *seat, int outcom
 	pg->exp_after = result->exp_after;
 	pg->rank_before = result->rank_before;
 	pg->rank_after = result->rank_after;
-	ae_social_view_postgame_sub(game.plan.label, ffa, pg->delta > 0, players, result->exp_after, pg->sub, (int)sizeof(pg->sub));
+	ae_social_view_postgame_sub(game.plan.label, ffa, pg->delta > 0, players, result->rank_before, result->exp_after, pg->sub, (int)sizeof(pg->sub));
 	(void)seat;
 }
 
@@ -780,6 +808,7 @@ static void result_count(void)
 void ae_social_game_tick(void)
 {
 	packs_put_back();
+	profiles_put_back();
 	if (game.dev)
 	{
 		if (!ae_screen_postgame_up())
@@ -803,6 +832,7 @@ void ae_social_game_tick(void)
 	if (game_running())
 	{
 		game.running = 1;
+		game.profiles_back = 1;
 		if (!game.pending_written && !game.counted)
 			pending_write();
 		if (!game.counted && ae_glue_postgame_due())
@@ -975,6 +1005,12 @@ int ae_social_game_continue(void)
 		return 0;
 	if (game.active && game.plan.ok)
 		last_capture();
+	/* (an online party carries on together: its leader asks the service for the next game, no lobby of this PC's own opens) */
+	if (!game.dev && ae_party_follow_continue(game.plan.playlist))
+	{
+		ae_glue_postgame_leave();
+		return 1;
+	}
 	game.reopen = 1;
 	ae_glue_postgame_leave();
 	return 1;
@@ -1130,11 +1166,11 @@ int ae_social_game_dev_postgame(char const *kind, char const *playlist, long exp
 		pg->exp_after = result.exp_after;
 		pg->rank_before = result.rank_before;
 		pg->rank_after = result.rank_after;
-		ae_social_view_postgame_sub(list->label, ffa, pg->delta, facts.players, result.exp_after, pg->sub, (int)sizeof(pg->sub));
+		ae_social_view_postgame_sub(list->label, ffa, pg->delta, facts.players, result.rank_before, result.exp_after, pg->sub, (int)sizeof(pg->sub));
 		if (!has_key && !ae_dev_mode_on())
 		{
 			pg->guest = 1;
-			snprintf(pg->sub, sizeof(pg->sub), "Sign in a profile to keep EXP");
+			snprintf(pg->sub, sizeof(pg->sub), "Sign in a profile to keep a career");
 		}
 	}
 	if (!ae_screen_postgame_dev_open(&facts))

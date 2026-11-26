@@ -662,6 +662,7 @@ boolean game_load(
 	network_game_manager.c) */
 	profile_console_map_loaded(options->map_name);
 #endif
+	{ extern void community_map_loading(char const *map_name); community_map_loading(options->map_name); } /* AE hook */
 	match_assert(
 		"c:\\halo\\SOURCE\\game\\game.c",
 		0x192,

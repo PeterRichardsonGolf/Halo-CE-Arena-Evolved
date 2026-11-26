@@ -86,6 +86,8 @@ void ae_lan_bots_clear_teams(void);
 /* (player_queues_new.c's update_server_next_update) the host's tick's input of the player at this absolute index:
 a LAN bot's from the bot brain, in place of the idle input its queue holds */
 void ae_lan_bots_action(long absolute_player_index, struct player_action *action);
+/* whether ae_lan_bots_action fills the bots' input when the update is built (a game hosted for other machines) */
+boolean ae_lan_bots_build_actions(void);
 
 /* (game_engine.c's multiple_teams_alive and team_has_players) whether the player (a datum index) is a bot that
 left the game in progress on this host: it still holds its team, so its leaving never ends the game */

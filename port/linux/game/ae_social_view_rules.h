@@ -12,13 +12,16 @@ returns the length.
 
 #include "ae_social_playlists.h"
 
+/* a tournament row's rank badge: "RANK 14" once the playlist has a game, the empty text (nothing drawn) before */
+int ae_social_view_rank_badge(long games, int rank, char *text, int size);
+/* the tournament card's foot for a playlist: "SKILL RANK 14" and 1 once it has a game (the bar and the wins to go follow), "NO GAMES YET"
+   and 0 before (nothing else is drawn) */
+int ae_social_view_foot_rank(long games, int rank, char *text, int size);
 /* "RANK 14" */
 int ae_social_view_rank(int rank, char *text, int size);
-/* "37 EXP" */
-int ae_social_view_exp(long exp, char *text, int size);
-/* "3 WINS TO RANK 15", "1 WIN TO RANK 15", "TOP RANK" at rank 50 */
+/* "3 WINS OR TIES TO RANK 15", "1 WIN OR TIE TO RANK 15", "TOP RANK" at rank 50 */
 int ae_social_view_wins_to(long exp, char *text, int size);
-/* the same for the overall rank: "38 EXP TO OVERALL RANK 23", "TOP OVERALL RANK" */
+/* the same for the overall rank: "38 WINS OR TIES TO OVERALL RANK 23", "TOP OVERALL RANK" */
 int ae_social_view_overall_to(long total, char *text, int size);
 /* the card's shape line: "4 V 4 · 19 MAPS" (teams), "8 PLAYERS · 19 MAPS" (a free for all); maps = the distinct maps on offer */
 int ae_social_view_shape(struct ae_social_playlist const *playlist, int maps, char *text, int size);
@@ -36,13 +39,14 @@ int ae_social_view_get_rest(struct ae_social_playlist const *playlist, struct ae
 int ae_social_view_bot_line(int mode, char *text, int size);
 /* the DEV line: "DEV · MATCH 17.4 · TIER 7 NORMAL / NORMAL · RANGE 11-24" (the match as points / 100 shown from 1) */
 int ae_social_view_dev_line(long points, char *text, int size);
-/* the post-game sub line: "TEAM SLAYER · RANK 15 · 10 TO RANK 16"; a free for all that earns nothing: "FREE FOR ALL · 4TH OR BETTER
-   EARNS EXP · RANK 16" (earns 0); a rank 50 one: "... · RANK 50" */
-int ae_social_view_postgame_sub(char const *label, int ffa, int earns, int players, long exp_after, char *text, int size);
-/* the quit dialog's body: "This is a tournament TEAM SLAYER game. Leaving before the end costs 1 EXP (37 to 36) and counts as left
-   early. Leaving at the post-game costs nothing." (at 0 EXP: "... costs nothing here: you have no EXP to lose, but it counts as left early.") */
+/* the post-game sub line: "Team Slayer · 10 wins or ties to rank 16", "Team Slayer · up from rank 14 · 10 wins or ties to rank 16" after a rank up,
+   "Team Slayer · no change for a loss", "Free For All · top 4 counts as a win" (a free for all that earns nothing), "Team Slayer · the top rank" */
+int ae_social_view_postgame_sub(char const *label, int ffa, int earns, int players, int rank_before, long exp_after, char *text, int size);
+/* the quit dialog's body: "This is a tournament Team Slayer game. Leaving before the end moves your skill back one win and counts as left
+   early. Leaving at the post-game costs nothing." (with no wins to lose: "... You have no wins to lose, but leaving before the end counts as
+   left early. ...") */
 int ae_social_view_quit_body(char const *label, long exp, char *text, int size);
-/* the quit's help line in the pause: "Leave the game: -1 EXP in TEAM SLAYER." */
+/* the quit's help line in the pause: "Leave the game: your Team Slayer skill moves back one win." */
 int ae_social_view_quit_help(char const *label, char *text, int size);
 /* the ordinal of a zero-based place: "1ST", "2ND", "3RD", "4TH" ... */
 int ae_social_view_ordinal(int place, char *text, int size);

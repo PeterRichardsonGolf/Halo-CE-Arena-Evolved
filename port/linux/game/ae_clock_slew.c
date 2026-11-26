@@ -18,6 +18,7 @@ No sample older than a second counts: a host gone silent leaves the clock alone.
 #include "ae_clock_slew.h"
 
 int config_boolean(char const *name);
+unsigned char network_replay_playing(void);
 unsigned long config_changes(void);
 
 /* the samples older than this are not used */
@@ -55,7 +56,8 @@ void ae_clock_slew_reset(void)
 
 void ae_clock_slew_note_host(long host_time, real round_trip_ticks)
 {
-	if (game_connection() != _game_connection_network_client || game_time_held())
+	/* (a replay's clock is its own: there is no host to be behind) */
+	if (game_connection() != _game_connection_network_client || game_time_held() || network_replay_playing())
 		return;
 	ae_clock_slew_samples_add(&ae_clock_slew_samples,
 		ae_clock_slew_error(host_time, (float)round_trip_ticks, game_time_get()));
@@ -88,7 +90,8 @@ real ae_clock_slew_error_ticks(void)
 
 real ae_clock_slew_speed_factor(void)
 {
-	if (!ae_clock_slew_enabled() || game_connection() != _game_connection_network_client || game_time_held())
+	if (!ae_clock_slew_enabled() || game_connection() != _game_connection_network_client || game_time_held() ||
+		network_replay_playing())
 		return 1.0f;
 	if (!ae_clock_slew_have_sample || ae_clock_slew_samples.count < AE_CLOCK_SLEW_SAMPLES ||
 		system_milliseconds() - ae_clock_slew_last_sample > AE_CLOCK_SLEW_STALE_MILLISECONDS)
@@ -100,7 +103,7 @@ real ae_clock_slew_speed_factor(void)
 
 long ae_clock_slew_frame_ticks(long stock_ticks)
 {
-	if (game_connection() != _game_connection_network_client)
+	if (game_connection() != _game_connection_network_client || network_replay_playing())
 		return stock_ticks;
 	return MIN(ae_clock_slew_burst(stock_ticks), stock_ticks);
 }
@@ -109,7 +112,7 @@ real ae_clock_slew_carry(real ticks_elapsed, long ticks_run, long stock_ticks, r
 {
 	float carried;
 
-	if (game_connection() != _game_connection_network_client || !(ticks_per_second > 0.0f))
+	if (game_connection() != _game_connection_network_client || network_replay_playing() || !(ticks_per_second > 0.0f))
 		return 0.0f;
 	carried = ae_clock_slew_carry_ticks(ticks_elapsed, ticks_run, stock_ticks);
 	/* (said once a hitch: the first frame that carries) */

@@ -41,6 +41,10 @@ void config_folder(char *path, size_t size);
 /* a whole file (a UTF-8 path), NUL terminated, or NULL; free() it (the Android
 guest has no SDL_LoadFile) */
 char *config_file_read(const char *path, size_t *size);
+/* sets a setting from its value as text for this run only, over the file's and the environment's (a daily challenge's:
+community.c), without writing it; config_write still writes the file's. 1 on success. Cleared all at once */
+int config_override(const char *name, const char *value);
+void config_overrides_clear(void);
 /* a setting's default, as text; 0 if there is no such setting */
 int config_default(const char *name, char *text, size_t size);
 /* The settings an existing config.toml has that a new version's defaults

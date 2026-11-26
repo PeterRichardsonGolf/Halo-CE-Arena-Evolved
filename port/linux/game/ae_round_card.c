@@ -24,6 +24,7 @@ verdict, Overpass 900 for the numerals and names, Overpass 750 for the tracked l
 #include "ae_round_card_rules.h"
 #include "ae_round_internal.h"
 #include "ae_scoreboard.h"
+#include "ae_split_layout.h"
 #include "../src/ae_draw.h"
 
 /* (sdl_platform.c's) the screen's size in pixels */
@@ -293,7 +294,7 @@ void ae_round_card_draw(short local_player_index)
 	struct card card;
 	float alpha;
 	int screen_w = 0, screen_h = 0;
-	boolean split = local_player_count() > 1;
+	boolean split = ae_split_layout_hud_small();
 	struct frame f;
 	struct ae_layout layout;
 	float view_x, view_y, view_w, view_h;

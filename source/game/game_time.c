@@ -84,6 +84,7 @@ symbols in this file:
 /* port/linux/game/network_distributed.c's */
 void network_distributed_tick(void);
 /* (a replay's playback: the records of the tick reached, before it runs) */ unsigned char network_replay_playing(void); void network_replay_playback_tick(void); /* AE hook */
+/* (a replay's seek: the ticks a frame runs) */ long network_replay_ticks_per_frame(long ticks); /* AE hook */
 
 /* port: the tick loop's steps, timed in the profiling build */
 PROFILE_SECTION(game_time_network_distributed_tick_section, "network_distributed_tick")
@@ -464,6 +465,7 @@ void game_time_update(
 				/* (the distributed netcode: every machine ticks on its own
 				clock, and the host waits for nobody) */
 				connection = TICKS_PER_SECOND;
+				if (network_replay_playing()) connection = network_replay_ticks_per_frame(connection); /* AE hook */
 				break;
 			case _game_connection_local:
 				connection = 7;

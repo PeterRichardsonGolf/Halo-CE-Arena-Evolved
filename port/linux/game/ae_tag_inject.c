@@ -16,6 +16,7 @@ is played: the tag injector says why. A tag is taken by its number in its catego
 #include "cev_glue.h"
 #include "mcc_maps.h"
 #include "ae_tag_inject.h"
+#include "randomizer.h"
 #include "firing_range.h"
 
 #include <stdio.h>
@@ -65,7 +66,7 @@ static long inject_profile(
 }
 
 /* the map of the injector's list a level name is: an MCC map's identity, else a Custom Edition map's level name */
-static short inject_map(
+short ae_tag_inject_map_of_level(
 	char const *level)
 {
 	if (strchr(level, '@'))
@@ -138,6 +139,9 @@ void ae_tag_inject_tags_loaded(
 		return;
 	range_profile = firing_range_level_profile(map_name);
 	if (!inject.on && !range_profile)
+		return;
+	/* (the randomizer's range branch injected the range's profile: a second load would overwrite the first one's table) */
+	if (range_profile && ae_randomizer_range_injected())
 		return;
 	if (range_profile)
 	{
@@ -258,7 +262,7 @@ boolean ae_tag_inject_command(
 			snprintf(answer, answer_size, "no map can be opened: %s", reason);
 			return FALSE;
 		}
-		map = inject_map(first);
+		map = ae_tag_inject_map_of_level(first);
 		if (map == NONE || !tag_injector_map_open(map))
 		{
 			snprintf(answer, answer_size, "'%s' cannot be opened (the log says why)", first);

@@ -157,6 +157,7 @@ symbols in this file:
 #include "ae_key_prompts.h" /* AE hook */
 #include "ae_hold_act.h" /* AE hook */
 #include "ae_bomb_assault.h" /* AE hook */
+#include "ae_split_layout.h" /* AE hook */
 #include "controller_remap.h" /* port: port/linux/game/controller_remap_game.c */
 
 #include <stddef.h>
@@ -1213,7 +1214,7 @@ static void hud_port_draw_colon(
 	offset.offset.y = (short)(long)y;
 	offset.scale.i = 1.0f;
 	offset.scale.j = 1.0f;
-	hud_calculate_point(local_player_index, &placement, &offset, NULL, local_player_count() > 1, scale, &point);
+	hud_calculate_point(local_player_index, &placement, &offset, NULL, ae_split_layout_hud_small(), scale, &point); /* AE hook */
 	hud_retrieve_bitmap_and_bounding_rect(hud_number->number_bitmap.index, 0, HUD_PORT_COLON_INDEX, &bitmap, &clip);
 	if (bitmap && _texture_cache_bitmap_get_hardware_format((struct bitmap_data *)bitmap, FALSE, TRUE))
 	{
@@ -1510,7 +1511,7 @@ void scripted_hud_messages_clear(
 long hud_get_font_index(
 	void)
 {
-	if (local_player_count() > 1 &&
+	if (ae_split_layout_hud_small() && /* AE hook */
 		hud_msg_def->multi_player_font.index != NONE)
 	{
 		return hud_msg_def->multi_player_font.index;
@@ -2117,7 +2118,7 @@ void hud_messaging_update(
 								}
 								else
 								{
-									ae_key_prompts_note(element->data, icon_index, local_player_count() > 1 ? 0.75f : 1.0f); /* AE hook */
+									ae_key_prompts_note(element->data, icon_index, ae_split_layout_hud_small() ? 0.75f : 1.0f); /* AE hook */
 									render_state_bitmap(
 										&line_bounds,
 										&line_cursor,

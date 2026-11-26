@@ -9,8 +9,9 @@ MAPS & MODS' rules (ae_maps_hub_rules.h). Plain C.
 #include <ctype.h>
 #include "ae_maps_hub_rules.h"
 
-static char const *const tab_names[AE_HUB_TABS] = { "INSTALLED", "REQUIRED FILES", "BROWSE CE MAPS", "WORKSHOP", "MODS" };
-static char const *const tab_words[AE_HUB_TABS] = { "installed", "required", "browse", "workshop", "mods" };
+static char const *const tab_names[AE_HUB_TABS] = { "INSTALLED", "REQUIRED FILES", "BROWSE CE MAPS", "WORKSHOP", "MODS",
+	"ITEM SETS" };
+static char const *const tab_words[AE_HUB_TABS] = { "installed", "required", "browse", "workshop", "mods", "sets" };
 static char const *const source_names[AE_HUB_SOURCES] = { "CE MAP", "MCC", "WORKSHOP", "WORKSHOP", "MAP PACK",
 	"STOCK", "FROM A HOST", "CE MAP", "MODDED DISC", "COMMUNITY" };
 static char const *const show_names[AE_HUB_SHOWS] = { "ALL", "CUSTOM EDITION", "COMMUNITY", "MCC", "WORKSHOP", "MAP PACKS", "STOCK",
@@ -29,6 +30,16 @@ const char *ae_hub_tab_name(int tab)
 	return tab >= 0 && tab < AE_HUB_TABS ? tab_names[tab] : "";
 }
 
+int ae_hub_tab_visible(int tab, int dev_mode)
+{
+	return tab >= 0 && tab < AE_HUB_TABS && (tab != AE_HUB_TAB_ITEM_SETS || dev_mode);
+}
+
+int ae_hub_tab_resolve(int tab, int dev_mode)
+{
+	return ae_hub_tab_visible(tab, dev_mode) ? tab : AE_HUB_TAB_INSTALLED;
+}
+
 int ae_hub_tab_find(const char *word)
 {
 	int tab;
@@ -41,11 +52,20 @@ int ae_hub_tab_find(const char *word)
 	return -1;
 }
 
-int ae_hub_tab_step(int tab, int direction)
+int ae_hub_tab_step(int tab, int direction, int dev_mode)
 {
-	if (tab < 0 || tab >= AE_HUB_TABS)
+	int next, tries;
+
+	if (!ae_hub_tab_visible(tab, dev_mode))
 		return AE_HUB_TAB_INSTALLED;
-	return (tab + (direction < 0 ? AE_HUB_TABS - 1 : 1)) % AE_HUB_TABS;
+	next = tab;
+	for (tries = 0; tries < AE_HUB_TABS; tries++)
+	{
+		next = (next + (direction < 0 ? AE_HUB_TABS - 1 : 1)) % AE_HUB_TABS;
+		if (ae_hub_tab_visible(next, dev_mode))
+			return next;
+	}
+	return AE_HUB_TAB_INSTALLED;
 }
 
 struct stage { char const *word; int state; };
@@ -71,6 +91,11 @@ static struct stage const workshop_stages[] = { { "list", AE_HUB_STATE_LIST }, {
 	{ NULL, 0 } };
 static struct stage const mods_stages[] = { { "list", AE_HUB_STATE_LIST }, { "moving", AE_HUB_STATE_MOVING },
 	{ "restart", AE_HUB_STATE_RESTART }, { NULL, 0 } };
+/* (ITEM SETS: the state is the scene, ae_item_sets_rules.h's AE_IS_SCENE_* in this order) */
+static struct stage const item_sets_stages[] = { { "list", 0 }, { "empty", 1 }, { "options", 2 }, { "delete", 3 }, { "pick", 4 },
+	{ "cant-open", 5 }, { "kinds", 6 }, { "items", 7 }, { "adding", 8 }, { "added", 9 }, { "refused", 10 }, { "contents", 11 },
+	{ "remove", 12 }, { "failed", 13 }, { "biped", 14 }, { "switched", 15 }, { "new", 16 }, { "real-kinds", 17 }, { "real-items", 18 },
+	{ "real-add", 19 }, { NULL, 0 } };
 
 static struct stage const *stages_of(int tab)
 {
@@ -81,6 +106,7 @@ static struct stage const *stages_of(int tab)
 	case AE_HUB_TAB_BROWSE: return browse_stages;
 	case AE_HUB_TAB_WORKSHOP: return workshop_stages;
 	case AE_HUB_TAB_MODS: return mods_stages;
+	case AE_HUB_TAB_ITEM_SETS: return item_sets_stages;
 	}
 	return NULL;
 }
@@ -110,6 +136,7 @@ const char *ae_hub_stage_names(int tab)
 	case AE_HUB_TAB_WORKSHOP: return "list|signed-out|collections-show|collections|collection|collection-map|collection-getting|"
 		"collection-installed|collection-get-confirm|collection-remove-confirm|collection-no-room";
 	case AE_HUB_TAB_MODS: return "list|moving|restart";
+	case AE_HUB_TAB_ITEM_SETS: return "list|empty|options|delete|pick|cant-open|kinds|items|adding|added|refused|contents|remove|failed|biped|switched|new|real-kinds|real-items|real-add";
 	}
 	return "";
 }
@@ -340,6 +367,11 @@ int ae_hub_hints(int tab, int state, int keyboard, struct ae_hub_hint hints[AE_H
 		hint(hints, &count, AE_HUB_HINT_ON_OFF, "On / off");
 		hint(hints, &count, AE_HUB_HINT_MOVE, "Move");
 		hint(hints, &count, AE_HUB_HINT_AGAIN, "Find mods again");
+		hint(hints, &count, AE_HUB_HINT_BACK, "Back");
+		break;
+	case AE_HUB_TAB_ITEM_SETS:
+		/* (the page's own screen draws its footer: ae_item_sets_rules.c) */
+		hint(hints, &count, AE_HUB_HINT_SELECT, "Open");
 		hint(hints, &count, AE_HUB_HINT_BACK, "Back");
 		break;
 	}

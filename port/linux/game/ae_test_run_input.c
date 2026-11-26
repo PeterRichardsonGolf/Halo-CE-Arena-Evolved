@@ -26,6 +26,11 @@ static unsigned long pad_polled[PORTS]; /* the count when each port's pad was la
 static unsigned long long keys_held;   /* the keyboard's bound actions as xinput_sdl.c last saw them (menus or not) */
 static unsigned long keys_polled;      /* the count when it was last given */
 static struct ae_test_run_hide hide;
+/* debug.test_run_auto's OWNER (ae_test_run_input_press): the chord pressed on port 0, and the read count it is let go at;
+then as many reads with nothing pressed, so the next one is a new press */
+enum { PRESS_READS = 4 };
+static enum ae_test_run_key press_key;
+static unsigned long press_until;
 
 /* the NOTE box's pad: every button of a port as bits (the wButtons, then the analog buttons from bit 16) */
 enum { ANALOG_BUTTONS = 8, ANALOG_SHIFT = 16 };
@@ -182,7 +187,7 @@ static int note_pad(short port, XINPUT_GAMEPAD *pad)
 	unsigned short *buttons = &pad->wButtons;
 	unsigned char *analog_buttons = pad->bAnalogButtons;
 	short sticks[4] = { pad->sThumbLX, pad->sThumbLY, pad->sThumbRX, pad->sThumbRY };
-	unsigned now = pad_bits(buttons, analog_buttons), pressed, dirs;
+	unsigned now = pad_bits(buttons, analog_buttons), pressed;
 
 	if (ae_test_run_typing())
 	{
@@ -287,6 +292,44 @@ int ae_test_run_input_device(void)
 	return scheme;
 }
 
+void ae_test_run_input_press(enum ae_test_run_key key)
+{
+	if (key <= AE_TEST_RUN_KEY_NONE || key > AE_TEST_RUN_KEY_BACK || polls < press_until + PRESS_READS)
+		return;
+	press_key = key;
+	press_until = polls + PRESS_READS;
+}
+
+/* the chord ae_test_run_input_press holds, put on port 0's pad as a pad that holds it would be: BACK and the key's face
+button (or the d-pad's up) on what the pad itself holds and on what the game is about to read */
+static void press_put(short port, XINPUT_GAMEPAD *own, XINPUT_GAMEPAD *pad)
+{
+	static const int analogs[] = { -1, PAD_A, PAD_B, PAD_X, PAD_Y, -1, PAD_WHITE };
+
+	/* (the NOTE box takes the pad while it is open: the chord waits for it to close) */
+	if (port != 0 || press_key == AE_TEST_RUN_KEY_NONE || ae_test_run_typing())
+		return;
+	if (polls >= press_until)
+	{
+		press_key = AE_TEST_RUN_KEY_NONE;
+		return;
+	}
+	own->wButtons |= PAD_BACK;
+	pad->wButtons |= PAD_BACK;
+	if (press_key == AE_TEST_RUN_KEY_RELOAD)
+	{
+		own->wButtons |= PAD_DPAD_UP;
+		pad->wButtons |= PAD_DPAD_UP;
+	}
+	else
+	{
+		int analog = face_button(analogs[press_key]);
+
+		own->bAnalogButtons[analog] = 0xff;
+		pad->bAnalogButtons[analog] = 0xff;
+	}
+}
+
 /* own: what the pad itself holds. pad: what the game is about to read, the pad's with the keyboard's merged in (in the
 menus a key counts as a pad's button: Tab as Y, Enter as A, F1 as BACK). A chord is read from the pad's own buttons, so
 a key held with the pad's BACK is no chord, and is taken out of what the game reads. */
@@ -301,9 +344,13 @@ void ae_test_run_input_pad_own(short port, XINPUT_GAMEPAD const *own, XINPUT_GAM
 	};
 	unsigned held = 0;
 	int index;
+	XINPUT_GAMEPAD pressed_own;
 
 	if (port < 0 || port >= PORTS)
 		return;
+	pressed_own = *own;
+	press_put(port, &pressed_own, pad);
+	own = &pressed_own;
 	/* (the box's, and its hold-over, run whether or not the reader is on: a button held when a run ends stays taken too) */
 	if (note_pad(port, pad))
 		return;

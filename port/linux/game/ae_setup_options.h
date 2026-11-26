@@ -16,7 +16,9 @@ gametype's fields, in the same order, and checks the counts match. Ideas from th
 
 /* the left column's topics, top to bottom (the mode's own is AE_SG_MODE: SLAYER, CAPTURE THE FLAG ...) */
 enum ae_setup_group { AE_SG_MATCH, AE_SG_RESPAWN, AE_SG_SPARTAN, AE_SG_LOADOUT, AE_SG_WEAPONS, AE_SG_TEAMS,
-	AE_SG_VEHICLES, AE_SG_MODE, AE_SG_CONTROLS, AE_SG_HUD, AE_SG_SOUND, AE_SG_NHE, AE_SETUP_GROUPS };
+	AE_SG_VEHICLES, AE_SG_MODE, AE_SG_CONTROLS, AE_SG_HUD, AE_SG_SOUND, AE_SG_NHE,
+	/* Firefight's five pages (a Firefight variant's rules show only these: ae_setup_firefight.c) */
+	AE_SG_FF_WAVES, AE_SG_FF_ENEMIES, AE_SG_FF_UNITS, AE_SG_FF_VEHICLES, AE_SG_FF_SKULLS, AE_SETUP_GROUPS };
 
 /* where a rule came from: Halo CE's own, OpenCE or ChupathingyCE (COMMUNITY), Arena Evolved's, NHE's */
 enum ae_setup_source { AE_SRC_CLASSIC, AE_SRC_COMMUNITY, AE_SRC_AE, AE_SRC_NHE };
@@ -127,8 +129,23 @@ enum ae_setup_option
 	model's own (DEV MODE's HALO_AE_TEST_SET names them, the start weapons and the summary read them) but no
 	screen lists them */
 	AE_SO_PACKS_ALL,
-	AE_SETUP_OPTIONS
+	/* Firefight's rules, in the order of Content Evolved's five pages (ae_setup_firefight.c; the glue's encodings keep them in the
+	variant and in the Firefight options). They apply to a Firefight variant only, and no other row does */
+	AE_SO_FF_FIRST,
+	AE_SO_FF_SET_LIMIT = AE_SO_FF_FIRST,
+	AE_SO_FF_START_LIVES, AE_SO_FF_ROUND_LIVES, AE_SO_FF_BONUS_LIVES, AE_SO_FF_MAX_LIVES,
+	AE_SO_FF_PREP_TIME, AE_SO_FF_WAVE_LIMIT, AE_SO_FF_BONUS_ROUND, AE_SO_FF_BONUS_DUR, AE_SO_FF_FACTION,
+	AE_SO_FF_ALLEGIANCE, AE_SO_FF_DIFFICULTY, AE_SO_FF_ESCALATION, AE_SO_FF_ENEMY_HP, AE_SO_FF_ENEMY_SHD,
+	AE_SO_FF_WAVE_SIZE, AE_SO_FF_BOSS_FREQ, AE_SO_FF_PLASMA_FLINCH, AE_SO_FF_ENEMY_LOADOUT, AE_SO_FF_U_GRUNTS,
+	AE_SO_FF_U_JACKALS, AE_SO_FF_U_ELITES, AE_SO_FF_U_SPECOPS, AE_SO_FF_U_ZEALOTS, AE_SO_FF_U_HUNTERS,
+	AE_SO_FF_U_FLOOD_C, AE_SO_FF_U_FLOOD_K, AE_SO_FF_U_SENTS, AE_SO_FF_DROPSHIPS, AE_SO_FF_BOSS_VEH, AE_SO_FF_ORDNANCE,
+	AE_SO_FF_ALLIES, AE_SO_FF_GENERATORS, AE_SO_FF_GEN_FAIL, AE_SO_FF_GEN_ATTACKERS, AE_SO_FF_PROG_SKULLS,
+	AE_SO_FF_START_SKULLS, AE_SO_FF_PRIMARY, AE_SO_FF_SECONDARY, AE_SO_FF_SHIELDS, AE_SO_FF_SPEED, AE_SO_FF_GRAVITY,
+	AE_SO_FF_AMMO, AE_SO_FF_GEN_HP, AE_SO_FF_TAG_PROFILE,
+	AE_SO_FF_LAST,
+	AE_SETUP_OPTIONS = AE_SO_FF_LAST
 };
+enum { AE_SETUP_FF_ROWS = AE_SO_FF_LAST - AE_SO_FF_FIRST };
 
 /* the weapon packs' rows are AE_SO_PACK_FIRST + (slot - 1): slots as ae_weapon_slots.h numbers them */
 #define AE_SO_PACK_FIRST AE_SO_PACK_BATTLE_RIFLE
@@ -151,7 +168,7 @@ enum { AE_SETUP_SECTION_PACKS = AE_SETUP_GROUPS, AE_SETUP_SECTION_START, AE_SETU
 /* the engines as game_engine.h numbers them (the glue checks): ctf 1, slayer 2, oddball 3, king 4, race 5, bomb 6 (the
 builds with Bomb: game_engine_bomb.c; Grifball is a Bomb gametype) */
 enum { AE_SETUP_ENGINE_CTF = 1, AE_SETUP_ENGINE_SLAYER = 2, AE_SETUP_ENGINE_ODDBALL = 3, AE_SETUP_ENGINE_KING = 4,
-	AE_SETUP_ENGINE_RACE = 5, AE_SETUP_ENGINE_BOMB = 6 };
+	AE_SETUP_ENGINE_RACE = 5, AE_SETUP_ENGINE_BOMB = 6, AE_SETUP_ENGINE_FIREFIGHT = 7 };
 /* value indexes the model reads to decide what shows */
 enum { AE_SETUP_TEAM_PLAY_YES = 0, AE_SETUP_LOADOUT_CUSTOM = 1, AE_SETUP_VEHICLE_SET_CUSTOM = 9,
 	AE_SETUP_SOUND_SPLIT_SCREEN = 1, AE_SETUP_BOMB_MELEE_ONLY_YES = 0, AE_SETUP_OPENCE_INFECTION = 2,
@@ -191,6 +208,8 @@ void ae_setup_name_set(const char *name);
 /* PLAYER MODEL's values: the display names of the biped packs this PC has, by slot (1 to 4; NULL for none there); the
 row is listed only while this PC has a pack, or the gametype already names one */
 void ae_setup_player_model_set(char const *const *names);
+/* (Firefight's STARTING SKULLS and ITEM SET: each one value, the text the glue gives it: "NONE", "3 ON", a set's name) */
+void ae_setup_firefight_summary_set(int option, const char *text);
 /* "" out of range */
 const char *ae_setup_value_text(int option, int value_index);
 const char *ae_setup_help(int option, int value_index);

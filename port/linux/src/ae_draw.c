@@ -1643,10 +1643,93 @@ static int build_vertices(int *atlas_full)
 	return count;
 }
 
+/* ae_draw_boxes_next_frame: the file the next frame's boxes go to ("" for none), and its writer */
+static char boxes_path[512];
+static float boxes_overlay[4];
+static int boxes_overlay_set;
+
+static void boxes_text(FILE *file, const char *text)
+{
+	fputc('"', file);
+	for (; *text; text++)
+	{
+		unsigned char c = (unsigned char)*text;
+
+		if (c == '"' || c == '\\')
+			fprintf(file, "\\%c", c);
+		else if (c < 0x20)
+			fprintf(file, "\\u%04x", c);
+		else
+			fputc(c, file);
+	}
+	fputc('"', file);
+}
+
+/* the frame's shapes, images and text runs in the order drawn, in the layout's units (TEST RUN's frame lint:
+tools/ae_test/frame_lint.py): a shape's box, corner radius, outline thickness (0: filled) and colours; a text run's box
+(its width measured, its top y, its height the size), size, align and colour, and the text; each with its clip */
+static void boxes_write(void)
+{
+	FILE *file = fopen(boxes_path, "w");
+	int index;
+
+	boxes_path[0] = 0;
+	if (!file)
+		return;
+	fprintf(file, "{\"layout\":{\"scale\":%.4f},", ae.layout.scale);
+	if (boxes_overlay_set)
+		fprintf(file, "\"overlay\":[%.2f,%.2f,%.2f,%.2f],", boxes_overlay[0], boxes_overlay[1], boxes_overlay[2],
+			boxes_overlay[3]);
+	boxes_overlay_set = 0;
+	fputs("\"boxes\":[", file);
+	for (index = 0; index < ae.quad_count; index++)
+	{
+		const struct quad *quad = &ae.quads[index];
+		const char *sep = index ? ",\n" : "\n";
+
+		if (quad->kind == _quad_text && quad->index >= 0 && quad->index < ae.text_count)
+		{
+			const struct text *entry = &ae.texts[quad->index];
+			float width = entry->width * entry->size;
+			float x = entry->align == AE_ALIGN_CENTER ? entry->x - width / 2.0f :
+				entry->align == AE_ALIGN_RIGHT ? entry->x - width : entry->x;
+
+			fprintf(file, "%s{\"k\":\"text\",\"i\":%d,\"x\":%.2f,\"y\":%.2f,\"w\":%.2f,\"h\":%.2f,\"align\":%d,"
+				"\"color\":%u,\"clip\":[%.2f,%.2f,%.2f,%.2f],\"text\":", sep, index, x, entry->y, width, entry->size,
+				entry->align, entry->color, quad->clip[0], quad->clip[1], quad->clip[2], quad->clip[3]);
+			boxes_text(file, ae.text + entry->offset);
+			fputc('}', file);
+		}
+		else
+			fprintf(file, "%s{\"k\":\"%s\",\"i\":%d,\"x\":%.2f,\"y\":%.2f,\"w\":%.2f,\"h\":%.2f,\"radius\":%.2f,"
+				"\"thickness\":%.2f,\"top\":%u,\"bottom\":%u,\"clip\":[%.2f,%.2f,%.2f,%.2f]}", sep,
+				quad->kind == _quad_shape ? "shape" : quad->kind == _quad_text ? "text?" : "image", index, quad->x, quad->y,
+				quad->width, quad->height, quad->radius, quad->thickness, quad->top, quad->bottom, quad->clip[0],
+				quad->clip[1], quad->clip[2], quad->clip[3]);
+	}
+	fputs("\n]}\n", file);
+	fclose(file);
+}
+
+void ae_draw_boxes_next_frame(const char *path)
+{
+	snprintf(boxes_path, sizeof(boxes_path), "%s", path ? path : "");
+}
+
+void ae_draw_boxes_overlay(const float box[4])
+{
+	memcpy(boxes_overlay, box, sizeof(boxes_overlay));
+	boxes_overlay_set = 1;
+}
+
 /* (at every Present, drawn or not: GL's context is current) */
 static void frame_done(void)
 {
 	int index;
+
+	/* (a frame's boxes asked for: written before the frame's lists are emptied; off, one test of a string a frame) */
+	if (boxes_path[0])
+		boxes_write();
 
 	/* the textures of freed images */
 	for (index = 0; index < MAXIMUM_IMAGES; index++)
@@ -1669,12 +1752,6 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 {
 	int index, count, atlas_full = 0;
 	double started = present_timing ? present_now() : 0.0;
-	GLint saved_vertex_array = 0, saved_array_buffer = 0, saved_program = 0, saved_active = 0;
-	GLint saved_textures[2] = { 0, 0 }, saved_samplers[2] = { 0, 0 }, saved_draw_framebuffer = 0;
-	GLint saved_viewport[4] = { 0, 0, 0, 0 };
-	GLboolean saved_blend, saved_depth, saved_stencil, saved_cull, saved_scissor;
-	GLint saved_blend_rgb_source = 0, saved_blend_rgb_destination = 0, saved_blend_alpha_source = 0,
-		saved_blend_alpha_destination = 0, saved_blend_equation = 0;
 
 	/* (the look's faces: once, from the game's data) */
 	ae_font_embedded_load();
@@ -1701,32 +1778,17 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 		ae.last_scale = ae.layout.scale;
 	}
 
-	/* (the game's renderer keeps its bindings across frames: they are put
-	back after; it binds a sampler to each unit, which would filter the atlas
-	as it filters its textures) */
-	saved_blend = glIsEnabled(GL_BLEND);
-	saved_depth = glIsEnabled(GL_DEPTH_TEST);
-	saved_stencil = glIsEnabled(GL_STENCIL_TEST);
-	saved_cull = glIsEnabled(GL_CULL_FACE);
-	saved_scissor = glIsEnabled(GL_SCISSOR_TEST);
-	glGetIntegerv(GL_VERTEX_ARRAY_BINDING, &saved_vertex_array);
-	glGetIntegerv(GL_ARRAY_BUFFER_BINDING, &saved_array_buffer);
-	glGetIntegerv(GL_CURRENT_PROGRAM, &saved_program);
-	glGetIntegerv(GL_DRAW_FRAMEBUFFER_BINDING, &saved_draw_framebuffer);
-	glGetIntegerv(GL_ACTIVE_TEXTURE, &saved_active);
+	/* (nothing is read back from GL: a glGet or glIsEnabled each frame makes
+	NVIDIA's driver give up its threaded mode for the rest of the session,
+	and the game's own draws with it. The game's renderer is told its state
+	is unknown after (xgpu_gl_state_invalidate), so its next draw sets
+	everything again. It binds a sampler to each unit, which would filter the
+	atlas as it filters its textures: units 0 and 1 have none here) */
 	for (index = 1; index >= 0; index--)
 	{
 		glActiveTexture(GL_TEXTURE0 + (GLenum)index);
-		glGetIntegerv(GL_TEXTURE_BINDING_2D, &saved_textures[index]);
-		glGetIntegerv(GL_SAMPLER_BINDING, &saved_samplers[index]);
 		glBindSampler((GLuint)index, 0);
 	}
-	glGetIntegerv(GL_VIEWPORT, saved_viewport);
-	glGetIntegerv(GL_BLEND_SRC_RGB, &saved_blend_rgb_source);
-	glGetIntegerv(GL_BLEND_DST_RGB, &saved_blend_rgb_destination);
-	glGetIntegerv(GL_BLEND_SRC_ALPHA, &saved_blend_alpha_source);
-	glGetIntegerv(GL_BLEND_DST_ALPHA, &saved_blend_alpha_destination);
-	glGetIntegerv(GL_BLEND_EQUATION_RGB, &saved_blend_equation);
 #ifndef HALO_GL_NO_CLIP_CONTROL
 	/* (the renderer's clip space is D3D's, y down (d3d8_gl.c's
 	glClipControl); this one is GL's, as on macOS and Android, which have no
@@ -1769,30 +1831,14 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 		glDrawArrays(GL_TRIANGLES, ae.runs[index].first, ae.runs[index].count);
 	}
 
-	glBindVertexArray((GLuint)saved_vertex_array);
-	glBindBuffer(GL_ARRAY_BUFFER, (GLuint)saved_array_buffer);
-	glUseProgram((GLuint)saved_program);
-	for (index = 1; index >= 0; index--)
-	{
-		glActiveTexture(GL_TEXTURE0 + (GLenum)index);
-		glBindTexture(GL_TEXTURE_2D, (GLuint)saved_textures[index]);
-		glBindSampler((GLuint)index, (GLuint)saved_samplers[index]);
-	}
-	glActiveTexture((GLenum)saved_active);
-	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (GLuint)saved_draw_framebuffer);
-	glViewport(saved_viewport[0], saved_viewport[1], saved_viewport[2], saved_viewport[3]);
+	/* (the vertex array stays bound: a core profile draws nothing without
+	one, and what draws next in the present binds its own) */
+	glActiveTexture(GL_TEXTURE0);
 #ifndef HALO_GL_NO_CLIP_CONTROL
 	if (glClipControl)
 		glClipControl(GL_UPPER_LEFT, GL_ZERO_TO_ONE);
 #endif
-	glBlendFuncSeparate((GLenum)saved_blend_rgb_source, (GLenum)saved_blend_rgb_destination,
-		(GLenum)saved_blend_alpha_source, (GLenum)saved_blend_alpha_destination);
-	glBlendEquation((GLenum)saved_blend_equation);
-	(saved_blend ? glEnable : glDisable)(GL_BLEND);
-	(saved_depth ? glEnable : glDisable)(GL_DEPTH_TEST);
-	(saved_stencil ? glEnable : glDisable)(GL_STENCIL_TEST);
-	(saved_cull ? glEnable : glDisable)(GL_CULL_FACE);
-	(saved_scissor ? glEnable : glDisable)(GL_SCISSOR_TEST);
+	xgpu_gl_state_invalidate();
 
 	if (atlas_full)
 		forget_glyphs();
@@ -1807,6 +1853,8 @@ void ae_draw_present(unsigned int framebuffer, int width, int height)
 fonts, so nothing draws and ae_draw_available() is 0 */
 
 void ae_draw_current_layout(struct ae_layout *layout) { ae_draw_layout(0, 0, 0, 0, layout); }
+void ae_draw_boxes_next_frame(const char *path) { (void)path; }
+void ae_draw_boxes_overlay(const float box[4]) { (void)box; }
 void ae_draw_view(float x, float y, float width, float height) { (void)x; (void)y; (void)width; (void)height; }
 void ae_draw_view_full(void) { }
 void ae_draw_inset(float x, float y, float width, float height) { (void)x; (void)y; (void)width; (void)height; }

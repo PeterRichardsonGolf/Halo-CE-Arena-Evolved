@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "../src/ae_private_files.h"
+#include "ae_glue_career_xp.h"
 #include "ae_glue_service_record.h"
 #include "ae_glue_profile_move.h"
 /* (network_replay_playback.c) */
@@ -86,11 +87,19 @@ int ae_record_store_game(struct ae_pgr_report const *report)
 	/* (a replay's playback is not a game played: it counts nothing) */
 	if (network_replay_playing())
 		return 0;
-	if (!ae_pgr_to_record_game(report, &game) || !ae_sr_record_game(record, &game))
+	if (!ae_pgr_to_record_game(report, &game))
 		return 0;
-	platform_log("ae record: game added (%s, %d players)", ae_sr_mode_name(game.mode), game.count);
-	ae_record_store_save();
-	return 1;
+	/* (every finished game of this PC pays career XP, whatever its kind: AE TOURNAMENT, bot games, customs, LAN and online. It does
+	not wait for the service record, which may refuse a game of its own (a full table)) */
+	if (ae_sr_record_game(record, &game))
+	{
+		platform_log("ae record: game added (%s, %d players)", ae_sr_mode_name(game.mode), game.count);
+		ae_record_store_save();
+		ae_career_xp_game_ended(&game);
+		return 1;
+	}
+	ae_career_xp_game_ended(&game);
+	return 0;
 }
 
 int ae_record_store_rival(char const *owner, char const *name, int on)

@@ -36,6 +36,7 @@ When the texture cannot be drawn, the sprites are drawn from their bitmap.
 #include "text/draw_string.h"
 #include "hud_button_layout.h"
 #include "controller_glyphs.h"
+#include "ae_split_layout.h" /* AE hook */
 
 /* the platform layer's (port/linux/src) */
 void platform_log(char const *format, ...);
@@ -433,7 +434,7 @@ boolean hud_hires_button_draw(struct icon_hud_element_definition const *icon,
 		if (!whole) return hud_button_not("no PlayStation picture for it");
 		if (hud_button_picture.wanted)
 			return hud_button_picture_found(whole, 12.0f / 256.0f, 32.0f / 256.0f, 148.0f / 256.0f, 168.0f / 256.0f);
-		viewport = local_player_count() > 1 ? 0.75f : 1.0f;
+		viewport = ae_split_layout_hud_small() ? 0.75f : 1.0f; /* AE hook */
 		/* (the circle is 136 of the picture's 256 pixels from (12, 32): 21 units across, the faces' width) */
 		width = height = 21.0f * viewport;
 		x = cursor->x0 + 4.0f * viewport;
@@ -491,7 +492,7 @@ boolean hud_hires_button_draw(struct icon_hud_element_definition const *icon,
 	if (hud_button_picture.wanted)
 		return slot >= 6 ? hud_button_picture_found(bitmap, 0.0f, 0.0f, (slot < 8 ? 50.0f : 36.0f) / 64.0f,
 			(slot < 8 ? 35.0f : 40.0f) / 64.0f) : hud_button_picture_found(bitmap, 0.0f, 0.0f, 21.0f / 32.0f, 26.0f / 32.0f);
-	viewport = local_player_count() > 1 ? 0.75f : 1.0f;
+	viewport = ae_split_layout_hud_small() ? 0.75f : 1.0f; /* AE hook */
 	scale = viewport;
 	/* Account for the text renderer's leading inset on the following run. */
 	x = cursor->x0 + 4.0f * viewport;

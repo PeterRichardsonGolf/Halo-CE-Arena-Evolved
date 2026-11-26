@@ -113,6 +113,15 @@ int main(void)
 	ae_campaign_rows_party_count(2, 4, 0, text, sizeof text);
 	CHECK(!strcmp(text, "2/4"));
 
+	/* DOOR STACK: "every" is EVERY DOOR, anything else ON ORDER; the help names what each does, and asks for the squad first */
+	CHECK(ae_campaign_rows_door_is_every("every") && !ae_campaign_rows_door_is_every("order") &&
+		!ae_campaign_rows_door_is_every("") && !ae_campaign_rows_door_is_every(NULL));
+	CHECK(!strcmp(ae_campaign_rows_door_value(0), "ON ORDER") && !strcmp(ae_campaign_rows_door_value(1), "EVERY DOOR"));
+	CHECK(!strcmp(ae_campaign_rows_door_next(0), "every") && !strcmp(ae_campaign_rows_door_next(1), "order"));
+	CHECK(!strcmp(ae_campaign_rows_door_help(0, 1), "Mark a door with DEFEND or SMART and your squad lines up beside it; ATTACK sends them in. Otherwise they follow you through."));
+	CHECK(!strcmp(ae_campaign_rows_door_help(1, 1), "Your squad lines up beside any closed door you wait at, and goes in when you walk through or call ATTACK."));
+	CHECK(!strcmp(ae_campaign_rows_door_help(1, 0), "Turn AI SQUAD on first: this sets how your squad takes doors."));
+
 	if (!failures)
 		printf("ae_campaign_rows_rules: ok\n");
 	return failures != 0;

@@ -28,6 +28,8 @@ out of a game) and "ev" (the kind), then the kind's own members:
 	down       player, x, y, z, zone (false): a player went down at a revive spot; out: the same with no spot (zone true:
 	           the danger zone's death)
 	revived    player, by (-1: a dev command), revives (this round)
+	hurt       player, blocked (1: DEV god took it, 0: the player took it): a hit on a player's unit or on what it carries
+	           (ae_dev_cmd_god_protects, before damage is applied)
 	zone       phase (0 wait, 1 closing, 2 wait, 3 closing, 4 closed), radius: the danger zone reached a phase
 	round_wait player, round: a player who joined during a round waits for the next; match_over rounds, best,
 	           runner_up

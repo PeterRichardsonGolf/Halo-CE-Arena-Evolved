@@ -37,6 +37,9 @@ int p2p_hosting_listable_invite(char *text, int size);
 public now, so going private or setting a password makes a new one; one
 that is no longer public is replaced at once */
 void p2p_hosting_invite_announced(const char *invite);
+/* a new invite for the hosted game now (the party leader's, when a member has gone: the invite the party was told is no use to
+them), under the lock; the players already in the game stay in it */
+void p2p_hosting_rotate_invite(void); /* AE hook */
 #ifdef HALO_GAME_BROWSER
 unsigned long p2p_peer_public_address(unsigned long game_address);
 unsigned long p2p_public_address_number(void);

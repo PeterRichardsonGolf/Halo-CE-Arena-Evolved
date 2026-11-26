@@ -54,7 +54,14 @@ void bots_update_actions(struct player_action *actions);
 player's datum index and the action it fills */
 void bots_squad_drive(long slot, long player_index, struct player_action *action);
 /* the squad brain's counts, one line of text */
-void bots_squad_report(char *text, unsigned int size);
+void bots_squad_report_lines(float closest_pair);
+/* the campaign squad's warp, last: whether a member's walk failed lately (its ticks since progress), a warp counted by reason
+(AE_COMPANION_WARP_*, then 5 catch-up, 6 a co-op rescue) */
+boolean bots_squad_member_stalled(long slot, long now, long *ticks);
+void bots_squad_count_warp(int reason);
+/* a member's controls' cost, milliseconds, in a game tick: the squad's busiest tick is its cost line's ms */
+void bots_squad_note_cost(double milliseconds, long tick);
+void bots_squad_cost_reset(void);
 /* a squad member's brain starts again (its fight, path and goal forgotten), as for a new body */
 void bots_squad_reset(long slot);
 /* the squad brain's view for the companions' last resorts: the player under a roof (TRACK FOLLOW's test), a member cut off from

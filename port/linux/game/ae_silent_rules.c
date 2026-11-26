@@ -354,6 +354,21 @@ int ae_silent_join_mcc_told(unsigned short const *name, int length)
 	return -1;
 }
 
+int ae_silent_lobby_uses_cache(int has_engine, int selection_uses_cache, int campaign_needs_cache)
+{
+	return (has_engine && selection_uses_cache) || campaign_needs_cache;
+}
+
+int ae_silent_join_exempt(int local_game, int own_pending)
+{
+	return local_game || own_pending;
+}
+
+int ae_silent_host_checks_machine(int remote_joined, int local_game)
+{
+	return remote_joined && !local_game;
+}
+
 int ae_silent_join_cache_decide(int uses_cache, int told, unsigned int client_format, unsigned int client_generation,
 	unsigned char const *client_digest4, unsigned int host_format, unsigned int host_generation,
 	unsigned char const *host_digest4)

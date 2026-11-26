@@ -44,6 +44,7 @@ test_ae_menus_swap.py needs a built binary and game data
 test_ae_motd.py needs a built binary
 test_ae_obj_report.py unknown
 test_ae_party.py needs a built binary
+test_ae_party_online.py needs a built binary
 test_ae_pause.py needs a built binary
 test_ae_player_settings_registry.py unknown
 test_ae_postgame.py needs a built binary

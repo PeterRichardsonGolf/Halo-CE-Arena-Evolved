@@ -706,6 +706,8 @@ def generate_android_build(n: Writer, sln: Any) -> None:
         host_tls_sources.append(LINUX_DIR / "src" / "posix_browser.c")
     # (and the server browser's requests to the master servers: posix_update.c's)
     host_tls_sources.append(LINUX_DIR / "src" / "posix_update.c")
+    # (posix_update.c's request function is renamed; ae_https_guard.c makes update_https_request, with the TLS lock)
+    host_tls_sources.append(LINUX_DIR / "src" / "ae_https_guard.c")
     for source in [*host_tls_sources, *sorted((MBEDTLS_DIR / "library").glob("*.c"))]:
         obj = host_obj_dir / ("mbedtls_" + source.name + ".o" if source.parent.parent == MBEDTLS_DIR
                               else source.name + ".o")

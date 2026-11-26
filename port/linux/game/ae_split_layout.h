@@ -62,6 +62,19 @@ void ae_split_layout_viewmodel_unplace(short local_player_index, real_point3d *p
 width in screen units, TRUE); FALSE for the whole screen */
 boolean ae_split_layout_cinematic_area(short *left, short *width);
 
+/* view_fov.c: the field of view in degrees this view takes (0 the stock view): display.fov, or with two to four local
+players the player's SPLIT SCREEN FOV (display.split_fov) when it is 0 or more */
+double ae_split_layout_fov_degrees(void);
+
+/* whether this view (the player the game works for) draws one player's HUD in a split screen: two players side by
+side with SPLIT SCREEN HUD (display.split_hud, per player) at SAME AS ONE PLAYER; FALSE with fewer than two players */
+boolean ae_split_layout_hud_one_player(void);
+
+/* whether this view's HUD is split screen's smaller one: two or more local players, and not
+ae_split_layout_hud_one_player. The HUD's pieces that follow the number of players (sizes, fonts, the item prompt's
+line) ask this in place of local_player_count() > 1 */
+boolean ae_split_layout_hud_small(void);
+
 /* what a view's share of the screen is multiplied by for the HUD's size (ae_split_hud_share_factor): 0.5 side by
 side, the width side bars took back, else 1 */
 real ae_split_layout_hud_share(void);

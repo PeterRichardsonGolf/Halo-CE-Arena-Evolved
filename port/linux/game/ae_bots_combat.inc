@@ -203,6 +203,11 @@ static boolean ae_bots_fight_teammate_near(struct bots_bot *bot, struct bots_tic
 	struct player_datum *teammate;
 	real_point3d const *eye = bots_tick_eye(tick);
 	boolean campaign = !game_engine_running();
+	long vehicle_index = tick->object->object.parent_object_index;
+	struct unit_datum const *vehicle = vehicle_index != NONE ?
+		(struct unit_datum const *)object_try_and_get_and_verify_type(vehicle_index, _object_mask_unit) : NULL;
+	/* (a vehicle's gunner: its turret's rounds cannot hit the vehicle's own driver, who never blocks its fire) */
+	long driver = vehicle && vehicle->unit.gunner_object_index == tick->player->unit_index ? vehicle->unit.driver_object_index : NONE;
 
 	/* (HALO_BOTS_FRIENDLY_FIRE=1: no holds, for the before and after of a test) */
 	if ((!campaign && !game_engine_has_teams()) || getenv("HALO_BOTS_FRIENDLY_FIRE"))
@@ -219,11 +224,21 @@ static boolean ae_bots_fight_teammate_near(struct bots_bot *bot, struct bots_tic
 			continue;
 		}
 		object = object_get(teammate->unit_index);
-		if (TEST_FLAG(object->object.damage_flags, _object_dead_bit))
+		if (TEST_FLAG(object->object.damage_flags, _object_dead_bit) ||
+			(!grenade && driver != NONE && teammate->unit_index == driver))
+		{
 			continue;
+		}
 		teammate_point = object->object.bounding_sphere_center;
+		/* (a grenade: near the landing now or where the teammate's walk carries it by the blast, or in the throw's path) */
 		if (grenade ? ae_bots_combat_grenade_near_teammate(point->x, point->y, point->z,
-			teammate_point.x, teammate_point.y, teammate_point.z) :
+			teammate_point.x, teammate_point.y, teammate_point.z) ||
+			ae_bots_combat_grenade_near_teammate(point->x, point->y, point->z,
+				teammate_point.x + object->object.translational_velocity.i * AE_BOTS_GRENADE_BLAST_TICKS,
+				teammate_point.y + object->object.translational_velocity.j * AE_BOTS_GRENADE_BLAST_TICKS,
+				teammate_point.z + object->object.translational_velocity.k * AE_BOTS_GRENADE_BLAST_TICKS) ||
+			ae_bots_combat_grenade_path_near(eye->x, eye->y, eye->z, teammate_point.x, teammate_point.y, teammate_point.z,
+				point->x, point->y, point->z) :
 			ae_bots_combat_teammate_blocks(eye->x, eye->y, eye->z, teammate_point.x, teammate_point.y,
 				teammate_point.z, point->x, point->y, point->z))
 		{
@@ -290,6 +305,15 @@ static boolean ae_bots_fight_friendly_grenade_clear(struct bots_bot *bot, struct
 	else if (!blocked)
 		state->friendly_grenade_held = FALSE;
 	return (boolean)!blocked;
+}
+
+static boolean ae_bots_fight_grenade_safe(struct bots_bot *bot, struct bots_tick *tick)
+{
+	struct player_datum *target = bots_target_player_try(bot);
+
+	if (!target || target->unit_index == NONE)
+		return TRUE;
+	return ae_bots_fight_friendly_grenade_clear(bot, tick, &object_get(target->unit_index)->object.bounding_sphere_center);
 }
 
 static void ae_bots_fight_event(struct bots_bot *bot, struct bots_tick *tick, char const *event, real distance,

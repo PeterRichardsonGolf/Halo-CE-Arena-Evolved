@@ -83,6 +83,12 @@ long update_server_ticked_update_number(
 struct player_action const *update_server_update_actions(
 	long update_number,
 	short *count);
+/* (the host's game with no other machine: bots driven after their tick's update was built) the action
+a player at that absolute index ran in the update its last tick ran, put in that update where it
+stands for the player, so that what is recorded and relayed from it is what the player did */
+void update_server_note_driven_action(
+	long absolute_index,
+	struct player_action const *action);
 /* each player's latest input forgotten, for a new game */
 void update_queues_distributed_reset(
 	void);

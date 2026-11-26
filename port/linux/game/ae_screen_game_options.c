@@ -29,6 +29,7 @@ cancelled", "saved as new ...", "closed (N changed)".
 #include "ae_number_field.h"
 #include "ae_hooks.h"
 #include "ae_screen_game_options.h"
+#include "ae_screen_skulls.h"
 #include "ae_setup_options.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -465,6 +466,12 @@ static void value_step(short option, short direction)
 	screen.tick_side = direction;
 	ae_motion_start(&screen.tick, 0.0f, 1.0f, AE_MOTION_VALUE_TICK_MS);
 	ae_setup_edit_set(option, next);
+	/* (Firefight: turning off the last enemy type of the faction is refused) */
+	if (ae_setup_edit_refused())
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
 	ae_sound_request(AE_SOUND_CURSOR, 0);
 	refresh();
 }
@@ -510,6 +517,7 @@ static void picked(short index, void *context)
 		index = picker_map.indexes[index];
 	}
 	ae_setup_edit_set(option, index);
+	(void)ae_setup_edit_refused();
 	screen.tick_option = -1;
 	refresh();
 }
@@ -553,6 +561,52 @@ static void picker_values(short option, struct ae_picker_spec *spec)
 	}
 }
 
+/* ITEM SET's list: NONE, then the item sets this PC has (the copy's picked is on); static, the picker and its ghost read them
+after the pick */
+static struct
+{
+	char names[AE_SETUP_FF_ITEM_SETS][48];
+	const char *texts[AE_SETUP_FF_ITEM_SETS];
+	unsigned long hashes[AE_SETUP_FF_ITEM_SETS];
+	short count;
+} item_sets;
+
+static void item_set_picked(short index, void *context)
+{
+	(void)context;
+	if (index < 0 || index >= item_sets.count)
+		return;
+	ae_setup_edit_firefight_item_set_set(item_sets.hashes[index]);
+	screen.tick_option = -1;
+	refresh();
+}
+
+static void item_set_open(void)
+{
+	struct ae_picker_spec spec;
+	unsigned long now = ae_setup_edit_firefight_item_set();
+	short index;
+
+	item_sets.count = (short)ae_setup_edit_firefight_item_sets(item_sets.names, item_sets.hashes, AE_SETUP_FF_ITEM_SETS);
+	memset(&spec, 0, sizeof(spec));
+	for (index = 0; index < item_sets.count; index++)
+	{
+		item_sets.texts[index] = item_sets.names[index];
+		if (item_sets.hashes[index] == now)
+			spec.current = index;
+	}
+	spec.values = item_sets.texts;
+	spec.count = item_sets.count;
+	spec.row = screen.focus_row;
+	spec.bounds = screen.frame.rect;
+	spec.density = screen.density;
+	spec.picked = item_set_picked;
+	spec.title = ae_setup_label(&screen.access, AE_SO_FF_TAG_PROFILE);
+	spec.context = NULL;
+	if (ae_picker_open(&spec, AE_OWNER_PARENT))
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+}
+
 static void picker_open(short option)
 {
 	struct ae_setup_row const *row = ae_setup_row(option);
@@ -569,6 +623,20 @@ static void picker_open(short option)
 	{
 		if (packs_open())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
+		return;
+	}
+	/* (Firefight's STARTING SKULLS opens the skulls grid on the copy; its ITEM SET a list of the sets this PC has) */
+	if (option == AE_SO_FF_START_SKULLS)
+	{
+		if (ae_screen_skulls_open_firefight())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		else
+			ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	if (option == AE_SO_FF_TAG_PROFILE)
+	{
+		item_set_open();
 		return;
 	}
 	if (ae_setup_edit_reason(option))
@@ -1313,6 +1381,9 @@ static void list_item(void *context, short item, float x, float y, float width, 
 		if (packs_changed())
 			widget.flags |= AE_ROW_CHANGED;
 	}
+	/* (Firefight's STARTING SKULLS and ITEM SET: their value, a chevron: A opens them) */
+	if (entry == AE_SO_FF_START_SKULLS || entry == AE_SO_FF_TAG_PROFILE)
+		widget.flags |= AE_ROW_SUBSCREEN;
 	if (entry == screen.tick_option)
 	{
 		widget.tick = &screen.tick;
@@ -1389,9 +1460,9 @@ static void draw_filters(void)
 {
 	struct ae_rect rects[AE_SETUP_FILTERS];
 	float glyph = ae_size_glyph(&screen.density), y = frame_y(CHIPS_Y), x = left_x(), chips_x, room, end;
-	int filter;
+	int filter, total = screen.access.engine == AE_SETUP_ENGINE_FIREFIGHT ? 2 : AE_SETUP_FILTERS;
 
-	for (filter = 0; filter < AE_SETUP_FILTERS; filter++)
+	for (filter = 0; filter < total; filter++)
 	{
 		short count = ae_setup_filter_count(&screen.access, filter);
 
@@ -1405,12 +1476,12 @@ static void draw_filters(void)
 	}
 	chips_x = x + ae_draw_button_width(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_SHOULDER, glyph) + u(GLYPH_GAP_U);
 	room = right_x() - chips_x - ae_draw_button_width(AE_FONT_LAST_DEVICE, AE_BUTTON_RIGHT_SHOULDER, glyph) - u(GLYPH_GAP_U);
-	ae_chips_layout(&screen.density, room, screen.chips, AE_SETUP_FILTERS, rects);
+	ae_chips_layout(&screen.density, room, screen.chips, total, rects);
 	ae_widget_chip_key(AE_FONT_LAST_DEVICE, AE_BUTTON_LEFT_SHOULDER, glyph, x, y + rects[0].height * 0.5f);
-	ae_widget_chips(&screen.density, chips_x, y, room, screen.chips, AE_SETUP_FILTERS, HIT_CHIPS);
-	end = chips_x + rects[AE_SETUP_FILTERS - 1].x + rects[AE_SETUP_FILTERS - 1].width + u(GLYPH_GAP_U);
+	ae_widget_chips(&screen.density, chips_x, y, room, screen.chips, total, HIT_CHIPS);
+	end = chips_x + rects[total - 1].x + rects[total - 1].width + u(GLYPH_GAP_U);
 	ae_widget_chip_key(AE_FONT_LAST_DEVICE, AE_BUTTON_RIGHT_SHOULDER, glyph, end,
-		y + rects[AE_SETUP_FILTERS - 1].y + rects[AE_SETUP_FILTERS - 1].height * 0.5f);
+		y + rects[total - 1].y + rects[total - 1].height * 0.5f);
 }
 
 /* the rail: the shown groups, the focus's lit */
@@ -1524,11 +1595,13 @@ static void draw_footer(void)
 	/* (0.9.3 CHANGED with nothing in it: no A, no group jump, no Y: B, the filter and SAVE AS NEW) */
 	if (screen.count)
 		screen.prompts[count++] = prompt_of(AE_BUTTON_A, screen.on_chips ? "To the list" : on_foot() ? ae_string(AE_STR_SELECT) :
-			screen.focus_option == AE_SO_WEAPON_PACKS ? "Open" : ae_string(AE_STR_ALL_VALUES), AE_ACTION_ACCEPT);
+			screen.focus_option == AE_SO_WEAPON_PACKS || screen.focus_option == AE_SO_FF_START_SKULLS ? "Open" :
+			screen.focus_option == AE_SO_FF_TAG_PROFILE ? "Choose" : ae_string(AE_STR_ALL_VALUES), AE_ACTION_ACCEPT);
 	screen.prompts[count++] = prompt_of(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
 	/* (0.7.6: Left and Right change the value; nothing said so) */
 	if (!screen.on_chips && screen.focus_option >= 0 && screen.focus_option != AE_SO_WEAPON_PACKS &&
-		screen.focus_option != AE_SO_NAME)
+		screen.focus_option != AE_SO_NAME && screen.focus_option != AE_SO_FF_START_SKULLS &&
+		screen.focus_option != AE_SO_FF_TAG_PROFILE)
 	{
 		screen.prompts[count] = prompt_of(AE_BUTTON_DPAD_LEFT, "Change", AE_ACTION_LEFT);
 		screen.prompts[count++].pair = 1;

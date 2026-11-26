@@ -82,6 +82,30 @@ char const *ae_campaign_rows_down_reason(void)
 	return "NEEDS AI SQUAD";
 }
 
+int ae_campaign_rows_door_is_every(char const *setting)
+{
+	return setting && !strcmp(setting, "every");
+}
+
+char const *ae_campaign_rows_door_value(int every)
+{
+	return every ? "EVERY DOOR" : "ON ORDER";
+}
+
+/* the setting's text after one step (the two values turn over) */
+char const *ae_campaign_rows_door_next(int every)
+{
+	return every ? "order" : "every";
+}
+
+char const *ae_campaign_rows_door_help(int every, int squad_on)
+{
+	if (!squad_on)
+		return "Turn AI SQUAD on first: this sets how your squad takes doors.";
+	return every ? "Your squad lines up beside any closed door you wait at, and goes in when you walk through or call ATTACK." :
+		"Mark a door with DEFEND or SMART and your squad lines up beside it; ATTACK sends them in. Otherwise they follow you through.";
+}
+
 int ae_campaign_rows_continue_case(int squad_count, int players, int save_takes_squad)
 {
 	if (players > 1)

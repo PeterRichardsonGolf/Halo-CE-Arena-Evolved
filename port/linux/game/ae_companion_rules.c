@@ -64,10 +64,15 @@ int ae_companion_catch_up(float distance, long ticks_without_gain, int unseen, i
 
 int ae_companion_track_step(float const track[][3], int count, float x, float y, float z)
 {
-	int index, nearest = -1;
-	float best = AE_COMPANION_TRACK_ON * AE_COMPANION_TRACK_ON;
+	return ae_companion_track_step_from(track, count, x, y, z, 0);
+}
 
-	for (index = 0; index < count; index++)
+int ae_companion_track_step_from(float const track[][3], int count, float x, float y, float z, int least)
+{
+	int index, nearest = -1, newer = -1;
+	float best = AE_COMPANION_TRACK_ON * AE_COMPANION_TRACK_ON, near;
+
+	for (index = least > 0 ? least : 0; index < count; index++)
 	{
 		float dx = track[index][0] - x, dy = track[index][1] - y, gap = dx * dx + dy * dy;
 
@@ -80,6 +85,37 @@ int ae_companion_track_step(float const track[][3], int count, float x, float y,
 	}
 	if (nearest < 0)
 		return -1;
+	/* (a track walked back along the same line: the newest crumb within AE_COMPANION_TRACK_NEWER of the nearest one's distance,
+	on a later stretch of the track (the track between the two over twice as long as the gap between them), is walked from, not
+	the older one beside it on the way out to the turn) */
+	near = sqrtf(best) + AE_COMPANION_TRACK_NEWER;
+	for (index = count - 1; index > nearest && newer < 0; index--)
+	{
+		float dx = track[index][0] - x, dy = track[index][1] - y;
+
+		if (fabsf(track[index][2] - z) <= AE_COMPANION_TRACK_RISE && dx * dx + dy * dy <= near * near &&
+			dx * dx + dy * dy <= AE_COMPANION_TRACK_ON * AE_COMPANION_TRACK_ON)
+		{
+			float along = 0.0f, gap_x = track[index][0] - track[nearest][0], gap_y = track[index][1] - track[nearest][1];
+			int step;
+
+			for (step = nearest; step < index; step++)
+			{
+				float sx = track[step + 1][0] - track[step][0], sy = track[step + 1][1] - track[step][1];
+
+				along += sqrtf(sx * sx + sy * sy);
+			}
+			if (along > 2.0f * sqrtf(gap_x * gap_x + gap_y * gap_y) + AE_COMPANION_TRACK_STEP)
+				newer = index;
+		}
+	}
+	if (newer >= 0)
+	{
+		float dx = track[newer][0] - x, dy = track[newer][1] - y;
+
+		nearest = newer;
+		best = dx * dx + dy * dy;
+	}
 	if (best <= AE_COMPANION_TRACK_REACH * AE_COMPANION_TRACK_REACH && nearest + 1 < count)
 		return nearest + 1;
 	return nearest;
@@ -219,10 +255,16 @@ int ae_companion_track_push(float track[][3], unsigned char flags[], int *count,
 
 		if (dx * dx + dy * dy < AE_COMPANION_TRACK_STEP * AE_COMPANION_TRACK_STEP && fabsf(dz) < AE_COMPANION_TRACK_RISE)
 			return 0;
-		if (fabsf(dz) >= AE_COMPANION_TRACK_RISE || dx * dx + dy * dy > AE_COMPANION_TRACK_GAP * AE_COMPANION_TRACK_GAP)
+		if (dx * dx + dy * dy > AE_COMPANION_TRACK_GAP * AE_COMPANION_TRACK_GAP || dz >= AE_COMPANION_TRACK_RISE ||
+			dz < -AE_COMPANION_TRACK_DROP_KEPT)
 			*count = 0;
-		else if (airborne_since)
-			flags[*count - 1] |= AE_COMPANION_TRACK_JUMPED;
+		else
+		{
+			if (airborne_since)
+				flags[*count - 1] |= AE_COMPANION_TRACK_JUMPED;
+			if (dz <= -AE_COMPANION_TRACK_RISE)
+				flags[*count - 1] |= AE_COMPANION_TRACK_DROPPED;
+		}
 	}
 	if (*count == AE_COMPANION_TRACK_MOST)
 	{
@@ -253,9 +295,63 @@ int ae_companion_track_cue(float const track[][3], unsigned char const flags[], 
 	return cue | (flags[goal] & AE_COMPANION_TRACK_CROUCHED);
 }
 
+int ae_companion_stuck_restarts(int indoors, int cut_off_seen, float distance, float window_nearest)
+{
+	return !indoors || distance < AE_COMPANION_STUCK_NEAR || !(cut_off_seen || distance > AE_COMPANION_STUCK_FAR) ||
+		distance < window_nearest - AE_COMPANION_STUCK_GAIN;
+}
+
 int ae_companion_stuck_warp(int indoors, int cut_off, float distance, long ticks_stuck, int unseen, int seated, int fighting)
 {
 	if (!indoors || seated || fighting || distance < AE_COMPANION_STUCK_NEAR || !(cut_off || distance > AE_COMPANION_STUCK_FAR))
 		return 0;
 	return ticks_stuck >= (unseen ? AE_COMPANION_STUCK_TICKS : AE_COMPANION_STUCK_SEEN_TICKS);
+}
+
+int ae_companion_progress(float path_left_was, float path_left_now, int crumb_was, int crumb_now)
+{
+	return crumb_now != crumb_was || path_left_was - path_left_now >= AE_COMPANION_PROGRESS;
+}
+
+int ae_companion_warp_due(int path_failed, int track_progress, long ticks_no_progress, int seen)
+{
+	return path_failed && !track_progress &&
+		ticks_no_progress >= (seen ? AE_COMPANION_WARP_SEEN_TICKS : AE_COMPANION_WARP_UNSEEN_TICKS);
+}
+
+int ae_companion_warp_now(int teleported, int lift_gone, int door_locked_between, int drop_over_rule)
+{
+	return teleported ? AE_COMPANION_WARP_TELEPORT : lift_gone ? AE_COMPANION_WARP_LIFT :
+		door_locked_between ? AE_COMPANION_WARP_LOCKED : drop_over_rule ? AE_COMPANION_WARP_DROP : AE_COMPANION_WARP_NONE;
+}
+
+int ae_companion_link_kind(float across, float up, int in_vehicle)
+{
+	if (across > AE_COMPANION_TRACK_GAP)
+		return in_vehicle ? AE_COMPANION_LINK_VEHICLE : AE_COMPANION_LINK_TELEPORT;
+	if (up <= -AE_COMPANION_TRACK_RISE)
+		return AE_COMPANION_LINK_DROP;
+	if (up >= AE_COMPANION_TRACK_RISE)
+		return AE_COMPANION_LINK_RISE;
+	return AE_COMPANION_LINK_NONE;
+}
+
+int ae_companion_drop_allowed(float link_drop, int player_hurt, float drop)
+{
+	return !player_hurt && drop <= link_drop + AE_COMPANION_DROP_SPARE;
+}
+
+int ae_companion_teleported(float moved_in_a_tick)
+{
+	return moved_in_a_tick > AE_COMPANION_TELEPORT;
+}
+
+int ae_companion_warp_far(float distance)
+{
+	return distance > AE_COMPANION_WARP_NEAR;
+}
+
+int ae_companion_walked(float moved)
+{
+	return moved >= AE_COMPANION_WALKED;
 }

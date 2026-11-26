@@ -299,6 +299,8 @@ static void ae_bots_fight_tap_pressed(struct bots_bot *bot, struct bots_tick *ti
 static boolean ae_bots_fight_melee(struct bots_bot *bot, struct bots_tick *tick);
 static long ae_bots_fight_melee_ticks(struct bots_bot *bot, struct bots_tick *tick);
 static void ae_bots_fight_grenade(struct bots_bot *bot, struct bots_tick *tick, long reaction_ticks);
+/* the original fight's grenade at middle range only when the throw at its target endangers no teammate (ae_bots_combat.inc) */
+static boolean ae_bots_fight_grenade_safe(struct bots_bot *bot, struct bots_tick *tick);
 /* (0.7.0, the owner: "bots with a shotgun don't swap to a longer weapon") the close-range weapon out of its range: the
 other one, if it has rounds and reaches further (ae_bots_combat.inc) */
 static void ae_bots_range_swap(struct bots_bot *bot, struct bots_tick *tick);

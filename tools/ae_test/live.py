@@ -22,6 +22,7 @@ FAIL. A rule not met stays WAITING ("not seen yet"): only the owner ends a test.
 Every verdict sent also goes to the stream as the dev command's own event, so the results file and the stream agree."""
 import argparse
 import json
+import os
 import socket
 import sys
 import time
@@ -327,12 +328,15 @@ def main(argv):
             return 3
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("list")
-    parser.add_argument("--events", default="~/src/halo-test/ae-gametypes-preview/dev")
+    install = os.environ.get("AE_TEST_INSTALL")
+    parser.add_argument("--events", default=str(Path(install) / "dev") if install else None)
     parser.add_argument("--port", type=int, default=2323)
     # (headless checks: a message at each test's start, a screenshot every so many seconds)
     parser.add_argument("--greet", default="")
     parser.add_argument("--shots", type=float, default=0.0)
     args = parser.parse_args(argv[1:])
+    if not args.events:
+        parser.error("--events is required when AE_TEST_INSTALL is unset")
     path = None
     while path is None:
         path = newest_stream(args.events)

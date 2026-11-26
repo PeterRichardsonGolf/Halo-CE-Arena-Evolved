@@ -592,9 +592,11 @@ int main(void)
 	CHECK(ae_setup_row_step(entries, count, (short)(count - 1), 1) == count - 1);   /* the bottom too */
 	CHECK(ae_setup_group_first_row(entries, count, AE_SETUP_GROUPS) == -1);
 	CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_MODE), "ODDBALL") && has(entries, count, AE_SO_BALL_MELEE));
-	/* every group of an oddball game shows */
-	for (group = 0; group < AE_SETUP_GROUPS; group++)
+	/* every group of an oddball game shows, but Firefight's five pages */
+	for (group = 0; group < AE_SG_FF_WAVES; group++)
 		CHECK(ae_setup_group_first_row(entries, count, group) > 0);
+	for (group = AE_SG_FF_WAVES; group < AE_SETUP_GROUPS; group++)
+		CHECK(ae_setup_group_first_row(entries, count, group) == -1);
 
 	/* a Bomb gametype (AE GRIFBALL, AE BOMB): its score as ROUNDS TO WIN, its own rules under BOMB, OBJECTIVES; a
 	team game whatever TEAM PLAY reads, which it never shows; no other engine's rows */
@@ -740,6 +742,87 @@ int main(void)
 		/* (bit 2 is free and FALL DAMAGE HALO 2's bit 3 is not BALL MELEE, and setting BALL MELEE keeps them) */
 		CHECK(ae_ball_melee_of(0x04) == 0 && ae_ball_melee_of(0x08) == 0 && ae_ball_melee_of(0x0D) == 1);
 		CHECK(ae_ball_melee_set(0x0C, 1) == 0x0D && ae_ball_melee_set(0x0D, 0) == 0x0C);
+	}
+
+	/* Firefight's rules: a Firefight variant shows its five pages and nothing else, no other engine shows one of them */
+	{
+		static const short per_group[5] = { 9, 9, 10, 7, 10 };
+		short ff_entries[260], ff_count, rows_in[AE_SETUP_GROUPS];
+		int engine, any_text;
+
+		memset(rows_in, 0, sizeof(rows_in));
+		fake_init(&fake, &access, AE_SETUP_ENGINE_FIREFIGHT);
+		ff_count = ae_setup_entries(&access, ff_entries, 260);
+		CHECK(ff_count == 45 + 5);
+		for (index = 0; index < ff_count; index++)
+		{
+			if (ae_setup_entry_is_header(ff_entries[index]))
+				continue;
+			CHECK(ff_entries[index] >= AE_SO_FF_FIRST && ff_entries[index] < AE_SO_FF_LAST);
+			rows_in[ae_setup_row(ff_entries[index])->group]++;
+		}
+		for (group = 0; group < AE_SETUP_GROUPS; group++)
+			CHECK(rows_in[group] == (group >= AE_SG_FF_WAVES ? per_group[group - AE_SG_FF_WAVES] : 0));
+		CHECK(ff_entries[0] == -1 - AE_SG_FF_WAVES && ff_entries[1] == AE_SO_FF_SET_LIMIT);
+		CHECK(!has(ff_entries, ff_count, AE_SO_NAME) && !has(ff_entries, ff_count, AE_SO_KILLS_TO_WIN) &&
+			!has(ff_entries, ff_count, AE_SO_LIVES) && !has(ff_entries, ff_count, AE_SO_PRIMARY));
+		CHECK(!strcmp(ae_setup_group_name(&access, AE_SG_FF_UNITS), "ENEMY UNITS") &&
+			!strcmp(ae_setup_group_name(&access, AE_SG_FF_SKULLS), "SKULLS & PLAYERS"));
+		/* the two chips: the source chips are not offered, CHANGED stays */
+		CHECK(ae_setup_filter_selectable(&access, AE_SF_ALL) && ae_setup_filter_selectable(&access, AE_SF_CHANGED) &&
+			!ae_setup_filter_selectable(&access, AE_SF_CLASSIC) && !ae_setup_filter_selectable(&access, AE_SF_COMMUNITY) &&
+			!ae_setup_filter_selectable(&access, AE_SF_AE) && !ae_setup_filter_selectable(&access, AE_SF_NHE));
+		/* a change is counted and listed under CHANGED */
+		fake.now[AE_SO_FF_DIFFICULTY] = 3;
+		CHECK(ae_setup_changes(&access) == 1 && ae_setup_filter_count(&access, AE_SF_CHANGED) == 1);
+		ff_count = ae_setup_entries_filtered(&access, AE_SF_CHANGED, ff_entries, 260);
+		CHECK(ff_count == 2 && ff_entries[1] == AE_SO_FF_DIFFICULTY && !strcmp(ae_setup_value_text(AE_SO_FF_DIFFICULTY, 3), "LEGENDARY"));
+		/* the words are Content Evolved's with no product name in them */
+		for (option = AE_SO_FF_FIRST; option < AE_SO_FF_LAST; option++)
+		{
+			struct ae_setup_row const *row = ae_setup_row(option);
+			static const char *const banned[] = { "(reach", "reach default", "reach standard", "mcc", "halo", "arcade", "xbox" };
+			int word;
+
+			CHECK(row && row->engines == (short)(1 << AE_SETUP_ENGINE_FIREFIGHT) && row->source == AE_SRC_CLASSIC);
+			for (index = 0; row && index < row->value_count; index++)
+			{
+				char lower[200];
+				int at;
+
+				snprintf(lower, sizeof(lower), "%s|%s|%s", row->label, ae_setup_value_text(option, index), ae_setup_help(option, index));
+				for (at = 0; lower[at]; at++)
+					lower[at] = (char)tolower((unsigned char)lower[at]);
+				for (word = 0; word < 7; word++)
+					CHECK(!strstr(lower, banned[word]));
+			}
+		}
+		/* the two rows that open a screen show the text they are given */
+		ae_setup_firefight_summary_set(AE_SO_FF_START_SKULLS, "3 ON");
+		ae_setup_firefight_summary_set(AE_SO_FF_TAG_PROFILE, "MY SET");
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_FF_START_SKULLS, 0), "3 ON") && !strcmp(ae_setup_value_text(AE_SO_FF_TAG_PROFILE, 0), "MY SET"));
+		ae_setup_firefight_summary_set(AE_SO_FF_START_SKULLS, "NONE");
+		ae_setup_firefight_summary_set(AE_SO_FF_TAG_PROFILE, "NONE");
+		ae_setup_firefight_summary_set(AE_SO_KILLS_TO_WIN, "no");
+		CHECK(!strcmp(ae_setup_value_text(AE_SO_KILLS_TO_WIN, 0), "5"));
+		/* the other engines (and no edit open) have none of them */
+		any_text = 0;
+		for (engine = 0; engine <= AE_SETUP_ENGINE_BOMB; engine++)
+		{
+			fake_init(&fake, &access, engine);
+			for (option = AE_SO_FF_FIRST; option < AE_SO_FF_LAST; option++)
+				any_text |= ae_setup_applies(&access, option) || ae_setup_visible(&access, option);
+			ff_count = ae_setup_entries(&access, ff_entries, 260);
+			for (index = 0; index < ff_count; index++)
+				any_text |= !ae_setup_entry_is_header(ff_entries[index]) && ff_entries[index] >= AE_SO_FF_FIRST;
+		}
+		CHECK(!any_text);
+		/* ... and every row of the others applies to no Firefight game, NAME's too */
+		fake_init(&fake, &access, AE_SETUP_ENGINE_FIREFIGHT);
+		any_text = 0;
+		for (option = 0; option < AE_SO_FF_FIRST; option++)
+			any_text |= ae_setup_applies(&access, option);
+		CHECK(!any_text);
 	}
 
 	if (failures) return 1;

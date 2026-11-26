@@ -31,7 +31,8 @@ static struct ae_settings_group_info const groups[AE_SETTINGS_PAGES] =
 	{ "CHAT AND STREAMING", "Text chat and the streamer word filter. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ONLINE", "Internet play, map downloads and what this PC shares. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "ACCESSIBILITY", "Menu size, motion, help and language.", AE_SETTINGS_MIXED, 1 },
-	{ "SYSTEM", "The menus, files, campaign rules, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
+	{ "CAMPAIGN", "The campaign's randomizer, skulls, scoring and missions. One set for this PC.", AE_SETTINGS_PC, 1 },
+	{ "SYSTEM", "The menus, files, recording and this version. One set for this PC.", AE_SETTINGS_PC, 1 },
 	{ "CROSSHAIR", "Draw your own crosshair: its shape, colour, lines and motion. Every player has their own.",
 		AE_SETTINGS_PLAYER, 1 },
 	{ "CROSSHAIR WEAPONS", "Which crosshair each weapon and vehicle gun uses. Every player has their own.",
@@ -97,6 +98,8 @@ static const char *const sway_texts[] = { "OFF", "25%", "50%", "75%", "STOCK" };
 static const char *const sway_values[] = { "0", "25", "50", "75", "100" };
 static const char *const hud_style_texts[] = { "AE", "CLASSIC" };
 static const char *const hud_style_values[] = { "ae", "classic" };
+static const char *const split_hud_texts[] = { "COMPACT (DEFAULT)", "SAME AS ONE PLAYER" };
+static const char *const split_hud_values[] = { "compact", "one_player" };
 static const char *const area_texts[] = { "FULL", "16:9", "4:3" };
 static const char *const area_values[] = { "full", "16:9", "4:3" };
 static const char *const safe_texts[] = { "OFF", "1 %", "2 %", "3 %", "4 %", "5 %", "6 %", "7 %", "8 %", "9 %", "10 %" };
@@ -119,6 +122,10 @@ static const char *const fade_values[] = { "instant", "fast", "normal", "slow" }
 static const char *const panel_texts[] = { "DARK", "BLACK", "BLUE", "RED", "GREEN" };
 static const char *const panel_values[] = { "16, 16, 16, 150", "0, 0, 0, 200", "16, 32, 64, 160", "64, 16, 16, 160",
 	"16, 48, 24, 160" };
+static const char *const prompt_look_texts[] = { "FULL", "SOFT", "FAINT" };
+static const char *const prompt_look_values[] = { "full", "soft", "faint" };
+static const char *const prompt_place_texts[] = { "BESIDE", "BELOW" };
+static const char *const prompt_place_values[] = { "beside", "below" };
 static const char *const medal_style_texts[] = { "UNIVERSAL", "MCC" };
 static const char *const medal_style_values[] = { "modern", "mcc" };
 static const char *const waypoint_texts[] = { "TEXT", "ICONS", "BOTH" };
@@ -138,6 +145,16 @@ static const char *const detail_values[] = { "minimal", "standard", "verbose" };
 /* (0.3.9: the settings only the classic menus had; their texts are the classic menus') */
 static const char *const mcc_use_texts[] = { "ASK", "ON", "OFF" };
 static const char *const mcc_use_values[] = { "ask", "yes", "no" };
+static const char *const pods_texts[] = { "10%", "20%", "30%", "40%", "50%", "60%", "70%", "80%", "90%", "100%" };
+static const char *const pods_values[] = { "10", "20", "30", "40", "50", "60", "70", "80", "90", "100" };
+static const char *const skull_count_texts[] = { "BY DIFFICULTY", "1", "2", "3", "4", "5", "6", "7", "8" };
+static const char *const skull_count_values[] = { "0", "1", "2", "3", "4", "5", "6", "7", "8" };
+static const char *const skull_chance_texts[] = { "25%", "50%", "100%", "200%", "400%" };
+static const char *const skull_chance_values[] = { "25", "50", "100", "200", "400" };
+static const char *const daily_server_texts[] = { "DEFAULT", "CUSTOM" };
+static const char *const daily_server_values[] = { "default", "custom" };
+static const char *const coop_score_texts[] = { "TEAM", "EACH PLAYER" };
+static const char *const coop_score_values[] = { "cooperative", "competitive" };
 static const char *const health_texts[] = { "HALO CE", "REACH", "HALO 2", "HALO 3" };
 static const char *const health_values[] = { "classic", "reach", "halo2", "halo3" };
 
@@ -269,6 +286,8 @@ enum { MCC_STEPS = 100, SCALE_STEPS = 20, HOLD_STEPS = 19, FOV_STEPS = 15, DEADZ
 static char volume_text[VOLUME_STEPS][16], volume_value[VOLUME_STEPS][16];
 static const char *volume_texts[VOLUME_STEPS], *volume_values[VOLUME_STEPS];
 static char mcc_text[MCC_STEPS][8], scale_text[SCALE_STEPS][8], hold_text[HOLD_STEPS][8], hold_value[HOLD_STEPS][8];
+static char split_fov_text[FOV_STEPS + 1][24], split_fov_value[FOV_STEPS + 1][8];
+static const char *split_fov_texts[FOV_STEPS + 1], *split_fov_values[FOV_STEPS + 1];
 static char fov_text[FOV_STEPS][16], fov_value[FOV_STEPS][8], deadzone_text[DEADZONE_STEPS][8], deadzone_value[DEADZONE_STEPS][8];
 static char waypoint_size_text[WAYPOINT_STEPS][8], waypoint_size_value[WAYPOINT_STEPS][8];
 static const char *mcc_texts[MCC_STEPS], *scale_texts[SCALE_STEPS], *hold_texts[HOLD_STEPS], *hold_values[HOLD_STEPS];
@@ -323,6 +342,16 @@ static void lists_build(void)
 		snprintf(fov_text[index], sizeof(fov_text[index]), "%d", 75 + 5 * index);
 		fov_texts[index] = fov_text[index];
 		fov_values[index] = fov_value[index];
+	}
+	/* (rc8) SPLIT SCREEN FOV: SAME AS FOV (-1, the default) first, then the FOV row's list */
+	split_fov_texts[0] = "SAME AS FOV (DEFAULT)";
+	split_fov_values[0] = "-1";
+	for (index = 0; index < FOV_STEPS; index++)
+	{
+		snprintf(split_fov_text[index + 1], sizeof(split_fov_text[index + 1]), "%s", index ? fov_texts[index] : "STOCK");
+		snprintf(split_fov_value[index + 1], sizeof(split_fov_value[index + 1]), "%s", fov_values[index]);
+		split_fov_texts[index + 1] = split_fov_text[index + 1];
+		split_fov_values[index + 1] = split_fov_value[index + 1];
 	}
 	deadzone_texts[0] = "DEFAULT";
 	deadzone_values[0] = "0";
@@ -590,6 +619,10 @@ static struct ae_settings_row const rows[] =
 	{ AE_SETTINGS_VIEW, "FIRST PERSON", "FOV", AE_SETTINGS_SLIDER, "display.fov", fov_texts, fov_values, FOV_STEPS,
 		AE_SETTINGS_ALWAYS,
 		"Your field of view in degrees. STOCK is Halo CE's 70 for 4:3, wider on wider screens.", 0 },
+	{ AE_SETTINGS_VIEW, "FIRST PERSON", "SPLIT SCREEN FOV", AE_SETTINGS_SLIDER, "display.split_fov", split_fov_texts,
+		split_fov_values, FOV_STEPS + 1, AE_SETTINGS_ALWAYS,
+		"Your field of view while two to four players share the screen. SAME AS FOV keeps the FOV above; one player "
+		"always plays with FOV.", 0 },
 	{ AE_SETTINGS_VIEW, "FIRST PERSON", "VIEWMODEL FOV", AE_SETTINGS_SLIDER, "display.viewmodel_fov", fov_texts,
 		fov_values, FOV_STEPS, AE_SETTINGS_ALWAYS, "How wide your weapon is drawn, apart from the world.", 0 },
 	{ AE_SETTINGS_VIEW, "FIRST PERSON", "VIEWMODELS", AE_SETTINGS_TOGGLE, "display.viewmodel_visible", ON_OFF,
@@ -640,6 +673,10 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_ALWAYS, "Pull the HUD in from the screen's edges, for TVs that cut the picture.", AE_SETTINGS_THIS_PC },
 	{ AE_SETTINGS_HUD, "HUD", "COMPACT HUD", AE_SETTINGS_TOGGLE, "display.compact_hud", ON_OFF, AE_SETTINGS_ALWAYS,
 		"A smaller HUD.", 0 },
+	{ AE_SETTINGS_HUD, "HUD", "SPLIT SCREEN HUD", AE_SETTINGS_SPINNER, "display.split_hud",
+		VALUES(split_hud_texts, split_hud_values), AE_SETTINGS_ALWAYS,
+		"Two players side by side: SAME AS ONE PLAYER draws your one-player HUD in your view. COMPACT is split "
+		"screen's smaller HUD. Top and bottom, and three or four players, always use COMPACT.", 0 },
 	{ AE_SETTINGS_HUD, "HUD", "MULTIPLAYER GAME TIMER", AE_SETTINGS_SPINNER, "display.match_clock",
 		VALUES(clock_texts, clock_values), AE_SETTINGS_ALWAYS, "The match clock on the score strip.", 0 },
 	{ AE_SETTINGS_HUD, "HUD", "CLOCK LABELS", AE_SETTINGS_TOGGLE, "display.match_clock_labels", ON_OFF,
@@ -680,6 +717,12 @@ static struct ae_settings_row const rows[] =
 		"The colour over an ally, with ALLY RETICLE on.", 0 },
 	{ AE_SETTINGS_HUD, "RETICLE", "MARK PROMPT", AE_SETTINGS_TOGGLE, "display.mark_prompt", ON_OFF,
 		AE_SETTINGS_ALWAYS, "The button and word over what a mark would act on.", 0 },
+	{ AE_SETTINGS_HUD, "RETICLE", "MARK PROMPT LOOK", AE_SETTINGS_SPINNER, "display.mark_prompt_look",
+		VALUES(prompt_look_texts, prompt_look_values), AE_SETTINGS_WHEN_MARK_PROMPT,
+		"How strong the mark prompt's button and word are. FAINT keeps it out of your way.", 0 },
+	{ AE_SETTINGS_HUD, "RETICLE", "MARK PROMPT PLACE", AE_SETTINGS_SPINNER, "display.mark_prompt_place",
+		VALUES(prompt_place_texts, prompt_place_values), AE_SETTINGS_WHEN_MARK_PROMPT,
+		"BESIDE: over or by what a mark would act on. BELOW: under your crosshair.", 0 },
 	{ AE_SETTINGS_HUD, "STOCK", "RETICLE SIZE", AE_SETTINGS_SPINNER, "display.reticle_size",
 		VALUES(xh_reticle_texts, xh_reticle_values), AE_SETTINGS_ALWAYS,
 		"How big a weapon's own reticle is. A crosshair you drew has its own size.", 0 },
@@ -921,7 +964,8 @@ static struct ae_settings_row const rows[] =
 		AE_SETTINGS_ALWAYS, "Join and host games over the internet. OFF keeps you to LAN and this PC.", 0 },
 	{ AE_SETTINGS_ONLINE, "CONNECTION", "COMMUNITY SERVICES", AE_SETTINGS_TOGGLE, "network.community_services",
 		on_off_texts, yes_no_values, COUNT(on_off_texts), AE_SETTINGS_ALWAYS,
-		"The server browser and invites, through halo.milenko.org. OFF: nothing goes there.", 0 },
+		"The server browser and invites, through halo.milenko.org. With ONLINE DAY AND BOARDS on (SETTINGS > CAMPAIGN), "
+		"the daily challenge's server too. OFF: nothing goes to either.", 0 },
 	{ AE_SETTINGS_ONLINE, "CONNECTION", "UPNP PORT FORWARDING", AE_SETTINGS_TOGGLE, "network.allow_upnp", ON_OFF,
 		AE_SETTINGS_ALWAYS, "Opens the game's port on your router so players can join you.", 0 },
 	{ AE_SETTINGS_ONLINE, "CONNECTION", "JOIN FROM CLIPBOARD", AE_SETTINGS_SPINNER, "network.join_from_clipboard",
@@ -1080,9 +1124,61 @@ static struct ae_settings_row const rows[] =
 		VALUES(record_fps_texts, record_fps_values), AE_SETTINGS_ALWAYS,
 		"The recordings' frames a second, whatever the game's frame rate.", 0 },
 #endif
-	{ AE_SETTINGS_SYSTEM, "CAMPAIGN", "FALL DAMAGE", AE_SETTINGS_TOGGLE, "game.fall_damage", ON_OFF,
+	/* (rc8) CAMPAIGN's rows: Content Evolved's Gameplay pages, one set of keys that the campaign lobby's doors write too */
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "RANDOMIZER", AE_SETTINGS_TOGGLE, "game.randomizer", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Swaps a mission's enemies, the weapons they carry and the weapons lying in it. The pages are on the campaign "
+		"lobby's RANDOMIZER. Alone and in split screen only.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "GO CRAZY", AE_SETTINGS_TOGGLE, "game.randomizer_crazy", ON_OFF, AE_SETTINGS_ALWAYS,
+		"A wilder randomizer: enemies can carry any weapon, engineers and sentinels join, the flamethrower can turn up and "
+		"more flood pods are swapped (pick each below). Missions may not play as smoothly.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "ANY NPC, ANY WEAPON", AE_SETTINGS_TOGGLE, "game.randomizer_crazy_weapons", ON_OFF,
+		AE_SETTINGS_WHEN_CRAZY, "Any actor can be given any weapon, even one it cannot normally hold.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "ENGINEERS & SENTINELS", AE_SETTINGS_TOGGLE, "game.randomizer_crazy_enemies", ON_OFF,
+		AE_SETTINGS_WHEN_CRAZY, "The unused actors, engineers and sentinels, join the pools and the type lists.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "FLAMETHROWER", AE_SETTINGS_TOGGLE, "game.randomizer_crazy_flamethrower", ON_OFF,
+		AE_SETTINGS_WHEN_CRAZY, "The multiplayer-only flamethrower can be a weapon the pools give.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "RANDOMIZER", "FLOOD PODS SWAPPED", AE_SETTINGS_SPINNER, "game.randomizer_crazy_pods",
+		VALUES(pods_texts, pods_values), AE_SETTINGS_WHEN_CRAZY,
+		"How many of a squad's flood infection pods are swapped like the other actors.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SKULLS", "SKULLS ON NOW", AE_SETTINGS_SUBSCREEN, "action.campaign_skulls", NULL, NULL, 0,
+		AE_SETTINGS_ALWAYS, "The skulls this PC has found, and which are on. The same list as the campaign lobby's SKULLS.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SKULLS", "LOSE ON DEATH", AE_SETTINGS_TOGGLE, "game.skulls_lose_on_death", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Only when skulls are found in levels: dying loses the skulls you picked up and have not kept yet.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SKULLS", "SKULLS PER LEVEL", AE_SETTINGS_SPINNER, "game.skulls_drop_count",
+		VALUES(skull_count_texts, skull_count_values), AE_SETTINGS_ALWAYS,
+		"How many of the skulls you have not found a level's enemies drop. By difficulty: 1 on EASY up to 4 on LEGENDARY.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SKULLS", "DROP CHANCE", AE_SETTINGS_SPINNER, "game.skulls_drop_chance",
+		VALUES(skull_chance_texts, skull_chance_values), AE_SETTINGS_ALWAYS,
+		"How likely a kill drops a skull. The level's first skull drops at the first kill.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SKULLS", "MORE SKULL RULES", AE_SETTINGS_SUBSCREEN, "action.campaign_skull_rules", NULL, NULL, 0,
+		AE_SETTINGS_ALWAYS, "How skulls are found, the fewest and most a random roll turns on, and forgetting every skull found.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SCORING", "SCORING", AE_SETTINGS_TOGGLE, "game.campaign_score", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Every kill scores, with your time; medals as you win them; a card with your score at the end of each mission.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SCORING", "CO-OP SCORING", AE_SETTINGS_SPINNER, "network.coop_score_type",
+		VALUES(coop_score_texts, coop_score_values), AE_SETTINGS_ALWAYS,
+		"TEAM: everyone's points add up to one score. EACH PLAYER: a score of their own. The host's setting counts online.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SCORING", "MEDAL POPUPS", AE_SETTINGS_TOGGLE, "game.campaign_medals", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Show the medals you win at the centre left as you win them. Medals always count with SCORING on.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "SCORING", "CHECKPOINT COSTS POINTS", AE_SETTINGS_TOGGLE, "game.campaign_score_revert_cost", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Going back to a checkpoint from the pause menu costs points.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "DAILY CHALLENGE", "DAILY CHALLENGE", AE_SETTINGS_TOGGLE, "game.daily_challenge", ON_OFF, AE_SETTINGS_ALWAYS,
+		"Puts DAILY CHALLENGE on the main menu: a mission a day with skulls and a randomizer, the same for everyone. The day and its "
+		"board are this PC's until ONLINE DAY AND BOARDS is on.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "DAILY CHALLENGE", "ONLINE DAY AND BOARDS", AE_SETTINGS_TOGGLE, "community.enabled", ON_OFF,
+		AE_SETTINGS_ALWAYS, "Asks Content Evolved's community server for the day's challenge and its boards, and sends it a random install "
+		"key, your profile's name and your scores in a daily challenge. OFF: nothing leaves this PC.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "DAILY CHALLENGE", "SHARE MY SCORES", AE_SETTINGS_TOGGLE, "community.upload_scores", ON_OFF,
+		AE_SETTINGS_ALWAYS, "A mission won with SCORING on, by one player on this PC, is also sent to the mission's online board with your "
+		"profile's name. A daily challenge's run always goes to its day's board while ONLINE DAY AND BOARDS is on.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "DAILY CHALLENGE", "SERVER", AE_SETTINGS_SPINNER, "community.server_mode",
+		VALUES(daily_server_texts, daily_server_values), AE_SETTINGS_ALWAYS,
+		"DEFAULT: Content Evolved's community server. CUSTOM: another community's server, set in SERVER ADDRESS. Needs ONLINE DAY AND "
+		"BOARDS on.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "DAILY CHALLENGE", "SERVER ADDRESS", AE_SETTINGS_SUBSCREEN, "action.daily_server", NULL, NULL, 0,
+		AE_SETTINGS_ALWAYS, "The https address of another community's server, as https://example.com. Used when SERVER is CUSTOM.", 0 },
+	{ AE_SETTINGS_CAMPAIGN, "MISSIONS", "FALL DAMAGE", AE_SETTINGS_TOGGLE, "game.fall_damage", ON_OFF,
 		AE_SETTINGS_ALWAYS, "Campaign only: OFF and landings never hurt. Gametypes have their own in GAME OPTIONS.", 0 },
-	{ AE_SETTINGS_SYSTEM, "CAMPAIGN", "HEALTH", AE_SETTINGS_SPINNER, "game.health",
+	{ AE_SETTINGS_CAMPAIGN, "MISSIONS", "HEALTH", AE_SETTINGS_SPINNER, "game.health",
 		VALUES(health_texts, health_values), AE_SETTINGS_ALWAYS,
 		"Campaign only: how health comes back. HALO CE: health packs. Gametypes have their own.", 0 },
 	{ AE_SETTINGS_SYSTEM, "DEV", "DEV MODE", AE_SETTINGS_TOGGLE, "system.dev_mode", ON_OFF, AE_SETTINGS_WHEN_DEV_SWITCH,
@@ -1245,6 +1341,8 @@ static struct { const char *key, *words; } const keywords[] =
 {
 	{ "display.fov", "FOV FIELD OF VIEW" },
 	{ "display.viewmodel_fov", "FOV GUN HANDS" },
+	{ "display.split_fov", "FOV FIELD OF VIEW SPLIT SCREEN" },
+	{ "display.split_hud", "HUD SPLIT SCREEN COMPACT SIZE" },
 	{ "display.vsync", "VSYNC TEARING SYNCHRONIZATION" },
 	{ "display.max_fps", "FPS FRAMES CAP" },
 	{ "display.target_framerate", "FPS FRAMES 60 DYNAMIC RESOLUTION" },
@@ -1426,6 +1524,7 @@ static int when_holds(short when, struct ae_settings_facts const *facts)
 	case AE_SETTINGS_WHEN_MOUSE_ZOOM_BOTH:
 		return facts && facts->keyboard && value_is(facts, "input.mouse_zoom_mode", "both");
 	case AE_SETTINGS_WHEN_MEDALS: return !value_is(facts, "display.medals", "false");
+	case AE_SETTINGS_WHEN_MARK_PROMPT: return !value_is(facts, "display.mark_prompt", "false");
 	case AE_SETTINGS_WHEN_NOT_AE_HUD: return !value_is(facts, "display.hud_style", "ae");
 	case AE_SETTINGS_WHEN_CLOCK: return !value_is(facts, "display.match_clock", "off");
 	case AE_SETTINGS_WHEN_GLOW: return value_is(facts, "display.shield_glow", "true");
@@ -1462,6 +1561,10 @@ static int when_holds(short when, struct ae_settings_facts const *facts)
 	/* (0.9.0) the greyed rows' conditions (an empty value is the default: NATIVE on the PC, AUTO) */
 	case AE_SETTINGS_WHEN_SCALING_NATIVE:
 		return value_is(facts, "display.resolution_scaling", "native") || value_is(facts, "display.resolution_scaling", "");
+	case AE_SETTINGS_WHEN_CRAZY: return value_is(facts, "game.randomizer_crazy", "true");
+	case AE_SETTINGS_WHEN_CAMPAIGN_SCORE: return value_is(facts, "game.campaign_score", "true");
+	case AE_SETTINGS_WHEN_COMMUNITY_SERVICES: return value_is(facts, "network.community_services", "yes");
+	case AE_SETTINGS_WHEN_DAILY_ONLINE: return value_is(facts, "network.community_services", "yes") && value_is(facts, "community.enabled", "true");
 	case AE_SETTINGS_WHEN_VSYNC: return !value_is(facts, "display.vsync", "false");
 	case AE_SETTINGS_WHEN_SMOOTH_MOTION: return !value_is(facts, "display.interpolation", "false");
 	case AE_SETTINGS_WHEN_TOP_AND_BOTTOM:
@@ -1502,6 +1605,22 @@ static const struct
 		"display.split_two_players", "SIDE BARS are for TOP AND BOTTOM. With SIDE BY SIDE each view already has the "
 		"screen's full height. {A} goes to TWO PLAYERS." } },
 	/* (rc6, Steam Input drives the pad: no row to go to, needs NULL) */
+	/* (rc8, CAMPAIGN) the scoring rows that mean nothing with SCORING off */
+	{ "network.coop_score_type", AE_SETTINGS_WHEN_CAMPAIGN_SCORE, { "Needs SCORING: ON", "game.campaign_score",
+		"Turn SCORING on first. {A} goes to SCORING." } },
+	/* (rc8, DAILY CHALLENGE) nothing is asked of or sent to the community server without COMMUNITY SERVICES, and the share needs the online day */
+	{ "community.enabled", AE_SETTINGS_WHEN_COMMUNITY_SERVICES, { "Needs COMMUNITY SERVICES: ON", "network.community_services",
+		"Nothing goes to the community server until COMMUNITY SERVICES is on. {A} goes to COMMUNITY SERVICES." } },
+	{ "community.upload_scores", AE_SETTINGS_WHEN_DAILY_ONLINE, { "Needs ONLINE DAY AND BOARDS: ON", "community.enabled",
+		"Scores are sent only with ONLINE DAY AND BOARDS on. {A} goes to ONLINE DAY AND BOARDS." } },
+	{ "community.server_mode", AE_SETTINGS_WHEN_DAILY_ONLINE, { "Needs ONLINE DAY AND BOARDS: ON", "community.enabled",
+		"The server is only asked with ONLINE DAY AND BOARDS on. {A} goes to ONLINE DAY AND BOARDS." } },
+	{ "action.daily_server", AE_SETTINGS_WHEN_DAILY_ONLINE, { "Needs ONLINE DAY AND BOARDS: ON", "community.enabled",
+		"The server is only asked with ONLINE DAY AND BOARDS on. {A} goes to ONLINE DAY AND BOARDS." } },
+	{ "game.campaign_medals", AE_SETTINGS_WHEN_CAMPAIGN_SCORE, { "Needs SCORING: ON", "game.campaign_score",
+		"Turn SCORING on first. {A} goes to SCORING." } },
+	{ "game.campaign_score_revert_cost", AE_SETTINGS_WHEN_CAMPAIGN_SCORE, { "Needs SCORING: ON", "game.campaign_score",
+		"Turn SCORING on first. {A} goes to SCORING." } },
 	{ "input.trackpad_aim", AE_SETTINGS_WHEN_STEAM_INPUT_OFF, { "Needs Steam Input off", NULL,
 		"Steam Input drives this controller, so Steam's layout sets its trackpads. Turn Steam Input off for this game in "
 		"Steam to use this row." } },
@@ -1978,6 +2097,7 @@ static struct { const char *key; struct ae_number_range range; const char *suffi
 	{ "display.max_fps", { 30, 1000, NULL, NULL, NULL }, NULL },
 	{ "display.fov", { 60, 150, NULL, NULL, NULL }, NULL },
 	{ "display.viewmodel_fov", { 60, 150, NULL, NULL, NULL }, NULL },
+	{ "display.split_fov", { 60, 150, NULL, NULL, NULL }, NULL },
 	{ "input.left_stick_deadzone", { 1, 50, NULL, NULL, NULL }, " %" },
 	{ "input.right_stick_deadzone", { 1, 50, NULL, NULL, NULL }, " %" },
 	{ "display.waypoint_size", { 50, 100, NULL, NULL, NULL }, " %" },
@@ -2062,6 +2182,28 @@ void ae_settings_whole_shown(struct ae_settings_row const *row, const char *valu
 		index = ae_settings_value_index(row, value);
 		snprintf(text, size, "%s", index >= 0 ? ae_settings_value_text(row, index) : value ? value : "");
 	}
+}
+
+int ae_settings_exact_shown(struct ae_settings_row const *row, const char *value, char *text, size_t size)
+{
+	short count, index;
+	size_t at;
+
+	if (!row || !row->key || !value || !*value ||
+		(strcmp(row->key, "display.target_framerate") && strcmp(row->key, "display.split_target_framerate")))
+	{
+		return 0;
+	}
+	count = ae_settings_value_count(row);
+	for (index = 0; index < count; index++)
+	{
+		if (!strcmp(ae_settings_value_of(row, index), value))
+			return 0;
+	}
+	for (at = 0; at + 1 < size && value[at]; at++)
+		text[at] = value[at] >= 'a' && value[at] <= 'z' ? (char)(value[at] - 'a' + 'A') : value[at];
+	text[at] = 0;
+	return 1;
 }
 
 int ae_settings_whole_typing_ok(const char *typed)

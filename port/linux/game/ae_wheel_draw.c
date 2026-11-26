@@ -36,6 +36,7 @@ chips AE's own (ae_key_prompts.c). Where everything sits is ae_wheel_layout.c's,
 #include "ae_wheel_draw.h"
 #include "ae_wheel_layout.h"
 #include "ae_wheel_rules.h"
+#include "ae_split_layout.h"
 
 void platform_video_drawable_size(int *width, int *height);
 struct bitmap_data const *hud_item_timers_ae_glyph(short glyph);
@@ -73,7 +74,7 @@ static boolean view_get(struct wheel_view *view)
 {
 	real ppu = ae_hud_pixels_per_unit();
 	real height;
-	int split = local_player_count() > 1;
+	int split = ae_split_layout_hud_small();
 	int drawable_width = 0, drawable_height = 0;
 	float centre_x, centre_y;
 

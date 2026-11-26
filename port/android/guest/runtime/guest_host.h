@@ -156,6 +156,11 @@ the body (its size in body_size), else 0 and why in error */
 int host_https_get(const char *url, int *status, char *headers, int headers_size, char *body, int body_capacity,
 	int *body_size, char *error, int error_size);
 
+/* a POST of a JSON body to an https:// url (port/linux/src/ae_party_http.c, the online party): 1 with the status and up to
+body_capacity bytes of the body (its size in body_size), else 0 and why in error */
+int host_https_post(const char *url, const char *json, int *status, char *body, int body_capacity, int *body_size, char *error,
+	int error_size);
+
 /* an MCC package's fingerprint (SHA-256 and CRC32) on the host's threads, with the CPU's
 instructions, and kept on the card (port/android/host/host_mcc_hash.c, which says what each
 does; the guest's side is port/linux/game/mcc_resource_check.inl's) */

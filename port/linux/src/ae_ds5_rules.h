@@ -145,6 +145,41 @@ shot, which its firing shape does), and its rumble pulse: a human weapon's on th
 right */
 int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind,
 	enum ae_ds5_event event, int strength);
+/* an event's motor pulse alone (human weapons on the left motor, Covenant on the right), scaled by TRIGGER STRENGTH's percent:
+the one table the DualSense and every other pad's two motors read */
+void ae_ds5_event_rumble(struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind, enum ae_ds5_event event, int strength);
+
+/* the named pulses the DEV `pad pulse <name>` fires on a pad: the number of them, a name by its place, and the motor pulse of
+one (scaled by TRIGGER STRENGTH's percent); 0 for a name that is none. Each is an event of a weapon kind of the table above:
+a pistol's, a rifle's, a battle rifle's, a plasma pistol's round, its charged blast, the magazine going in, the shotgun's
+chambering, the two grenades and the charge ramp half and fully charged */
+int ae_ds5_pulse_count(void);
+char const *ae_ds5_pulse_name(int index);
+int ae_ds5_pulse_named(char const *name, int strength, struct ae_ds5_rumble *rumble);
+
+/* which events one tick holds: bits of AE_DS5_EVENTS_*. facts: the weapon this tick; memory: what the tick before left, kept by
+the caller (zeroed to start). A new weapon holds no event (it is only readying). charged_before: the charge was nearly full
+(0.95) the tick before. Both the DualSense's and the plain pads' paths read it */
+enum
+{
+	AE_DS5_EVENTS_SHOT = 1, AE_DS5_EVENTS_SHOT_CHARGED = 2, AE_DS5_EVENTS_MAG_IN = 4, AE_DS5_EVENTS_CHAMBER = 8,
+	AE_DS5_EVENTS_SETTLE = 16
+};
+struct ae_ds5_event_memory
+{
+	long last_fired;
+	int rounds_loaded, chambering, reloading, readying;
+};
+struct ae_ds5_event_facts
+{
+	int same_weapon;
+	long last_fired;
+	int rounds_loaded, chambering, reloading, readying, charged_before;
+};
+unsigned ae_ds5_events_step(struct ae_ds5_event_memory *memory, struct ae_ds5_event_facts const *facts);
+/* a grenade's throw ending: 1 on the tick it begins; ending_before is the caller's memory */
+int ae_ds5_event_grenade(int *ending_before, int ending);
+
 /* whether the kind is a Covenant (energy) weapon's */
 int ae_ds5_kind_covenant(enum ae_ds5_weapon_kind kind);
 /* the plasma pistol's overcharged release on the lightbar: green, fading over 0.3 s; 0 when ticks (since the

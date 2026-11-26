@@ -16,6 +16,8 @@ of the game it was last moved in. Plain text, one line for each entry, in this o
 	social = chief | team-slayer | 37 70 33 4 3 1763201234
 	pending = chief | team-slayer | 1763201234
 	experience = chief | 2
+	xp = chief | 5230 1763201234
+	challenges = chief | 20415 2916 | d_win2 1 0 | d_kills40 40 1 | d_time30 0 0 | w_play15 4 0 | w_win10 2 0 | w_camp3 0 0
 	checksum = 3fa91c07
 
 career / online: the playlist id, then points level highest games wins quits last, then (when there were quits) the clocks of the
@@ -25,7 +27,11 @@ Version 2 (0.9.3, the offline SOCIAL career): match = the hidden match rating of
 id, then points games last); social = a profile's EXP in a playlist (then exp games wins ties quits last; the losses are what is
 left); pending = a game that was started and not yet ended (profile key, playlist id, the start clock; one a profile at most).
 experience = a profile's calibration answer (0.9.4; 1 NEW, 2 SOME, 3 A LOT; a profile with no line has not answered; an older
-reader skips the line as unknown, like the others). The checksum is the last line: data after it, a second checksum, a second header or a line twice (a playlist
+reader skips the line as unknown, like the others). Version 3 (the CAREER XP): xp = a profile's career XP (ae_career_xp_rules.h; then the clock of the game that last moved it); challenges = a
+profile's daily and weekly challenges (ae_career_challenge_rules.h): the day and the week they are for, then six slots after a "|"
+each (the kind's id or "-", the counter, 1 when it has paid). A file is written as version 3 only once it holds one of these lines;
+a version 2 file reads as before (no XP, no challenges). A 0.9.x reader of a version 3 file sets newer and never writes it back.
+The checksum is the last line: data after it, a second checksum, a second header or a line twice (a playlist
 on a ladder, a profile and playlist of match / social, a profile of pending) make a file read as edited. A version 1 file reads as before (no such lines). A 0.9.2 reader of a version 2 file skips these lines as unknown, sets newer and
 never writes the file back, so a downgrade loses none of them. The checksum (FNV-1a of every byte before
 its line) guards against hand edits: a file whose checksum does not match, or that has none, is read as empty and flagged
@@ -42,6 +48,9 @@ version past its own sets newer (the glue then never writes the file back). A fi
 enum
 {
 	AE_CAREER_VERSION = 2,
+	/* the version written once a profile has career XP or challenge lines (1.0); a reader of this one's reads both */
+	AE_CAREER_VERSION_XP = 3,
+	AE_CAREER_VERSION_MAX = 3,
 	AE_CAREER_ID = 32,
 	AE_CAREER_PLAYLISTS = 32,
 	/* the last quits kept for each playlist */
@@ -51,12 +60,17 @@ enum
 	AE_CAREER_PENDING = 8,
 	/* the calibration answers (0.9.4): one line a profile, as many as a PC's profiles (AE_PROFILES_MAXIMUM) */
 	AE_CAREER_EXPERIENCES = 64,
+	/* the career XP and the challenges (version 3): one line a profile of each, as many as a PC's profiles */
+	AE_CAREER_XP_PROFILES = 64,
+	AE_CAREER_CHALLENGE_SLOTS = 6,
+	AE_CAREER_CHALLENGE_ID = 16,
 	/* a line of the file, the newline in it, at most (the longest one is a ladder line with 16 quit clocks of 20 digits: 512);
 	   the reader refuses a longer one */
 	AE_CAREER_LINE = 640,
 	/* the file's text: every table full of longest lines, the header and the checksum line; ae_career_write still checks its
 	   bound and answers -1 when a file does not fit */
-	AE_CAREER_TEXT = (2 * AE_CAREER_PLAYLISTS + 2 * AE_CAREER_SOCIAL + AE_CAREER_PENDING + AE_CAREER_EXPERIENCES + 4) * AE_CAREER_LINE,
+	AE_CAREER_TEXT = (2 * AE_CAREER_PLAYLISTS + 2 * AE_CAREER_SOCIAL + AE_CAREER_PENDING + AE_CAREER_EXPERIENCES +
+		2 * AE_CAREER_XP_PROFILES + 4) * AE_CAREER_LINE,
 	/* the ladders */
 	AE_CAREER_OFFLINE = 0,
 	AE_CAREER_ONLINE = 1,
@@ -110,6 +124,30 @@ struct ae_career_experience
 	int value;
 };
 
+/* a profile's career XP (the ladder of ae_career_xp_rules.h) and the clock of the game that last moved it */
+struct ae_career_xp
+{
+	char profile[AE_CAREER_ID];
+	long xp;
+	unsigned long last;
+};
+
+/* one challenge of a profile: the kind's id (ae_career_challenge_rules.h), the counter, and whether it has paid */
+struct ae_career_challenge_slot
+{
+	char kind[AE_CAREER_CHALLENGE_ID];
+	long progress;
+	int done;
+};
+
+/* a profile's challenges: the day and the week they are for, the daily ones in slots 0 .. 2 and the weekly ones in 3 .. 5 */
+struct ae_career_challenges
+{
+	char profile[AE_CAREER_ID];
+	long day, week;
+	struct ae_career_challenge_slot slot[AE_CAREER_CHALLENGE_SLOTS];
+};
+
 struct ae_career
 {
 	int newer;
@@ -122,6 +160,9 @@ struct ae_career
 	struct ae_career_pending pending[AE_CAREER_PENDING];
 	int experience_count;
 	struct ae_career_experience experience[AE_CAREER_EXPERIENCES];
+	int xp_count, challenge_count;
+	struct ae_career_xp xp[AE_CAREER_XP_PROFILES];
+	struct ae_career_challenges challenges[AE_CAREER_XP_PROFILES];
 };
 
 void ae_career_init(struct ae_career *career);
@@ -191,6 +232,17 @@ int ae_career_experience_set(struct ae_career *career, char const *profile, int 
 long ae_career_match_start(struct ae_career const *career, char const *profile);
 /* every match line of the profile moved back to the start of its answer with 0 games (the EXP lines stay); how many lines moved */
 int ae_career_match_restart(struct ae_career *career, char const *profile, unsigned long clock);
+
+/* ---- career XP and challenges (version 3) ---- */
+
+/* the profile's XP line, NULL for none; the same made (all zero) when there is none, NULL when the table is full */
+struct ae_career_xp *ae_career_xp_find(struct ae_career *career, char const *profile);
+struct ae_career_xp *ae_career_xp_entry(struct ae_career *career, char const *profile);
+/* the profile's XP (0 for none) */
+long ae_career_xp_get(struct ae_career const *career, char const *profile);
+/* the profile's challenges line, NULL for none; the same made (zero day and week, empty slots) when there is none */
+struct ae_career_challenges *ae_career_challenges_find(struct ae_career *career, char const *profile);
+struct ae_career_challenges *ae_career_challenges_entry(struct ae_career *career, char const *profile);
 
 /* the file's text into buffer: its length, -1 when it does not fit */
 long ae_career_write(struct ae_career const *career, char *buffer, long size);

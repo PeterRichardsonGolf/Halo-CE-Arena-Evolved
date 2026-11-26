@@ -212,6 +212,19 @@ static void send_action(
 	send_step(controller, action, 0);
 }
 
+/* ae_input_press's queue: sent at the next poll with a screen up (none up: dropped, and said) */
+enum { PRESSES = 8 };
+static int presses[PRESSES], press_count;
+
+int ae_input_press(
+	int action)
+{
+	if (action <= AE_ACTION_NONE || action >= AE_NUMBER_OF_ACTIONS || press_count >= PRESSES)
+		return 0;
+	presses[press_count++] = action;
+	return 1;
+}
+
 /* a pressed button's action (the d-pad's come from the held directions); (0.4.2) a Nintendo pad's face buttons
 by their labels in AE menus: its A (east) selects, its B (south) goes back, its X (north) and Y (west) are X and Y.
 (0.7.6) The pad's state is by labels already with A/B SWAP OFF (xinput_sdl.c) and by places with EVERYWHERE: only with
@@ -460,6 +473,13 @@ void ae_input_poll(
 	}
 	for (index = 0; index < action_count && ae_ui_depth(); index++)
 		send_action(0, actions[index]);
+	for (index = 0; index < press_count; index++)
+	{
+		platform_log("ae input: test press %d %s", presses[index], ae_ui_depth() ? "sent" : "dropped: no screen is up");
+		if (ae_ui_depth())
+			send_action(0, presses[index]);
+	}
+	press_count = 0;
 	/* ((menus phase 1) on the main menu, and on the TAB menu it opens, Tab is that menu's key: START, no step) */
 	if (tab_forward + tab_backward > 0 && ae_screen_main_menu_tab_opens())
 	{

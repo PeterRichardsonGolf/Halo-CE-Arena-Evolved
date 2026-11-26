@@ -1,0 +1,55 @@
+# Staging spots on octagon_b (arena, collision BSP 0): an eight-sided floor 16 units across with no AI placement. The
+# four spots face across the floor from the middle of each side, clear of the player starts on the corners.
+map = "octagon_b"
+geometry_bsp = 0
+quiet = 5
+need = 9
+ally = 5
+
+[[spot]]
+name = "octagon-b-west"
+x = -6
+y = 0
+z = 0.05
+facing = 0
+bsp = 0
+flat_room = 13.5
+ground_dz = 0.05
+rating = "GOOD"
+notes = "West side facing east across the floor."
+
+[[spot]]
+name = "octagon-b-south"
+x = 0
+y = -6
+z = 0.05
+facing = 90
+bsp = 0
+flat_room = 13.5
+ground_dz = 0.05
+rating = "GOOD"
+notes = "South side facing north."
+
+[[spot]]
+name = "octagon-b-east"
+x = 6
+y = 0
+z = 0.05
+facing = 180
+bsp = 0
+flat_room = 13.5
+ground_dz = 0.05
+rating = "GOOD"
+notes = "East side facing west."
+
+[[spot]]
+name = "octagon-b-north"
+x = 0
+y = 6
+z = 0.05
+facing = 270
+bsp = 0
+flat_room = 13.5
+ground_dz = 0.05
+rating = "GOOD"
+notes = "North side facing south."

@@ -105,6 +105,9 @@ and each bot's kills and deaths; debug.bot_trace logs each bot's state.
 int ae_bot_names_name(long bot_index, char *name, int size); /* AE hook */
 #include "ae_bots_travel_rules.h" /* AE hook */
 #include "ae_path_cost.h" /* AE hook */
+static boolean ae_squad_paths_keep_open(long object_index); /* AE hook */
+static boolean ae_squad_paths_may_learn(long object_index); /* AE hook */
+static void ae_squad_paths_closed(long object_index, long surface_index); /* AE hook */
 #include "bots_combat.h"
 
 #include <math.h>
@@ -1075,6 +1078,7 @@ static boolean bots_paths_close_object(long object_index, char const *why, real 
 			bots_surface_blocked(object_index, corners, corner_count, &middle))
 		{
 			bots_paths.walkable[surface_index] &= (byte)~FLAG(BOTS_PATHFINDING_WALKABLE_BIT);
+			ae_squad_paths_closed(object_index, surface_index); /* AE hook */
 			closed++;
 		}
 	}
@@ -1266,6 +1270,7 @@ static long bots_paths_learn(real_point3d const *position, real_point3d const *g
 		{
 			continue;
 		}
+		if (!ae_squad_paths_may_learn(iterator.index)) continue; /* AE hook */
 		if (bots_paths_close_object(iterator.index, "in the way:", object->object.type == _object_type_machine ? object->object.bounding_sphere_radius : 0.0f)) /* AE hook */
 			learned++;
 	}
@@ -1324,6 +1329,7 @@ static void bots_prepare_paths(void)
 		{
 			continue;
 		}
+		if (ae_squad_paths_keep_open(iterator.index)) continue; /* AE hook */
 		bots_paths_close_object(iterator.index, "a machine in the way:", 0.0f); /* AE hook */
 	}
 }
@@ -2757,7 +2763,8 @@ static void bots_bot_fight(struct bots_bot *bot, struct bots_tick *tick)
 	if (tick->target_distance > 6.0f && tick->target_distance < 22.0f && now >= bot->grenade_tick &&
 		(tick->unit->unit.grenade_counts[0] > 0 || tick->unit->unit.grenade_counts[1] > 0) &&
 		bots_random_real(bot) < skill->grenade_chance / TICKS_PER_SECOND * 3.0f &&
-		now - bot->target_first_seen_tick >= reaction_ticks)
+		now - bot->target_first_seen_tick >= reaction_ticks &&
+		ae_bots_fight_grenade_safe(bot, tick)) /* AE hook */
 	{
 		tick->flags |= FLAG(_unit_control_throw_grenade_bit);
 		if (tick->unit->unit.grenade_counts[(long)tick->unit->unit.current_grenade_index] <= 0)

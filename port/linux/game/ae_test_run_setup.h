@@ -6,6 +6,11 @@ gametype, `set` config values and local players, started as debug.network_test d
 read its settings again); a screen test is an AE menu screen (debug.ae_test_screen, opened again). A map test names its gametype for network_test twice: in debug.network_test
 ("local:<map>:<gametype>", built-in names) and in debug.network_test_gametype (a saved or seeded one, "AE SLAYER").
 
+A campaign level's test (gametype coop) opens at the level's start point (ae_test_start.h): the level's saved game at
+first control after its intro, taken by the first test load that plays the intro and read by the later ones, so they
+open in seconds. The AI squad is not in it: it joins in the level (a `companion` line, else the game.companions setting).
+A test that wants the ride has the setup line `intro play`, and loads the level again.
+
 Undo puts back the exact value every key had before the last apply changed it (the test's `set` keys and the
 debug.network_test, debug.network_test_local_players and debug.ae_test_screen keys the setup itself uses).
 */

@@ -26,6 +26,11 @@ boolean ae_tag_inject_read(
 long ae_tag_inject_player_biped(
 	long unit_definition_index);
 
+/* the map of the injector's list a level name is (an MCC map's identity, <name>@mcc or <name>@ws<id>, else a Custom Edition map's
+level name: it is made known to the list), or NONE; the list is found again. The ITEM SETS page opens its maps with it */
+short ae_tag_inject_map_of_level(
+	char const *level);
+
 /* ---------- DEV MODE's command (ae_dev_cmd.c): inject status|maps|close|on|off|clear, inject open <level>,
 inject list <category>, inject take <category> <number or part of a path>. The answer (one line) into answer; FALSE when refused */
 boolean ae_tag_inject_command(

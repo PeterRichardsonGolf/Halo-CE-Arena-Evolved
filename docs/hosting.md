@@ -32,7 +32,7 @@ To keep it running: `ae-server.service` is a hardened systemd user unit (`GUIDE.
 
 ## 2. A container
 
-The package has a `Dockerfile`, `container-start.sh` and `compose.yaml`. The container runs as uid 10001 with no capabilities, no new privileges and a read-only root; the program and Arena Evolved's weapon data are in the image, everything the server writes is in one volume, and your Steam library is mounted read-only. Only UDP 2302 is published.
+The server package carries `compose.example.yaml` only. The `Dockerfile`, `container-start.sh` and `compose.yaml` are in the release's source, in `server/deploy/ae-package`: put them beside the unpacked package's files in `~/ae-server` before the commands below. The container runs as uid 10001 with no capabilities, no new privileges and a read-only root; the program and Arena Evolved's weapon data are in the image, everything the server writes is in one volume, and your Steam library is mounted read-only. Only UDP 2302 is published.
 
 ```
 cd ~/ae-server

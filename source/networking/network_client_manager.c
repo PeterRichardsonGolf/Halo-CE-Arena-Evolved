@@ -3114,6 +3114,7 @@ static boolean network_game_client_idle_searching(
 
 			join_parameters.__unknown2 = 0;
 			network_game_generate_join_game_token(join_parameters.join_token);
+			ae_silent_own_join_begin(); /* AE hook */
 
 			if (!network_game_client_initiate_join_game(
 				client,

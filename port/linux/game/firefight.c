@@ -1699,6 +1699,8 @@ static void firefight_player_added(
 static void firefight_game_ending(
 	void)
 {
+	/* (a client's copy of the host's rules is for its game only) */
+	ae_firefight_net_clear();
 }
 
 static void firefight_game_starting(

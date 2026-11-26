@@ -4,6 +4,57 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## 1.0.0-rc8 - 2026-11-25
+
+### Added
+
+- REJOIN AFTER A DROP: a guest whose connection to a game is lost, with no kick, ban or restart from the host, goes
+  back to the menus and joins the same game again, up to 3 tries in 30 seconds, with a "Reconnecting" dialog whose one
+  choice stops it. When no try gets back, the lost-connection error shows as before. network.rejoin_after_drop (on by
+  default) turns it off.
+- A pack map (a file@pack map) whose version on your machine is not the host's is fetched from the host and played
+  beside your own file, which is never touched. At most 3 copies of a map are kept. With DOWNLOAD MAPS off the join says
+  why it was refused.
+- SETTINGS > HUD > RETICLE: MARK PROMPT LOOK (FULL, SOFT, FAINT) fades the button and word that show over what a mark
+  would act on, and MARK PROMPT PLACE (BESIDE, BELOW) can keep them under your crosshair. Both are as before by default.
+- CAMPAIGN in the AE menus covers what Content Evolved's own menus offer: SKULLS (all 40, with the first-time questions),
+  SCORING, CO-OP OPTIONS, LOAD GAME, the mission list with your best run and par, the end-of-level card, and a CAMPAIGN
+  group in SETTINGS.
+- RANDOMIZER: AI REPLACEMENT, AI WEAPONS, WEAPON PICKUPS and PLAYER LOADOUT (with AE's weapons and an item set's), eight
+  saved setups, and GO CRAZY for a wilder mix.
+- FIREFIGHT on the main menu: its lobby, its rules, MAP CONTENT and OBJECTIVES. A host's rules go to every player in the
+  game.
+  Firefight copies its enemies, ships and weapons once from the Xbox campaign maps: a PC with only MCC's maps shows
+  NEEDS THE XBOX MAPS on its card until they are installed.
+- DAILY CHALLENGE: one set run a day, kept on this PC, with a local leaderboard. Online boards are off until you turn
+  them on in SETTINGS; when the server does not answer, the challenge says so and plays offline.
+- THEATER (beta): record your games, then watch them from the main menu: each player's own view, behind the player, a
+  free camera and a cinematic camera, pause, speed, skip and a fast seek. Recording is off until you turn it on.
+- Split screen: each player's HUD and field of view fit their own part of the screen; on a 21:9 or wider screen two
+  players sit side by side.
+- CAREER: skill rank and career rank pictures, and challenges that give career XP. MCC owners see MCC's own pictures.
+- Steam Controller: rumble.
+- AI SQUAD: they no longer throw a grenade while a teammate is near where it lands or in its path, and a vehicle
+  gunner no longer holds fire for its own driver. Bots in multiplayer team games follow the same grenade rule.
+
+### Changed
+
+- The AE menus remember the size and spacing of each letter they draw instead of looking them up in the font every
+  frame: a screen with a lot of text, such as a first-start page or a notice, costs about a tenth of the time to draw.
+
+### Fixed
+
+- In a recorded game, bots move, aim and animate as they did in play (they stepped and switched animations). Games
+  recorded before this keep the old look.
+- The post-game and CAREER screens fit a 4:3 screen: their footer and help line no longer run off the right edge.
+- AI SQUAD: members follow you over the pipes leaving the cryo bay instead of crouch-walking into them.
+- With the AE menus on, the game no longer runs slower on NVIDIA graphics once the menus have been shown: the menus
+  read the graphics state back every frame, which made the driver give up its faster threaded mode for the rest of the
+  session. A campaign level could take more than twice as long to draw.
+- The first join right after a dedicated server restart no longer fails when the server is still hashing its map list:
+  the first guest is kept waiting while the list is made.
+- SETTINGS > VIDEO: a TARGET FRAMERATE value its list does not have shows as itself, not as a nearby entry.
+
 ## 1.0.0-rc7 - 2026-11-24
 
 ### Added
@@ -44,6 +95,11 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ### Added
 
+- CALLOUTS: ITEMS + COUNTDOWN (SETTINGS > AUDIO), a talking clock of the time left in a game with a time limit: a beep
+  and "five minutes" 5 minutes before the end, "one minute" at 1 minute, "thirty seconds left" at 30 seconds, then
+  "ten" to "one" on the last ten seconds, in the callout voice, with the item calls as ITEMS has them. No countdown
+  calls in a game without a time limit or in Infection. ITEMS + CLOCK, Halo 1: NHE's count of the minutes played, stays
+  as it is. CALLOUT DETAIL MINIMAL says the countdown's words only, without beeps or "ten" to "one".
 - CAMPAIGN > AI SQUAD: a squad of allied Spartans, played by the game, joins each Halo CE campaign mission you start
   alone; left / right on the row choose how many. They follow you, fight beside you, take the Warthog's gunner seat
   when you drive, go for a weapon on the ground or their second weapon when theirs runs dry, and come back after a
@@ -110,11 +166,6 @@ release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
 ### Added
 
-- CALLOUTS: ITEMS + COUNTDOWN (SETTINGS > AUDIO), a talking clock of the time left in a game with a time limit: a beep
-  and "five minutes" 5 minutes before the end, "one minute" at 1 minute, "thirty seconds left" at 30 seconds, then
-  "ten" to "one" on the last ten seconds, in the callout voice, with the item calls as ITEMS has them. No countdown
-  calls in a game without a time limit or in Infection. ITEMS + CLOCK, Halo 1: NHE's count of the minutes played, stays
-  as it is. CALLOUT DETAIL MINIMAL says the countdown's words only, without beeps or "ten" to "one".
 - CHANGE MAP lists a map held in several copies once: the Steam Workshop item when it is installed, else the stock or
   community file, else our converted copy, else the CE+ X copy. Each row has a chip saying which copy it is (WORKSHOP,
   STOCK, COMMUNITY, CONVERTED, CE+ X) and, when there are more, "N VERSIONS". LEFT / RIGHT on the row choose the copy to

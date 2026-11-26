@@ -35,6 +35,8 @@ static int answering_writes;
 
 static long config_setting_index(const char *name);
 void ae_config_player_written(const char *name, const char *value) { (void)name; (void)value; } /* AE hook */
+/* (no setting is overridden for the run here: config_write_overridden, port_config.c) */
+static int config_write_overridden(long index, const char *name) { (void)index; (void)name; return 0; }
 
 static const struct config_value *config_value(const char *name, enum config_type type)
 {

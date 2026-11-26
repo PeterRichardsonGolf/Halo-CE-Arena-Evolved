@@ -83,6 +83,24 @@ unsigned short ae_netext_peer_version(struct ae_netext_peer const *peer, char co
 long ae_netext_first_missing(struct ae_netext_peer const *peer, struct ae_netext_capability const *table,
 	long table_count, unsigned long required_mask);
 
+/* ---- the Firefight rules message: kind 2 of the same packet, host to client, sent only in a Firefight game to a machine
+that told it has Arena Evolved. Its bytes, before the type byte: magic, format 1, kind 2, 1 rules version (1), 1 count of
+rules, then each rule's value little-endian in the width the reader's table gives it (1, 2 or 4 bytes). A reader that does not
+know kind 2 ignores the packet as one of another kind (ae_netext_parse), so a build without it keeps its own rules. */
+#define AE_NETEXT_KIND_FIREFIGHT 2
+#define AE_NETEXT_FIREFIGHT_VERSION 1
+#define AE_NETEXT_FIREFIGHT_MAXIMUM_RULES 64
+
+/* the message of count rules (values[i] written in widths[i] bytes) into out[capacity]: its size, or -1 */
+long ae_netext_firefight_build(unsigned long const *values, unsigned char const *widths, int count, unsigned char *out,
+	long capacity);
+/* reads data[size] (the type byte included) against the reader's widths into values: OK, OTHER (not a Firefight rules
+message) or MALFORMED (a count or length that does not fit the widths) */
+int ae_netext_firefight_parse(void const *data, long size, unsigned char const *widths, int count, unsigned long *values);
+/* whether the host sends the rules to a machine now: only in a Firefight game, only to a machine that told it has Arena
+Evolved, and only when they are new to it or changed. Any other game sends nothing new */
+int ae_netext_firefight_send(int firefight_game, int machine_has_ae, int changed);
+
 /* the key's characters only */
 int ae_netext_key_valid(char const *key, long length);
 

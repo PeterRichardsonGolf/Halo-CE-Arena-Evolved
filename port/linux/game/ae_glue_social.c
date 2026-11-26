@@ -13,6 +13,7 @@
 #include "ae_dev_cmd_rules.h"
 #include "ae_dev_events.h"
 #include "ae_glue_career.h"
+#include "ae_glue_career_xp.h"
 #include "ae_glue_profiles.h"
 #include "ae_glue_bot_records.h"
 #include "ae_glue_social.h"
@@ -553,6 +554,8 @@ int ae_social_dev(struct ae_dev_cmd const *cmd, char *text, int size)
 
 	if (!ae_social_profile_key((short)player, profile, sizeof(profile)))
 		snprintf(profile, sizeof(profile), "dev-player%d", player + 1);
+	if (!strcmp(sub, "career"))
+		return ae_career_xp_dev(cmd, (short)player, text, size);
 	if (!strcmp(sub, "maps"))
 	{
 		ae_social_maps_hide(cmd->word[2]);
@@ -651,6 +654,12 @@ int ae_social_dev(struct ae_dev_cmd const *cmd, char *text, int size)
 			}
 			else if (!strcmp(cmd->word[each], "party") && each + 1 < cmd->words)
 				party = atoi(cmd->word[++each]);
+			else if (!strcmp(cmd->word[each], "result") && each + 1 < cmd->words)
+			{
+				char const *word = cmd->word[++each];
+
+				ae_screen_social_lobby_dev_result(!strcmp(word, "win") ? 1 : !strcmp(word, "tie") ? 2 : !strcmp(word, "loss") ? 3 : 4);
+			}
 			else if (!strcmp(cmd->word[each], "left") && each + 1 < cmd->words)
 				left = atoi(cmd->word[++each]);
 			else if (!strcmp(cmd->word[each], "votes") && each + 1 < cmd->words)

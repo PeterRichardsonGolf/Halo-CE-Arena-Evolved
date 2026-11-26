@@ -38,5 +38,9 @@ their own drag) */
 int ae_input_accept_held(short controller);
 /* (menus phase 1) the same for its B (the back button of the pad's family): the PARTY manager's hold to remove */
 int ae_input_back_held(short controller);
+/* TEST RUN's scripted press (a list's `press` line, preflight runs only): the action (enum ae_action) goes to player 1's
+screen at the next poll, after the keys' and before the held directions', as a key's would. 1 when queued, 0 when the
+queue (8) is full or the action is none */
+int ae_input_press(int action);
 
 #endif

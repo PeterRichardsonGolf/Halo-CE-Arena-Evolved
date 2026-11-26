@@ -143,10 +143,11 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               the host's feet, 3 units ahead or at its own stand (as if its carrier died there), held by the host (carry,
 	                               theirs) or by the nearest enemy (carry, ours: a dummy or runner first, waited for while it is
 	                               still on its way to its spot), or back on its stand
-	god [me|<player>|off]          that player takes no damage (me when none named; off ends it; their vehicle still does)
+	god [me|<player>|off]          that player takes no damage (me when none named; off ends it; their vehicle still does; works in a campaign level)
 	unseen [me|<player>|off]       the bots neither see nor target that player, nor count them as an enemy near (me when
 	                               none named; off ends it); a bot they hit reacts to the hurt (cover,
-	                               unscoping) but never turns on them
+	                               unscoping) but never turns on them. In a campaign level the level's AI
+	                               sees no player at all (off ends it)
 	mods list | on <name> | off <name> | order <name> <1-256>
 	                               the mods folder's mods (ae_mods_list.h): the list in one line (top first: priority 1
 	                               plays over every other), a mod (its folder or mod.toml id) turned on or off, or moved to a
@@ -196,6 +197,8 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               the ground, facing it
 	campaign <1-10> [<0-3>] [won <seconds>] (from the menus) the level starts alone at the difficulty (0 easy to 3 legendary, 1 by default),
 	                               as the CAMPAIGN screen's A does; won: the level is won that many seconds into it, as its end does
+	intro play                     (a TEST RUN campaign test's setup line) the test plays the level's intro: it loads the level again and
+	                               does not open at the level's start point (ae_test_start.h); a campaign test without it opens at first control
 	ride [warthog|ghost|scorpion] [circle|line]
 	                               puts the host on top of the nearest one of that kind, making one when none exists
 	roundcard won|lost|tied [reason]
@@ -211,6 +214,12 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               (slayer, flag, ball, hill, race, bomb, other) rings that kind's column on MODES
 	lobby_fill <1-4>               (menus phase 1) the main menu's party at that size: player 1 and test guests on the
 	                               controllers after (signed in as guests, no pad needed), the rest signed out
+	party code | party online <status|start|stop|autojoin [off]|steam fake|send|list|off|name <text>|invite <code>|answer <n> [no]|leave|kick <code>|promote <code>|
+	      privacy <invite|friends|closed>|link <text>|newlink|seats <1-4>|follow server|hosted|lan <address>|
+	      quickplay <playlist> [<address>=<ms>,...] [again]|cancel>
+	                               (online party) this install's friend code; the online party service's link driven from the
+	                               console (network.party_service must name a service; `config network.party_service <url>`):
+	                               every call answers at once with "queued", the service's answer is the `last:` of status
 	motd_reset                     MESSAGE OF THE DAY forgets what was seen (ae_motd.txt): the next main menu opens it first
 	motd_offline                   MESSAGE OF THE DAY asks the master nothing until the game restarts (its saved message,
 	                               else the release's notes)
@@ -376,12 +385,14 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	skip_training status|on|off    the first level (a10) starts after its training, as in co-op: the setting game.campaign_skip_training for the
 	                               next level (alone, on normal; status says the setting and how often the level was told heroic)
 	pad status | pad world a|b|c|other|dualsense|keyboard|off | pad battery <0-100>|charging [<0-100>]|charged|wired|off |
-	               pad mode wired|bluetooth|puck|off | pad hold on|off | pad reset | pad open settings|buttons | pad open controls [trackpad|extra|gyro]
+	               pad mode wired|bluetooth|puck|off | pad hold on|off | pad reset | pad open settings|buttons | pad open controls [trackpad|extra|gyro] |
+	               pad pulse <event>
 	                               what the game takes each local player's pad to be (status: ids, world, connection, battery),
 	                               and the staging of a scene without the pad: world a (Steam Input drives a Steam Controller), b (the
 	                               game reads it), c (Linux has not given access), other (Steam Input, pad not known), dualsense,
 	                               keyboard; the battery and the connection; hold keeps the controller notice on screen; reset clears
 	                               it all; open shows SETTINGS, its CONTROLS page (the focus on that row) or the EXTRA BUTTONS screen (from the menus).
+	                               pulse fires that event's motor pulse (pistol, rifle, shotgun, br, plasma, plasma-charged, mag-in, chamber, grenade, plasma-grenade, charge-half, charge-full) on that player's pad, as the game would, at its TRIGGER STRENGTH.
 	                               Each takes a last "player <1-4>" (player 1 when not given)
 	script_refuse status|off|<script>  the next MCC campaign level's script check refuses that script, as if its calls were not allowed (debug.script_refuse),
 	                               so the notice of switched off scripts shows; status says the setting, the loaded level's count and whether the line was shown
@@ -472,6 +483,7 @@ enum ae_dev_cmd_id
 	AE_DEV_CMD_AMMO, /* the weapon in hand's ammunition, a percent */
 	AE_DEV_CMD_SPAWNER, /* stage the nearest weapon spawner (ae_spawners.h) */
 	AE_DEV_CMD_MEDAL, /* a medal given to a player as the host's rules give it */
+	AE_DEV_CMD_PARTY, /* the online party service's link: code, online ... */
 	AE_DEV_CMD_COMPANION, /* an allied squad of the campaign level's own AI, following the players */
 	AE_DEV_CMD_CAMPAIGN, /* a campaign level started alone from the menus, as the CAMPAIGN screen's A does */
 	AE_DEV_CMD_CAMPAIGN_WEAPONS, /* AE weapons in campaign levels and the AI squad's gear */
@@ -481,6 +493,10 @@ enum ae_dev_cmd_id
 	AE_DEV_CMD_SCRIPT_REFUSE, /* script_refuse status|off|<script>: the next MCC level's script check refuses that script (debug.script_refuse) */
 	AE_DEV_CMD_PAD, /* pad status|world|battery|mode|hold|reset|open: what the game takes a pad to be, and a staged scene without the pad */
 	AE_DEV_CMD_ACTOR, /* actor <variant> [<2-60>] | actor kill [blast]: an AI of the map's actor variant placed ahead, facing you, or those placed killed */
+	AE_DEV_CMD_DOOR, /* door power [on|off]: the doors within 15 units of the host get power (they open for a body near them) or lose it */
+	AE_DEV_CMD_INTRO, /* a TEST RUN campaign test's setup line: the level's intro plays (ae_test_start.h) */
+	AE_DEV_CMD_PLAYER, /* player route <x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]>... | go | look <deg> | stop: the host's player walks a route by itself */
+	AE_DEV_CMD_POINT, /* point save|load <name>: the level's state saved to a named file, or loaded from it (a test's start) */
 	AE_DEV_CMD_COUNT
 };
 
@@ -520,7 +536,8 @@ its effect on a player, whose word is then in *player (NULL otherwise) */
 enum { AE_DEV_POWERUP_FEET, AE_DEV_POWERUP_AHEAD, AE_DEV_POWERUP_PLAYER };
 int ae_dev_cmd_powerup_place(struct ae_dev_cmd const *cmd, const char **player);
 /* whether a parsed line runs in a campaign level's tick, which has no game engine: the companions, a move, a vehicle, a
-seat, and a powerup only as the item lying ahead of the host; every other form needs a multiplayer engine */
+seat, god, the test player, a saved point, and a powerup only as the item lying ahead of the host; every other form needs a
+multiplayer engine */
 int ae_dev_cmd_runs_in_campaign(struct ae_dev_cmd const *cmd);
 
 /* a command's name ("give") and its usage line; "" for an id out of range */
@@ -565,5 +582,40 @@ int ae_dev_cmd_votes(const char *text, int *votes);
 a passenger's). A gunner's seat is never the driver's too (a ghost's one seat drives and fires: "seat gunner" puts no one
 at a ghost's wheel); a passenger's is neither */
 int ae_dev_cmd_seat_wanted(const char *kind, int driver, int gunner);
+
+/* THE TEST PLAYER (player route): the host's own player walks a route of points by itself, its controls given as a pad's
+would be: it faces the next point and walks to it at full speed times the point's walk, jumps as it comes within
+AE_DEV_PUPPET_JUMP_NEAR of a jump point, holds crouch while it walks to a crouch point. A point is reached within
+AE_DEV_PUPPET_REACHED across and AE_DEV_PUPPET_RISE up or down. */
+#define AE_DEV_PUPPET_POINTS 32
+#define AE_DEV_PUPPET_REACHED 0.3f
+#define AE_DEV_PUPPET_RISE 1.0f
+#define AE_DEV_PUPPET_JUMP_NEAR 0.6f
+struct ae_dev_puppet_point
+{
+	float x, y, z;
+	float walk; /* 0.1-1: the share of full speed */
+	int jump;
+	int crouch;
+	int teleport; /* put there at once, not walked */
+	int save;     /* reached: the level's state saved (a checkpoint) */
+	int revert;   /* reached: the level reverted to its last save */
+};
+struct ae_dev_puppet_route
+{
+	int count;
+	struct ae_dev_puppet_point point[AE_DEV_PUPPET_POINTS];
+};
+/* appends text's points ("x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]" each) to the route: how many, -1 when the text is bad or
+the route would hold more than AE_DEV_PUPPET_POINTS (the route is then as it was) */
+int ae_dev_puppet_parse(const char *text, struct ae_dev_puppet_route *route);
+/* a step toward point (tx, ty, tz) from (px, py, pz): 1 when it is reached; else 0, *yaw (radians, world) toward it and the
+throttle (*throttle_x ahead, *throttle_y to the left) at walk */
+int ae_dev_puppet_step(float px, float py, float pz, float tx, float ty, float tz, float walk, float *yaw, float *throttle_x,
+	float *throttle_y);
+
+/* a saved point's name (point save|load): letters, digits and '-', 1 to AE_DEV_POINT_NAME long */
+#define AE_DEV_POINT_NAME 24
+int ae_dev_point_name_ok(const char *name);
 
 #endif

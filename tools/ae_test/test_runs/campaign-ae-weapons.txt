@@ -7,8 +7,11 @@
 # from the first swapped weapon on the ground, facing it. The CAMPAIGN screen's SQUAD GEAR and AE WEAPONS rows set the same
 # settings. With AE WEAPONS on (or an AE squad asked for), a guest joining a co-op campaign game needs the weapon cache, as in a
 # multiplayer game that uses it: that join needs a second machine and is not in this list.
+#
+# The tests open at the level's start point (the level at first control after its intro, one file for each set of `set` values:
+# the swapped weapons are in it), so a load takes seconds, not the ride; a test that wants the ride has the setup line `intro play`.
 list campaign-ae-weapons
-revision 2
+revision 3
 title CAMPAIGN AE WEAPONS
 
 group b30-ground

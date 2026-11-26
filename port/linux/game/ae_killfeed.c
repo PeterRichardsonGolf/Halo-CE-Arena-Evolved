@@ -56,6 +56,7 @@ Everything drawn is the view's pixels (x from its left, y from its top) at the H
 #include "ae_waypoint_ink.h"
 #include "ae_weapon_pack.h"
 #include "ae_weapon_ids.h"
+#include "ae_split_layout.h"
 
 void platform_log(const char *format, ...) __attribute__((format(printf, 1, 2)));
 void platform_video_drawable_size(int *width, int *height);
@@ -419,7 +420,7 @@ void ae_killfeed_player_killed(long killing_player_index, long dead_player_index
 			row.kind, weapon_name_for_log(row.weapon), row.weapon_tag, row.headshot, row.perfect, row.betrayal, mine.mine,
 			mine.assist, have_blow ? "blow seen" : "no blow");
 		/* (split screen: the line in this player's message list, the weapon as a word) */
-		if (local_player_count() > 1)
+		if (ae_split_layout_hud_small())
 		{
 			struct ae_kf_split line;
 			real_argb_color killer_color, victim_color;
@@ -819,7 +820,7 @@ void ae_killfeed_draw(short local_player_index)
 	list = &lists[local_player_index];
 	/* (the clock goes on while it is not drawn, so a row does not wait for the scoreboard) */
 	ae_kf_list_step(list, now);
-	if (!wanted(local_player_index) || local_player_count() > 1 || ae_kf_list_count(list) < 1 || !(ppu > 0.0f))
+	if (!wanted(local_player_index) || ae_split_layout_hud_small() || ae_kf_list_count(list) < 1 || !(ppu > 0.0f))
 		return;
 	hidden = (boolean)(game_engine_scoreboard_shown(local_player_index) > 0.0f || game_engine_scoreboard_held(local_player_index) ||
 		(hud_scripted_globals && !hud_scripted_globals->show_hud));
@@ -924,7 +925,7 @@ void ae_killfeed_chat_begin(short local_player_index, boolean grows_up, real anc
 	chat_room.on = FALSE;
 	/* (where the feed is drawn: a lone player's view in a game, its KILL FEED on; not the server lobby's page, whose chat has
 	its own room) */
-	if (!grows_up || !game_engine_running() || local_player_count() > 1 || !wanted(local_player_index) || !(ppu > 0.0f) ||
+	if (!grows_up || !game_engine_running() || ae_split_layout_hud_small() || !wanted(local_player_index) || !(ppu > 0.0f) ||
 		ae_screen_server_lobby_open())
 	{
 		return;

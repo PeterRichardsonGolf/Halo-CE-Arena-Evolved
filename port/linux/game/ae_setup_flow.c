@@ -167,7 +167,9 @@ static void flow_draw_row(struct ae_flow_screen *flow, short index, float x, flo
 
 	if (row->kind == AE_FLOW_ROW_HEADER)
 	{
-		*y += ae_widget_group(d, x, *y, width, row->label);
+		flow->rects[index].y = *y;
+		flow->rects[index].height = ae_widget_group(d, x, *y, width, row->label);
+		*y += flow->rects[index].height;
 		flow->rects[index].width = 0.0f;
 		return;
 	}
@@ -196,6 +198,8 @@ static void flow_draw_row(struct ae_flow_screen *flow, short index, float x, flo
 		widget.flags |= AE_ROW_FOCUSED;
 	if (row->status)
 		widget.flags |= AE_ROW_STATUS;
+	if (row->value_title)
+		widget.flags |= AE_ROW_VALUE_TITLE;
 	if (row->subscreen)
 	{
 		widget.flags |= AE_ROW_SUBSCREEN | AE_ROW_MARQUEE;
@@ -249,7 +253,7 @@ void ae_flow_draw_rows(struct ae_flow_screen *flow, float width)
 	struct ae_density const *d = &flow->density;
 	float x = ae_flow_left_x(flow), y = ae_frame_y(&flow->frame, AE_FLOW_CONTENT_Y) + ae_flow_u(flow, flow->rows_top_offset_u);
 	float body = ae_flow_u(flow, d->metrics->body), line = ae_flow_u(flow, d->metrics->body_line), help_y;
-	float more = ae_widget_more_line(d), bottom = ae_flow_content_bottom(flow), room;
+	float more = ae_widget_more_line(d), bottom = ae_flow_content_bottom(flow) - ae_flow_u(flow, flow->rows_bottom_reserve_u), room;
 	char lines[2][160];
 	char expanded[320];
 	short index, last, count = flow->count, pinned = -1, pin_row;

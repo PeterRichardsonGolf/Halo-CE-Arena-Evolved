@@ -103,6 +103,9 @@ int ae_test_run_record_write(FILE *file, struct ae_test_run_record const *record
 	if (record->events[0] && (!put_text(buffer, LINE_MAX_BYTES, &at, ",\"events\":") ||
 		!put_string(buffer, LINE_MAX_BYTES, &at, record->events)))
 		return 0;
+	if (record->program[0] && (!put_text(buffer, LINE_MAX_BYTES, &at, ",\"program\":") ||
+		!put_string(buffer, LINE_MAX_BYTES, &at, record->program)))
+		return 0;
 	if (!put_text(buffer, LINE_MAX_BYTES, &at, "}\n"))
 		return 0;
 	if (fwrite(buffer, 1, (size_t)at, file) != (size_t)at || fflush(file) != 0)
@@ -248,6 +251,9 @@ int ae_test_run_record_parse(const char *line, struct ae_test_run_record *out)
 	if (!strncmp(p, ",\"ask_later\":", 13) && (!take_text(&p, ",\"ask_later\":") || !take_number(&p, &r.ask_later)))
 		return 0;
 	if (!strncmp(p, ",\"events\":", 10) && (!take_text(&p, ",\"events\":") || !take_string(&p, r.events, sizeof r.events)))
+		return 0;
+	if (!strncmp(p, ",\"program\":", 11) && (!take_text(&p, ",\"program\":") ||
+		!take_string(&p, r.program, sizeof r.program)))
 		return 0;
 	if (*p++ != '}' || (size_t)(p - line) != length)
 		return 0;

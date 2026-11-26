@@ -24,9 +24,11 @@ ae_ce_archive.h's; a staged page (DEV MODE) draws made-up copies of all of them 
 #include "ae_mods_list.h"
 #include "ae_screen_campaign.h"
 #include "ae_screen_create_game.h"
+#include "ae_screen_item_sets.h"
 #include "ae_screen_maps_hub.h"
 #include "ae_screen_steam.h"
 #include "ae_collections_data.h"
+#include "ae_dev_mode.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
 #include "ae_strings.h"
@@ -2128,6 +2130,7 @@ static void hub_draw(struct ae_screen *instance)
 	/* the tab strip: the change dot on REQUIRED FILES while a file is missing, on BROWSE CE MAPS while a map installs */
 	H.tab_defs[AE_HUB_TAB_REQUIRED].changed = H.files.missing > 0;
 	H.tab_defs[AE_HUB_TAB_BROWSE].changed = browse_downloading();
+	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
 	H.tabs.active = (short)H.tab;
 	ae_widget_tabs(d, &H.tabs, x, Y(182.0f), U(1030.0f), HIT_TABS);
 	/* (a search that changed starts the list over) */
@@ -2190,6 +2193,7 @@ static void list_reset(void)
 
 static void page_enter(int tab, int state)
 {
+	tab = ae_hub_tab_resolve(tab, ae_dev_mode_on());
 	H.tab = tab;
 	H.state = state;
 	H.ctl = -1;
@@ -2283,6 +2287,11 @@ static void page_enter(int tab, int state)
 		else
 			/* (nothing of the list works signed out: the footer offers only the two doors) */
 			H.state = AE_HUB_STATE_SIGNED_OUT;
+		break;
+	case AE_HUB_TAB_ITEM_SETS:
+		/* (the page is a screen of its own over this one, as WORKSHOP's is: its strip is drawn by strip(), B leaves both) */
+		if (!ae_screen_item_sets_open(H.staged, state))
+			H.state = AE_HUB_STATE_UNREADABLE;
 		break;
 	case AE_HUB_TAB_MODS:
 		H.mods_read = 0;
@@ -3063,7 +3072,7 @@ static int hub_handle(struct ae_screen *instance, struct ae_event const *event)
 	case AE_ACTION_TAB_PREVIOUS:
 	case AE_ACTION_TAB_NEXT:
 		if (!H.moving)
-			tab_set(ae_hub_tab_step(H.tab, event->action == AE_ACTION_TAB_PREVIOUS ? -1 : 1));
+			tab_set(ae_hub_tab_step(H.tab, event->action == AE_ACTION_TAB_PREVIOUS ? -1 : 1, ae_dev_mode_on()));
 		return 1;
 	case AE_ACTION_UP:
 	case AE_ACTION_DOWN:
@@ -3281,6 +3290,9 @@ static void hub_pointer(struct ae_screen *instance, struct ae_pointer const *poi
 static void hub_update(struct ae_screen *instance)
 {
 	(void)instance;
+	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
+	if (!ae_hub_tab_visible(H.tab, ae_dev_mode_on()))
+		page_enter(AE_HUB_TAB_INSTALLED, AE_HUB_STATE_LIST);
 	if (H.removing_name[0])
 	{
 		int removed;
@@ -3360,7 +3372,7 @@ static void hub_init(int staged)
 	for (each = 0; each < AE_HUB_TABS; each++)
 		H.tab_defs[each].label = ae_hub_tab_name(each);
 	H.tabs.tabs = H.tab_defs;
-	H.tabs.count = AE_HUB_TABS;
+	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
 	H.tabs.hover = -1;
 	ae_text_init(&H.search, "", 48, 0);
 	H.ctl = -1;
@@ -3377,6 +3389,7 @@ int ae_screen_maps_hub_open(int tab)
 		if (tab < 0 || tab >= AE_HUB_TABS)
 			tab = AE_HUB_TAB_INSTALLED;
 	}
+	tab = ae_hub_tab_resolve(tab, ae_dev_mode_on());
 	hub_init(0);
 	if (!ae_ui_push(&hub_class, AE_OWNER_ANY, &H))
 		return 0;
@@ -3387,9 +3400,11 @@ int ae_screen_maps_hub_open(int tab)
 
 int ae_screen_maps_hub_open_staged(int tab, int state)
 {
+	tab = ae_hub_tab_resolve(tab, ae_dev_mode_on());
 	/* (a question left open by the page staged before it is closed: the next scene opens its own) */
 	while (ae_ui_depth() && ae_ui_top() && ae_ui_top()->screen_class && !strcmp(ae_ui_top()->screen_class->name, "dialog"))
 		ae_ui_pop();
+	ae_screen_item_sets_close();
 	if (ae_ui_depth() && ae_ui_top() && ae_ui_top()->screen_class == &hub_class)
 		ae_ui_pop();
 	hub_init(1);
@@ -3421,6 +3436,7 @@ void ae_screen_maps_hub_strip(struct ae_flow_screen *flow, int tab)
 {
 	float x = ae_flow_left_x(flow);
 
+	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
 	H.tabs.active = (short)tab;
 	ae_widget_tabs(&flow->density, &H.tabs, x, ae_frame_y(&flow->frame, 182.0f / 1080.0f),
 		ae_flow_u(flow, 1030.0f), HIT_TABS);
@@ -3442,5 +3458,5 @@ int ae_screen_maps_hub_strip_pointer(struct ae_pointer const *pointer)
 
 void ae_screen_maps_hub_step(int direction)
 {
-	tab_set(ae_hub_tab_step(H.tab, direction));
+	tab_set(ae_hub_tab_step(H.tab, direction, ae_dev_mode_on()));
 }

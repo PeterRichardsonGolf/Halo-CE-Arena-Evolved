@@ -120,6 +120,13 @@ unsigned int ae_draw_frame(void);
 double ae_draw_present_seconds(void);
 /* enables that timing for the next Present (the FULL performance display) */
 void ae_draw_present_timing(int enabled);
+/* TEST RUN's frame lint: the next frame's boxes (shapes, images, text runs: their places, sizes, colours, clips and the
+texts) written to path as JSON when the frame is done, once (ae_draw.c boxes_write). "" or NULL: none. Nothing is kept
+or written while none is asked for */
+void ae_draw_boxes_next_frame(const char *path);
+/* the box (x0, y0, x1, y1, the layout's units) of an overlay drawn over the screen on purpose (TEST RUN's card), written
+with the next boxes as "overlay": the lint leaves what lies under it alone */
+void ae_draw_boxes_overlay(const float box[4]);
 
 /* (d3d8_gl.c, at Present, before the screenshot: the frame's drawing into the back buffer's framebuffer,
 width by height pixels, row 0 the picture's top) */

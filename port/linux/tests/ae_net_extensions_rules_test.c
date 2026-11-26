@@ -260,6 +260,44 @@ int main(void)
 		expect(peer.count <= AE_NETEXT_MAXIMUM_ENTRIES, 1, "garbage keeps within the cap");
 		free(junk);
 	}
+	/* the Firefight rules message: every width round trips, and a reader of another kind or a wrong shape does not take it */
+	{
+		static unsigned char const widths[] = { 1, 2, 4, 1, 4 };
+		unsigned long const values[5] = { 200, 0xBEEF, 0xDEADBEEFUL, 0, 1 };
+		unsigned long back[5];
+		unsigned char out[AE_NETEXT_MAXIMUM_BYTES + 1], other[AE_NETEXT_MAXIMUM_BYTES + 1];
+		long size = ae_netext_firefight_build(values, widths, 5, out, (long)sizeof(out));
+		struct ae_netext_peer peer;
+		unsigned char wrong[5] = { 1, 2, 4, 1, 3 };
+		int index;
+
+		expect(size, 8 + 12 + 1, "firefight message size");
+		expect(out[size - 1], AE_NETEXT_PACKET_TYPE, "ends in the type byte");
+		expect(out[5], AE_NETEXT_KIND_FIREFIGHT, "kind 2");
+		expect(ae_netext_firefight_parse(out, size, widths, 5, back), AE_NETEXT_PARSE_OK, "firefight parse");
+		for (index = 0; index < 5; index++)
+			expect(back[index] == values[index], 1, "firefight value round trip");
+		/* (the capability reader takes it for another kind, and the Firefight reader takes a capability message the same way) */
+		expect(ae_netext_parse(out, size, AE_NETEXT_KIND_ANNOUNCEMENT, mine, MINE, &peer), AE_NETEXT_PARSE_OTHER, "capability reader ignores it");
+		expect(ae_netext_parse(out, size, AE_NETEXT_KIND_ANSWER, mine, MINE, &peer), AE_NETEXT_PARSE_OTHER, "answer reader ignores it");
+		size = ae_netext_build(AE_NETEXT_KIND_ANNOUNCEMENT, mine, MINE, 0, other, (long)sizeof(other));
+		expect(ae_netext_firefight_parse(other, size, widths, 5, back), AE_NETEXT_PARSE_OTHER, "firefight reader ignores a capability message");
+		/* (a count or width that does not fit, a cut message, a bad width or version: malformed, nothing written to a build) */
+		size = ae_netext_firefight_build(values, widths, 5, out, (long)sizeof(out));
+		expect(ae_netext_firefight_parse(out, size, widths, 4, back), AE_NETEXT_PARSE_MALFORMED, "count differs");
+		expect(ae_netext_firefight_parse(out, size, wrong, 5, back), AE_NETEXT_PARSE_MALFORMED, "widths differ");
+		expect(ae_netext_firefight_parse(out, size - 2, widths, 5, back), AE_NETEXT_PARSE_MALFORMED, "cut short");
+		out[6] = 9;
+		expect(ae_netext_firefight_parse(out, size, widths, 5, back), AE_NETEXT_PARSE_MALFORMED, "version differs");
+		expect(ae_netext_firefight_build(values, wrong, 5, out, (long)sizeof(out)), -1, "a bad width is refused");
+		expect(ae_netext_firefight_build(values, widths, 5, out, 8), -1, "too small a buffer is refused");
+		/* (the host sends only in a Firefight game, to a machine with Arena Evolved, when the rules are new or changed: any
+		other game sends nothing new) */
+		expect(ae_netext_firefight_send(1, 1, 1), 1, "firefight to an AE machine");
+		expect(ae_netext_firefight_send(0, 1, 1), 0, "no other game sends");
+		expect(ae_netext_firefight_send(1, 0, 1), 0, "no machine without AE gets it");
+		expect(ae_netext_firefight_send(1, 1, 0), 0, "no repeat of the same rules");
+	}
 	if (failures)
 		return 1;
 	printf("ok\n");

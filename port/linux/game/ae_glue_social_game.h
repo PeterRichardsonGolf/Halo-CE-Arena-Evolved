@@ -6,7 +6,7 @@ shows and the game plays: the playlist, the map and gametype the playlist's pick
 (tiers, teams). STARTING a plan keeps the player's own bot settings (BOTS, BOT SKILL, ... are saved and set for this run only
 with config_set), gives every bot its own SHOOTING and MOVEMENT skill (ae_bots_seat.h), and opens the offline game
 (ae_screen_create_game_social_open). Each frame (ae_social_game_tick, from ae_screen_postgame_tick): the first frame of the game
-writes the pending line of each local profile; the post-game's opening counts the result once (EXP and the hidden rating,
+writes the pending line of each local profile; the post-game's opening counts the result once (the skill count and the hidden rating,
 ae_social_result_apply); once the game is over the settings come back and the bots' pairs are cleared. QUIT from the pause counts
 a quit once, before the game is left (ae_social_game_quit). A guest pad (no profile) earns nothing; with DEV MODE on a pad with
 no profile plays as "dev-player<n>" so a staged scene keeps its numbers.

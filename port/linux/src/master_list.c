@@ -25,6 +25,7 @@ The server browser's master servers (master_list.h).
 #if !defined(HALO_ANDROID) && !defined(HALO_WEB)
 #include <SDL3/SDL.h>
 #include "update.h"
+#include "ae_https_guard.h" /* AE hook */
 #endif
 
 enum
@@ -498,7 +499,7 @@ static int fetch(const char *url, struct fetched *fetched)
 
 	if (!update_https_request("GET", url, NULL, NULL, 0, MAXIMUM_ANSWER, &response, error, sizeof(error)))
 	{
-		platform_log("server browser: %s: %s", url, error);
+		platform_log("server browser: %s: %s", ae_https_log_address(url), error); /* AE hook */
 		return 0;
 	}
 	fetched->status = response.status;

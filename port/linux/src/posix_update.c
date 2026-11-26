@@ -32,19 +32,112 @@ Built with the host's ABI, as the other posix_*.c.
 #include "psa/crypto.h"
 
 #include <errno.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <poll.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
 #include <sys/resource.h>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <time.h>
 #include <unistd.h>
 
 #define MAXIMUM_REDIRECTS 8
 #define TIMEOUT_MILLISECONDS 20000
 #define MAXIMUM_HEADER_SIZE 16384
+
+/* a total deadline for this thread's next requests (update_https_deadline): the time it ends at, in milliseconds of the monotonic clock; 0 for none */
+static __thread unsigned long long request_deadline;
+
+static unsigned long long clock_milliseconds(void)
+{
+	struct timespec now;
+
+	clock_gettime(CLOCK_MONOTONIC, &now);
+	return (unsigned long long)now.tv_sec * 1000ULL + (unsigned long long)now.tv_nsec / 1000000ULL;
+}
+
+void update_https_deadline(unsigned long milliseconds)
+{
+	request_deadline = milliseconds ? clock_milliseconds() + milliseconds : 0;
+}
+
+/* how long the next wait may take: the timeout of one read, or what is left of the deadline when that is less; 0 when it has run out */
+static int wait_milliseconds(void)
+{
+	unsigned long long now;
+
+	if (!request_deadline)
+		return TIMEOUT_MILLISECONDS;
+	now = clock_milliseconds();
+	if (now >= request_deadline)
+		return 0;
+	return request_deadline - now < TIMEOUT_MILLISECONDS ? (int)(request_deadline - now) : TIMEOUT_MILLISECONDS;
+}
+
+/* the connection made within the deadline: the name looked up, then a connect that waits only what is left (the lookup itself is the
+system's) */
+static int connect_within_deadline(mbedtls_net_context *net, const char *host, const char *port)
+{
+	struct addrinfo hints, *addresses, *address;
+	int connected = 0;
+
+	memset(&hints, 0, sizeof(hints));
+	hints.ai_family = AF_UNSPEC;
+	hints.ai_socktype = SOCK_STREAM;
+	if (getaddrinfo(host, port, &hints, &addresses) != 0)
+		return MBEDTLS_ERR_NET_UNKNOWN_HOST;
+	for (address = addresses; address && !connected; address = address->ai_next)
+	{
+		int descriptor = socket(address->ai_family, address->ai_socktype, address->ai_protocol);
+		int wait = wait_milliseconds();
+
+		if (descriptor < 0)
+			continue;
+		if (wait > 0 && fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL, 0) | O_NONBLOCK) == 0)
+		{
+			int result = connect(descriptor, address->ai_addr, address->ai_addrlen);
+
+			if (result != 0 && errno == EINPROGRESS)
+			{
+				struct pollfd waiting = { descriptor, POLLOUT, 0 };
+				int error = 0;
+				socklen_t size = sizeof(error);
+
+				result = poll(&waiting, 1, wait) == 1 && getsockopt(descriptor, SOL_SOCKET, SO_ERROR, &error, &size) == 0 &&
+					!error ? 0 : -1;
+			}
+			if (result == 0)
+			{
+				struct timeval limit;
+				int left = wait_milliseconds();
+
+				limit.tv_sec = left / 1000;
+				limit.tv_usec = (left % 1000) * 1000;
+				fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL, 0) & ~O_NONBLOCK);
+				setsockopt(descriptor, SOL_SOCKET, SO_SNDTIMEO, &limit, sizeof(limit));
+				net->fd = descriptor;
+				connected = 1;
+				continue;
+			}
+		}
+		close(descriptor);
+	}
+	freeaddrinfo(addresses);
+	return connected ? 0 : MBEDTLS_ERR_NET_CONNECT_FAILED;
+}
+
+/* mbedtls_net_connect, within the deadline when there is one */
+static int net_connect(mbedtls_net_context *net, const char *host, const char *port)
+{
+	return request_deadline ? connect_within_deadline(net, host, port) :
+		mbedtls_net_connect(net, host, port, MBEDTLS_NET_PROTO_TCP);
+}
 
 /* where distributions keep their certificate authorities */
 static const char *const certificate_bundles[] =
@@ -190,7 +283,7 @@ static int connection_open(struct connection *connection, const char *host, cons
 	connection->start = connection->end = 0;
 	connection->closed = 0;
 	connection->plain = 0;
-	if ((result = mbedtls_net_connect(&connection->net, host, port, MBEDTLS_NET_PROTO_TCP)) != 0)
+	if ((result = net_connect(&connection->net, host, port)) != 0)
 	{
 		set_error(error, error_size, "could not connect", result);
 		return 0;
@@ -213,8 +306,20 @@ static int connection_open(struct connection *connection, const char *host, cons
 		return 0;
 	}
 	mbedtls_ssl_set_bio(&connection->ssl, &connection->net, mbedtls_net_send, NULL, mbedtls_net_recv_timeout);
-	while ((result = mbedtls_ssl_handshake(&connection->ssl)) != 0)
+	for (;;)
 	{
+		int wait = wait_milliseconds();
+
+		/* (each wait is the read timeout, or what is left of the deadline) */
+		if (wait)
+		{
+			mbedtls_ssl_conf_read_timeout(&connection->config, (uint32_t)wait);
+			result = mbedtls_ssl_handshake(&connection->ssl);
+		}
+		else
+			result = MBEDTLS_ERR_SSL_TIMEOUT;
+		if (result == 0)
+			break;
 		if (result != MBEDTLS_ERR_SSL_WANT_READ && result != MBEDTLS_ERR_SSL_WANT_WRITE)
 		{
 			unsigned int flags = mbedtls_ssl_get_verify_result(&connection->ssl);
@@ -273,8 +378,14 @@ static int connection_fill(struct connection *connection)
 	}
 	for (;;)
 	{
+		int wait = wait_milliseconds();
+
+		/* (the whole request's time spent: no more is waited for) */
+		if (!wait)
+			return -1;
+		mbedtls_ssl_conf_read_timeout(&connection->config, (uint32_t)wait);
 		result = connection->plain ? mbedtls_net_recv_timeout(&connection->net, connection->buffer + connection->end,
-			sizeof(connection->buffer) - connection->end, TIMEOUT_MILLISECONDS) :
+			sizeof(connection->buffer) - connection->end, (uint32_t)wait) :
 			mbedtls_ssl_read(&connection->ssl, connection->buffer + connection->end,
 				sizeof(connection->buffer) - connection->end);
 		if (result > 0)
@@ -445,7 +556,7 @@ static int https_get(const char *url, struct download *download, char *location,
 
 	if (!parse_url(url, host, sizeof(host), port, sizeof(port), path, sizeof(path)))
 	{
-		snprintf(error, (size_t)error_size, "not an https:// address: %s", url);
+		snprintf(error, (size_t)error_size, "not an https:// address"); /* AE hook */
 		return 0;
 	}
 	if (!connection_open(&connection, host, port, error, error_size))
@@ -690,6 +801,7 @@ static int read_memory_body(struct connection *connection, unsigned char **data,
 	}
 }
 
+#define update_https_request ae_update_https_request_unlocked /* AE hook */
 int update_https_request(const char *method, const char *url, const char *headers, const void *body,
 	unsigned long body_size, unsigned long maximum, struct update_response *response, char *error, int error_size)
 {
@@ -714,7 +826,7 @@ int update_https_request(const char *method, const char *url, const char *header
 		if (!parse_url(https, host, sizeof(host), port, sizeof(port), path, sizeof(path)) ||
 			(strcmp(host, "127.0.0.1") && strcasecmp(host, "localhost")))
 		{
-			snprintf(error, (size_t)error_size, "plain http:// only to this machine: %s", url);
+			snprintf(error, (size_t)error_size, "plain http:// only to this machine: %s", host); /* AE hook */
 			return 0;
 		}
 		if (!colon || (slash && colon > slash))
@@ -723,7 +835,7 @@ int update_https_request(const char *method, const char *url, const char *header
 	}
 	else if (!parse_url(url, host, sizeof(host), port, sizeof(port), path, sizeof(path)))
 	{
-		snprintf(error, (size_t)error_size, "not an https:// address: %s", url);
+		snprintf(error, (size_t)error_size, "not an https:// address"); /* AE hook */
 		return 0;
 	}
 	if (!plain)
@@ -752,7 +864,7 @@ int update_https_request(const char *method, const char *url, const char *header
 		mbedtls_ssl_init(&connection->ssl);
 		mbedtls_ssl_config_init(&connection->config);
 		connection->plain = 1;
-		if ((result = mbedtls_net_connect(&connection->net, host, port, MBEDTLS_NET_PROTO_TCP)) != 0)
+		if ((result = net_connect(&connection->net, host, port)) != 0)
 		{
 			set_error(error, error_size, "could not connect", result);
 			connection_free(connection);
@@ -840,6 +952,7 @@ int update_https_request(const char *method, const char *url, const char *header
 	free(connection);
 	return 1;
 }
+#undef update_https_request /* AE hook */
 
 /* ---------- files and processes */
 

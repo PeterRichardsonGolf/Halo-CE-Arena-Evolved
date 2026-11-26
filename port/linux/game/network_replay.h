@@ -47,6 +47,16 @@ long network_replay_list(char (*names)[AE_REPLAY_NAME_SIZE], long maximum);
 cannot be played in a line */
 int network_replay_describe(char const *name, struct ae_replay_header *header, unsigned long long *bytes, char *why,
 	long why_size);
+/* a recording of the folder removed (its KEPT marker too); 1 when it was there and is gone */
+int network_replay_delete(char const *name);
+/* a recording KEPT (on) or not: a kept one is never removed to make room for a new one, nor counted against the caps. 1 when done */
+int network_replay_keep(char const *name, int on);
+int network_replay_kept(char const *name);
+/* (DEV MODE `replay stage <0-8>`) the test recordings the command made removed, then that many made: a header and no records, so they list
+(75, 150, ... seconds long, on a day far back) and refuse to play; the number made, -1 when one could not be */
+long network_replay_stage(long count);
+/* (DEV MODE `replay keep`) the recording being written is kept even if it ends under 15 seconds; FALSE when none is written */
+boolean network_replay_keep_short(void);
 /* the recording being written now (empty when none), and the game thread's cost so far */
 void network_replay_status(char *name, long size, struct ae_replay_cost *cost);
 
@@ -78,14 +88,35 @@ void network_replay_set_speed(long percent);
 boolean network_replay_paused(void);
 long network_replay_speed_percent(void);
 boolean network_replay_view_is_free(void);
+/* the view behind the player watched, turned with them (the right stick flies it round them, the left one's up and down zooms
+it), and the cinematic one: a tripod placed behind them that frames them and follows them when they go on. Y goes round the
+four (the next one's name and the present one's, in title case or capitals, for the Theater's lines) */
+void network_replay_view_behind(void);
+void network_replay_view_cinematic(void);
+void network_replay_view_next(void);
+char const *network_replay_view_name(boolean next, boolean capitals);
 long network_replay_position_seconds(void);
 long network_replay_length_seconds(void);
 /* to a second of the game: FALSE when not playing */
 boolean network_replay_seek(long seconds);
+/* (game_time.c) the ticks a frame runs: while a seek plays, up to 60 and none past its second */
+long network_replay_ticks_per_frame(long ticks);
 /* whether a seek plays to its second now */
 boolean network_replay_seeking(void);
+/* while one does (also while the replay loads again for a seek back): its second and how much of the way is played (0 to 1) */
+boolean network_replay_seek_progress(long *target_seconds, float *progress);
+/* (game_engine.c) whether the game's scoreboard stays shut: a replay's pause card or seek card is over the view */
+boolean network_replay_scores_hidden(void);
 /* back to the menus */
 void network_replay_end(void);
+/* once a frame (ae_hooks.c, from the main loop): the pad's and keyboard's controls of a playing replay: Start pauses and resumes (Back too),
+B hides the lines over the screen (leaves, in the pause), the shoulders change the speed, the d-pad skips ten seconds, A and X pick the next
+and the previous player, Y the next view (behind, eyes, the free camera, cinematic) */
+void network_replay_playback_frame(void);
+/* whether B hid the lines over the screen */
+boolean network_replay_lines_hidden(void);
+/* the player watched through their eyes: their number from 1 (0 in the free camera or with none alive; the view is behind, their eyes or cinematic) and, in name, their name in capitals */
+long network_replay_watched_number(char *name, long size);
 /* a line saying what plays, where, through whose eyes, at what speed */
 void network_replay_playback_status(char *text, long size);
 /* a replay stopped since the last ask: the menus open the Theater again */

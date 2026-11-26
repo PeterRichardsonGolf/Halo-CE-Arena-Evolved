@@ -36,6 +36,7 @@ last name (sniper_rifle, "sniper rifle" or SNIPER RIFLE alike), else by a part o
 #include "networking/network_game_globals.h"
 #include "ai/actor_definitions.h"
 #include "ai/actors.h"
+#include "ai/ai_debug.h"
 #include "objects/objects.h"
 #include "scenario/scenario.h"
 #include "scenario/scenario_definitions.h"
@@ -53,12 +54,16 @@ last name (sniper_rifle, "sniper rifle" or SNIPER RIFLE alike), else by a part o
 #include "ae_mods_list.h"
 #include "randomizer.h"
 #include "ae_companion.h"
+#include "devices/devices.h"
+#include "devices/device_definitions.h"
 #include "ae_mark_rules.h"
 #include "ae_wheel_rules.h"
 #include "ae_campaign_weapons.h"
 #include "ae_skip_training.h"
 #include "ae_campaign_rows_rules.h"
 #include "ae_pad_notice.h"
+#include "../src/ae_ds5.h"
+#include "../src/ae_ds5_rules.h"
 #include "ae_screen_keys.h"
 #include "../src/ae_steam_pad.h"
 #include "ae_script_notice.h"
@@ -89,6 +94,7 @@ void main_goto_main_menu(void);
 #include "ae_screen_main_menu.h"
 #include "ae_screen_motd.h"
 #include "ae_glue_social.h"
+#include "ae_glue_party_online.h"
 #include "ae_screen_party.h"
 #include "ae_glue_ce_archive.h"
 #include "ae_glue_bot_records.h"
@@ -109,6 +115,18 @@ void main_goto_main_menu(void);
 #include "ae_screen_maps_hub.h"
 #include "ae_screen_coop_lobby.h"
 #include "ae_screen_career.h"
+#include "ae_screen_challenges.h"
+#include "ae_screen_coop_options.h"
+#include "ae_screen_daily.h"
+#include "ae_screen_end_card.h"
+#include "ae_screen_leaderboard.h"
+#include "ae_screen_saved_games.h"
+#include "ae_screen_theater.h"
+#include "ae_screen_scoring.h"
+#include "ae_screen_randomizer.h"
+#include "ae_firefight_dev.h"
+#include "ae_screen_skull_rules.h"
+#include "ae_screen_skulls.h"
 #include "ae_screen_profiles.h"
 #include "menu_chief.h"
 #include "ae_screen_credits.h"
@@ -2019,7 +2037,41 @@ static void command_range(struct ae_dev_cmd const *cmd, char const *line, int so
 	answer(source, line, TRUE, "the firing range starts with the profile %s", profile);
 }
 
+static int god_protects(long object_index);
+
+/* the player whose unit, or something the unit carries, object_index is (as god's protection reads it), NONE for none */
+static long hit_player(long object_index)
+{
+	long depth, player_index;
+
+	for (depth = 0; object_index != NONE && depth < 8; depth++)
+	{
+		player_index = player_index_from_unit_index(object_index);
+		if (player_index != NONE)
+			return player_index;
+		object_index = object_get(object_index)->object.parent_object_index;
+	}
+	return NONE;
+}
+
 int ae_dev_cmd_god_protects(long object_index)
+{
+	int protects = god_protects(object_index);
+
+	/* (DEV MODE's event stream: a hit on a player, and whether god took it, for the effect expects of `god` and
+	`unseen` (tools/ae_test/expect.py's hurt rule); nothing while the stream is off) */
+	if (ae_dev_events_on())
+	{
+		long player_index = hit_player(object_index);
+
+		if (player_index != NONE)
+			ae_dev_event("hurt", "\"player\":%d,\"blocked\":%d", (int)DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index),
+				protects ? 1 : 0);
+	}
+	return protects;
+}
+
+static int god_protects(long object_index)
 {
 	long player_index;
 	long depth;
@@ -2027,10 +2079,11 @@ int ae_dev_cmd_god_protects(long object_index)
 	if (god_player == NONE)
 		return FALSE;
 	/* (DEV MODE turned off, the game over or gone: the protection ends) */
-	if (!ae_dev_mode_on() || !game_engine_running() || game_engine_game_over() || !player_try_and_get(god_player))
+	if (!ae_dev_mode_on() || !(game_engine_running() || game_in_progress()) || game_engine_game_over() ||
+		!player_try_and_get(god_player))
 	{
 		platform_log("dev: god ended: dev mode %d, game running %d, game over %d", (int)ae_dev_mode_on(),
-			(int)game_engine_running(), (int)game_engine_game_over());
+			(int)(game_engine_running() || game_in_progress()), (int)game_engine_game_over());
 		god_player = NONE;
 		return FALSE;
 	}
@@ -2050,7 +2103,24 @@ int ae_dev_cmd_god_protects(long object_index)
 /* the player `unseen` hides from the bots, NONE for nobody (this game only) */
 static long unseen_player = NONE;
 
-/* replay list|status|info <n>|play <n> and the playback's controls: eyes, free, pause, speed, seek, skip, stop */
+/* whether `unseen` has the campaign AI's invisible-player switch on (the AI there is the level's actors, not bots) */
+static boolean unseen_ai_on = FALSE;
+
+static void unseen_ai_set(boolean on)
+{
+	if (on)
+	{
+		ai_debug.invisible_player = TRUE;
+		unseen_ai_on = TRUE;
+	}
+	else if (unseen_ai_on)
+	{
+		ai_debug.invisible_player = FALSE;
+		unseen_ai_on = FALSE;
+	}
+}
+
+/* replay list|status|info <n>|play <n> and the playback's controls: eyes, free, behind, cinematic, pause, speed, seek, skip, stop */
 static void command_replay(struct ae_dev_cmd const *cmd, char const *line, int source)
 {
 	static char names[64][AE_REPLAY_NAME_SIZE];
@@ -2113,13 +2183,40 @@ static void command_replay(struct ae_dev_cmd const *cmd, char const *line, int s
 	{
 		long count = network_replay_list(names, NUMBEROF(names));
 		char why[96];
+		long pick = cmd->number - 1;
 
-		if (cmd->number > count)
+		/* (newest: the newest that is not one of `replay stage`'s test recordings) */
+		if (cmd->number == 0)
+		{
+			for (pick = 0; pick < count && strstr(names[pick], "_theatertest"); pick++)
+				;
+			if (pick >= count)
+			{
+				answer(source, line, FALSE, "there is no recording but the staged test ones");
+				return;
+			}
+		}
+		if (pick >= count)
 			answer(source, line, FALSE, "there are %ld recordings", count);
-		else if (!network_replay_play(names[cmd->number - 1], why, sizeof(why)))
-			answer(source, line, FALSE, "%s: %s", names[cmd->number - 1], why);
+		else if (!network_replay_play(names[pick], why, sizeof(why)))
+			answer(source, line, FALSE, "%s: %s", names[pick], why);
 		else
-			answer(source, line, TRUE, "playing %s", names[cmd->number - 1]);
+			answer(source, line, TRUE, "playing %s", names[pick]);
+	}
+	else if (!strcmp(verb, "keep"))
+	{
+		boolean kept = network_replay_keep_short();
+
+		answer(source, line, kept, "%s", kept ? "the recording is kept however short" : "no recording is being written");
+	}
+	else if (!strcmp(verb, "stage"))
+	{
+		long made = network_replay_stage(cmd->number);
+
+		if (made < 0)
+			answer(source, line, FALSE, "the test recordings could not be made");
+		else
+			answer(source, line, TRUE, "%ld test recordings staged (their own earlier ones removed)", made);
 	}
 	else if (!network_replay_playing())
 		answer(source, line, FALSE, "no replay is playing");
@@ -2129,7 +2226,8 @@ static void command_replay(struct ae_dev_cmd const *cmd, char const *line, int s
 		answer_not_yet(source, line, "the replay is still loading");
 	/* (a view asked for while a seek plays to its second: given once it is there, so a TEST RUN's scene opens on that
 	second) */
-	else if (network_replay_seeking() && (!strcmp(verb, "eyes") || !strcmp(verb, "free")))
+	else if (network_replay_seeking() && (!strcmp(verb, "eyes") || !strcmp(verb, "free") || !strcmp(verb, "behind") ||
+		!strcmp(verb, "cinematic")))
 		answer_not_yet(source, line, "the replay is still seeking");
 	else
 	{
@@ -2142,6 +2240,10 @@ static void command_replay(struct ae_dev_cmd const *cmd, char const *line, int s
 		}
 		if (!strcmp(verb, "free"))
 			network_replay_view_free();
+		else if (!strcmp(verb, "behind"))
+			network_replay_view_behind();
+		else if (!strcmp(verb, "cinematic"))
+			network_replay_view_cinematic();
 		else if (!strcmp(verb, "pause"))
 			network_replay_set_paused(TRUE);
 		else if (!strcmp(verb, "speed"))
@@ -2177,6 +2279,7 @@ static void command_unseen(struct ae_dev_cmd const *cmd, char const *line, int s
 	if (!strcmp(who, "off"))
 	{
 		unseen_player = NONE;
+		unseen_ai_set(FALSE);
 		answer(source, line, TRUE, "unseen off");
 		platform_log("dev: unseen off");
 		tell_players("DEV: the host ended unseen");
@@ -2193,6 +2296,8 @@ static void command_unseen(struct ae_dev_cmd const *cmd, char const *line, int s
 			(char)player_get(target)->name[index] : '?';
 	name[index] = 0;
 	unseen_player = target;
+	/* (a campaign level: the actors stop seeing every player, the level's switch has no per-player form) */
+	unseen_ai_set((boolean)!game_engine_running());
 	answer(source, line, TRUE, "unseen on for %s: the bots do not see them (unseen off ends it)", name);
 	platform_log("dev: unseen on for %s", name);
 	tell_players("DEV: the host hid %s from the bots", name);
@@ -2250,11 +2355,13 @@ long ae_dev_cmd_unseen_player(void)
 	if (unseen_player == NONE)
 		return NONE;
 	/* (DEV MODE turned off, the game over or gone, the player gone: it ends) */
-	if (!ae_dev_mode_on() || !game_engine_running() || game_engine_game_over() || !player_try_and_get(unseen_player))
+	if (!ae_dev_mode_on() || !(game_engine_running() || game_in_progress()) || game_engine_game_over() ||
+		!player_try_and_get(unseen_player))
 	{
 		platform_log("dev: unseen ended: dev mode %d, game running %d, game over %d", (int)ae_dev_mode_on(),
-			(int)game_engine_running(), (int)game_engine_game_over());
+			(int)(game_engine_running() || game_in_progress()), (int)game_engine_game_over());
 		unseen_player = NONE;
+		unseen_ai_set(FALSE);
 		return NONE;
 	}
 	return unseen_player;
@@ -2598,6 +2705,225 @@ static void command_botskill(struct ae_dev_cmd const *cmd, char const *line, int
 		shown++;
 	}
 	answer(source, line, TRUE, "%s", shown ? text : "no bot has a pair of its own: all play the settings");
+}
+
+/* door power [on|off]: the doors (machines of the door kind) within 15 units of the host get power and are no longer held shut by
+the level, or lose power; a level that keeps its doors shut until later has them open for a body near them in a staged test */
+static void command_door(struct ae_dev_cmd const *cmd, char const *line, int source)
+{
+	long player_index = me();
+	struct player_datum *player = player_index != NONE ? player_try_and_get(player_index) : NULL;
+	real power = cmd->words == 2 && !strcmp(cmd->word[1], "off") ? 0.0f : 1.0f;
+	struct object_iterator iterator;
+	real_point3d here;
+	short doors = 0;
+
+	if (!player || player->unit_index == NONE || !object_try_and_get(player->unit_index))
+	{
+		answer(source, line, FALSE, "the host player is dead (no place for the doors)");
+		return;
+	}
+	here = object_get(player->unit_index)->object.position;
+	object_iterator_new(&iterator, _object_mask_machine, 0);
+	while (object_iterator_next(&iterator))
+	{
+		struct object_datum *object = object_get(iterator.index);
+
+		if (machine_definition_get(object->definition_index)->machine.type != 0 ||
+			(real)sqrt(distance_squared3d(&object->object.position, &here)) > 15.0f)
+			continue;
+		device_set_power(iterator.index, power);
+		/* (powered: also no longer held shut by the level) */
+		if (power > 0.0f)
+			((struct machine_datum *)object)->machine.flags &= ~FLAG(_machine_does_not_operate_automatically_bit);
+		doors++;
+	}
+	answer(source, line, TRUE, "door power: %d door%s within 15 units %s", (int)doors, doors == 1 ? "" : "s",
+		power > 0.0f ? "powered" : "without power");
+}
+
+/* THE TEST PLAYER (player route): the host's own player walks a route by itself (ae_dev_cmd_rules.h) */
+static struct
+{
+	struct ae_dev_puppet_route route;
+	int next;           /* the point it walks to */
+	int armed;          /* a route waiting for go: a test's, its setup's end */
+	int walking;
+	int looking;
+	real look_yaw;
+	long started;       /* game ticks */
+	long jump_ticks;    /* ticks the jump is still held */
+	int jumped;         /* the point whose jump was taken */
+	real_point3d still_at;
+	long still_since;
+	int stuck_said;
+} puppet;
+
+static void puppet_go(void)
+{
+	puppet.looking = FALSE;
+	puppet.walking = puppet.route.count > 0;
+	puppet.armed = FALSE;
+	puppet.next = 0;
+	puppet.jumped = -1;
+	puppet.jump_ticks = 0;
+	puppet.started = game_time_get();
+	puppet.still_since = puppet.started;
+	puppet.stuck_said = FALSE;
+	puppet.still_at.x = puppet.still_at.y = puppet.still_at.z = 0.0f;
+}
+
+void ae_dev_cmd_puppet_go(void)
+{
+	if (puppet.armed)
+		puppet_go();
+}
+
+static void command_player(struct ae_dev_cmd const *cmd, char const *line, int source)
+{
+	if (!strcmp(cmd->word[0], "route"))
+	{
+		int added;
+
+		/* (a new route: the last one's points gone, unless this is another line of a route not yet set off) */
+		if (puppet.walking || !puppet.armed)
+			csmemset(&puppet, 0, sizeof(puppet));
+		added = ae_dev_puppet_parse(cmd->rest, &puppet.route);
+		puppet.armed = added > 0;
+		answer(source, line, added > 0, "player route: %d point%s added, %d in all (player go, or a test's start, sets off)",
+			added, added == 1 ? "" : "s", puppet.route.count);
+		return;
+	}
+	if (!strcmp(cmd->word[0], "go"))
+	{
+		puppet_go();
+		answer(source, line, puppet.walking, "player route: %s", puppet.walking ? "off it goes" : "no route");
+		return;
+	}
+	if (!strcmp(cmd->word[0], "look"))
+	{
+		puppet.looking = TRUE;
+		puppet.look_yaw = (real)(atof(cmd->word[1]) * 3.14159265358979 / 180.0);
+		answer(source, line, TRUE, "player look: %s degrees while it stands", cmd->word[1]);
+		return;
+	}
+	csmemset(&puppet, 0, sizeof(puppet));
+	answer(source, line, TRUE, "player route: stopped");
+}
+
+int ae_dev_puppet_action(long absolute_player_index, struct player_action *action)
+{
+	long player_index = me();
+	struct player_datum *player;
+	struct ae_dev_puppet_point const *point;
+	real_point3d here;
+	float yaw, throttle_x, throttle_y;
+	long now = game_time_get();
+
+	if ((!puppet.walking && !puppet.looking) || player_index == NONE ||
+		DATUM_INDEX_TO_ABSOLUTE_INDEX(player_index) != absolute_player_index)
+	{
+		return 0;
+	}
+	player = player_try_and_get(player_index);
+	if (!player || player->unit_index == NONE || !object_try_and_get(player->unit_index))
+		return 0;
+	object_get_origin(player->unit_index, &here);
+	action->control_flags = 0;
+	action->throttle.i = action->throttle.j = 0.0f;
+	action->primary_trigger = 0.0f;
+	if (!puppet.walking)
+	{
+		action->desired_facing.yaw = puppet.look_yaw;
+		action->desired_facing.pitch = 0.0f;
+		return 1;
+	}
+	point = &puppet.route.point[puppet.next];
+	/* (a teleport point: put there at once) */
+	if (point->teleport)
+	{
+		real_point3d to;
+
+		to.x = point->x;
+		to.y = point->y;
+		to.z = point->z;
+		if (player_teleport(player_index, NONE, &to))
+			platform_log("player route: teleported to point %d", puppet.next + 1);
+		puppet.next++;
+		platform_log("player route: %d of %d reached, %.1f s", puppet.next, puppet.route.count, (now - puppet.started) / 30.0);
+		if (puppet.next >= puppet.route.count)
+			puppet.walking = FALSE;
+		return 1;
+	}
+	yaw = action->desired_facing.yaw;
+	if (ae_dev_puppet_step(here.x, here.y, here.z, point->x, point->y, point->z, point->walk, &yaw, &throttle_x, &throttle_y))
+	{
+		/* (a save or a revert as the point is reached) */
+		if (point->save)
+		{
+			main_save_map_nonsafe();
+			platform_log("player route: saved at point %d", puppet.next + 1);
+		}
+		if (point->revert)
+		{
+			main_revert_map();
+			platform_log("player route: reverted at point %d", puppet.next + 1);
+		}
+		puppet.next++;
+		platform_log("player route: %d of %d reached, %.1f s", puppet.next, puppet.route.count, (now - puppet.started) / 30.0);
+		if (puppet.next >= puppet.route.count)
+		{
+			puppet.walking = FALSE;
+			return 1;
+		}
+		point = &puppet.route.point[puppet.next];
+		(void)ae_dev_puppet_step(here.x, here.y, here.z, point->x, point->y, point->z, point->walk, &yaw, &throttle_x, &throttle_y);
+	}
+	action->desired_facing.yaw = yaw;
+	action->desired_facing.pitch = 0.0f;
+	action->throttle.i = throttle_x;
+	action->throttle.j = throttle_y;
+	if (point->crouch)
+		action->control_flags |= FLAG(_unit_control_crouch_modifier_bit);
+	if (point->jump && puppet.jumped != puppet.next &&
+		(point->x - here.x) * (point->x - here.x) + (point->y - here.y) * (point->y - here.y) <=
+		AE_DEV_PUPPET_JUMP_NEAR * AE_DEV_PUPPET_JUMP_NEAR)
+	{
+		puppet.jumped = puppet.next;
+		puppet.jump_ticks = 2;
+		platform_log("player route: jump at point %d", puppet.next + 1);
+	}
+	if (puppet.jump_ticks > 0)
+	{
+		action->control_flags |= FLAG(_unit_control_jump_bit);
+		puppet.jump_ticks--;
+	}
+	/* (stuck: under 0.3 moved in 4 s) */
+	if (distance_squared3d(&here, &puppet.still_at) > 0.09f)
+	{
+		puppet.still_at = here;
+		puppet.still_since = now;
+	}
+	else if (now - puppet.still_since > 4 * 30 && !puppet.stuck_said)
+	{
+		puppet.stuck_said = TRUE;
+		platform_log("player route: stuck at %d of %d", puppet.next + 1, puppet.route.count);
+	}
+	return 1;
+}
+
+/* a saved point of a level: its state written to (or read from) "point-<name>.bin" as the level goes on */
+static void command_point(struct ae_dev_cmd const *cmd, char const *line, int source)
+{
+	char file[AE_DEV_POINT_NAME + 16];
+
+	snprintf(file, sizeof file, "point-%s.bin", cmd->word[1]);
+	if (!strcmp(cmd->word[0], "save"))
+		main_save_core_name(file);
+	else
+		main_load_core_name(file);
+	platform_log("point %s: %s (%s)", cmd->word[0], cmd->word[1], file);
+	answer(source, line, TRUE, "point %s: %s, as the next frame starts", cmd->word[0], cmd->word[1]);
 }
 
 static void command_ttk(struct ae_dev_cmd const *cmd, char const *line, int source)
@@ -2962,6 +3288,7 @@ static void command_reset(char const *line, int source)
 	deferred_count = 0;
 	god_player = NONE;
 	unseen_player = NONE;
+	unseen_ai_set(FALSE);
 	if (!quiet_deaths_ready)
 		quiet_deaths_clear();
 	/* (the dummies leave, with the bots settings they changed back: a reset is the start state; the game is settled when
@@ -3898,6 +4225,82 @@ static boolean actor_blasted(struct unit_datum const *unit)
 	return TRUE;
 }
 
+void ae_dev_cmd_actors_in_view(int *placed, int *in_view)
+{
+	enum { VIEW_DISTANCE = 60 };
+	long host = me() != NONE ? living_unit(me()) : NONE;
+	int each;
+
+	*placed = *in_view = 0;
+	for (each = 0; each < actors_placed_count; each++)
+	{
+		struct unit_datum const *unit = (struct unit_datum const *)object_try_and_get_and_verify_type(actors_placed[each],
+			_object_mask_unit);
+		real_vector3d to;
+		real distance;
+
+		if (!unit)
+			continue;
+		(*placed)++;
+		if (host == NONE)
+			continue;
+		to.i = unit->object.position.x - object_get(host)->object.position.x;
+		to.j = unit->object.position.y - object_get(host)->object.position.y;
+		to.k = unit->object.position.z - object_get(host)->object.position.z;
+		distance = normalize3d(&to);
+		/* (ahead within 50 degrees of where the player looks, the unit's looking vector as the camera follows it,
+		within VIEW_DISTANCE: on the picture, walls aside) */
+		if (distance > 0.0f && distance <= VIEW_DISTANCE &&
+			dot_product3d(&to, &unit_get(host)->unit.looking_vector) >= 0.64f)
+			(*in_view)++;
+	}
+}
+
+/* the structure's floor straight below a point, within 60 units: how far down it is (-1 none) */
+static real drop_at(real_point3d const *at)
+{
+	struct collision_result collision;
+	real_point3d start = *at;
+	real_vector3d down;
+
+	down.i = 0.0f;
+	down.j = 0.0f;
+	down.k = -60.0f;
+	start.z += 0.2f;
+	if (collision_test_vector(FLAG(_collision_test_structure_bit) | FLAG(_collision_test_front_facing_surfaces_bit),
+		&start, &down, NONE, &collision) && collision.type == _collision_result_structure)
+		return at->z - collision.point.z;
+	return -1.0f;
+}
+
+void ae_dev_cmd_drops(float *below, float *ahead)
+{
+	long host = me() != NONE ? living_unit(me()) : NONE;
+	real_vector3d look;
+	int step;
+
+	*below = *ahead = -1.0f;
+	if (host == NONE)
+		return;
+	*below = drop_at(&object_get(host)->object.position);
+	look = unit_get(host)->unit.looking_vector;
+	look.k = 0.0f;
+	if (normalize3d(&look) <= 0.0f)
+		return;
+	/* (a walk off a ledge: the deepest floor 2, 4 or 6 units ahead, where a step off lands) */
+	for (step = 1; step <= 3; step++)
+	{
+		real_point3d point = object_get(host)->object.position;
+		real drop;
+
+		point.x += look.i * 2.0f * (real)step;
+		point.y += look.j * 2.0f * (real)step;
+		drop = drop_at(&point);
+		if (drop > *ahead)
+			*ahead = drop;
+	}
+}
+
 static void command_actor(struct ae_dev_cmd const *cmd, char const *line, int source)
 {
 	char error[200];
@@ -4027,6 +4430,21 @@ static void command_pad(struct ae_dev_cmd const *cmd, char const *line, int sour
 		}
 		snprintf(text, sizeof text, "pad: staging and notices cleared");
 	}
+	else if (!strcmp(verb, "pulse"))
+	{
+		struct ae_ds5_rumble rumble;
+		int strength = ae_ds5_settings_port(player).strength;
+
+		if (!ae_ds5_pulse_named(what, strength, &rumble) || rumble.ms <= 0)
+		{
+			answer(source, line, FALSE, "pad: %s has no pulse", what);
+			return;
+		}
+		ae_ds5_pulse(player, rumble.left, rumble.right, rumble.ms);
+		answer(source, line, TRUE, "pad: player %d %s: left %d right %d for %d ms (strength %d %%)", player + 1, what, rumble.left,
+			rumble.right, rumble.ms, strength);
+		return;
+	}
 	else if (!strcmp(verb, "hold"))
 	{
 		ae_pad_notice_hold(!strcmp(what, "on"));
@@ -4061,7 +4479,8 @@ static void command_pad(struct ae_dev_cmd const *cmd, char const *line, int sour
 	answer(source, line, TRUE, "%s", text);
 }
 
-/* the commands that run in a campaign level's tick too (it has no game engine): the companions, a move, a vehicle, a seat and a powerup lying ahead */
+/* the commands that run in a campaign level's tick too (it has no game engine): the companions, a move, a vehicle, a seat,
+god, the test player, a saved point and a powerup lying ahead */
 static boolean campaign_command(struct ae_dev_cmd const *cmd)
 {
 	return ae_dev_cmd_runs_in_campaign(cmd);
@@ -4208,6 +4627,15 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 	case AE_DEV_CMD_TTK:
 		command_ttk(cmd, line, source);
 		break;
+	case AE_DEV_CMD_DOOR:
+		command_door(cmd, line, source);
+		break;
+	case AE_DEV_CMD_PLAYER:
+		command_player(cmd, line, source);
+		break;
+	case AE_DEV_CMD_POINT:
+		command_point(cmd, line, source);
+		break;
 	case AE_DEV_CMD_BOTSKILL:
 		command_botskill(cmd, line, source);
 		break;
@@ -4251,6 +4679,10 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 		break;
 	case AE_DEV_CMD_CAMPAIGN_WEAPONS:
 		command_campaign_weapons(cmd, line, source);
+		break;
+	case AE_DEV_CMD_INTRO:
+		/* (the runner reads the line when it loads the level: nothing to do once the level is up) */
+		answer(source, line, TRUE, "the level's intro was asked for at its load");
 		break;
 	case AE_DEV_CMD_CAMPAIGN:
 	{
@@ -4401,6 +4833,14 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 	case AE_DEV_CMD_PGCR_DEMO:
 		command_pgcr_demo(cmd, line, source);
 		break;
+	case AE_DEV_CMD_PARTY:
+	{
+		char party_text[400];
+		boolean party_ok = (boolean)ae_party_online_dev(cmd, party_text, (int)sizeof(party_text));
+
+		answer(source, line, party_ok, "%s", party_text);
+		break;
+	}
 	case AE_DEV_CMD_MOTD_RESET:
 		ae_screen_motd_reset();
 		answer(source, line, TRUE, "MESSAGE OF THE DAY forgot what was seen: the next main menu opens it first");
@@ -4462,6 +4902,116 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 		}
 		/* (0.9.3 menu tournament [focus <id>]; menu matchmaking [online] [focus <id>]; menu career [player <n>] [focus <id>]: the
 		tournament's screens, from the menus; `menu matchmaking social ...` still opens the tournament (an alias for one release)) */
+		/* (rc8: Firefight's lobby and screens, staged scenes) */
+		if (!strcmp(cmd->word[0], "firefight"))
+		{
+			char menu_why[120];
+			boolean menu_ok;
+
+			if (game_in_progress() && !main_menu_is_active())
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			menu_ok = (boolean)ae_firefight_dev_menu(cmd, menu_why, (int)sizeof(menu_why));
+			answer(source, line, menu_ok, menu_ok ? "firefight %s done" : "menu firefight: %s", menu_ok ? cmd->word[1] : menu_why);
+			break;
+		}
+		/* (rc8: the randomizer's screens, staged scenes) */
+		if (!strcmp(cmd->word[0], "randomizer"))
+		{
+			boolean menu_ok;
+
+			if (game_in_progress() && !main_menu_is_active())
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			menu_ok = (boolean)ae_screen_randomizer_open_staged(cmd->word[1]);
+			answer(source, line, menu_ok, menu_ok ? "randomizer %s open" : "menu randomizer %s: did not open", cmd->word[1]);
+			break;
+		}
+		/* (the Theater over the recordings in the folder; delete: its delete dialog open on the first) */
+		if (!strcmp(cmd->word[0], "theater"))
+		{
+			boolean menu_ok;
+
+			if (game_in_progress() && !main_menu_is_active())
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			int each, empty = 0, delete_dialog = 0;
+
+			for (each = 1; each < cmd->words; each++)
+			{
+				if (!strcmp(cmd->word[each], "empty"))
+					empty = 1;
+				else if (!strcmp(cmd->word[each], "delete"))
+					delete_dialog = 1;
+			}
+			menu_ok = (boolean)ae_screen_theater_open_staged(empty, delete_dialog);
+			answer(source, line, menu_ok, menu_ok ? "theater open" : "menu theater: did not open");
+			break;
+		}
+		/* (rc8: DAILY CHALLENGE, a staged scene: a made-up day, no server asked) */
+		if (!strcmp(cmd->word[0], "daily"))
+		{
+			boolean menu_ok;
+
+			if (game_in_progress() && !main_menu_is_active())
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			menu_ok = (boolean)ae_screen_daily_open_staged(cmd->words > 1 ? cmd->word[1] : "today");
+			answer(source, line, menu_ok, menu_ok ? "daily %s open" : "menu daily %s: did not open", cmd->words > 1 ? cmd->word[1] : "today");
+			break;
+		}
+		/* (rc8: the campaign's rule screens and the end card, staged scenes) */
+		if (!strcmp(cmd->word[0], "skulls") || !strcmp(cmd->word[0], "skullrules") || !strcmp(cmd->word[0], "scoring") ||
+			!strcmp(cmd->word[0], "coopoptions") || !strcmp(cmd->word[0], "saved") || !strcmp(cmd->word[0], "leaderboard") ||
+			!strcmp(cmd->word[0], "endcard"))
+		{
+			boolean menu_ok = FALSE;
+			int each, flag_a = 0, flag_b = 0;
+
+			if (game_in_progress() && !main_menu_is_active() && strcmp(cmd->word[0], "endcard"))
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			for (each = 1; each < cmd->words; each++)
+			{
+				if (!strcmp(cmd->word[each], "questions") || !strcmp(cmd->word[each], "reset") || !strcmp(cmd->word[each], "changed") ||
+					!strcmp(cmd->word[each], "empty") || !strcmp(cmd->word[each], "on") || !strcmp(cmd->word[each], "last"))
+					flag_a = 1;
+				else if (!strcmp(cmd->word[each], "delete") || !strcmp(cmd->word[each], "best"))
+					flag_b = 1;
+			}
+			if (!strcmp(cmd->word[0], "skulls"))
+				menu_ok = (boolean)ae_screen_skulls_open_staged(flag_a);
+			else if (!strcmp(cmd->word[0], "skullrules"))
+				menu_ok = (boolean)ae_screen_skull_rules_open_staged(flag_a);
+			else if (!strcmp(cmd->word[0], "scoring"))
+				menu_ok = (boolean)ae_screen_scoring_open_staged(cmd->words < 2 || flag_a);
+			else if (!strcmp(cmd->word[0], "coopoptions"))
+				menu_ok = (boolean)ae_screen_coop_options_open_staged(flag_a);
+			else if (!strcmp(cmd->word[0], "saved"))
+				menu_ok = (boolean)ae_screen_saved_games_open_staged(flag_a, flag_b);
+			else if (!strcmp(cmd->word[0], "leaderboard"))
+				menu_ok = (boolean)ae_screen_leaderboard_open_staged((short)(cmd->number - 1), flag_a);
+			else
+				menu_ok = (boolean)ae_screen_end_card_open_staged((int)cmd->number, flag_a, flag_b);
+			answer(source, line, menu_ok, menu_ok ? "%s open" : "menu %s: did not open", cmd->word[0]);
+			break;
+		}
+		if (!strcmp(cmd->word[0], "challenges"))
+		{
+			ae_screen_challenges_close();
+			answer(source, line, (boolean)ae_screen_challenges_open("MENU", (short)cmd->number), "menu challenges");
+			break;
+		}
 		if (!strcmp(cmd->word[0], "matchmaking") || !strcmp(cmd->word[0], "career") || !strcmp(cmd->word[0], "tournament"))
 		{
 			char const *focus = NULL, *filter = NULL;
@@ -4487,7 +5037,11 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 					open_party = TRUE;
 			}
 			if (!strcmp(cmd->word[0], "career"))
-				menu_ok = (boolean)ae_screen_career_open("MENU", (short)cmd->number, focus);
+				{
+					/* (a staged scene opens fresh: the one already up closes first) */
+					ae_screen_career_close();
+					menu_ok = (boolean)ae_screen_career_open("MENU", (short)cmd->number, focus);
+				}
 			else
 			{
 				ae_screen_party_close();
@@ -5201,8 +5755,10 @@ int ae_dev_cmd_evaluate_from(const char *expression, int source)
 
 void ae_dev_cmd_new_game(void)
 {
+	csmemset(&puppet, 0, sizeof(puppet));
 	god_player = NONE;
 	unseen_player = NONE;
+	unseen_ai_set(FALSE);
 	dummy_settings_back();
 	ae_dev_dummy_forget();
 	ae_dev_ttk_new_game();

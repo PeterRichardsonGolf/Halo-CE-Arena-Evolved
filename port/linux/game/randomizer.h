@@ -3,88 +3,111 @@ RANDOMIZER.H
 
 The campaign randomizer (randomizer.c). A level swaps actors and weapons
 in memory; tags it does not have are copied in from the other campaign
-maps' (tag_import.h), of the randomizer's tag pack. Played alone or in
-split screen on one machine: a network game is never randomized.
+maps' (tag_import.h), of the randomizer's tag pack.
 */
 
 #ifndef __RANDOMIZER_H
 #define __RANDOMIZER_H
 
-/* the randomizer's tag pack (port/assets/tag_packs/ae_randomizer.toml):
+/* the randomizer's tag pack (port/assets/tag_packs/watanoge_randomizer.toml):
 the ten campaign maps' tags, their actors' and weapons' pixels and samples */
-#define RANDOMIZER_PACK "ae_randomizer"
-/* the pictures of the scenery Firefight places (the randomizer's pack leaves scenery out) */
-#define FIREFIGHT_PACK "ae_firefight"
+#define RANDOMIZER_PACK "watanoge_randomizer"
 
-/* a level loading (every map's tags, the menus' too), and the level going */
+/* a level loading: every tag it copies in, in one order on every machine
+(the randomizer's, the skulls', the Tag Injector's stock HUDs, the game
+mode's), then the Tag Injector's profile's; and the level going */
 void randomizer_tags_loaded(char const *scenario_name);
 void randomizer_tags_unloaded(void);
-
-/* whether this level has tags the randomizer copied in (the read hook) */
-int randomizer_imported(void);
-
-/* a number written into a saved game with the level's checkpoint checksum:
-0 when this level has no copied tags, else a hash of its tag table. A saved game
-of a level with another table is not taken (game_state.c) */
-unsigned long randomizer_save_signature(void);
 
 /* the actor, weapon or carried weapon a placement uses. each returns the
 index it was given when the randomizer is not swapping that */
 long randomizer_actor_variant(long original, long encounter_index, long squad_index, void *starting_location);
 /* the last randomizer_actor_variant left its infection form out: NONE, as
-one of a squad's to be swapped past the setup's share */
+one of a squad's to be swapped past the setup's share (game.randomizer_crazy_pods) */
 int randomizer_actor_left_out(void);
-long randomizer_weapon_definition(long definition_index, void *scenario_object);
-/* gives an actor's unit a weapon of the weapons pool in place of the actor's
-own: 1 when it did, 0 when the actor's own weapon is to be given */
-int randomizer_actor_weapon(long weapon_definition, long unit_index);
+/* actor_place's actor placed, of the variant asked for: kept when swapped */
+void randomizer_actor_placed(long actor_index, long requested);
+
+/* a swapped actor's unit, with no animations for the seats a script loads
+it into (vehicle_load_magic): its actor placed back as the one the level
+gave it, its new unit, else NONE. Once out of the seat, landed and standing,
+walking or fighting, it is swapped again (randomizer_tick) */
+long randomizer_rider_restore(long unit_index);
+
+/* EXTRA ENEMIES (game.randomizer_extra_enemies): how many times as large
+the level's squads of enemies are (coop_enemies.c), 1 for none. As the
+level loading had it: the randomizer on, a campaign level played alone or
+hosted, no campaign profile in its place, and no daily challenge */
+int randomizer_extra_enemies(void);
 
 /* PLAYER LOADOUT (game.randomizer_loadout), for player_add_equipment: whether
 it stands in for the starting profile's weapons, a level with some to give.
 Gives them to a player's unit whose weapons were reset or that has none */
 int randomizer_player_loadout(long unit_index, int reset_equipment);
+/* what game.randomizer_loadout_primary and _secondary hold for a Tag
+Injector profile's weapon: short, so that a saved setup keeps it (a tag's
+path would not fit a field of one) */
+#define RANDOMIZER_LOADOUT_VALUE_LENGTH TAG_INJECTOR_CUSTOM_TYPE_LENGTH
+void randomizer_loadout_tag_value(char const *path, char *value, unsigned int size);
 
-/* the roll the level was laid out with */
+/* the roll the level was laid out with (its own, its host's, or a daily
+challenge's seed: community.c sends it with a challenge's run) */
 unsigned long randomizer_roll(void);
 
-/* the DEV MODE command: a line of text on the state */
-void randomizer_status(char *text, unsigned int size);
-/* the next level's roll: 0 for a new one each time. reroll forgets the last */
-void randomizer_reroll(void);
+/* the riders' and the infection forms' state, in the game state (game.c) */
+void randomizer_initialize(void);
+void randomizer_initialize_for_new_map(void);
+void randomizer_tick(void);
+long randomizer_weapon_definition(long definition_index, void *scenario_object);
+/* the weapon an actor of the variant `variant_index` holds (its own:
+`weapon_definition`), each attempt after one its unit refused */
+long randomizer_enemy_weapon(long weapon_definition, long unit_index, long attempt, long variant_index);
 
-/* the tag pack's writing, for a screen to show: queued or being written, the campaign maps read so far and the ones
-this PC has, done (the pack is there and current), failed (not written), and one line why a map was left out or the
-pack was not written */
-struct randomizer_pack_state
-{
-	int writing;
-	int maps_done;
-	int maps_wanted;
-	int done;
-	int failed;
-	char reason[160];
-};
-void randomizer_pack_state(struct randomizer_pack_state *state);
-/* queues the pack's writing now, on the writer's own worker (nothing when the pack is current) */
-void randomizer_pack_write(void);
-/* whether a test's game (a test launch, debug.network_test) is to wait to start: game.firefight_pack is on and the pack is
-queued or being written, so the game's level would load without the campaign's tags. 0 once the pack is there or failed */
-int randomizer_pack_wait(void);
-/* each frame: with game.randomizer on, a pack that is missing or older than its maps is queued once, and a writing
-finished is taken up. The level loading meanwhile plays as the map has it */
-void randomizer_frame(void);
-
-/* what the skulls (skulls.c) and Firefight (firefight_spawner.c) ask: whether a tag's name is a class of the randomizer's */
+/* by a tag's name: a Covenant weapon of the campaign's, and a grunt's unit
+(the skulls': skulls.c) */
 int randomizer_weapon_is_covenant(char const *tag_name);
 int randomizer_unit_is_grunt(char const *tag_name);
 int randomizer_unit_is_hunter(char const *tag_name);
+/* whether a unit holds things, to carry a skull: a grunt, an elite, a
+jackal or a combat form (not a carrier or infection form, a hunter, a
+sentinel or an engineer) */
 int randomizer_unit_can_carry(char const *tag_name);
-int randomizer_show_prefix(void);
+/* whether a campaign map has a weapon, actor variant or equipment of this
+group and path (the Tag Injector's REPLACE ORIGINAL). The maps are read the
+first time it is asked */
 int randomizer_stock_tag_exists(long group_tag, char const *name);
-long randomizer_firefight_tags(unsigned long group, long *tags, long maximum);
-short randomizer_firefight_actor_tier(long variant_tag);
-boolean randomizer_firefight_weapon_power(long weapon_tag);
-/* how many of the level's enemy squads' actors can carry a skull */
+/* how the campaign's player (a10's characters\cyborg\cyborg, standing) is
+animated holding a weapon of a label (a weapon's: "ar", matched as the game
+matches it, by its weapon types'): 1 with the weapon class's animations
+(bits by model_animation_definitions.c's weapon class list: idle,
+move-front, throw-grenade...) and the weapon type's (reload-1, fire-1,
+melee...), 0 when it has none of that label (it is held as another), -1
+when a10 cannot be read. Read the first time it is asked */
+int randomizer_stock_player_class(char const *label, unsigned long long *animations, unsigned long long *overlays);
+/* the enemies the level's encounters place on this difficulty (and bring
+back) that can carry a skull, by the squads' own actors (the randomizer's
+swaps aside): the skulls' odds (skulls.c) */
 long randomizer_level_carriers(void);
 
+/* the advertisement's reserved bytes: the randomizer flag and the setup,
+when this game is a randomized campaign */
+void randomizer_advertisement(unsigned char *reserved);
+
+/* the setup of the game this machine is joining, or none, and its Go
+Crazy's parts (HALO_PORT_ADVERTISED_RANDOMIZER_CRAZY_OFFSET's byte) */
+void randomizer_set_remote(int on, unsigned char const *setup, unsigned char crazy);
+/* ... and a client's, as it was set (a replay a client records keeps it:
+network_replay.c): whether the host's game is randomized, and its setup
+(HALO_PORT_ADVERTISED_RANDOMIZER_SETUP_SIZE bytes) and crazy byte */
+int randomizer_remote_get(unsigned char *setup, unsigned char *crazy);
+int randomizer_remote_on(void);
+
+/* the lobby's map line, prefixed while the game is randomized */
+void randomizer_note_map_widget(void *widget);
+wchar_t const *randomizer_level_title_text(void *widget, wchar_t const *string);
+
+/* whether the game this machine is in, or is hosting, is randomized */
+int randomizer_show_prefix(void);
+
+#include "ae_randomizer_glue.h" /* AE hook */
 #endif /* __RANDOMIZER_H */

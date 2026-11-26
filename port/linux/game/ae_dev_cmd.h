@@ -73,6 +73,12 @@ long ae_dev_cmd_time_extra(void);
 /* (damage.c's object_cause_damage, AE hook) TRUE when the object is the unit of the player `god` named: the unit takes no
 damage (the vehicle it rides still does). Only with DEV MODE on and a game running; a new game or its end clears it */
 int ae_dev_cmd_god_protects(long object_index);
+/* the AI placed by `actor` that are still there (alive or a body), and of those the ones within 50 degrees of where the
+player looks (the unit's looking vector) and 60 wu (walls not counted): a staged scene's picture should show them (TEST RUN's scene picture line) */
+void ae_dev_cmd_actors_in_view(int *placed, int *in_view);
+/* how far the floor is below the player (below), and the deepest floor 2, 4 or 6 units ahead where they look (ahead), in
+world units; -1 for none within 60 or no player: a staged fall's height (TEST RUN's scene picture line) */
+void ae_dev_cmd_drops(float *below, float *ahead);
 
 /* (bots.c, the bots' enemy tests, AE hook) the player `unseen` named, NONE for none: the bots neither see, target nor
 count them. Only with DEV MODE on and a game running; a new game, a reset or its end clears it */
@@ -84,5 +90,11 @@ int ae_dev_cmd_making(void);
 /* (a TEST RUN's next map load and its end) the settings bots and config changed put back as they were before; reset
 does it too */
 void ae_dev_cmd_settings_back(void);
+
+/* THE TEST PLAYER: the host's player's controls while it walks a route (1: action filled); a route set by a test's setup
+sets off at the setup's end */
+struct player_action;
+int ae_dev_puppet_action(long absolute_player_index, struct player_action *action);
+void ae_dev_cmd_puppet_go(void);
 
 #endif

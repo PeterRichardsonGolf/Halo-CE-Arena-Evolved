@@ -20,7 +20,8 @@ def generated(network_fault=None, setup_fault=None):
     glue = read('port/linux/game/ae_glue_setup_options.c')
     network = read('port/linux/game/network_test.c')
     state = glue[glue.index('struct rules {'):glue.index('} setup_edit;') + len('} setup_edit;')]
-    setup = (state + '\n' + function(glue, 'narrow_name') + function(glue, 'ae_setup_edit_begin_rules') +
+    setup = (state + '\n' + function(glue, 'narrow_name') + function(glue, 'ff_defaults') +
+             function(glue, 'ae_setup_edit_begin_rules') +
              function(glue, 'ae_setup_edit_apply'))
     found = function(network, 'network_test_saved_gametype')
     if network_fault:

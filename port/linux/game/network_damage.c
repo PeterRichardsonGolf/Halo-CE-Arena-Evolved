@@ -2752,6 +2752,7 @@ void network_damage_handle_events(
 			{
 				/* (what harm it did the units' states bring: no death from here) */
 				ae_shield_fx_guest_hit(event->being_damaged_flags, event->body_damage); /* AE hook */
+				{ void network_replay_playback_damage(long, long, long, real_point3d const *); if (event->shield_damage > 0.0f || event->body_damage > 0.0f) network_replay_playback_damage(event->object_index, damage.owner_player_index, damage.owner_object_index, &damage.origin); } /* AE hook */
 				damage_replay_aftermath(event->object_index, &damage,
 					event->being_damaged_flags &
 						~(FLAG(_object_being_damaged_body_depleted_bit) | FLAG(_object_being_damaged_killed_instantly_bit)),

@@ -801,7 +801,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 
 		/* (a status's value and a sub-screen's summary muted, unless on the bar) */
 		if (!disabled && !on_bar && (flags & (AE_ROW_SUBSCREEN | AE_ROW_STATUS)))
-			color = AE_COLOR_MUTED;
+			color = (flags & AE_ROW_VALUE_TITLE) ? AE_COLOR_TITLE : AE_COLOR_MUTED;
 		if ((flags & AE_ROW_SUBSCREEN) && layout.value_overflow > 0.0f)
 		{
 			/* (the marquee: the whole summary, clipped to its room, scrolled) */
@@ -837,7 +837,7 @@ float ae_widget_row(struct ae_density const *density, float x, float y, float wi
 		unsigned int color = disabled && !on_bar ? AE_COLOR_WARNING : value_color;
 
 		if (!disabled && !on_bar && (flags & AE_ROW_STATUS))
-			color = AE_COLOR_MUTED;
+			color = (flags & AE_ROW_VALUE_TITLE) ? AE_COLOR_TITLE : AE_COLOR_MUTED;
 
 		/* (a value tick: the old value out, the new in from the pressed side) */
 		if (!disabled && row->tick && row->tick_side && row->old_value && ae_motion_running(row->tick))

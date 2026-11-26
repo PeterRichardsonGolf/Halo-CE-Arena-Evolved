@@ -64,14 +64,12 @@ last event (its kick and count: the platform kicks on a change of the count) wit
 static struct
 {
 	long weapon_index;
-	long last_fired;
 	int logged;
 	/* the charge last frame, and whether the last round was a fully charged one (the plasma pistol's blast: the
 	charge is gone by the frame its round is seen) */
 	float last_charge;
-	int rounds_loaded;
-	int reloading, readying, chambering;
-	char grenade_throw_state;
+	struct ae_ds5_event_memory events;
+	int grenade_ending;
 	long overcharge_at;
 	unsigned char kick_right[AE_DS5_EFFECT_SIZE], kick_left[AE_DS5_EFFECT_SIZE];
 	int kick_right_ms, kick_left_ms;
@@ -379,6 +377,23 @@ static int pump_frame(struct weapon_datum const *weapon)
 	return weapon->object.animation.state.frame_index >= key;
 }
 
+/* the weapon's facts of this tick for ae_ds5_events_step (a DualSense's path and the plain pads' read the same): its last round's
+time, rounds loaded, whether it is chambering (the weapon's or its magazine's state, or the pump's frame), and the state's reload
+and readying; last_charge: the charge the tick before */
+static void weapon_event_facts(struct weapon_datum const *weapon, struct ae_ds5_weapon_state const *state, float last_charge,
+	int same_weapon, struct ae_ds5_event_facts *facts)
+{
+	facts->same_weapon = same_weapon;
+	facts->last_fired = weapon->weapon.game_time_last_fired;
+	facts->rounds_loaded = weapon->weapon.magazines[0].rounds_loaded;
+	facts->chambering = weapon->weapon.state == _weapon_state_primary_chamber ||
+		weapon->weapon.state == _weapon_state_secondary_chamber ||
+		weapon->weapon.magazines[0].state == _magazine_chambering || pump_frame(weapon);
+	facts->reloading = state->reloading;
+	facts->readying = state->readying;
+	facts->charged_before = last_charge >= 0.95f;
+}
+
 /* an event on a trigger (right 1, left 0): its kick and rumble kept until the next */
 static void event(short gamepad_index, int right, enum ae_ds5_weapon_kind kind, enum ae_ds5_event what, int strength,
 	int rumble_on, int log, char const *name)
@@ -416,48 +431,105 @@ static void event(short gamepad_index, int right, enum ae_ds5_weapon_kind kind, 
 	}
 }
 
-/* a pad that is not a DualSense this machine drives (an Xbox pad, an 8BitDo, a Switch Pro): the battle rifle's
-round pulse on its motors through the game's rumble, the one a DualSense gets (the rifle's own trigger damage effect
-rumbles only the light motor, at a quarter: owner 10-17, "br doesn't have haptics on xinput devices"). Every other
-weapon keeps its tag's rumble alone. Its own memory of the rounds, apart from the DualSense ports' */
-static void other_pad_battle_rifle(short local_player_index, long weapon_index)
+/* a pad that is not a DualSense this machine drives (an Xbox pad, a Steam Controller, an 8BitDo, a Switch Pro): the DualSense's
+events on its two motors through the game's rumble, from the same table and the same moments (ae_ds5_events_step,
+ae_ds5_event_rumble), scaled by TRIGGER STRENGTH as the motors' percent: a round, a charged round, the magazine going in, the
+chambering, a weapon readied (no motor pulse), a grenade leaving the hand and a charge weapon's ramp. Its own memory of the
+rounds, apart from the DualSense ports'. A tick holding two pulses gives the stronger of each motor, the longer time */
+static void pulse_merge(struct ae_ds5_rumble *into, struct ae_ds5_rumble const *more)
 {
-	static long seen_weapon[MAXIMUM_LOCAL_PLAYERS] = { NONE, NONE, NONE, NONE };
-	static long seen_fired[MAXIMUM_LOCAL_PLAYERS];
+	if (more->left > into->left)
+		into->left = more->left;
+	if (more->right > into->right)
+		into->right = more->right;
+	if (more->ms > into->ms)
+		into->ms = more->ms;
+}
+
+static void other_pad_events(short local_player_index, long weapon_index)
+{
+	static struct
+	{
+		long weapon_index;
+		struct ae_ds5_event_memory events;
+		float last_charge;
+		int grenade_ending;
+	} plain[MAXIMUM_LOCAL_PLAYERS] = { { NONE }, { NONE }, { NONE }, { NONE } };
 	long player_index = local_player_get_player_index(local_player_index);
 	short gamepad_index;
-	long last_fired;
+	struct ae_ds5_rumble pulse = { 0, 0, 0 };
+	int strength, quiet;
+	long unit_index;
+	struct unit_datum *unit;
 
 	if (player_index == NONE)
 		return;
 	gamepad_index = player_get(player_index)->local_player_index;
 	if (gamepad_index < 0 || gamepad_index >= MAXIMUM_LOCAL_PLAYERS || ae_ds5_port_active(gamepad_index))
 		return;
-	weapon_index = seated_weapon(player_get(player_index)->unit_index, weapon_index);
-	if (weapon_index == NONE)
-	{
-		seen_weapon[gamepad_index] = NONE;
-		return;
-	}
-	last_fired = weapon_get(weapon_index)->weapon.game_time_last_fired;
-	if (seen_weapon[gamepad_index] == weapon_index && seen_fired[gamepad_index] != last_fired &&
-		!player_ui_rumble_disabled(local_player_index))
+	strength = ae_ds5_settings_port(local_player_index).strength;
+	quiet = player_ui_rumble_disabled(local_player_index);
+	unit_index = player_get(player_index)->unit_index;
+	weapon_index = seated_weapon(unit_index, weapon_index);
+	if (weapon_index != NONE)
 	{
 		struct ae_ds5_weapon_state state;
-		struct ae_ds5_rumble rumble;
-		unsigned char effect[AE_DS5_EFFECT_SIZE];
+		struct ae_ds5_event_facts facts;
+		struct ae_ds5_rumble one;
+		unsigned events;
 		char const *name;
 
 		weapon_state(weapon_index, &state, &name);
-		memset(&rumble, 0, sizeof(rumble));
-		if (state.kind == AE_DS5_WEAPON_BURST && ae_ds5_event(effect, &rumble, state.kind, AE_DS5_EVENT_SHOT, 100) >= 0 &&
-			rumble.ms > 0)
+		weapon_event_facts(weapon_get(weapon_index), &state, plain[gamepad_index].last_charge,
+			plain[gamepad_index].weapon_index == weapon_index, &facts);
+		events = ae_ds5_events_step(&plain[gamepad_index].events, &facts);
+		if (events & AE_DS5_EVENTS_SHOT_CHARGED)
 		{
-			ae_ds5_pulse(gamepad_index, rumble.left, rumble.right, rumble.ms);
+			ae_ds5_event_rumble(&one, state.kind, AE_DS5_EVENT_SHOT_CHARGED, strength);
+			pulse_merge(&pulse, &one);
+		}
+		if (events & AE_DS5_EVENTS_SHOT)
+		{
+			ae_ds5_event_rumble(&one, state.kind, AE_DS5_EVENT_SHOT, strength);
+			pulse_merge(&pulse, &one);
+		}
+		if (events & AE_DS5_EVENTS_MAG_IN)
+		{
+			ae_ds5_event_rumble(&one, state.kind, AE_DS5_EVENT_MAG_IN, strength);
+			pulse_merge(&pulse, &one);
+		}
+		if (events & AE_DS5_EVENTS_CHAMBER)
+		{
+			ae_ds5_event_rumble(&one, state.kind, AE_DS5_EVENT_CHAMBER, strength);
+			pulse_merge(&pulse, &one);
+		}
+		if (ae_ds5_charge_rumble(state.kind, state.charge, game_time_get(), &one))
+		{
+			ae_ds5_rumble_scaled(&one, strength);
+			pulse_merge(&pulse, &one);
+		}
+		plain[gamepad_index].last_charge = state.charge;
+	}
+	else
+		plain[gamepad_index].last_charge = 0.0f;
+	plain[gamepad_index].weapon_index = weapon_index;
+	/* (a grenade leaving the hand: the weapon in hand does not matter) */
+	unit = unit_index != NONE ? unit_get(unit_index) : NULL;
+	{
+		char throw_state = unit ? unit->unit.grenade_throw_state : (char)_unit_grenade_throw_idle;
+		short grenade_type = unit ? (short)unit->unit.current_grenade_index : 0;
+
+		if (ae_ds5_event_grenade(&plain[gamepad_index].grenade_ending, throw_state == _unit_grenade_throw_ending))
+		{
+			struct ae_ds5_rumble one;
+
+			ae_ds5_event_rumble(&one, AE_DS5_WEAPON_NONE, grenade_type == _unit_grenade_covenant_plasma ?
+				AE_DS5_EVENT_GRENADE_PLASMA : AE_DS5_EVENT_GRENADE_FRAG, strength);
+			pulse_merge(&pulse, &one);
 		}
 	}
-	seen_weapon[gamepad_index] = weapon_index;
-	seen_fired[gamepad_index] = last_fired;
+	if (!quiet && pulse.ms > 0 && (pulse.left || pulse.right))
+		ae_ds5_pulse(gamepad_index, pulse.left, pulse.right, pulse.ms);
 }
 
 void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level)
@@ -481,7 +553,7 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	long now = game_time_get();
 	int rumble_on, winding, grenades;
 
-	other_pad_battle_rifle(local_player_index, weapon_index);
+	other_pad_events(local_player_index, weapon_index);
 	if (!ae_ds5_on())
 		return;
 	/* (the player's own DUALSENSE settings: their controller's port is their local player's) */
@@ -532,43 +604,31 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 	if (weapon_index != NONE)
 	{
 		struct weapon_datum *weapon = weapon_get(weapon_index);
-		long last_fired = weapon->weapon.game_time_last_fired;
-		int chambering = weapon->weapon.state == _weapon_state_primary_chamber ||
-			weapon->weapon.state == _weapon_state_secondary_chamber ||
-			weapon->weapon.magazines[0].state == _magazine_chambering || pump_frame(weapon);
-		int rounds_loaded = weapon->weapon.magazines[0].rounds_loaded;
+		struct ae_ds5_event_facts facts;
+		unsigned events;
 
-		if (rounds[gamepad_index].weapon_index != weapon_index)
-		{
+		weapon_event_facts(weapon, &state, rounds[gamepad_index].last_charge, rounds[gamepad_index].weapon_index == weapon_index, &facts);
+		if (!facts.same_weapon)
 			rounds[gamepad_index].logged = 0;
-			rounds[gamepad_index].readying = 1;
-		}
-		else
+		events = ae_ds5_events_step(&rounds[gamepad_index].events, &facts);
+		if (events & (AE_DS5_EVENTS_SHOT | AE_DS5_EVENTS_SHOT_CHARGED))
 		{
-			if (rounds[gamepad_index].last_fired != last_fired)
-			{
-				int charged = rounds[gamepad_index].last_charge >= 0.95f;
+			int charged = (events & AE_DS5_EVENTS_SHOT_CHARGED) != 0;
 
-				event(gamepad_index, 1, state.kind, charged ? AE_DS5_EVENT_SHOT_CHARGED : AE_DS5_EVENT_SHOT,
-					settings.strength, rumble_on, settings.log, charged ? "charged round" : "round");
-				if (charged && ae_ds5_kind_covenant(state.kind))
-					rounds[gamepad_index].overcharge_at = now;
-			}
-			if ((state.reloading || rounds[gamepad_index].reloading) && rounds_loaded > rounds[gamepad_index].rounds_loaded)
-				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_MAG_IN, settings.strength, rumble_on, settings.log,
-					"magazine in");
-			if (chambering && !rounds[gamepad_index].chambering)
-				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_CHAMBER, settings.strength, rumble_on, settings.log,
-					"chambered");
-			if (rounds[gamepad_index].readying && !state.readying)
-				event(gamepad_index, 1, state.kind, AE_DS5_EVENT_SETTLE, settings.strength, rumble_on, settings.log,
-					"readied");
+			event(gamepad_index, 1, state.kind, charged ? AE_DS5_EVENT_SHOT_CHARGED : AE_DS5_EVENT_SHOT,
+				settings.strength, rumble_on, settings.log, charged ? "charged round" : "round");
+			if (charged && ae_ds5_kind_covenant(state.kind))
+				rounds[gamepad_index].overcharge_at = now;
 		}
-		rounds[gamepad_index].last_fired = last_fired;
-		rounds[gamepad_index].rounds_loaded = rounds_loaded;
-		rounds[gamepad_index].chambering = chambering;
-		rounds[gamepad_index].reloading = state.reloading;
-		rounds[gamepad_index].readying = state.readying;
+		if (events & AE_DS5_EVENTS_MAG_IN)
+			event(gamepad_index, 1, state.kind, AE_DS5_EVENT_MAG_IN, settings.strength, rumble_on, settings.log,
+				"magazine in");
+		if (events & AE_DS5_EVENTS_CHAMBER)
+			event(gamepad_index, 1, state.kind, AE_DS5_EVENT_CHAMBER, settings.strength, rumble_on, settings.log,
+				"chambered");
+		if (events & AE_DS5_EVENTS_SETTLE)
+			event(gamepad_index, 1, state.kind, AE_DS5_EVENT_SETTLE, settings.strength, rumble_on, settings.log,
+				"readied");
 	}
 	rounds[gamepad_index].weapon_index = weapon_index;
 	rounds[gamepad_index].last_charge = state.charge;
@@ -592,11 +652,10 @@ void ae_ds5_player(short local_player_index, long weapon_index, short zoom_level
 
 		winding = throw_state == _unit_grenade_throw_wind_up || throw_state == _unit_grenade_throw_in_hand;
 		grenades = unit && grenade_type >= 0 ? unit_get_grenade_count(unit_index, grenade_type) : 0;
-		if (throw_state == _unit_grenade_throw_ending && rounds[gamepad_index].grenade_throw_state != throw_state)
+		if (ae_ds5_event_grenade(&rounds[gamepad_index].grenade_ending, throw_state == _unit_grenade_throw_ending))
 			event(gamepad_index, 0, state.kind, grenade_type == _unit_grenade_covenant_plasma ?
 				AE_DS5_EVENT_GRENADE_PLASMA : AE_DS5_EVENT_GRENADE_FRAG, settings.strength, rumble_on, settings.log,
 				"grenade thrown");
-		rounds[gamepad_index].grenade_throw_state = throw_state;
 	}
 	memcpy(wish.kick_right, rounds[gamepad_index].kick_right, sizeof(wish.kick_right));
 	wish.kick_right_ms = rounds[gamepad_index].kick_right_ms;

@@ -331,6 +331,13 @@ int ae_bots_combat_sidestep_side(float shooter_x, float shooter_y, float target_
 	float friend_y, int fallback);
 int ae_bots_combat_grenade_near_teammate(float landing_x, float landing_y, float landing_z,
 	float teammate_x, float teammate_y, float teammate_z);
+/* a teammate in a grenade's path: within AE_BOTS_GRENADE_PATH_NEAR of the line from the thrower to the landing, between them (a
+throw at an enemy past a player standing ahead of the thrower meets him, and the grenade drops at his feet) */
+#define AE_BOTS_GRENADE_PATH_NEAR 1.0f
+/* the ticks from a throw to its blast a teammate's walk is followed for (1.5 s: the flight and the fuse) */
+#define AE_BOTS_GRENADE_BLAST_TICKS 45
+int ae_bots_combat_grenade_path_near(float thrower_x, float thrower_y, float thrower_z, float teammate_x, float teammate_y,
+	float teammate_z, float landing_x, float landing_y, float landing_z);
 
 /* CROUCH JUMP: a bot crouches at the top of a jump and holds it to the landing (a ledge, a jump spot, a dodge in a
 fight): in the air, between 0.1 and 2 s after the press, no longer rising (vertical velocity, units a tick, at most

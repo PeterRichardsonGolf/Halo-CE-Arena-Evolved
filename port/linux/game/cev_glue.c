@@ -249,24 +249,3 @@ boolean custom_edition_scripts_convert(
 
 	return FALSE;
 }
-
-/* the campaign maps' tags are not read for the Tag Injector here: no stock tag is known, and the player's held
-classes are not known (as when a10 cannot be read) */
-int randomizer_stock_tag_exists(long group_tag, char const *name)
-{
-	(void)group_tag;
-	(void)name;
-
-	return 0;
-}
-
-int randomizer_stock_player_class(char const *label, unsigned long long *animations, unsigned long long *overlays)
-{
-	(void)label;
-	if (animations)
-		*animations = 0;
-	if (overlays)
-		*overlays = 0;
-
-	return -1;
-}

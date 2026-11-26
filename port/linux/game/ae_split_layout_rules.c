@@ -9,6 +9,21 @@ SPLIT SCREEN's layout: the pure rules (ae_split_layout_rules.h).
 
 #include "ae_split_layout_rules.h"
 
+double ae_split_fov_pick(double fov, double split_fov, int players)
+{
+	return players > 1 && split_fov >= 0.0 ? split_fov : fov;
+}
+
+int ae_split_hud_value(char const *text)
+{
+	return text && !strcmp(text, "one_player");
+}
+
+int ae_split_hud_one_player(int players, int side_by_side, int one_player_chosen)
+{
+	return players == 2 && side_by_side && one_player_chosen;
+}
+
 int ae_split_two_players_value(char const *text)
 {
 	if (text && !strcmp(text, "top_and_bottom"))

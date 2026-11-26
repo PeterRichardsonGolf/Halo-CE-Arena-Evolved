@@ -336,6 +336,19 @@ int ae_replay_name_is_own(const char *name)
 	return 1;
 }
 
+int ae_replay_keep_marker(const char *name, char *marker, size_t size)
+{
+	size_t length;
+
+	if (!ae_replay_name_is_safe(name))
+		return 0;
+	length = strlen(name) + strlen(AE_REPLAY_KEEP_EXTENSION);
+	if (length >= size)
+		return 0;
+	snprintf(marker, size, "%s%s", name, AE_REPLAY_KEEP_EXTENSION);
+	return 1;
+}
+
 long ae_replay_kept(long value)
 {
 	return value < AE_REPLAY_KEPT_LEAST ? AE_REPLAY_KEPT_LEAST : value > AE_REPLAY_KEPT_MOST ? AE_REPLAY_KEPT_MOST : value;

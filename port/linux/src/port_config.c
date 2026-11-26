@@ -247,6 +247,10 @@ static const struct config_setting config_settings[] =
 		"How two players share the screen: \"top_and_bottom\", \"side_by_side\"\n"
 		"(each view the screen's full height), or \"auto\" (side by side on a\n"
 		"screen 21:9 or wider, top and bottom on a narrower one)." },
+	{ "display.split_hud", _config_string, "\"compact\"", "HALO_SPLIT_HUD", _environment_value, _platform_all, /* AE hook */
+		"The HUD while two players play side by side: \"one_player\" draws the\n"
+		"one-player HUD in each view, \"compact\" split screen's smaller one.\n"
+		"Top and bottom, and three or four players, always use compact." },
 	{ "display.split_side_bars", _config_boolean, "false", "HALO_SPLIT_SIDE_BARS", _environment_value, _platform_all, /* AE hook */
 		"Two players top and bottom: each view no wider than 1440:538, with black\n"
 		"bars beside it (fewer pixels to draw, a less stretched view)." },
@@ -311,6 +315,10 @@ static const struct config_setting config_settings[] =
 		"The first-person view's field of view on foot, in degrees across at\n"
 		"16:9 (20 to 150); 0 keeps the stock view. Vehicles, cinematics and\n"
 		"scripted cameras keep their own." },
+	{ "display.split_fov", _config_real, "-1.0", "HALO_SPLIT_FOV", _environment_value, _platform_all, /* AE hook */
+		"The field of view while two to four players share the screen, in\n"
+		"degrees across at 16:9 (20 to 150); 0 keeps the stock view, -1 uses\n"
+		"display.fov. One player always plays with display.fov." },
 	{ "display.viewmodel_sway", _config_real, "0", "HALO_VIEWMODEL_SWAY", _environment_value, _platform_all, /* AE hook */
 		"How far the first-person weapon leans as you turn and walk, in percent\n"
 		"of the stock lean (0 to 100): 0 (the default) holds it still in its\n"
@@ -479,6 +487,14 @@ static const struct config_setting config_settings[] =
 		"MARK PROMPT: the button and a word over what a mark would act on\n"
 		"(ENEMY, SNIPER, GO HERE, OK). Off while the profile's IN-GAME HELP\n"
 		"is off. Only what this machine draws changes." },
+	{ "display.mark_prompt_look", _config_string, "\"full\"", "HALO_MARK_PROMPT_LOOK", _environment_value, _platform_all, /* AE hook */
+		"MARK PROMPT LOOK: how strong the mark prompt's button and word are\n"
+		"drawn, \"full\" (the default), \"soft\" or \"faint\". Only what this machine\n"
+		"draws changes." },
+	{ "display.mark_prompt_place", _config_string, "\"beside\"", "HALO_MARK_PROMPT_PLACE", _environment_value, _platform_all, /* AE hook */
+		"MARK PROMPT PLACE: \"beside\" (the default) puts the mark prompt over\n"
+		"or by what a mark would act on; \"below\" keeps it under your\n"
+		"crosshair. Only what this machine draws changes." },
 	{ "display.crosshair", _config_string, "\"own\"", "HALO_CROSSHAIR", _environment_value, _platform_all, /* AE hook */
 		"CROSSHAIR (HUD > RETICLE): the player's main crosshair, \"own\" (each\n"
 		"weapon's own reticle) or \"1\" to \"8\", one of the saved crosshairs. Only what\n"
@@ -1488,8 +1504,8 @@ static const struct config_setting config_settings[] =
 	{ "game.randomizer", _config_boolean, "false", "HALO_RANDOMIZER", _environment_value, _platform_all, /* AE hook */
 		"The campaign randomizer (port/linux/game/randomizer.c): a campaign level played alone\n"
 		"or in split screen on one machine swaps its actors and weapons as it loads, by the\n"
-		"rows below. Needs tag_pack/ae_randomizer.pack (python3 tools/tag_pack.py\n"
-		"ae_randomizer); without it the level plays as the map has it. Never in a network\n"
+		"rows below. Needs tag_pack/watanoge_randomizer.pack (python3 tools/tag_pack.py\n"
+		"watanoge_randomizer); without it the level plays as the map has it. Never in a network\n"
 		"game. false: nothing here is read." },
 	{ "game.randomizer_enemies", _config_boolean, "false", "HALO_RANDOMIZER_ENEMIES", _environment_value, _platform_all, /* AE hook */
 		"Swap the enemies' actors for those of game.randomizer_pool." },
@@ -1522,11 +1538,203 @@ static const struct config_setting config_settings[] =
 	{ "game.randomizer_weapon_type", _config_string, "\"plasma_rifle\"", "HALO_RANDOMIZER_WEAPON_TYPE", _environment_value, _platform_all, /* AE hook */
 		"With game.randomizer_weapon_pool \"one\": a value of game.randomizer_pickup_type,\n"
 		"\"fuel_rod\" or \"energy_sword\"." },
+	{ "game.daily_challenge", _config_boolean, "false", "HALO_DAILY_CHALLENGE", _environment_value, _platform_all, /* AE hook */
+		"Settings > Gameplay > Community's DAILY CHALLENGE: Campaign's DAILY\n"
+		"CHALLENGE, a level a day with the randomizer and skulls set, the same\n"
+		"for everyone (port/linux/game/community.c). false: no such item." },
+	{ "game.campaign_medals", _config_boolean, "false", "HALO_CAMPAIGN_MEDALS", _environment_value, _platform_all, /* AE hook */
+		"Settings > Gameplay > Scoring's MEDAL POPUPS: show the medals at the\n"
+		"center left as they are won. With SCORING on, the campaign always gives\n"
+		"Halo 3's and Halo: Reach's medals (multi-kills, sprees, headshots,\n"
+		"Wheelman, ...), each worth points\n"
+		"(port/linux/game/campaign_score_values.json), and shows the last few\n"
+		"above the score; this only hides the popups." },
+	{ "game.multiplayer_medals", _config_boolean, "false", "HALO_MULTIPLAYER_MEDALS", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Gameplay > Scoring's MEDALS, with MULTIPLAYER on: a kill of\n"
+		"another player wins the campaign's medals (multi-kills, sprees,\n"
+		"headshots, Revenge, ...), shown at the center left as they are won and\n"
+		"the last few at the bottom right." },
+	{ "game.multiplayer_scoring", _config_boolean, "false", "HALO_MULTIPLAYER_SCORING", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Gameplay > Scoring's MULTIPLAYER: the campaign's medals and a\n"
+		"score panel in multiplayer games, as game.multiplayer_medals and\n"
+		"game.multiplayer_score_hud choose. Only this machine's players' are\n"
+		"shown, and nothing is sent: a client has them whatever the host's." },
+	{ "game.multiplayer_score_hud", _config_boolean, "false", "HALO_MULTIPLAYER_SCORE_HUD", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Gameplay > Scoring's SCORE HUD, with MULTIPLAYER on: a panel\n"
+		"at the bottom right of the player's name and place, kills and deaths,\n"
+		"the game's kind and its score (captures, time on the hill, kills), a\n"
+		"team game's standing (winning, losing, tied) and the game's time." },
+	{ "stats.api_url", _config_string, "\"\"", NULL, _environment_value, _platform_all, /* AE hook */
+		"Firefight stats: the web address a finished game's stats are posted to. Empty: none. Nothing is sent\n"
+		"unless network.community_services is \"yes\" and the game is a campaign or Firefight game." },
+	{ "stats.web_url", _config_string, "\"\"", NULL, _environment_value, _platform_all, /* AE hook */
+		"Firefight stats: the web address of the stats page a profile link opens. Empty: none." },
+	{ "stats.auto_export_json", _config_boolean, "false", NULL, _environment_value, _platform_all, /* AE hook */
+		"Firefight stats: a record of a finished game written as a JSON file in the saved games." },
+	{ "game.randomizer_ally_custom_type", _config_string, "\"\"", "HALO_RANDOMIZER_ALLY_CUSTOM_TYPE", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"tag_injector\": the custom\n"
+		"type of the Tag Injector profile's actor variants the allies may\n"
+		"become." },
+	{ "game.randomizer_ally_elite_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_ELITE_RANK", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"elite\": as\n"
+		"game.randomizer_elite_rank." },
+	{ "game.randomizer_ally_flood_combat_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_FLOOD_COMBAT_RANK", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"flood_combat\": as\n"
+		"game.randomizer_flood_combat_rank." },
+	{ "game.randomizer_ally_grunt_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_GRUNT_RANK", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"grunt\": as\n"
+		"game.randomizer_grunt_rank." },
+	{ "game.randomizer_ally_hunter_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_HUNTER_RANK", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"hunter\": as\n"
+		"game.randomizer_hunter_rank." },
+	{ "game.randomizer_ally_jackal_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_JACKAL_RANK", /* AE hook */
+		_environment_value, _platform_all,
+		"AI REPLACEMENT, when the ally type is \"jackal\": as\n"
+		"game.randomizer_jackal_rank." },
+	{ "game.randomizer_crazy", _config_boolean, "false", "HALO_RANDOMIZER_CRAZY", _environment_value, _platform_all, /* AE hook */
+		"Settings > Gameplay > Randomizer's Go Crazy. true: the parts of it on\n"
+		"(game.randomizer_crazy_weapons, _enemies, _flamethrower), and as many\n"
+		"of the infection forms swapped as game.randomizer_crazy_pods says.\n"
+		"Things might not go as smooth. false: none of them, and one infection\n"
+		"form in three swapped (the rest are not placed)." },
+	{ "game.randomizer_crazy_enemies", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_ENEMIES", _environment_value, /* AE hook */
+		_platform_all,
+		"Go Crazy's, with game.randomizer_crazy. true: the unused NPCs\n"
+		"(engineers, sentinels) join the enemy pools." },
+	{ "game.randomizer_crazy_flamethrower", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_FLAMETHROWER", /* AE hook */
+		_environment_value, _platform_all,
+		"Go Crazy's, with game.randomizer_crazy. true: the multiplayer-only\n"
+		"flamethrower can be the one weapon type of a pool, and joins the weapon\n"
+		"pools of more than one weapon. false: neither (a type of the\n"
+		"flamethrower is taken as the default: pistol, plasma rifle)." },
+	{ "game.randomizer_crazy_pods", _config_integer, "30", "HALO_RANDOMIZER_CRAZY_PODS", _environment_value, /* AE hook */
+		_platform_all,
+		"Go Crazy's, with game.randomizer_crazy. How many of a squad's\n"
+		"infection forms the enemy pool swaps for other actors, a percentage\n"
+		"(10 to 100, in tens): the squad's first, then evenly; the rest are not\n"
+		"placed. Without Go Crazy, one in three." },
+	{ "game.randomizer_crazy_weapons", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_WEAPONS", _environment_value, /* AE hook */
+		_platform_all,
+		"Go Crazy's, with game.randomizer_crazy. true: any NPC can hold any\n"
+		"weapon, but might not know how to use it (one with no animations for it\n"
+		"holds it as a near weapon: a marine's plasma pistol as its pistol, an\n"
+		"elite's shotgun as its plasma rifle). false: an actor keeps its own\n"
+		"weapon instead." },
+	{ "game.randomizer_custom_type", _config_string, "\"\"", "HALO_RANDOMIZER_CUSTOM_TYPE", _environment_value, /* AE hook */
+		_platform_all,
+		"The randomizer screen, when the one type is \"tag_injector\": the custom\n"
+		"type (a tag's custom_type, else the last part of its path, in the Tag\n"
+		"Injector) whose actor variants the pool is." },
+	{ "game.randomizer_elite_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ELITE_RANK", _environment_value, _platform_all, /* AE hook */
+		"The randomizer screen, when the one type is \"elite\": \"any\", \"minor\",\n"
+		"\"major\", \"specops\", \"zealot\" (the gold commanders) or \"stealth\"." },
+	{ "game.randomizer_extra_enemies", _config_integer, "1", "HALO_RANDOMIZER_EXTRA_ENEMIES", _environment_value, /* AE hook */
+		_platform_all,
+		"The randomizer screen's EXTRA ENEMIES: each squad of the players'\n"
+		"enemies a campaign level places is this many times as large (1, off,\n"
+		"to 32), as co-op's static multiplier (network.coop_enemies_multiplier)\n"
+		"makes them; a co-op game's extra enemies come on top of it. Played\n"
+		"alone or as a co-op host, never in a daily challenge." },
+	{ "game.randomizer_flood_combat_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_FLOOD_COMBAT_RANK", _environment_value, /* AE hook */
+		_platform_all,
+		"The randomizer screen, when the one type is \"flood_combat\": \"any\",\n"
+		"\"human\" or \"elite\"." },
+	{ "game.randomizer_grunt_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_GRUNT_RANK", _environment_value, _platform_all, /* AE hook */
+		"The randomizer screen, when the one type is \"grunt\": \"any\", \"minor\",\n"
+		"\"major\" or \"specops\"." },
+	{ "game.randomizer_hunter_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_HUNTER_RANK", _environment_value, _platform_all, /* AE hook */
+		"The randomizer screen, when the one type is \"hunter\": \"any\", \"minor\" or\n"
+		"\"major\"." },
+	{ "game.randomizer_jackal_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_JACKAL_RANK", _environment_value, _platform_all, /* AE hook */
+		"The randomizer screen, when the one type is \"jackal\": \"any\", \"minor\" or\n"
+		"\"major\"." },
+	{ "game.randomizer_pickup_custom", _config_string, "\"\"", "HALO_RANDOMIZER_PICKUP_CUSTOM", _environment_value, /* AE hook */
+		_platform_all,
+		"The randomizer screen, when the pickup type is \"tag_injector\": the\n"
+		"custom type of the Tag Injector profile's weapons a pickup may become." },
+	{ "game.randomizer_tag_profile", _config_string, "\"\"", "HALO_RANDOMIZER_TAG_PROFILE", _environment_value, /* AE hook */
+		_platform_all,
+		"The Tag Injector's profile the randomizer plays: its folder's name, or\n"
+		"\"\" for none. Chosen on the screen before the randomizer's, with\n"
+		"game.tag_injection on and a profile. A level played alone (not a network game, nor a challenge)\n"
+		"is given its tags on, which join the pools their settings name, and the\n"
+		"TAG INJECTOR pools and types." },
+	{ "game.randomizer_profile_1", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_1", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_2", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_2", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_3", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_3", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_4", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_4", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_5", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_5", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_6", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_6", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_7", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_7", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.randomizer_profile_8", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_8", _environment_value, /* AE hook */
+		_platform_all,
+		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
+		"by semicolons. Written by the screen; the oldest of the eight is dropped for a ninth." },
+	{ "game.tag_injection", _config_boolean, "false", "HALO_TAG_INJECTION", _environment_value, _platform_all, /* AE hook */
+		"true: a campaign level played alone is given the tags of an item set (game.randomizer_tag_profile): weapons and\n"
+		"actors taken from Custom Edition maps. The randomizer screen's ITEM SET turns it on." },
+	{ "community.enabled", _config_boolean, "false", "HALO_COMMUNITY", _environment_value, _platform_all, /* AE hook */
+		"Settings > Campaign > Daily Challenge's ONLINE DAY AND BOARDS. true, with network.community_services \"yes\": the daily\n"
+		"challenge and the leaderboards come from the community server (community.server_mode) and a daily challenge's run is\n"
+		"sent to it. false (the default): nothing is sent or asked; the day's challenge is made on this machine, and its\n"
+		"leaderboard is this machine's profiles'." },
+	{ "community.server_mode", _config_string, "\"default\"", "HALO_COMMUNITY_SERVER_MODE", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Campaign > Daily Challenge's SERVER: \"default\" (the Content Evolved community server,\n"
+		"https://oceapi.watanoge.com) or \"custom\" (community.custom_server)." },
+	{ "community.custom_server", _config_string, "\"\"", "HALO_COMMUNITY_CUSTOM_SERVER", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Campaign > Daily Challenge's SERVER ADDRESS, with community.server_mode \"custom\": another community\n"
+		"server's address (https only), as https://example.com." },
+	{ "community.upload_scores", _config_boolean, "false", "HALO_COMMUNITY_UPLOAD_SCORES", _environment_value, /* AE hook */
+		_platform_all,
+		"Settings > Campaign > Daily Challenge's SHARE MY SCORES, with community.enabled: a campaign level won with scoring on,\n"
+		"by one player on this machine, is sent to the online leaderboard with the profile's name. A daily challenge's run\n"
+		"goes to its day's leaderboard whenever community.enabled is on." },
+	{ "community.key", _config_string, "\"\"", "HALO_COMMUNITY_KEY", _environment_value, _platform_all, /* AE hook */
+		"This install's own key on the community server, made the first time a request is sent (only with community.enabled):\n"
+		"it keeps your scores yours. Keep it secret; copy it to move your scores to another install." },
+	{ "game.randomizer_weapon_custom", _config_string, "\"\"", "HALO_RANDOMIZER_WEAPON_CUSTOM", _environment_value, /* AE hook */
+		_platform_all,
+		"The randomizer screen, when the enemy weapon type is \"tag_injector\":\n"
+		"the custom type of the Tag Injector profile's weapons an actor may be\n"
+		"given." },
 	{ "game.randomizer_loadout", _config_string, "\"default\"", "HALO_RANDOMIZER_LOADOUT", _environment_value, _platform_all, /* AE hook */
 		"The players' starting weapons: \"default\" (the level's), \"random\" (two each) or \"set\"\n"
 		"(game.randomizer_loadout_primary and _secondary)." },
 	{ "game.randomizer_loadout_primary", _config_string, "\"assault_rifle\"", "HALO_RANDOMIZER_LOADOUT_PRIMARY", _environment_value, _platform_all, /* AE hook */
-		"With game.randomizer_loadout \"set\": a value of game.randomizer_pickup_type, or \"none\"." },
+		"With game.randomizer_loadout \"set\": a value of game.randomizer_pickup_type, \"none\", one of AE's weapons\n"
+		"(\"ae:12\": its registry id; the seven of AE WEAPONS IN LEVELS) or a weapon of the item set that plays\n"
+		"(\"tag:<hash>\"). One the level has not got sends the game back to the level's own loadout." },
 	{ "game.randomizer_loadout_secondary", _config_string, "\"pistol\"", "HALO_RANDOMIZER_LOADOUT_SECONDARY", _environment_value, _platform_all, /* AE hook */
 		"With game.randomizer_loadout \"set\": as game.randomizer_loadout_primary." },
 	{ "game.randomizer_seed", _config_integer, "0", "HALO_RANDOMIZER_SEED", _environment_value, _platform_all, /* AE hook */
@@ -1576,6 +1784,11 @@ static const struct config_setting config_settings[] =
 		"only beside another player, and with no player left standing the game goes back to the last checkpoint.\n"
 		"respawn: a player comes back beside anyone standing, the squad included, within 10 seconds; the game\n"
 		"goes back to the last checkpoint only when no one is standing." },
+	{ "game.companions_door_stack", _config_string, "\"order\"", "HALO_COMPANIONS_DOOR_STACK", _environment_value, /* AE hook */
+		_platform_all,
+		"Campaign AI squad at doors. order: the squad lines up beside a door the player marks (DEFEND or SMART)\n"
+		"and goes in on ATTACK. every: it also lines up beside any closed door the player waits at, and goes in\n"
+		"when the player walks through or calls ATTACK." },
 	{ "game.companions_loadout", _config_string, "\"standard\"", "HALO_COMPANIONS_LOADOUT", _environment_value, /* AE hook */
 		_platform_all,
 		"Campaign AI squad, bot brain: what each squad member carries. standard: the level's co-op start\n"
@@ -2103,6 +2316,20 @@ static const struct config_setting config_settings[] =
 		"The server browser: public games are listed through the signalling\n"
 		"brokers, and Join Game > Server Browser shows them. False lists no\n"
 		"game of this machine's and shows none." },
+	{ "network.party_service", _config_string, "\"\"", "HALO_NET_PARTY_SERVICE", _environment_value, _platform_all, /* AE hook */
+		"Arena Evolved: the online party and QUICK PLAY service's address (for\n"
+		"example https://master.arenaevolved.com/party). Empty: no online party\n"
+		"and no QUICK PLAY; the rest of multiplayer works as before. The service\n"
+		"gets this PC's friend code and party key, profile name, game version,\n"
+		"split-screen players, what it does in the party, and for QUICK PLAY its\n"
+		"pings to AE servers, the last server played and the invite of a game the\n"
+		"party leader hosts. It sees the connection's address (kept only as a\n"
+		"keyed code for a few minutes, for rate limits) and shows no address to\n"
+		"other players." },
+	{ "network.steam_friends", _config_boolean, "false", "HALO_NET_STEAM_FRIENDS", _environment_value, _platform_all, /* AE hook */
+		"Arena Evolved: STEAM FRIENDS, not available yet. The online party service\n"
+		"takes no Steam ids until Steam sign-in is built, so this setting does\n"
+		"nothing outside DEV tests. Needs network.party_service." },
 	{ "network.browser_pings", _config_boolean, "true", "HALO_NET_BROWSER_PINGS", _environment_value, /* AE hook */
 		_platform_all,
 		"Arena Evolved (DamnationCE's): the Server Browser times each public\n"
@@ -3528,7 +3755,9 @@ static const struct config_setting config_settings[] =
 		"menu has loaded, and play its pending tests (port/linux/game/ae_test_run.h)." },
 	{ "debug.test_run_auto", _config_string, "\"\"", "HALO_TEST_RUN_AUTO", _environment_value, _platform_all, /* AE hook */
 		"TEST RUN, for the automated tests: the verdicts to give, each after this many seconds with the\n"
-		"test ready, cycling, e.g. \"PASS:6,FAIL:6,NOTE:6,SKIP:6\"; a note is typed as \"auto\"." },
+		"test ready, cycling, e.g. \"PASS:6,FAIL:6,NOTE:6,SKIP:6\"; a note is typed as \"auto\". With OWNER\n"
+		"in it (\"OWNER,PASS:6\") PASS and SKIP are pressed on the first pad as BACK + A and BACK + Y, and\n"
+		"the run goes the way a run by hand goes (tools/ae_test/preflight.py --owner)." },
 	{ "debug.gpu_flush_draws", _config_integer, "-1", "HALO_GPU_FLUSH_DRAWS", _environment_value, _platform_desktop,
 		"Flush the GPU every this many draws: -1 for every 3 on Intel with Mesa,\n"
 		"0 never." },
@@ -3672,6 +3901,8 @@ struct config_value
 };
 
 static struct config_value config_values[NUMBER_OF_CONFIG_SETTINGS];
+static struct config_value config_overrides[NUMBER_OF_CONFIG_SETTINGS]; /* AE hook */
+static unsigned char config_overridden[NUMBER_OF_CONFIG_SETTINGS]; /* AE hook */
 /* whether the file or the environment gives the setting a value */
 static int config_given[NUMBER_OF_CONFIG_SETTINGS];
 static __thread struct config_value ae_player_value; /* AE hook */
@@ -5218,6 +5449,7 @@ static const struct
 	{ "display.split_target_framerate", { AE_TARGET_FRAMERATE_WORDS, NULL }, "\"60\"" }, /* AE hook */
 	{ "display.split_graphics", { "auto", "same", "quality", "performance", NULL }, "\"auto\"" }, /* AE hook */
 	{ "display.split_two_players", { "auto", "top_and_bottom", "side_by_side", NULL }, "\"auto\"" }, /* AE hook */
+	{ "display.split_hud", { "compact", "one_player", NULL }, "\"compact\"" }, /* AE hook */
 	{ "display.anti_aliasing", { "off", "fxaa", "smaa", "ssaa2x", "msaa2x", "msaa4x", "msaa8x", NULL }, NULL },
 	{ "display.menus", { "xbox", "pc", "gearbox", NULL }, NULL },
 	{ "display.player_names", { "all", "allies", "allys", "enemies", "none", NULL }, "\"all\"" },
@@ -6038,10 +6270,16 @@ static const struct config_value *config_value(const char *name, enum config_typ
 		platform_log("settings: no %s setting %s", type == _config_string ? "string" : "such", name);
 		return &none;
 	}
+	if (config_overridden[index]) /* AE hook */
+		return &config_overrides[index]; /* AE hook */
 	if (ae_config_player_value(name, config_settings[index].environment, (int)type, &ae_player_value.boolean, &ae_player_value.integer, &ae_player_value.real, &ae_player_value.string)) /* AE hook */
 		return &ae_player_value;
 	return &config_values[index];
 }
+
+/* the settings a daily challenge sets for its run (community.c), over the file's and the environment's, which they leave as they are */
+int config_override(const char *name, const char *value) { long index = config_setting_index(name); if (index < 0 || !value || strlen(value) > 160) return 0; config_value(name, config_settings[index].type); pthread_mutex_lock(&config_lock); config_set_from_text(&config_overrides[index], config_settings[index].type, value); config_overridden[index] = 1; config_change_count++; pthread_mutex_unlock(&config_lock); return 1; } /* AE hook */
+void config_overrides_clear(void) { size_t index; int any = 0; pthread_mutex_lock(&config_lock); for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++) { if (config_overridden[index]) { config_overridden[index] = 0; any = 1; } } if (any) config_change_count++; pthread_mutex_unlock(&config_lock); } /* AE hook */
 
 /* sets a setting for this run only, as its environment variable does (config.toml is not changed) */
 int config_set(const char *name, const char *value) { long index = config_setting_index(name); if (index < 0 || !value) return 0; config_value(name, config_settings[index].type); pthread_mutex_lock(&config_lock); config_set_from_text(&config_values[index], config_settings[index].type, value); config_values[index].chosen = 1; config_change_count++; pthread_mutex_unlock(&config_lock); return 1; } /* AE hook */
@@ -6058,6 +6296,9 @@ long ae_config_integer_held(const char *name) /* AE hook */
 
 /* the longest string config_write takes */
 #define CONFIG_MAXIMUM_WRITTEN_STRING 16384 /* AE hook */
+
+/* (AE) whether a setting is set for this run alone (config_override): such a setting is never written to config.toml; said once for each */
+static int config_write_overridden(long index, const char *name) { static unsigned char told[NUMBER_OF_CONFIG_SETTINGS]; if (!config_overridden[index]) return 0; if (!told[index]) { told[index] = 1; platform_log("settings: %s is set for this run (a daily challenge), config.toml keeps the player's own value", name); } return 1; } /* AE hook */
 
 /* sets a setting, for now and in config.toml, from its value as text
 ("true", "60", "1.5", "all"): its line there is changed (or added, or the
@@ -6081,6 +6322,7 @@ int config_write(const char *name, const char *value)
 	{
 		return 0;
 	}
+	if (config_write_overridden(index, name)) return 0; /* AE hook */
 	/* (the line: its key, and its value with each character escaped as
 	\uXXXX at most) */
 	line_size = strlen(dot + 1) + 6 * strlen(value) + 64;

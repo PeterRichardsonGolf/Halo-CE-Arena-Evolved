@@ -106,6 +106,34 @@ struct dialog_layout
 	int line_count;
 };
 
+/* the body wrapped to the width, a new line at each '\n' (ae_wrap_text breaks only at spaces), up to maximum lines */
+static int dialog_wrap(float size, const char *body, float width, char (*lines)[160], int maximum)
+{
+	int total = 0;
+	const char *at = body;
+
+	while (*at && total < maximum)
+	{
+		char paragraph[400];
+		size_t length = 0;
+
+		while (at[length] && at[length] != '\n' && length < sizeof(paragraph) - 1)
+			length++;
+		memcpy(paragraph, at, length);
+		paragraph[length] = 0;
+		at += length;
+		if (*at == '\n')
+			at++;
+		if (!length)
+		{
+			lines[total++][0] = 0;
+			continue;
+		}
+		total += ae_wrap_text(AE_FONT_BODY, size, paragraph, width, lines + total, maximum - total);
+	}
+	return total;
+}
+
 static void dialog_layout(struct ae_dialog_spec const *spec, float maximum_width, float maximum_height,
 	struct dialog_layout *l)
 {
@@ -136,8 +164,7 @@ static void dialog_layout(struct ae_dialog_spec const *spec, float maximum_width
 			wrap = maximum_width - 2.0f * l->pad;
 		if (wrap < density->pixel)
 			wrap = density->pixel;
-		l->line_count = spec->body && *spec->body ? ae_wrap_text(AE_FONT_BODY, l->body_size, spec->body, wrap, l->lines,
-			maximum_lines) : 0;
+		l->line_count = spec->body && *spec->body ? dialog_wrap(l->body_size, spec->body, wrap, l->lines, maximum_lines) : 0;
 		title_width = spec->title ? ae_draw_text_width(AE_FONT_ROW, l->title_size, spec->title) : 0.0f;
 		content = title_width;
 		for (index = 0; index < l->line_count; index++)
@@ -170,8 +197,7 @@ static void dialog_layout(struct ae_dialog_spec const *spec, float maximum_width
 			l->width = maximum_width;
 		/* (the body wrapped again at the width it got: never wider than the box) */
 		if (spec->body && *spec->body)
-			l->line_count = ae_wrap_text(AE_FONT_BODY, l->body_size, spec->body, l->width - 2.0f * l->pad, l->lines,
-				maximum_lines);
+			l->line_count = dialog_wrap(l->body_size, spec->body, l->width - 2.0f * l->pad, l->lines, maximum_lines);
 		ae_fit_text(AE_FONT_ROW, l->title_size, spec->title ? spec->title : "", l->width - 2.0f * l->pad, l->title,
 			sizeof(l->title));
 		/* top to bottom: the stripe, the title, the body, (the countdown and its bar), the choices, the prompts */

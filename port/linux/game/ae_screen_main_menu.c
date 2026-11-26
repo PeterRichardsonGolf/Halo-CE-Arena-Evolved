@@ -58,9 +58,14 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit", "ae
 #include "ae_widgets.h"
 #include "ae_scoreboard_header.h"
 #include "ae_host_server.h"
+#include "ae_screen_daily.h"
 #include "ae_screen_host_server.h"
 #include "ae_server_ingame.h"
 #include "halo_ui_map_list.h"
+#include "ae_firefight_doors.h"
+#include "ae_firefight_doors_rules.h"
+#include "ae_glue_setup_options.h"
+#include "ae_screen_theater.h"
 
 void platform_log(char const *format, ...);
 void platform_request_quit(void);
@@ -77,7 +82,8 @@ enum
 	HIT_ROWS = MENU_HIT + 1, HIT_PROMPTS, HIT_CARDS, HIT_PARTY
 };
 enum { ROW_MULTIPLAYER = AE_FLOW_ROW_OWN, ROW_CAMPAIGN, ROW_SETTINGS, ROW_PROFILES, ROW_QUIT, ROW_CREATE, ROW_JOIN,
-	ROW_BROWSER, ROW_LAN, ROW_HOST_SERVER, ROW_MOTD, ROW_WHATS_NEW, ROW_COMING_SOON, ROW_MATCHMAKING, ROW_ADDRESS, ROW_TOURNAMENT, ROW_MAPS };
+	ROW_BROWSER, ROW_LAN, ROW_HOST_SERVER, ROW_MOTD, ROW_WHATS_NEW, ROW_COMING_SOON, ROW_MATCHMAKING, ROW_ADDRESS, ROW_TOURNAMENT, ROW_MAPS,
+	ROW_FIREFIGHT, ROW_DAILY, ROW_THEATER };
 
 /* (menus phase 1) the main menu's rows by ae_main_menu_rules.h's order: their kinds and descriptions (spec §5; copy in
 one place for the owner to edit). COMING SOON's rows say only "Coming soon." */
@@ -90,8 +96,8 @@ static struct { short kind; const char *help; } const main_rows[AE_MAIN_ROWS] =
 	{ ROW_SETTINGS, "Video, audio, controls, network and menu settings." },
 	{ ROW_MOTD, "The latest word from the Arena Evolved team." },
 	{ ROW_WHATS_NEW, "What changed in each release, newest first." },
-	{ ROW_COMING_SOON, "Coming soon." },
-	{ ROW_COMING_SOON, "Coming soon." },
+	{ ROW_FIREFIGHT, "Waves of enemies, alone or together: survive as long as you can." },
+	{ ROW_THEATER, "Watch the network games you recorded, from any player's eyes or a free camera." },
 	{ ROW_COMING_SOON, "Coming soon." },
 	{ ROW_COMING_SOON, "Coming soon." },
 };
@@ -100,12 +106,20 @@ static struct { short kind; const char *help; } const main_rows[AE_MAIN_ROWS] =
 /* a main row's place on the page: COMING SOON's label sits before its first row */
 static short main_flow_index(int row)
 {
-	return (short)(row >= AE_MAIN_FIREFIGHT ? row + 1 : row);
+	/* (COMING SOON's label before FORGE; DAILY CHALLENGE's row after CAMPAIGN's, with its setting on) */
+	return (short)((row >= AE_MAIN_FORGE ? row + 1 : row) + (ae_screen_daily_row_shown() && row > AE_MAIN_CAMPAIGN ? 1 : 0));
 }
 
 static int main_row_of(short flow_index)
 {
-	return flow_index > AE_MAIN_FIREFIGHT ? flow_index - 1 : flow_index == AE_MAIN_FIREFIGHT ? -1 : flow_index;
+	if (ae_screen_daily_row_shown())
+	{
+		if (flow_index == AE_MAIN_CAMPAIGN + 1)
+			return -1;
+		if (flow_index > AE_MAIN_CAMPAIGN + 1)
+			flow_index--;
+	}
+	return flow_index > AE_MAIN_FORGE ? flow_index - 1 : flow_index == AE_MAIN_FORGE ? -1 : flow_index;
 }
 
 static struct
@@ -127,7 +141,7 @@ static short accept_player;
 static int signed_in[4];
 
 /* (menus phase 1, layout A, owner 2026-11-10; 0.9.3 order: CAMPAIGN, AE TOURNAMENT, MULTIPLAYER, SETTINGS, MESSAGE OF THE DAY, WHAT'S
-NEW), then COMING SOON's label over FIREFIGHT, FORGE, THEATER, FRIENDS (focusable, muted, they open nothing yet). PROFILES
+NEW, FIREFIGHT, THEATER), then COMING SOON's label over FORGE, FRIENDS (focusable, muted, they open nothing yet). PROFILES
 moved to MY PARTY's player 1 and the TAB menu, QUIT to B */
 static void rows_main(void)
 {
@@ -137,11 +151,17 @@ static void rows_main(void)
 
 	for (row = 0; row < AE_MAIN_ROWS; row++)
 	{
-		if (row == AE_MAIN_FIREFIGHT)
+		if (row == AE_MAIN_FORGE)
 			flow->rows[count++] = (struct ae_flow_row){ AE_FLOW_ROW_HEADER, -1, COMING_SOON_LABEL, NULL, NULL, NULL };
 		flow->rows[count] = (struct ae_flow_row){ main_rows[row].kind, -1, ae_main_row_label(row), NULL,
 			main_rows[row].help, NULL };
 		flow->rows[count].muted = (short)ae_main_row_coming_soon(row);
+		/* (FIREFIGHT waits on its data: a PC with none of the campaign maps it is built from says so; any other opens, the lobby builds it) */
+		if (row == AE_MAIN_FIREFIGHT && ae_firefight_doors_data() == AE_FFD_DATA_NEEDS_MAPS)
+		{
+			flow->rows[count].reason = ae_firefight_doors_data_reason(AE_FFD_DATA_NEEDS_MAPS);
+			flow->rows[count].help = ae_firefight_doors_data_help(AE_FFD_DATA_NEEDS_MAPS);
+		}
 		/* (the badges: NEW on an unread message, N NEW on releases not opened yet) */
 		if (row == AE_MAIN_MOTD)
 			flow->rows[count].value = ae_screen_motd_badge();
@@ -151,6 +171,9 @@ static void rows_main(void)
 			flow->rows[count].value = ae_screen_maps_hub_badge();
 		flow->rows[count].status = flow->rows[count].value != NULL;
 		count++;
+		if (row == AE_MAIN_CAMPAIGN && ae_screen_daily_row_shown())
+			flow->rows[count++] = (struct ae_flow_row){ ROW_DAILY, -1, "DAILY CHALLENGE", NULL,
+				"A mission a day with skulls and a randomizer, the same for everyone.", NULL };
 	}
 	flow->count = count;
 }
@@ -163,6 +186,10 @@ static void rows_main_open(void)
 	int row, last = (int)config_integer("menus.main_row"), first = ae_main_first_focus(last);
 	short index;
 
+	/* (the main menu is open: no FIREFIGHT lobby is, and no Firefight copy is the open one) */
+	if (ae_setup_edit_is_firefight())
+		ae_setup_edit_firefight_leave();
+	ae_firefight_doors_lobby_set(0);
 	rows_main();
 	said[0] = 0;
 	for (index = 0; index < main_page.flow.count; index++)
@@ -811,6 +838,22 @@ static void accept(int multiplayer, short row)
 		if (ae_screen_campaign_open())
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		break;
+	case ROW_FIREFIGHT:
+		if (ae_screen_create_game_firefight_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		else
+			ae_flow_error(flow, "Firefight did not open", "Firefight's lobby could not be opened.");
+		break;
+	case ROW_THEATER:
+		if (ae_screen_theater_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		else
+			ae_flow_error(flow, "Theater did not open", "The Theater could not be opened.");
+		break;
+	case ROW_DAILY:
+		if (ae_screen_daily_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		break;
 	case ROW_MAPS:
 		if (ae_screen_maps_hub_open(-1))
 			ae_sound_request(AE_SOUND_FORWARD, 0);
@@ -1315,6 +1358,8 @@ int ae_screen_main_menu_open(void)
 		return 0;
 	platform_log("ae main menu: open");
 	rows_main_open();
+	/* (rc8: a daily challenge's level was just won: its screen comes back over the menu) */
+	ae_screen_daily_after_win();
 	/* (menus phase 1 test hook, as DEV MODE's lobby_fill: the party at that size) */
 	{
 		char const *fill = getenv("HALO_AE_TEST_PARTY");
@@ -1348,4 +1393,15 @@ void ae_screen_main_menu_close(void)
 	ae_screen_join_invite_close();
 	if (ae_ui_remove(&main_page) || closed)
 		platform_log("ae main menu: closed (the game left its main menu)");
+	/* (a screen still up once the game left its main menu, such as a notice never answered there, draws over the game
+	every frame: said once each time the top screen changes) */
+	{
+		static char const *told;
+		struct ae_screen *top = ae_ui_top();
+		char const *name = top && top->screen_class ? top->screen_class->name : NULL;
+
+		if (name && name != told)
+			platform_log("ae ui: %s open while a game plays (%d screens up)", name, ae_ui_depth());
+		told = name;
+	}
 }

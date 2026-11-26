@@ -48,6 +48,7 @@ by the state line: under the reticle in one view, as the first line of the messa
 #include "ae_revive_hud_rules.h"
 #include "ae_score_strip.h"
 #include "ae_wheel.h"
+#include "ae_split_layout.h"
 
 void platform_video_drawable_size(int *width, int *height);
 real hud_item_timers_ae_waypoint_scale(real world_units);
@@ -214,7 +215,7 @@ static void record_set(short view, int kind, long object_index, short icon_type,
 /* the state line, left as the prompt needs it: empty and out of the way in one view, reserved (empty text) in the split views */
 static void state_line(short view)
 {
-	hud_enable_custom_state_message(view, (boolean)(local_player_count() > 1));
+	hud_enable_custom_state_message(view, ae_split_layout_hud_small());
 }
 
 static boolean usable(short view)
@@ -488,7 +489,7 @@ void ae_item_prompt_draw(short local_player_index)
 		return;
 	record = &records[local_player_index];
 	record->drawn = FALSE;
-	if (!record->have || local_player_count() > 1 || !ae_hud_style_is_ae() || !hud_scripted_globals ||
+	if (!record->have || ae_split_layout_hud_small() || !ae_hud_style_is_ae() || !hud_scripted_globals ||
 		!hud_scripted_globals->show_hud)
 	{
 		return;
@@ -623,7 +624,7 @@ void ae_item_prompt_split_draw(short local_player_index)
 	int chip_kind;
 	boolean visible;
 
-	if (!view_ok(local_player_index) || local_player_count() < 2)
+	if (!view_ok(local_player_index) || !ae_split_layout_hud_small())
 		return;
 	record = &records[local_player_index];
 	if (!record->have || record->last_true != game_time_get() || !ae_hud_style_is_ae() || !words_get(record, &text))

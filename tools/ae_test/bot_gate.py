@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 """bot_gate: play the bot scorecard scenes headless for one build and score them against a baseline (Phase 0, the gate).
 
-    python3 tools/ae_test/bot_gate.py --game <build dir>/build/linux64/halo --out ~/ae-gate-runs/new \
-        [--baseline ~/ae-gate-runs/b0] [--save] [--scenes btb,ctf,arena,drive,stuck] [--runs 2] [--after 90]
+    python3 tools/ae_test/bot_gate.py --game <build dir>/build/linux64/halo --out <output folder> \
+        [--baseline <baseline folder>] [--save] [--scenes btb,ctf,arena,drive,stuck] [--runs 2] [--after 90]
 
-Each scene is a TEST RUN list (tools/ae_test/test_runs/bots-score-<scene>.txt) played by run_list.py on the box's data
+Each scene is a TEST RUN list (tools/ae_test/test_runs/bots-score-<scene>.txt) played by run_list.py on the test data
 root, <runs> times at once (each on a loopback address of its own).  The game logs of one scene are scored together
 (bot_scorecard: per-game summary counters, the last value of each stretch from the map's start).  --save writes <out>/<scene>.json (a baseline);
 --baseline <dir> compares every scene with <dir>/<scene>.json and prints the tables.  Exit 1 on a FAIL (a behaviour
-stopped); WARN and WORSE are for the owner.  The game seeds its random numbers from the clock's second, so the runs of
+stopped); WARN and WORSE are for the tester. The game seeds its random numbers from the clock's second, so the runs of
 a scene start START_GAP seconds apart (started in one second they played the same game); a scene whose runs still log
-the same bot events is reported as one sample.  The runs are added up and only a halved or doubled rate is called out.  Headless runs belong on the box, never the laptop."""
+the same bot events is reported as one sample. The runs are added up and only a halved or doubled rate is called out."""
 import argparse
 import hashlib
 import json
+import os
 import random
 import subprocess
 import sys
@@ -26,7 +27,7 @@ sys.path.insert(0, str(HERE))
 import bot_scorecard  # noqa: E402
 
 SCENES = ["btb", "ctf", "arena", "drive", "stuck", "canyon", "temple"]
-# (owner 2026-11-13) the map scenes play four games a round: two games of a map's stuck spots swing too much to tell a fix
+# The map scenes play four games a round: two games of a map's stuck spots swing too much to tell a fix
 # from luck (Danger Canyon's centre pocket: 60 stuck reports in one round, 1 in another)
 MAP_SCENE_RUNS = {"canyon": 4, "stuck": 4}
 
@@ -128,16 +129,18 @@ def main():
     parser.add_argument("--runs", type=int, default=None,
                         help="games a scene (default 2; the map scenes' MAP_SCENE_RUNS)")
     parser.add_argument("--after", type=int, default=90)
-    parser.add_argument("--maps", default="~/halo-data/maps")
+    parser.add_argument("--maps", default=os.environ.get("AE_TEST_MAPS"))
     parser.add_argument("--timeout", type=int, default=900)
     parser.add_argument("--extra-set", action="append", default=[], metavar="KEY=VALUE",
                         help="more `set` lines for every scene, e.g. debug.bots_drive_classic=true")
     parser.add_argument("--flat", action="store_true", help="lists in the 0.7.0 format (no groups, setup or expect lines)")
     parser.add_argument("--score-only", action="store_true", help="do not play: score the logs already under --out")
     args = parser.parse_args()
+    if not args.maps and not args.score_only:
+        parser.error("--maps is required when AE_TEST_MAPS is unset")
     out = Path(args.out).expanduser()
     out.mkdir(parents=True, exist_ok=True)
-    maps = Path(args.maps).expanduser()
+    maps = Path(args.maps).expanduser() if args.maps else None
     failed = False
     for scene in args.scenes.split(","):
         if args.score_only:

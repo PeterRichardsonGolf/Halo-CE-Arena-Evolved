@@ -1122,7 +1122,7 @@ static void confirm(struct seat *seat, int row)
 		char social_body[320], social_yes[40];
 
 		ae_social_game_quit_text(seat_player(seat), social_body, sizeof(social_body));
-		snprintf(social_yes, sizeof(social_yes), "%s", ae_social_game_quit_costs(seat_player(seat)) ? "LEAVE AND LOSE 1 EXP" : "LEAVE");
+		snprintf(social_yes, sizeof(social_yes), "%s", ae_social_game_quit_costs(seat_player(seat)) ? "LEAVE (SKILL BACK ONE)" : "LEAVE");
 		spec.title = "LEAVE THE GAME?";
 		spec.body = social_body;
 		spec.choices[0] = "STAY IN THE GAME";

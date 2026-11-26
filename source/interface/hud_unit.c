@@ -93,6 +93,7 @@ symbols in this file:
 #include "ae_panels.h" /* AE hook */
 #include "ae_seat_panel.h" /* AE hook */
 #include "ae_sensor.h" /* AE hook */
+#include "ae_split_layout.h" /* AE hook */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
 #include "bitmaps/bitmap_group.h"
 
@@ -1543,7 +1544,7 @@ void hud_render_progress_meter(
 	if (!player || player->unit_index == NONE)
 		return;
 	hud_index = unit_definition_get_active_hud_index(
-		unit_definition_get(unit_get(player->unit_index)->definition_index), local_player_count() > 1);
+		unit_definition_get(unit_get(player->unit_index)->definition_index), ae_split_layout_hud_small()); /* AE hook */
 	if (hud_index == NONE)
 		return;
 	hud_definition = unit_hud_interface_definition_get(hud_index);
@@ -1575,7 +1576,7 @@ void hud_render_progress_meter(
 	}
 	value_scale = meter.value_scale ? meter.value_scale : 8;
 	value = (byte)PIN(fast_ftol_C((real)value_scale * PIN(fraction, 0.0f, 1.0f)), 0, UNSIGNED_CHAR_MAX);
-	SET_FLAG(draw_flags, _hud_draw_in_multiplayer_bit, local_player_count() > 1);
+	SET_FLAG(draw_flags, _hud_draw_in_multiplayer_bit, ae_split_layout_hud_small()); /* AE hook */
 	hud_draw_meter(local_player_index, &placement, &meter, value, value, draw_flags, -1.0f, fraction);
 	if (background.interface_bitmap.index != NONE)
 		hud_draw_static_element(local_player_index, &placement, &background, draw_flags, NONE);

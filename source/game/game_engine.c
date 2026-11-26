@@ -4704,6 +4704,7 @@ static void game_engine_post_rasterize_in_game(
 	fade = PIN(fade, 0.0f, 1.0f);
 	if (ae_test_scoreboard_shown()) fade = 1.0f; /* AE hook */
 	if (ae_pause_scoreboard_shown(local_player_index)) fade = 1.0f; /* AE hook */
+	{ unsigned char network_replay_scores_hidden(void); if (network_replay_scores_hidden()) fade = 0.0f; } /* AE hook */
 	if (fade > 0.0f)
 	{
 		real alpha = linear_to_non_linear_alpha(fade);

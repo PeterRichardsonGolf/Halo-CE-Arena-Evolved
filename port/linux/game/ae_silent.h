@@ -64,6 +64,9 @@ void ae_silent_join_request_heard(void const *client_machine, wchar_t const *mac
 /* the host accepting that client machine into a game of this variant at its
 slot: TRUE when refused (the code to tell it set) */
 struct game_variant_options;
+/* the host's own client is joining this process's server: the next join request the server reads is its own, which the
+lobby's gametype (the one chosen before this game's) must not refuse */
+void ae_silent_own_join_begin(void);
 boolean ae_silent_join_refused_now(void const *client_machine, long machine_index, struct game_variant const *variant,
 	struct game_variant_options const *options, short *refusal_code);
 /* the host's look at a machine each frame: a remote one in the game without

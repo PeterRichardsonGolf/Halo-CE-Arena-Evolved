@@ -191,6 +191,10 @@ int ae_test_run_list_parse(const char *text, struct ae_test_run_list *out)
 			else
 				out->revision = (short)n;
 		}
+		/* (what a list needs on the machine that plays it: read by the tools, not the game) */
+		else if (KEY("requires"))
+		{
+		}
 		else if (KEY("title"))
 		{
 			if (test)
@@ -299,6 +303,37 @@ int ae_test_run_list_parse(const char *text, struct ae_test_run_list *out)
 				note_error(error, line, "expect longer than " STRING_OF(AE_TEST_RUN_EXPECT_TEXT) " letters", "", 0);
 			else
 				copy_text(test->expect[n - 1], AE_TEST_RUN_EXPECT_TEXT, rule, (int)(end - rule));
+		}
+		else if (test && test != &group_lines && KEY("press"))
+		{
+			const char *buttons = value;
+			int n;
+
+			while (buttons < end && *buttons != ' ' && *buttons != '\t')
+				buttons++;
+			n = number_of(value, (int)(buttons - value), AE_TEST_RUN_CHECKS);
+			while (buttons < end && (*buttons == ' ' || *buttons == '\t'))
+				buttons++;
+			if (n < 1 || n > test->checks)
+				note_error(error, line, "press names no check given yet", value, value_length);
+			else if (buttons == end)
+				note_error(error, line, "press has no button", "", 0);
+			else if (end - buttons > AE_TEST_RUN_PRESS_TEXT - 1)
+				note_error(error, line, "press longer than " STRING_OF(AE_TEST_RUN_PRESS_TEXT) " letters", "", 0);
+			else
+				copy_text(test->press[n - 1], AE_TEST_RUN_PRESS_TEXT, buttons, (int)(end - buttons));
+		}
+		/* (an expect line taken out of judging, kept with why: the game reads nothing of it but its check's number) */
+		else if (test && test != &group_lines && KEY("retired"))
+		{
+			const char *rest = value;
+			int n;
+
+			while (rest < end && *rest != ' ' && *rest != '\t')
+				rest++;
+			n = number_of(value, (int)(rest - value), AE_TEST_RUN_CHECKS);
+			if (n < 1 || n > test->checks)
+				note_error(error, line, "retired names no check given yet", value, value_length);
 		}
 		else if (test && KEY("retest"))
 		{

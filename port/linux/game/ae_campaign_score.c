@@ -34,10 +34,12 @@ log, and the score starts at 0. With the setting off nothing is written and noth
 #include "networking/network_game_manager.h"
 
 #include "ae_campaign_score.h"
+#include "ae_glue_career_xp.h"
 #include "ae_campaign_score_rules.h"
 #include "ae_campaign_medals_rules.h"
 #include "ae_saved_game_file.h"
 #include "halo_firefight.h"
+#include "ae_test_start.h"
 #include "campaign_score_values.h"
 #include "network_coop.h"
 #include "ae_companion.h"
@@ -69,6 +71,8 @@ static struct ae_campaign_medals_state medals;
 static long last_time = -1;
 static int competitive;
 static int won_logged;
+/* the level's career XP was paid (a level won is told once) */
+static int xp_paid;
 /* the units hurt by any blow since the level began (or a checkpoint was reverted to), salted by their index */
 static long hurt[HURT_SLOTS];
 static long unknown_tags[UNKNOWN_TAGS];
@@ -217,6 +221,7 @@ void ae_campaign_score_new_map(void)
 	unknown_tag_count = 0;
 	last_time = -1;
 	won_logged = 0;
+	xp_paid = 0;
 	competitive = 0;
 	resumed_type = -1;
 }
@@ -492,6 +497,12 @@ void ae_campaign_score_level_won(void)
 	long par, points;
 	float time_multiplier;
 
+	/* (the career XP of the level, with the score setting on or off: once for a level won, never for a client of a network game) */
+	if (campaign_level() && game_connection() != _game_connection_network_client && !xp_paid)
+	{
+		xp_paid = 1;
+		ae_career_xp_campaign_won(difficulty());
+	}
 	if (!ae_campaign_score_active() || won_logged)
 		return;
 	won_logged = 1;
@@ -817,6 +828,8 @@ void ae_campaign_score_saved_game_taken(void)
 	char const *why = "";
 	int each = 0;
 
+	/* (every saved game the engine takes, whether the score is on or not) */
+	ae_test_start_note_loaded();
 	if (!ae_campaign_score_active() || !score_file_path(path, sizeof(path)))
 		return;
 	ae_campaign_score_log_reset(&score_log);

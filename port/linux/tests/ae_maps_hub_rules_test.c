@@ -23,15 +23,23 @@ int main(void)
 	char text[40];
 	int tab, state, count, source;
 
-	/* the pages: five, in the strip's order, LB and RB wrap */
-	CHECK(AE_HUB_TABS == 5);
+	/* the pages: six, in the strip's order, LB and RB wrap */
+	CHECK(AE_HUB_TABS == 6);
 	CHECK(!strcmp(ae_hub_tab_name(AE_HUB_TAB_INSTALLED), "INSTALLED") && !strcmp(ae_hub_tab_name(AE_HUB_TAB_MODS), "MODS"));
 	CHECK(!strcmp(ae_hub_tab_name(AE_HUB_TAB_BROWSE), "BROWSE CE MAPS") && !strcmp(ae_hub_tab_name(AE_HUB_TAB_REQUIRED), "REQUIRED FILES"));
-	CHECK(ae_hub_tab_step(AE_HUB_TAB_INSTALLED, -1) == AE_HUB_TAB_MODS && ae_hub_tab_step(AE_HUB_TAB_MODS, 1) == AE_HUB_TAB_INSTALLED);
-	CHECK(ae_hub_tab_step(AE_HUB_TAB_REQUIRED, 1) == AE_HUB_TAB_BROWSE && ae_hub_tab_step(AE_HUB_TAB_REQUIRED, -1) == AE_HUB_TAB_INSTALLED);
-	CHECK(ae_hub_tab_step(99, 1) == AE_HUB_TAB_INSTALLED);
+	CHECK(ae_hub_tab_step(AE_HUB_TAB_INSTALLED, -1, 1) == AE_HUB_TAB_ITEM_SETS && ae_hub_tab_step(AE_HUB_TAB_ITEM_SETS, 1, 1) == AE_HUB_TAB_INSTALLED);
+	CHECK(ae_hub_tab_step(AE_HUB_TAB_MODS, 1, 1) == AE_HUB_TAB_ITEM_SETS && !strcmp(ae_hub_tab_name(AE_HUB_TAB_ITEM_SETS), "ITEM SETS"));
+	CHECK(ae_hub_tab_find("sets") == AE_HUB_TAB_ITEM_SETS && ae_hub_stage_find(AE_HUB_TAB_ITEM_SETS, "refused", &state) && state == 10 &&
+		!ae_hub_stage_find(AE_HUB_TAB_ITEM_SETS, "consent", &state));
+	CHECK(ae_hub_tab_step(AE_HUB_TAB_REQUIRED, 1, 1) == AE_HUB_TAB_BROWSE && ae_hub_tab_step(AE_HUB_TAB_REQUIRED, -1, 1) == AE_HUB_TAB_INSTALLED);
+	CHECK(ae_hub_tab_step(99, 1, 1) == AE_HUB_TAB_INSTALLED);
 	for (tab = 0; tab < AE_HUB_TABS; tab++)
-		CHECK(ae_hub_tab_step(ae_hub_tab_step(tab, 1), -1) == tab);
+		CHECK(ae_hub_tab_step(ae_hub_tab_step(tab, 1, 1), -1, 1) == tab);
+	/* ITEM SETS is absent outside DEV MODE: requests fall back and page cycling passes from MODS to INSTALLED. */
+	CHECK(!ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 0) && ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 1));
+	CHECK(ae_hub_tab_resolve(AE_HUB_TAB_ITEM_SETS, 0) == AE_HUB_TAB_INSTALLED);
+	CHECK(ae_hub_tab_step(AE_HUB_TAB_MODS, 1, 0) == AE_HUB_TAB_INSTALLED &&
+		ae_hub_tab_step(AE_HUB_TAB_INSTALLED, -1, 0) == AE_HUB_TAB_MODS);
 
 	/* DEV MODE's names: any case, a page and its own states only */
 	CHECK(ae_hub_tab_find("Browse") == AE_HUB_TAB_BROWSE && ae_hub_tab_find("mods") == AE_HUB_TAB_MODS && ae_hub_tab_find("maps") == -1);

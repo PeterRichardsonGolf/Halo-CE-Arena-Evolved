@@ -115,6 +115,10 @@ AE_GROUPS = [
              "The color your crosshair and a weapon's reticle\ntake over an enemy in range."),
             ('MARK PROMPT:', 'display.mark_prompt', [('ON', 'true'), ('OFF', 'false')],
              'The button and word over what a mark would act on.'),
+            ('MARK PROMPT LOOK:', 'display.mark_prompt_look', [('FULL', 'full'), ('SOFT', 'soft'), ('FAINT', 'faint')],
+             "How strong the mark prompt's button and word are."),
+            ('MARK PROMPT PLACE:', 'display.mark_prompt_place', [('BESIDE', 'beside'), ('BELOW', 'below')],
+             'BESIDE: over or by the target. BELOW: under your crosshair.'),
         ]),
         ('stock', 'WEAPON RETICLES', "Size, scaling, color and motion of the\nweapons' own reticles.", [
             ('RETICLE SIZE:', 'display.reticle_size', [('50%', '50'), ('55%', '55'), ('60%', '60'), ('65%', '65'), ('70%', '70'), ('75%', '75'), ('80%', '80'), ('85%', '85'), ('90%', '90'), ('95%', '95'), ('100%', '100'), ('105%', '105'), ('110%', '110'), ('115%', '115'), ('120%', '120'), ('125%', '125'), ('130%', '130'), ('135%', '135'), ('140%', '140'), ('145%', '145'), ('150%', '150'), ('155%', '155'), ('160%', '160'), ('165%', '165'), ('170%', '170'), ('175%', '175'), ('180%', '180'), ('185%', '185'), ('190%', '190'), ('195%', '195'), ('200%', '200')],

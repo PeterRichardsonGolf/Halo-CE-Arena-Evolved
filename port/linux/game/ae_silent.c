@@ -101,6 +101,8 @@ static struct
 	unsigned long heard_next;
 	signed char capability[AE_SILENT_MACHINES];
 	boolean dropped[AE_SILENT_MACHINES];
+	/* (the host's own client is joining this process's server and its request has not been read) */
+	boolean own_join_pending;
 } silent;
 
 /* ---- the gametype */
@@ -465,8 +467,9 @@ static int cache_join_case(struct game_variant const *variant, struct game_varia
 	if (!id)
 		return AE_CACHE_JOIN_ACCEPT;
 	/* (a campaign game with AE WEAPONS on, or an AE squad: its guests need the cache as a multiplayer game's that uses it) */
-	return ae_silent_join_cache_decide(ae_weapon_selection_game_uses_cache(variant, options) ||
-		ae_campaign_weapons_game_needs_cache(variant && !variant->game_engine_index),
+	return ae_silent_join_cache_decide(ae_silent_lobby_uses_cache(!variant || variant->game_engine_index,
+			ae_weapon_selection_game_uses_cache(variant, options),
+			ae_campaign_weapons_game_needs_cache(variant && !variant->game_engine_index)),
 		machine_index >= 0 && machine_index < AE_SILENT_MACHINES && silent.cache_told[index],
 		silent.cache_format[index], silent.cache_generation[index], silent.cache_digest[index],
 		AE_CACHE_FORMAT_VERSION, ae_weapon_cache_serial(), id);
@@ -555,6 +558,11 @@ boolean ae_bomb_gate_keeps_ae_machine(long machine_index)
 	return TRUE;
 }
 
+void ae_silent_own_join_begin(void)
+{
+	silent.own_join_pending = TRUE;
+}
+
 boolean ae_silent_join_refused_now(void const *client_machine, long machine_index, struct game_variant const *variant,
 	struct game_variant_options const *options, short *refusal_code)
 {
@@ -576,6 +584,13 @@ boolean ae_silent_join_refused_now(void const *client_machine, long machine_inde
 		silent.mcc[machine_index] = slot != NONE ? silent.heard_mcc[slot] : -1;
 		silent.biped[machine_index] = slot != NONE ? silent.heard_biped[slot] : 0;
 		silent.dropped[machine_index] = FALSE;
+	}
+	/* (a local game takes no machine from elsewhere, and the host's own client joining its own server is the host's own
+	machine: the lobby's gametype, the one chosen before this game's own was set, must not refuse it) */
+	if (ae_silent_join_exempt(network_game_is_splitscreen_local(), silent.own_join_pending))
+	{
+		silent.own_join_pending = FALSE;
+		return FALSE;
 	}
 	/* (a dedicated server's playlist: a machine that cannot play the game's audience is refused, or the lobby's entry is
 	chosen again for it, before the packs' and the cache's own gates) */
@@ -676,9 +691,13 @@ void ae_silent_host_machine(long machine_index, boolean remote_joined, struct ga
 	/* (0.7.1) a chat line for a machine that joined without Arena Evolved */
 	ae_joiner_notice_host_machine(machine_index, remote_joined);
 	ae_net_extensions_host_machine(machine_index, remote_joined);
+	ae_net_extensions_host_firefight(machine_index, remote_joined, variant && variant->game_engine_index == game_engine_firefight);
 	if (ae_server_playlist_join_deferred(machine_index)) /* AE hook */
 		return;
-	if (!remote_joined || machine_index < 0 || machine_index >= AE_SILENT_MACHINES || silent.dropped[machine_index])
+	/* (a local game's machines are the host's own: its client may be gone while the lobby still holds the game just
+	played, which would show its machine as a guest of that game) */
+	if (!ae_silent_host_checks_machine(remote_joined, network_game_is_splitscreen_local()) || machine_index < 0 ||
+		machine_index >= AE_SILENT_MACHINES || silent.dropped[machine_index])
 		return;
 	/* (the gametype changed in the lobby to one with the battle rifle) */
 	/* (a build with the weapon cache: the cache gate) */

@@ -384,6 +384,12 @@ static void agent_fields(void)
 	line_of(&r, text, sizeof text);
 	CHECK(ae_test_run_record_parse(text, &back));
 	CHECK(!strcmp(back.agent, r.agent) && back.ask_later == 1 && !strcmp(back.events, r.events));
+	/* (the program's digest, after the event stream's path) */
+	snprintf(r.program, sizeof r.program, "%s", "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef");
+	line_of(&r, text, sizeof text);
+	CHECK(strstr(text, "\"events\":\"/home/x/dev/events-1.jsonl\",\"program\":\"0123"));
+	CHECK(ae_test_run_record_parse(text, &back) && !strcmp(back.program, r.program));
+	r.program[0] = 0;
 	/* (only some of them) */
 	r.agent[0] = 0;
 	r.ask_later = 0;

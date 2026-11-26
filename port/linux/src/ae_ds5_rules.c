@@ -481,6 +481,143 @@ void ae_ds5_right_held(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_w
 	snprintf(text, text_size, "%s: %s", why, words);
 }
 
+void ae_ds5_event_rumble(struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind, enum ae_ds5_event event, int strength)
+{
+	struct profile const *profile = &profiles[kind >= 0 && kind < AE_DS5_WEAPON_KINDS ? kind : 0];
+
+	rumble->left = rumble->right = rumble->ms = 0;
+	switch (event)
+	{
+	case AE_DS5_EVENT_SHOT_CHARGED:
+		if (profile->charged_kick.mode != OFF && profile->charged_kick_ms > 0)
+		{
+			rumble->left = profile->charged_rumble_left;
+			rumble->right = profile->charged_rumble_right;
+			rumble->ms = profile->charged_rumble_ms;
+			break;
+		}
+		/* (no charged kick: an ordinary shot) */
+		/* fall through */
+	case AE_DS5_EVENT_SHOT:
+		if (profile->family == COVENANT)
+			rumble->right = profile->shot_rumble;
+		else
+			rumble->left = profile->shot_rumble;
+		/* (at least SHOT_RUMBLE_MINIMUM_MS, one Bluetooth report: the pad gets one every 50 ms there, and a shorter pulse could be
+		merged away) */
+		rumble->ms = profile->shot_rumble_ms < SHOT_RUMBLE_MINIMUM_MS ? SHOT_RUMBLE_MINIMUM_MS : profile->shot_rumble_ms;
+		/* (the battle rifle: the light motor joins each round) */
+		if (kind == AE_DS5_WEAPON_BURST)
+			rumble->right = BURST_RUMBLE_RIGHT;
+		break;
+	case AE_DS5_EVENT_MAG_IN:
+		/* SEAT BUMP: the magazine (or a shotgun's shell) going in */
+		rumble->left = 60;
+		rumble->ms = 30;
+		break;
+	case AE_DS5_EVENT_SETTLE:
+		break;
+	case AE_DS5_EVENT_CHAMBER:
+		/* the post-shot action (the shotgun's pump): a mechanical click */
+		rumble->left = 120;
+		rumble->ms = 50;
+		break;
+	case AE_DS5_EVENT_GRENADE_FRAG:
+		/* a frag grenade leaving the hand: a light pulse on the left motor */
+		rumble->left = GRENADE_THROW_RUMBLE;
+		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
+		break;
+	case AE_DS5_EVENT_GRENADE_PLASMA:
+		/* a plasma grenade leaving the hand: the same, on the right motor */
+		rumble->right = GRENADE_THROW_RUMBLE;
+		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
+		break;
+	}
+	ae_ds5_rumble_scaled(rumble, strength);
+}
+
+static const struct { char const *name; enum ae_ds5_weapon_kind kind; int event; float charge; } pulses[] =
+{
+	{ "pistol", AE_DS5_WEAPON_SEMI, AE_DS5_EVENT_SHOT, -1.0f },
+	{ "rifle", AE_DS5_WEAPON_AUTOMATIC, AE_DS5_EVENT_SHOT, -1.0f },
+	{ "shotgun", AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_SHOT, -1.0f },
+	{ "br", AE_DS5_WEAPON_BURST, AE_DS5_EVENT_SHOT, -1.0f },
+	{ "plasma", AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT, -1.0f },
+	{ "plasma-charged", AE_DS5_WEAPON_CHARGE, AE_DS5_EVENT_SHOT_CHARGED, -1.0f },
+	{ "mag-in", AE_DS5_WEAPON_AUTOMATIC, AE_DS5_EVENT_MAG_IN, -1.0f },
+	{ "chamber", AE_DS5_WEAPON_HEAVY, AE_DS5_EVENT_CHAMBER, -1.0f },
+	{ "grenade", AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_FRAG, -1.0f },
+	{ "plasma-grenade", AE_DS5_WEAPON_NONE, AE_DS5_EVENT_GRENADE_PLASMA, -1.0f },
+	{ "charge-half", AE_DS5_WEAPON_CHARGE, 0, 0.5f },
+	{ "charge-full", AE_DS5_WEAPON_CHARGE, 0, 1.0f },
+};
+
+int ae_ds5_pulse_count(void)
+{
+	return (int)(sizeof(pulses) / sizeof(pulses[0]));
+}
+
+char const *ae_ds5_pulse_name(int index)
+{
+	return index >= 0 && index < ae_ds5_pulse_count() ? pulses[index].name : "";
+}
+
+int ae_ds5_pulse_named(char const *name, int strength, struct ae_ds5_rumble *rumble)
+{
+	int index;
+
+	rumble->left = rumble->right = rumble->ms = 0;
+	for (index = 0; name && index < ae_ds5_pulse_count(); index++)
+	{
+		if (strcmp(name, pulses[index].name))
+			continue;
+		if (pulses[index].charge >= 0.0f)
+		{
+			/* (the ramp's pulse at that charge, on a tick it is due) */
+			ae_ds5_charge_rumble(pulses[index].kind, pulses[index].charge, 0, rumble);
+			ae_ds5_rumble_scaled(rumble, strength);
+		}
+		else
+			ae_ds5_event_rumble(rumble, pulses[index].kind, (enum ae_ds5_event)pulses[index].event, strength);
+		return 1;
+	}
+	return 0;
+}
+
+/* which events a tick holds, from the weapon's facts and what the last tick left (both kinds of pad read this) */
+unsigned ae_ds5_events_step(struct ae_ds5_event_memory *memory, struct ae_ds5_event_facts const *facts)
+{
+	unsigned events = 0;
+
+	if (facts->same_weapon)
+	{
+		if (memory->last_fired != facts->last_fired)
+			events |= facts->charged_before ? AE_DS5_EVENTS_SHOT_CHARGED : AE_DS5_EVENTS_SHOT;
+		if ((facts->reloading || memory->reloading) && facts->rounds_loaded > memory->rounds_loaded)
+			events |= AE_DS5_EVENTS_MAG_IN;
+		if (facts->chambering && !memory->chambering)
+			events |= AE_DS5_EVENTS_CHAMBER;
+		if (memory->readying && !facts->readying)
+			events |= AE_DS5_EVENTS_SETTLE;
+	}
+	else
+		memory->readying = 1;
+	memory->last_fired = facts->last_fired;
+	memory->rounds_loaded = facts->rounds_loaded;
+	memory->chambering = facts->chambering;
+	memory->reloading = facts->reloading;
+	memory->readying = facts->readying;
+	return events;
+}
+
+int ae_ds5_event_grenade(int *ending_before, int ending)
+{
+	int thrown = ending && !*ending_before;
+
+	*ending_before = ending;
+	return thrown;
+}
+
 int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble *rumble, enum ae_ds5_weapon_kind kind,
 	enum ae_ds5_event event, int strength)
 {
@@ -497,9 +634,6 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 		{
 			shape = profile->charged_kick;
 			ms = profile->charged_kick_ms;
-			rumble->left = profile->charged_rumble_left;
-			rumble->right = profile->charged_rumble_right;
-			rumble->ms = profile->charged_rumble_ms;
 			break;
 		}
 		/* (no charged kick: an ordinary shot) */
@@ -507,16 +641,6 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 	case AE_DS5_EVENT_SHOT:
 		shape = profile->kick;
 		ms = profile->kick_ms;
-		if (profile->family == COVENANT)
-			rumble->right = profile->shot_rumble;
-		else
-			rumble->left = profile->shot_rumble;
-		/* (at least SHOT_RUMBLE_MINIMUM_MS, one Bluetooth report: the pad gets one every 50 ms there, and a shorter pulse could be
-		merged away, owner 10-15: "the br doesn't use the rumble motors") */
-		rumble->ms = profile->shot_rumble_ms < SHOT_RUMBLE_MINIMUM_MS ? SHOT_RUMBLE_MINIMUM_MS : profile->shot_rumble_ms;
-		/* (the battle rifle: the light motor joins each round, owner 10-15: "consistent but weak") */
-		if (kind == AE_DS5_WEAPON_BURST)
-			rumble->right = BURST_RUMBLE_RIGHT;
 		break;
 	case AE_DS5_EVENT_MAG_IN:
 	{
@@ -525,8 +649,6 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 
 		shape = bump;
 		ms = 40;
-		rumble->left = 60;
-		rumble->ms = 30;
 		break;
 	}
 	case AE_DS5_EVENT_SETTLE:
@@ -545,23 +667,14 @@ int ae_ds5_event(unsigned char effect[AE_DS5_EFFECT_SIZE], struct ae_ds5_rumble 
 
 		shape = pump;
 		ms = 45;
-		rumble->left = 120;
-		rumble->ms = 50;
 		break;
 	}
 	case AE_DS5_EVENT_GRENADE_FRAG:
-		/* (L2) a frag grenade leaving the hand: no trigger kick (owner 10-21: "should be like a hair trigger"; it was a
-		25 Hz jolt at 7 for 80 ms, then a 30 ms click), a light pulse on the left motor */
-		rumble->left = GRENADE_THROW_RUMBLE;
-		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
-		break;
 	case AE_DS5_EVENT_GRENADE_PLASMA:
-		/* (L2) a plasma grenade leaving the hand: the same, on the right motor */
-		rumble->right = GRENADE_THROW_RUMBLE;
-		rumble->ms = SHOT_RUMBLE_MINIMUM_MS;
+		/* (L2) a grenade leaving the hand: no trigger kick (a hair trigger), only its motor pulse */
 		break;
 	}
-	ae_ds5_rumble_scaled(rumble, strength);
+	ae_ds5_event_rumble(rumble, kind, event, strength);
 	if (shape.mode == OFF || ms <= 0)
 	{
 		ae_ds5_effect_off(effect);

@@ -28,6 +28,35 @@ struct game_variant_options;
 int ae_setup_edit_begin_rules(struct game_variant const *variant, struct game_variant_options const *options);
 /* whether an edit is open */
 int ae_setup_edit_open(void);
+/* (the FIREFIGHT lobby) the copy from a Firefight variant: entry n of ae_firefight_variants.h's list (the built-in ones, then the
+player's saved); the copy's rules are the five pages' (ae_setup_options.h), no file behind it, SAVE AS NEW writes a saved variant (never a
+multiplayer gametype). 0 when there is none */
+int ae_setup_edit_begin_firefight(int entry);
+/* the FIREFIGHT lobby left: the multiplayer copy that was open when the Firefight copy began is the open one again (none if there was none),
+so no multiplayer lobby opens on a Firefight copy */
+void ae_setup_edit_firefight_leave(void);
+/* whether the edit open is a Firefight variant */
+int ae_setup_edit_is_firefight(void);
+/* 1 once after a change was refused (every enemy of the faction turned off), cleared by the call */
+int ae_setup_edit_refused(void);
+/* a Firefight copy's starting skulls (the two words of enum skull's bits) and those its variant carries itself, which show on and
+locked; the skulls set (the words are the whole set) */
+void ae_setup_edit_firefight_skulls(unsigned long words[2], unsigned long locked[2]);
+void ae_setup_edit_firefight_skulls_set(unsigned long const words[2]);
+/* the item sets to pick from: NONE (hash 0) first, then each set this PC has by its name in capitals and its hash; how many
+(up to maximum) */
+enum { AE_SETUP_FF_ITEM_SETS = 33 };
+int ae_setup_edit_firefight_item_sets(char (*names)[48], unsigned long *hashes, int maximum);
+/* its item set (firefight_tag_profile_hash of a set's folder, 0 for none) */
+unsigned long ae_setup_edit_firefight_item_set(void);
+void ae_setup_edit_firefight_item_set_set(unsigned long hash);
+/* a Firefight copy's game's own choices, no rows of the rules: MAP CONTENT's byte (ae_firefight_menus_rules.h) and VEHICLES' mode
+(0 all at spawn, 1 ordnance rewards, 2 none). The content is the map's, kept for it by ae_glue_firefight.h: the lobby sets it as a map
+is chosen */
+unsigned char ae_setup_edit_firefight_content(void);
+void ae_setup_edit_firefight_content_set(unsigned char content);
+unsigned char ae_setup_edit_firefight_vehicles(void);
+void ae_setup_edit_firefight_vehicles_set(unsigned char mode);
 /* the model's access over the copy (get, changed; the engine; AE's rules) */
 void ae_setup_edit_access(struct ae_setup_access *access);
 /* a row set to a value index (out of range: nothing) */

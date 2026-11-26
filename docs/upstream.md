@@ -3,7 +3,7 @@
 Back to the [README](../README.md).
 
 - [OpenCE](https://github.com/OpenCommunityEdition/OpenCE) is where the port is
-  made. Arena Evolved merges its releases: it is on OpenCE build-250 and
+  made. Arena Evolved merges its releases: it is on OpenCE build-387 and
   ChupathingyCE 0.8.0b. Arena Evolved is AGPL-3.0-or-later from its merge of
   OpenCE build-237, as OpenCE is; ChupathingyCE's code from its 0.8.0 is
   GPL-3.0-or-later, which the GPL lets it combine with an AGPL work (README,
@@ -13,11 +13,10 @@ Back to the [README](../README.md).
   Custom Edition and HaloMD map support and fixes come with it, and their
   documentation in this repository is theirs.
 - Fixes to the shared game code are offered back upstream.
-- Online, Arena Evolved 0.5.0 and later is network version 39: it plays with
-  OpenCE build-282 to build-333 (network 39), both ways. OpenCE build-334 and
-  later (40, then 41) are shown as newer and not joined until Arena Evolved
-  follows them. ChupathingyCE 0.8.0f and later plays with it by Delta, both
-  ways (each game by its host's number).
+- Online, Arena Evolved 0.9.0-beta and later (the 1.0.0 release candidates too) is network version 44: it plays with
+  OpenCE build-355 to build-387 (network 44), both ways. Arena Evolved 0.5.0 to 0.7.4 was network version 39, which
+  played with OpenCE build-282 to build-333. Arena Evolved 0.7.5 to 0.8.2 was network version 41, which played with the
+  OpenCE builds on 41 from build-334. OpenCE's other builds before build-355 were not joined.
 - Before that, Arena Evolved was network version 38 (0.3.9 to 0.4.3; 32 from 0.3.5 to
   0.3.8): it plays with OpenCE builds on network 38 (build-268 onward, until
   OpenCE changes its network version), both ways, and joins only games

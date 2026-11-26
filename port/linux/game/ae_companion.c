@@ -51,6 +51,7 @@ See ae_companion.h.
 #include "ae_fireteam.h"
 #include "ae_campaign_weapons.h"
 #include "ae_companion_rules.h"
+#include "saved games/game_state.h"
 
 void platform_log(char const *format, ...);
 boolean main_menu_is_active(void);
@@ -141,10 +142,10 @@ static struct
 	real best_distance[AE_COMPANION_MOST];
 	long gain_tick[AE_COMPANION_MOST];
 	long teleports;
-	/* STUCK INDOORS (ae_companion_stuck_warp): each member's window (its place, its distance and the tick at its start), the
-	warps */
-	real_point3d stuck_at[AE_COMPANION_MOST];
+	/* STUCK INDOORS (ae_companion_stuck_warp): each member's window (the nearest it came to the player in it, whether it was cut
+	off in it and the tick at its start), the warps */
 	real stuck_distance[AE_COMPANION_MOST];
+	boolean stuck_cut[AE_COMPANION_MOST];
 	long stuck_tick[AE_COMPANION_MOST];
 	/* the window whose missing spot was logged */
 	long stuck_said[AE_COMPANION_MOST];
@@ -169,6 +170,14 @@ static struct
 	/* each crumb's cues (ae_companion_track_push), and whether the human was in the air since the last crumb */
 	unsigned char track_flags[AE_COMPANION_TRACK_MOST];
 	boolean track_air;
+	/* the crumbs pushed since the level's start (the first crumb held is serial - count), and each member's oldest crumb it may
+	walk to again (a track that doubles back) */
+	long track_serial;
+	long track_least[AE_COMPANION_MOST];
+	/* THE WARP, LAST: the first human's feet last tick, and the tick he last teleported (moved more than AE_COMPANION_TELEPORT) */
+	real_point3d human_last;
+	boolean human_last_valid;
+	long teleport_tick;
 } companion;
 
 /* the companions' state cleared: zero, the vehicles a member was sent to none */
@@ -213,8 +222,10 @@ static void won_service(long now);
 #define PLACE_NEAR 6.0f
 /* the ticks a new body waits for clear ground behind the player before it is left where it spawned (2 s) */
 #define ENTRY_TRIES 60
-/* the squad's position line, every 2 s */
+/* the squad's position line, every 2 s; with debug.bot_events on every half second (a played game's route for a test player,
+and the test lists' crossings) */
 #define POSITIONS_TICKS 60
+#define POSITIONS_EVENTS_TICKS 15
 
 /* the DEV MODE count (companion <n>, off), -1 when none is set: the game.companions setting then says */
 static long count_override = -1;
@@ -484,6 +495,17 @@ long ae_companion_foes(long *units, long max)
 
 long ae_companion_leader(real_point3d const *from, real_point3d *at)
 {
+	/* (one leader for the whole squad, its fireteam's human leader alive and on foot or seated; else the nearest human) */
+	long fireteam = ae_fireteam_of_brain(0), player_index = fireteam != NONE ? ae_fireteam_leader_player(fireteam) : NONE;
+	struct player_datum *player = player_index != NONE ? player_try_and_get(player_index) : NULL;
+
+	if (player && player->unit_index != NONE && object_try_and_get(player->unit_index) &&
+		!bots_machine_is_bot(player->network_player_data.machine_index) &&
+		!TEST_FLAG(object_get(player->unit_index)->object.damage_flags, _object_dead_bit))
+	{
+		object_get_origin(player->unit_index, at);
+		return player->unit_index;
+	}
 	return nearest_player_unit(from, at);
 }
 
@@ -642,6 +664,9 @@ int ae_companion_reset(void)
 	long slot;
 	int players = 0;
 
+	/* (a test's setup: the squad's cost gauges are this test's own from here) */
+	bots_squad_cost_reset();
+
 	if (!companion.active)
 		return -1;
 	companion.place_until = game_time_get() + PLACE_TICKS;
@@ -701,7 +726,19 @@ static boolean narrow_ground(long unit_index)
 		real_point3d probe = { at.x + AE_COMPANION_NARROW_PROBE * (real)cos(angle), at.y + AE_COMPANION_NARROW_PROBE * (real)sin(angle),
 			at.z + 0.5f };
 		real_vector3d down = { 0.0f, 0.0f, -(0.5f + AE_COMPANION_NARROW_DROP) };
+		real_point3d chest = at;
+		real_vector3d out;
 
+		chest.z += 0.5f;
+		out.i = probe.x - at.x;
+		out.j = probe.y - at.y;
+		out.k = 0.0f;
+		/* (a wall between it and the probe, a doorway's side: a wall, not a drop) */
+		if (collision_test_vector(FLOOR_FLAGS, &chest, &out, unit_index, &collision))
+		{
+			drops[index] = 0;
+			continue;
+		}
 		drops[index] = !collision_test_vector(FLOOR_FLAGS, &probe, &down, unit_index, &collision);
 	}
 	known[next].unit = unit_index;
@@ -741,8 +778,9 @@ static void track_service(void)
 		return;
 	}
 	object_get_origin(human, &at);
-	ae_companion_track_push(companion.track, companion.track_flags, &companion.track_count, at.x, at.y, at.z, companion.track_air,
-		biped->biped.crouch > 0.5f);
+	if (ae_companion_track_push(companion.track, companion.track_flags, &companion.track_count, at.x, at.y, at.z, companion.track_air,
+		biped->biped.crouch > 0.5f))
+		companion.track_serial++;
 	/* (on the ground again: a jump that landed away marked its crumb as it was added; one in place marks none) */
 	companion.track_air = FALSE;
 }
@@ -761,6 +799,50 @@ int ae_companion_track_goal_cue(real_point3d const *from, real_point3d *goal, in
 	if (cue)
 		*cue = ae_companion_track_cue((float const (*)[3])companion.track, companion.track_flags, companion.track_count, index,
 			from->x, from->y);
+	return 1;
+}
+
+/* a member's walk on the track from its oldest crumb on: the goal crumb, its cue, and that member's oldest crumb moved up to the
+one before the goal */
+int ae_companion_track_goal_cue_for(long slot, real_point3d const *from, real_point3d *goal, int *cue)
+{
+	long base = companion.track_serial - companion.track_count;
+	int least = 0, index;
+
+	if (slot >= 0 && slot < AE_COMPANION_MOST && companion.track_least[slot] > base)
+		least = (int)(companion.track_least[slot] - base);
+	index = ae_companion_track_step_from((float const (*)[3])companion.track, companion.track_count, from->x, from->y, from->z, least);
+	if (cue)
+		*cue = 0;
+	if (index < 0)
+		return 0;
+	goal->x = companion.track[index][0];
+	goal->y = companion.track[index][1];
+	goal->z = companion.track[index][2];
+	if (cue)
+		*cue = ae_companion_track_cue((float const (*)[3])companion.track, companion.track_flags, companion.track_count, index,
+			from->x, from->y);
+	if (slot >= 0 && slot < AE_COMPANION_MOST && base + index - 1 > companion.track_least[slot])
+		companion.track_least[slot] = base + index - 1;
+	return 1;
+}
+
+/* a member's oldest crumb forgotten (a warp, a new body) */
+void ae_companion_track_forget(long slot)
+{
+	if (slot >= 0 && slot < AE_COMPANION_MOST)
+		companion.track_least[slot] = 0;
+}
+
+int ae_companion_track_cue_crumb(real_point3d const *from, real_point3d *crumb)
+{
+	int index = ae_companion_track_step((float const (*)[3])companion.track, companion.track_count, from->x, from->y, from->z);
+
+	if (index < 1)
+		return 0;
+	crumb->x = companion.track[index - 1][0];
+	crumb->y = companion.track[index - 1][1];
+	crumb->z = companion.track[index - 1][2];
 	return 1;
 }
 
@@ -791,10 +873,37 @@ static boolean spot_taken(real_point3d const *spot, long self_unit)
 	return FALSE;
 }
 
+/* whether a spot has a clear line to the player low over the floor, at a barrier's heights (AE_SQUAD_CUT_OFF_LOW and
+AE_SQUAD_CUT_OFF_HEIGHT, both faces): a barrier the player jumped, the pipes of a doorway, is not between them */
+static boolean spot_low_clear(long human, real_point3d const *there)
+{
+	static real const heights[2] = { AE_SQUAD_CUT_OFF_LOW, AE_SQUAD_CUT_OFF_HEIGHT };
+	real_point3d feet;
+	int index;
+
+	object_get_origin(human, &feet);
+	for (index = 0; index < 2; index++)
+	{
+		struct collision_result collision;
+		real_point3d from = feet;
+		real_vector3d across;
+
+		from.z += heights[index];
+		across.i = there->x - from.x;
+		across.j = there->y - from.y;
+		across.k = there->z + heights[index] - from.z;
+		if (collision_test_vector(FLAG(_collision_test_structure_bit) | FLAG(_collision_test_front_facing_surfaces_bit) |
+			FLAG(_collision_test_back_facing_surfaces_bit), &from, &across, human, &collision))
+			return FALSE;
+	}
+	return TRUE;
+}
+
 /* ENTRY (ae_companion_rules.h): a spot behind the human player's unit, out of their view, on walkable ground that a clear line
-from them reaches (no wall, no vehicle hull, no scenery between), not on another body (self_unit's own aside): TRUE with the
-spot (the floor, a little above it) */
-static boolean entry_spot(long human, long slot, long self_unit, real_point3d *spot)
+from them reaches (no wall, no vehicle hull, no scenery between), not on another body (self_unit's own aside); low_clear (a
+member stuck behind a barrier): also a clear line at a barrier's heights (spot_low_clear); TRUE with the spot (the floor, a
+little above it) */
+static boolean entry_spot(long human, long slot, long self_unit, boolean low_clear, real_point3d *spot)
 {
 	unsigned long const sight = FLAG(_collision_test_structure_bit) | FLAG(_collision_test_front_facing_surfaces_bit) |
 		FLAG(_collision_test_back_facing_surfaces_bit) | FLAG(_collision_test_objects_bit) |
@@ -847,7 +956,7 @@ static boolean entry_spot(long human, long slot, long self_unit, real_point3d *s
 				continue;
 			there = collision.point;
 			there.z += 0.05f;
-			if (spot_taken(&there, self_unit))
+			if (spot_taken(&there, self_unit) || (low_clear && !spot_low_clear(human, &there)))
 				continue;
 			*spot = there;
 			return TRUE;
@@ -884,7 +993,7 @@ static boolean entry_spot(long human, long slot, long self_unit, real_point3d *s
 		if (!ae_companion_entry_floor(floor_up, ground.z, feet.z, headroom))
 			continue;
 		ground.z += 0.05f;
-		if (spot_taken(&ground, self_unit))
+		if (spot_taken(&ground, self_unit) || (low_clear && !spot_low_clear(human, &ground)))
 			continue;
 		*spot = ground;
 		return TRUE;
@@ -921,7 +1030,7 @@ static void place_service(long now)
 		if (human == NONE || (object_get(player->unit_index)->object.parent_object_index == NONE &&
 			distance_squared3d(&at, &human_at) < PLACE_NEAR * PLACE_NEAR))
 			continue;
-		if (vehicle_of(human) == NONE && entry_spot(human, slot, player->unit_index, &spot))
+		if (vehicle_of(human) == NONE && entry_spot(human, slot, player->unit_index, FALSE, &spot))
 			;
 		else
 		{
@@ -981,7 +1090,7 @@ static void entry_service(void)
 		/* (one seated for the intro's ride gets out with the player: vehicles_follow) */
 		if (vehicle_of(player->unit_index) == NONE)
 		{
-			if (entry_spot(human, slot, player->unit_index, &spot) && player_teleport(iterator.datum_index, NONE, &spot))
+			if (entry_spot(human, slot, player->unit_index, FALSE, &spot) && player_teleport(iterator.datum_index, NONE, &spot))
 			{
 				placed = TRUE;
 				companion.teleports++;
@@ -1060,8 +1169,8 @@ static void ground_text(long unit_index, char *text, size_t size)
 	snprintf(text, size, "%s, %s", stand, ray);
 }
 
-/* the squad's log, every tick with a squad: a member's death (where, by what), and every 2 s a position line (the human, each
-member: its spot, seated or dead) */
+/* the squad's log, every tick with a squad: a member's death (where, by what), and every 2 s (half a second with bot events) a
+position line (the human, each member: its spot, seated or dead) */
 static void log_service(long now)
 {
 	struct data_iterator iterator;
@@ -1075,7 +1184,7 @@ static void log_service(long now)
 		long human = first_human_unit();
 		real_point3d at;
 
-		companion.next_positions = now + POSITIONS_TICKS;
+		companion.next_positions = now + (config_boolean("debug.bot_events") ? POSITIONS_EVENTS_TICKS : POSITIONS_TICKS);
 		if (human != NONE)
 		{
 			char ground[180];
@@ -1151,7 +1260,8 @@ static boolean member_unseen(long human, real_point3d const *human_at, real_poin
 }
 
 /* STUCK INDOORS: no entry spot behind the player (a corridor, every spot in their view or off the floor): a crumb of the player's
-own track behind them with room for a body, not on another one, else a spot straight behind them; TRUE with the spot */
+own track behind them with room for a body, not on another one, else a spot straight behind them, else one beside them; each
+with a clear line to the player low over the floor (spot_low_clear); TRUE with the spot */
 static boolean stuck_track_spot(long human, long unit, real_point3d *spot)
 {
 	real_point3d feet;
@@ -1168,7 +1278,11 @@ static boolean stuck_track_spot(long human, long unit, real_point3d *spot)
 		there.x = companion.track[crumb][0];
 		there.y = companion.track[crumb][1];
 		there.z = companion.track[crumb][2] + 0.1f;
-		if (spot_taken(&there, unit) || !biped_fix_position(unit, NONE, &there, &fixed, 2.0f, FALSE, TRUE, TRUE))
+		/* (on his floor only: a crumb above a drop he took is the side the member is stuck on) */
+		if (fabs(there.z - feet.z) > AE_COMPANION_TRACK_RISE * 0.4f)
+			continue;
+		if (spot_taken(&there, unit) || !biped_fix_position(unit, NONE, &there, &fixed, 2.0f, FALSE, TRUE, TRUE) ||
+			!spot_low_clear(human, &fixed))
 			continue;
 		*spot = fixed;
 		return TRUE;
@@ -1188,41 +1302,72 @@ static boolean stuck_track_spot(long human, long unit, real_point3d *spot)
 			there.x -= i / length * back;
 			there.y -= j / length * back;
 			there.z += 0.1f;
-			if (spot_taken(&there, unit) || !biped_fix_position(unit, NONE, &there, &fixed, 2.0f, FALSE, TRUE, TRUE))
+			if (spot_taken(&there, unit) || !biped_fix_position(unit, NONE, &there, &fixed, 2.0f, FALSE, TRUE, TRUE) ||
+				!spot_low_clear(human, &fixed))
 				continue;
 			*spot = fixed;
 			return TRUE;
+		}
+		/* (behind them taken or walled: beside them, 1.2 then 2 units, either side) */
+		for (back = 1.2f; back <= 2.0f; back += 0.8f)
+		{
+			int side;
+
+			for (side = -1; side <= 1; side += 2)
+			{
+				real_point3d there = feet, fixed;
+
+				there.x += -j / length * back * (real)side;
+				there.y += i / length * back * (real)side;
+				there.z += 0.1f;
+				if (spot_taken(&there, unit) || !biped_fix_position(unit, NONE, &there, &fixed, 2.0f, FALSE, TRUE, TRUE) ||
+					!spot_low_clear(human, &fixed))
+					continue;
+				*spot = fixed;
+				return TRUE;
+			}
 		}
 	}
 	return FALSE;
 }
 
-/* STUCK INDOORS (ae_companion_rules.h): a member under a roof cut off by a barrier or past the follow radius that has stayed where
-it is is put behind the player (entry_spot); TRUE when it was */
+/* STUCK INDOORS (ae_companion_rules.h): a member under a roof cut off by a barrier or past the follow radius that has come no
+nearer to the player is put behind them (entry_spot); TRUE when it was */
 static boolean stuck_indoors(long now, long slot, long player_index, long unit, long human, real_point3d const *human_at,
 	real_point3d const *at, real distance)
 {
-	int indoors = bots_squad_indoors(), cut_off = bots_squad_member_cut_off(slot);
+	int cut_off = bots_squad_member_cut_off(slot);
 	real_point3d spot;
-	long ticks;
+	long ticks = 0;
 
-	if (!indoors || distance < AE_COMPANION_STUCK_NEAR || !(cut_off || distance > AE_COMPANION_STUCK_FAR) ||
-		!companion.stuck_tick[slot] || now < companion.stuck_tick[slot] ||
-		distance < companion.stuck_distance[slot] - AE_COMPANION_STUCK_GAIN ||
-		distance_squared3d(at, &companion.stuck_at[slot]) > AE_COMPANION_STUCK_GAIN * AE_COMPANION_STUCK_GAIN)
+	/* (THE WARP, LAST, ae_companion_rules.h: only when the walk to the player failed and the member made no progress along its
+	path or the track for 5 s unseen, 10 s seen; never in a vehicle or a fight, nor within AE_COMPANION_WARP_NEAR of him) */
+	companion.stuck_cut[slot] = (boolean)cut_off;
+	/* (the player teleported 3 s ago and the member is still that far: at once, unseen) */
+	if (companion.teleport_tick && now - companion.teleport_tick >= 3 * TICKS_PER_SECOND &&
+		now - companion.teleport_tick < 4 * TICKS_PER_SECOND && ae_companion_teleported((float)distance) &&
+		member_unseen(human, human_at, at) && vehicle_of(unit) == NONE &&
+		ae_companion_warp_now(1, 0, 0, 0) == AE_COMPANION_WARP_TELEPORT && entry_spot(human, slot, unit, TRUE, &spot) &&
+		player_teleport(player_index, NONE, &spot))
 	{
-		companion.stuck_tick[slot] = now > 0 ? now : 1;
-		companion.stuck_at[slot] = *at;
-		companion.stuck_distance[slot] = distance;
+		companion.teleports++;
+		bots_squad_count_warp(AE_COMPANION_WARP_TELEPORT);
+		bots_squad_reset(slot);
+		platform_log("companion: %ld warps to the player at %.1f %.1f %.1f (the player teleported, %.1f away)", slot + 1, spot.x, spot.y,
+			spot.z, (double)distance);
+		return TRUE;
+	}
+	if (!bots_squad_member_stalled(slot, now, &ticks) || !ae_companion_warp_far((float)distance) || vehicle_of(unit) != NONE ||
+		bots_squad_member_fighting(slot) ||
+		!ae_companion_warp_due(1, 0, ticks, !member_unseen(human, human_at, at)) ||
+		(now < companion.stuck_retry[slot] && now >= companion.stuck_retry[slot] - TICKS_PER_SECOND))
+	{
 		return FALSE;
 	}
-	ticks = now - companion.stuck_tick[slot];
-	if (ticks < AE_COMPANION_STUCK_TICKS || (now < companion.stuck_retry[slot] && now >= companion.stuck_retry[slot] - TICKS_PER_SECOND) ||
-		!ae_companion_stuck_warp(indoors, cut_off, (float)distance, ticks, member_unseen(human, human_at, at), vehicle_of(unit) != NONE,
-			bots_squad_member_fighting(slot)))
-		return FALSE;
+	companion.stuck_tick[slot] = now - ticks > 0 ? now - ticks : 1;
 	/* (no entry spot: a crumb of the player's track behind them; neither: said once a window, tried again next tick) */
-	if (!entry_spot(human, slot, unit, &spot) && !stuck_track_spot(human, unit, &spot))
+	/* (a crumb of the player's track first: where he walked, his side of what cut the member off) */
+	if (!stuck_track_spot(human, unit, &spot) && !entry_spot(human, slot, unit, TRUE, &spot))
 	{
 		if (companion.stuck_said[slot] != companion.stuck_tick[slot])
 		{
@@ -1239,12 +1384,13 @@ static boolean stuck_indoors(long now, long slot, long player_index, long unit, 
 	}
 	companion.teleports++;
 	companion.indoor_warps++;
+	bots_squad_count_warp(AE_COMPANION_WARP_NONE);
 	companion.stuck_tick[slot] = 0;
 	companion.best_distance[slot] = 0.0f;
 	companion.gain_tick[slot] = now > 0 ? now : 1;
 	bots_squad_reset(slot);
-	platform_log("companion: %ld warps to the player at %.1f %.1f %.1f (stuck indoors %s, %.1f away for %ld s)", slot + 1, spot.x, spot.y,
-		spot.z, cut_off ? "behind a barrier" : "out of reach", (double)distance, ticks / 30);
+	platform_log("companion: %ld warps to the player at %.1f %.1f %.1f (no way to him: %s, %.1f away, no progress for %ld s)", slot + 1,
+		spot.x, spot.y, spot.z, companion.stuck_cut[slot] ? "behind a barrier" : "its path failed", (double)distance, ticks / 30);
 	return TRUE;
 }
 
@@ -1297,9 +1443,10 @@ static void catch_up_service(long now)
 			at.y - human_at.y) || collision_test_vector(FLAG(_collision_test_structure_bit) | FLAG(_collision_test_front_facing_surfaces_bit),
 			&eye, &line, human, &collision));
 		if (!ae_companion_catch_up((float)distance, now - companion.gain_tick[slot], unseen, vehicle_of(player->unit_index) != NONE) ||
-			!entry_spot(human, slot, player->unit_index, &spot) || !player_teleport(iterator.datum_index, NONE, &spot))
+			!entry_spot(human, slot, player->unit_index, FALSE, &spot) || !player_teleport(iterator.datum_index, NONE, &spot))
 			continue;
 		companion.teleports++;
+		bots_squad_count_warp(5);
 		companion.best_distance[slot] = 0.0f;
 		companion.gain_tick[slot] = now > 0 ? now : 1;
 		bots_squad_reset(slot);
@@ -2265,6 +2412,34 @@ void ae_companion_tick(void)
 	}
 	attach_actors();
 	arm_service();
+	/* (a teleport of the player: noted; a member still far from him 3 s on is warped, unseen) */
+	{
+		long human = first_human_unit();
+		real_point3d at;
+
+		if (human != NONE && vehicle_of(human) == NONE)
+		{
+			object_get_origin(human, &at);
+			if (companion.human_last_valid &&
+				ae_companion_teleported((float)sqrt(distance_squared3d(&at, &companion.human_last))))
+			{
+				companion.teleport_tick = now > 0 ? now : 1;
+				platform_log("companion: the player teleported %.1f", (double)sqrt(distance_squared3d(&at, &companion.human_last)));
+			}
+			companion.human_last = at;
+			companion.human_last_valid = TRUE;
+		}
+		else
+			companion.human_last_valid = FALSE;
+	}
+	/* (a revert: the walked track is of the game before it: started again) */
+	if (game_state_reverted())
+	{
+		companion.track_count = 0;
+		companion.track_air = FALSE;
+		memset(companion.stuck_tick, 0, sizeof companion.stuck_tick);
+		memset(companion.track_least, 0, sizeof companion.track_least);
+	}
 	track_service();
 	entry_service();
 	place_service(now);
@@ -2355,13 +2530,14 @@ void ae_companion_tick(void)
 		companion.enemy_seen[companion.enemy_seen_count++] = alive[each];
 	if (brain_is_bot())
 	{
-		char brain[512];
-
-		bots_squad_report(brain, sizeof brain);
 		if (periodic_line(now, &status_logged))
-			platform_log("companion: t+%lds %ld bodies, farthest %.1f closest pair %.1f, enemies alive %ld gone %ld, seated %ld, teleports %ld (indoor warps %ld), %s",
-			(now - companion.started) / 30, near_count, (double)farthest, (double)(closest > 999.0f ? 0.0f : closest), alive_count,
-			companion.enemies_gone, companion.seated, companion.teleports, companion.indoor_warps, brain);
+		{
+			platform_log("companion: t+%lds %ld bodies, farthest %.1f closest pair %.1f, enemies alive %ld gone %ld, seated %ld, teleports %ld (indoor warps %ld)",
+				(now - companion.started) / 30, near_count, (double)farthest, (double)(closest > 999.0f ? 0.0f : closest), alive_count,
+				companion.enemies_gone, companion.seated, companion.teleports, companion.indoor_warps);
+			/* (no pair: none near, 99) */
+			bots_squad_report_lines(closest > 999.0f ? 99.0f : closest);
+		}
 		return;
 	}
 	if (periodic_line(now, &status_logged))

@@ -37,6 +37,7 @@ where its offset falls in their combined offset space.
 
 #include <stdint.h>
 #include <stdlib.h>
+#include "../../src/ae_worker.h" /* the platform layer's lock: no <pthread.h> in a game unit (Windows has none) */
 #include <xtl.h>
 
 #ifdef HALO_SWITCH
@@ -329,6 +330,90 @@ static boolean maps_folder_hashed_name(
 map of its name in another folder */
 static char custom_edition_script_map_path[MAP_PATH_SIZE];
 
+static boolean maps_folders_search(
+	char const *name,
+	char *path);
+
+/* the maps folders' answers for a name, as last looked for (a second, five
+for a map not there, or until the maps change: custom_edition_map_paths_forget). A map this machine
+lacks is looked for in each folder and subfolder, and the menus ask for it
+each frame (a server browser's row of a map not downloaded yet), which
+without these took the game to a few frames a second */
+#define MAPS_FOLDERS_ANSWERS 16
+static struct
+{
+	char name[MAP_PATH_SIZE];
+	char path[MAP_PATH_SIZE];
+	boolean found;
+	unsigned long looked_at;
+	unsigned long generation;
+} maps_folders_answers[MAPS_FOLDERS_ANSWERS];
+static short maps_folders_answer_next;
+static unsigned long maps_folders_generation = 1;
+static struct ae_worker_lock *maps_folders_lock;
+
+/* the maps folders' lock, made by the first caller (a lock is never freed: one made by a caller that lost the race is
+left unused) */
+static struct ae_worker_lock *maps_folders_lock_get(
+	void)
+{
+	struct ae_worker_lock *lock = __atomic_load_n(&maps_folders_lock, __ATOMIC_ACQUIRE);
+
+	if (!lock)
+	{
+		struct ae_worker_lock *made = ae_worker_lock_new();
+
+		if (__atomic_compare_exchange_n(&maps_folders_lock, &lock, made, 0, __ATOMIC_ACQ_REL, __ATOMIC_ACQUIRE))
+			lock = made;
+	}
+	return lock;
+}
+
+static boolean maps_folders_named(
+	char const *name,
+	char *path)
+{
+	unsigned long now = GetTickCount() | 1;
+	unsigned long generation;
+	boolean found;
+	short index;
+
+	if (strlen(name) >= MAP_PATH_SIZE)
+		return maps_folders_search(name, path);
+	ae_worker_lock_take(maps_folders_lock_get());
+	for (index = 0; index < MAPS_FOLDERS_ANSWERS; index++)
+	{
+		if (maps_folders_answers[index].looked_at &&
+			maps_folders_answers[index].generation == maps_folders_generation &&
+			now - maps_folders_answers[index].looked_at < (maps_folders_answers[index].found ? 1000u : 5000u) &&
+			!csstrcasecmp(maps_folders_answers[index].name, name))
+		{
+			found = maps_folders_answers[index].found;
+			if (found)
+				strcpy(path, maps_folders_answers[index].path);
+			ae_worker_lock_give(maps_folders_lock_get());
+			return found;
+		}
+	}
+	generation = maps_folders_generation;
+	ae_worker_lock_give(maps_folders_lock_get());
+	found = maps_folders_search(name, path);
+	ae_worker_lock_take(maps_folders_lock_get());
+	/* (not kept if the maps changed while it looked) */
+	if (generation == maps_folders_generation)
+	{
+		index = maps_folders_answer_next;
+		maps_folders_answer_next = (short)((maps_folders_answer_next + 1) % MAPS_FOLDERS_ANSWERS);
+		strcpy(maps_folders_answers[index].name, name);
+		strcpy(maps_folders_answers[index].path, found ? path : "");
+		maps_folders_answers[index].found = found;
+		maps_folders_answers[index].looked_at = now;
+		maps_folders_answers[index].generation = generation;
+	}
+	ae_worker_lock_give(maps_folders_lock_get());
+	return found;
+}
+
 /* the file the map `map_name` names (a level name or a file name), in a
 maps folder or one subfolder of it, whatever version a network game is on
 (custom_edition_map_file_named) */
@@ -337,8 +422,6 @@ static boolean custom_edition_map_named(
 	char *path)
 {
 	char const *name = tag_name_strip_path(map_name);
-	char hashed[MAP_PATH_SIZE];
-	short folder;
 
 	if (custom_edition_script_map_path[0])
 	{
@@ -356,6 +439,17 @@ static boolean custom_edition_map_named(
 	custom_campaigns.c) */
 	if (custom_campaign_map_path(map_name, TRUE, path))
 		return TRUE;
+	return maps_folders_named(name, path);
+}
+
+/* (custom_edition_map_named's search of the maps folders) */
+static boolean maps_folders_search(
+	char const *name,
+	char *path)
+{
+	char hashed[MAP_PATH_SIZE];
+	short folder;
+
 	for (folder = 0; folder < NUMBER_OF_MAPS_FOLDERS; folder++)
 	{
 		if (maps_folder_has(maps_folder(folder), name, MAP_FILE_EXTENSION, path) ||
@@ -414,6 +508,9 @@ void custom_edition_map_paths_forget(
 {
 	custom_edition_version_lookup.looked_at = 0;
 	custom_edition_flg1_lookup.looked_at = 0;
+	ae_worker_lock_take(maps_folders_lock_get());
+	maps_folders_generation++;
+	ae_worker_lock_give(maps_folders_lock_get());
 }
 
 /* the file that holds the map `map_name` names (a level name or a file
@@ -1215,6 +1312,21 @@ boolean custom_edition_level_name(
 	s_in_flg1_check = FALSE;
 
 	return !custom_edition_flg1_lookup.is_flg1;
+}
+
+/* (custom_edition_cache.h) */
+boolean custom_forge_map_level(
+	char const *level_name)
+{
+	return level_name &&
+		!_strnicmp(level_name, CUSTOM_EDITION_LEVEL_NAME_PREFIX, csstrlen(CUSTOM_EDITION_LEVEL_NAME_PREFIX)) &&
+		!custom_edition_level_name(level_name);
+}
+
+boolean custom_edition_shared_level_name(
+	char const *level_name)
+{
+	return custom_edition_level_name(level_name) || custom_forge_map_level(level_name);
 }
 
 boolean custom_edition_map_file_path(

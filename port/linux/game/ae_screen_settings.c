@@ -41,11 +41,17 @@ values back.
 #include "ae_input.h"
 #include "ae_picker_common.h"
 #include "ae_screen_banned.h"
+#include "ae_screen_daily_server.h"
 #include "ae_screen_music.h"
 #include "ae_screen_crosshair.h"
 #include "ae_screen_keys.h"
 #include "ae_screen_maps_hub.h"
 #include "ae_screen_steam.h"
+#include "../src/port_config.h"
+#include "ae_pve_menus_rules.h"
+#include "ae_pve_menus_ui.h"
+#include "ae_screen_skulls.h"
+#include "ae_screen_skull_rules.h"
 #include "ae_screen_test_run.h"
 #include "ae_screen_settings.h"
 #include "ae_seats.h"
@@ -618,6 +624,11 @@ static void row_shown(short player, struct ae_settings_row const *row, char cons
 		ae_screen_banned_summary(text, size);
 		return;
 	}
+	if (!strcmp(row->key, "action.daily_server"))
+	{
+		ae_screen_daily_server_summary(text, size);
+		return;
+	}
 	if (!strcmp(row->key, "action.menu_music"))
 	{
 		ae_screen_music_summary(text, size);
@@ -626,6 +637,18 @@ static void row_shown(short player, struct ae_settings_row const *row, char cons
 	if (!strcmp(row->key, "action.steam_account"))
 	{
 		ae_screen_steam_summary(text, size);
+		return;
+	}
+	/* (rc8, CAMPAIGN) the skulls turned on that are had now */
+	if (!strcmp(row->key, "action.campaign_skulls"))
+	{
+		ae_pve_menus_skulls_value(config_boolean("game.skulls") ? ae_pve_menus_ui_skulls_on_count() : 0, text, (size_t)size);
+		return;
+	}
+	if (!strcmp(row->key, "action.campaign_skull_rules"))
+	{
+		snprintf(text, (size_t)size, "%s", ae_pve_menus_found_name(ae_pve_menus_found_from_keys(config_boolean("game.skulls_all_unlocked"),
+			config_boolean("game.skulls_instant_unlock"))));
 		return;
 	}
 	if (ae_crosshair_edit_shown(player, row->key, text, size))
@@ -641,6 +664,9 @@ static void row_shown(short player, struct ae_settings_row const *row, char cons
 		ae_settings_whole_shown(row, value, text, (size_t)size);
 		return;
 	}
+	/* (TARGET FRAMERATE's value its list lacks as itself, 75, not as a nearby entry) */
+	if (ae_settings_exact_shown(row, value, text, (size_t)size))
+		return;
 	/* (0.3.9: a number row's value between its steps as itself, 1.37) */
 	if (ae_settings_row_number(row, NULL))
 	{
@@ -2246,12 +2272,18 @@ static void picker_open(struct ae_settings_row const *row)
 			opened = ae_screen_test_run_open();
 		else if (!strcmp(row->key, "action.banned_players"))
 			opened = ae_screen_banned_open();
+		else if (!strcmp(row->key, "action.daily_server"))
+			opened = ae_screen_daily_server_open();
 		else if (!strcmp(row->key, "action.menu_music"))
 			opened = ae_screen_music_open();
 		else if (!strcmp(row->key, "action.maps_hub"))
 			opened = ae_screen_maps_hub_open(AE_HUB_TAB_INSTALLED);
 		else if (!strcmp(row->key, "action.steam_account"))
 			opened = ae_screen_steam_open("SETTINGS");
+		else if (!strcmp(row->key, "action.campaign_skulls"))
+			opened = ae_screen_skulls_open();
+		else if (!strcmp(row->key, "action.campaign_skull_rules"))
+			opened = ae_screen_skull_rules_open();
 		else if (!strncmp(row->key, "action.crosshair_", 17))
 			opened = crosshair_action(row);
 		if (opened)

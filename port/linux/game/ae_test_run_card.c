@@ -933,6 +933,9 @@ static float panel(struct ae_test_run_view const *view, body_function body, floa
 
 /* ---------- the summary */
 
+/* the gap between the summary's "Results saved" line and its error line, pixels of the 1080 layout */
+#define SUMMARY_ERROR_GAP 8.0f
+
 static void count_cell(float x, float y, int number, const char *label, unsigned int color)
 {
 	char text[16];
@@ -970,6 +973,9 @@ static void summary(struct ae_test_run_view const *view, float layout_width, int
 		count = add_item(items, 0, ITEM_KEY, "F7", "Finish testing", 0);
 	/* (height: 26 + header 21 + 8 + title 40 + 18 + counts 72 + 16 + line 28 + 12 + hints 24 + 26) */
 	height = 26.0f + 21.0f + 8.0f + 44.0f + 18.0f + 72.0f + 16.0f + 28.0f + 12.0f + 24.0f + 26.0f;
+	/* (an error has its own line under "Results saved", an 8 px gap between the two lines' boxes) */
+	if (view->error[0])
+		height += SUMMARY_ERROR_GAP + 28.0f;
 	ae_draw_rect(x, y, SUMMARY_WIDTH, height, 0.0f, AE_COLOR_PANEL);
 	ae_draw_rect(x, y, (float)BAR, height, 0.0f, AE_COLOR_ACCENT);
 	cy = y + 26.0f;
@@ -988,9 +994,17 @@ static void summary(struct ae_test_run_view const *view, float layout_width, int
 	cy += 72.0f + 16.0f;
 	put(AE_FONT_BODY, 21, inner_x, cy, 28.0f, AE_ALIGN_LEFT, muted_color(),
 		"Results saved. The agents read them; no need to copy anything.");
+	cy += 28.0f;
 	if (view->error[0])
-		put(AE_FONT_ROW, 21, inner_x + inner_w, cy, 28.0f, AE_ALIGN_RIGHT, COLOR_FAIL, view->error);
-	cy += 28.0f + 12.0f;
+	{
+		char cut[LINE_TEXT];
+
+		cy += SUMMARY_ERROR_GAP;
+		fit_one(AE_FONT_ROW, 21, 0.0f, inner_w, view->error, cut, sizeof(cut));
+		put(AE_FONT_ROW, 21, inner_x, cy, 28.0f, AE_ALIGN_LEFT, COLOR_FAIL, cut);
+		cy += 28.0f;
+	}
+	cy += 12.0f;
 	flow_items(items, count, inner_x, cy, inner_w);
 }
 

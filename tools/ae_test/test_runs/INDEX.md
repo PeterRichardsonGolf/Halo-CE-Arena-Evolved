@@ -561,6 +561,15 @@ CAMPAIGN SCREEN rc6 ROWS: the ARENA EVOLVED group (AI SQUAD, SQUAD GEAR, PLAYER 
 - `workshop-squad`: Workshop campaign: the squad rows are dimmed
 - `split-squad`: Split screen: the squad rows are dimmed
 
+## campaign-start: CAMPAIGN START POINT
+
+File `campaign-start.txt`, 2 tests.
+
+CAMPAIGN START POINT (ae_test_start.h): a campaign level's tests open at first control after the intro, not after the ride.
+
+- `b30-start-a`: Silent Cartographer: the first load
+- `b30-start-b`: Silent Cartographer: the load from the start point
+
 ## campaign-stock-rules: CAMPAIGN PLAYS HALO CE'S RULES
 
 File `campaign-stock-rules.txt`, 2 tests.
@@ -585,6 +594,34 @@ File `campaign-workshop-rc2.txt`, 9 tests.
 - `stock`: The stock campaign as before, under the picker
 - `none`: No custom campaign installed: where they come from
 - `fault`: A package with a fault: one quiet line says what
+
+## career-xp-mcc: CAREER RANK, SKILL RANK AND CHALLENGES WITH MCC
+
+File `career-xp-mcc.txt`, 4 tests.
+
+The career rank (30 ranks, 11 tours, from XP that never goes down), the skill rank per playlist and the daily / weekly challenges.
+
+- `mcc-career`: CAREER with MCC: insignia, tour badge, skill pictures
+- `mcc-challenges`: CHALLENGES with MCC
+- `mcc-postgame`: Post-game with MCC: rank up
+- `mcc-lobby`: TOURNAMENT LOBBY with MCC: skill leads
+
+## career-xp: CAREER RANK, SKILL RANK AND CHALLENGES
+
+File `career-xp.txt`, 10 tests.
+
+The career rank (30 ranks, 11 tours, from XP that never goes down), the skill rank per playlist and the daily / weekly challenges.
+
+- `career-plain`: CAREER: the career rank and the skill rank
+- `challenges-page`: CHALLENGES: today and this week
+- `postgame-tournament`: Post-game: a tournament game with a rank up
+- `lobby-skill`: TOURNAMENT LOBBY: skill leads
+- `lobby-last-win`: TOURNAMENT LOBBY after a win: the LAST GAME card
+- `lobby-last-loss`: TOURNAMENT LOBBY after a loss
+- `lobby-last-quit`: TOURNAMENT LOBBY after leaving a game early
+- `matchmaking-card`: MATCHMAKING: the playlist card's foot
+- `matchmaking-unplayed`: MATCHMAKING: an unplayed playlist focused
+- `career-no-games`: CAREER for a pad that has played nothing (pad 2)
 
 ## classic-ae-section: CLASSIC MENUS: ARENA EVOLVED SECTION
 
@@ -1117,6 +1154,34 @@ rc2 MAP + GAMETYPE VOTE FOR A GAME YOU HOST: a game hosted from CREATE GAME with
 - `vote-host-alone`: One PC: the host votes, the winner is next
 - `vote-two-host`: HOST PC: hosts, then votes with the joiner
 - `vote-two-join`: JOINING PC: joins the host and votes
+
+## item-sets: ITEM SETS AND THE LOADOUT PICKER
+
+File `item-sets.txt`, 21 tests.
+
+ITEM SETS (rc8): MAPS & MODS' sixth page, the sets of items taken out of maps on this PC, and PLAYER LOADOUT's picker with AE's weapons and the
+
+- `sets-list`: The sets list
+- `sets-switched`: Y plays another set
+- `sets-empty`: No set yet
+- `set-options`: A set's options
+- `set-delete`: Delete a set
+- `set-new`: New set: the name asked
+- `pick-map`: Pick a map
+- `pick-map-blocked`: A Custom Edition map is being played
+- `map-kinds`: An open map's kinds
+- `kind-items`: A kind's items
+- `item-adding`: Adding an item
+- `item-added`: An item added
+- `item-refused`: An item that can't be added
+- `set-contents`: A set's items
+- `set-remove`: Remove an item
+- `item-failed`: An item the last level turned off
+- `loadout-ae`: PLAYER LOADOUT: AE's weapons
+- `loadout-set`: PLAYER LOADOUT: the playing set's weapons
+- `real-kinds`: REAL: a map on this PC, its kinds
+- `real-items`: REAL: a kind's items
+- `real-add`: REAL: an item added to a new set
 
 ## killfeed-1: KILL FEED, ROUND 1
 
@@ -1834,6 +1899,86 @@ EXPORT PROGRESS and IMPORT PROGRESS (PROFILES > a profile), the words only: the 
 - `export-words`: EXPORT PROGRESS: what it saves and how to move the file
 - `import-words`: IMPORT PROGRESS: MERGE and REPLACE explained
 
+## pve-daily: DAILY CHALLENGE
+
+File `pve-daily.txt`, 13 tests.
+
+rc8 DAILY CHALLENGE: the main menu's row (SETTINGS > CAMPAIGN > DAILY CHALLENGE), the day's screen and PAST DAYS. Every test opens on its
+
+- `daily-main-row`: MAIN MENU: the DAILY CHALLENGE row
+- `daily-today`: DAILY CHALLENGE: this PC's day
+- `daily-not-played`: DAILY CHALLENGE: a day not played yet
+- `daily-closed-day`: DAILY CHALLENGE: a day before
+- `daily-past-days`: PAST DAYS: the last thirty days
+- `daily-online`: DAILY CHALLENGE: an online day
+- `daily-asking`: DAILY CHALLENGE: waiting for the server
+- `daily-unreached`: DAILY CHALLENGE: the server is not reached
+- `daily-unreached-custom`: DAILY CHALLENGE: a custom server is not reached
+- `daily-settings-off`: SETTINGS: online rows wait for COMMUNITY SERVICES
+- `daily-settings-on`: SETTINGS: online rows with the consent given
+- `daily-server-waits`: SETTINGS: SERVER rows wait for the online day
+- `daily-server-live`: SETTINGS: SERVER with the online day on
+
+## pve-firefight: FIREFIGHT MENUS
+
+File `pve-firefight.txt`, 20 tests.
+
+rc8 FIREFIGHT MENUS: the main menu's FIREFIGHT row, the FIREFIGHT lobby (alone, on the LAN), its five rule groups, STARTING SKULLS, MAP CONTENT
+
+- `main-row`: FIREFIGHT: a row of the main menu
+- `main-row-needs-maps`: FIREFIGHT: no Xbox maps on this PC
+- `lobby-offline`: FIREFIGHT lobby: alone
+- `lobby-lan`: FIREFIGHT lobby: on the LAN
+- `lobby-quick-options`: FIREFIGHT lobby: the quick options
+- `lobby-variant`: FIREFIGHT lobby: Gruntpocalypse
+- `lobby-map-rows`: FIREFIGHT lobby: a map with content of its own
+- `lobby-data-preparing`: FIREFIGHT lobby: the data is preparing
+- `lobby-data-needs-maps`: FIREFIGHT lobby: no Xbox maps
+- `rules-groups`: RULES: five groups, 45 rows
+- `rules-changed`: RULES: two changes
+- `rules-units`: RULES: the enemy units
+- `skulls-grid`: STARTING SKULLS: the grid
+- `content-include`: MAP CONTENT: include the map
+- `content-vanilla`: MAP CONTENT: vanilla only
+- `content-custom`: MAP CONTENT: custom weapons
+- `content-tags`: CHOOSE WEAPONS: the list
+- `content-loadout`: PLAYER LOADOUT: the map's weapons
+- `objectives`: OBJECTIVES: wave and round
+- `multiplayer-untouched`: Multiplayer: CREATE GAME is still a multiplayer lobby
+
+## pve-menus: CAMPAIGN RULE SCREENS
+
+File `pve-menus.txt`, 26 tests.
+
+rc8 CAMPAIGN RULE SCREENS (and the RANDOMIZER's screens, SETTINGS > CAMPAIGN): SKULLS (the tile grid, Content Evolved's two first-time questions), SKULL RULES, SCORING, CO-OP
+
+- `skulls-questions`: SKULLS: the two questions come first
+- `skulls-grid`: SKULLS: the tile grid
+- `skull-rules`: SKULL RULES: the rows and the found count
+- `skull-forget`: SKULL RULES: the forget dialog
+- `scoring-off`: SCORING: off, the other rows wait
+- `scoring-on`: SCORING: on
+- `coop-options`: CO-OP OPTIONS: changed from standard
+- `saved-games`: SAVED GAMES: three made-up profiles
+- `saved-empty`: SAVED GAMES: none left
+- `leaderboard`: LEADERBOARD: four made-up runs
+- `leaderboard-empty`: LEADERBOARD: no runs
+- `end-card-solo`: END CARD: one player
+- `end-card-coop`: END CARD: two players, the last mission
+- `randomizer-hub`: RANDOMIZER: the hub
+- `randomizer-off`: RANDOMIZER: off, the rows wait
+- `randomizer-ai`: AI REPLACEMENT: one type, an elite zealot
+- `randomizer-weapons`: AI WEAPONS: the precision pool
+- `randomizer-pickups`: WEAPON PICKUPS: one type, shotgun
+- `randomizer-loadout`: PLAYER LOADOUT: set
+- `randomizer-setups`: LOAD A SETUP: three saved
+- `randomizer-delete`: LOAD A SETUP: delete asks first
+- `randomizer-name`: SAVE THIS SETUP: the name
+- `randomizer-itemset`: ITEM SET: the list
+- `settings-campaign`: SETTINGS: GO CRAZY in the CAMPAIGN group
+- `settings-campaign-scoring`: SETTINGS: scoring rows with SCORING off
+- `settings-campaign-missions`: SETTINGS: FALL DAMAGE and HEALTH moved
+
 ## ragdoll-ab-081: RAGDOLL STYLES A/B (PLAYERS ROW)
 
 File `ragdoll-ab-081.txt`, 4 tests.
@@ -1927,6 +2072,18 @@ File `rc-077a.txt`, 25 tests.
 - `hud-names-ae`: AE HUD: ally names always, enemy names in sight
 - `hud-names-classic`: CLASSIC HUD: names as before
 - `zone-look-default`: ELIMINATION: the zone's default look is A
+
+## rc8-smalls: rc8 SMALLS: MARK PROMPT, TARGET FRAMERATE, GOD AND UNSEEN
+
+File `rc8-smalls.txt`, 5 tests.
+
+rc8 SMALLS: the mark prompt's new LOOK and PLACE rows (SETTINGS > HUD > RETICLE, under MARK PROMPT), TARGET FRAMERATE
+
+- `prompt-faint-below`: MARK PROMPT: FAINT and BELOW
+- `prompt-default`: MARK PROMPT: the defaults look as before
+- `target-framerate`: TARGET FRAMERATE: a value not in its list
+- `god-campaign`: DEV god in a campaign level
+- `unseen-campaign`: DEV unseen in a campaign level
 
 ## record-medals-081: 0.8.1 SERVICE RECORD: MEDALS PAGE
 
@@ -2255,6 +2412,20 @@ File `split-090.txt`, 11 tests.
 - `target60-held-split`: TARGET 60 FPS held at 50 %, two players
 - `target60-four`: TARGET 60 FPS on its own, four players
 
+## split-hud: SPLIT SCREEN HUD, SPLIT SCREEN FOV
+
+File `split-hud.txt`, 7 tests.
+
+rc8 SPLIT SCREEN HUD and SPLIT SCREEN FOV (each player's own, in their ae.toml): two players side by side on a screen
+
+- `hud-ae-one-player`: HUD STYLE AE: SAME AS ONE PLAYER (left view)
+- `hud-classic-one-player`: HUD STYLE CLASSIC: SAME AS ONE PLAYER (left view)
+- `hud-compact-default`: SPLIT SCREEN HUD at COMPACT (the default), AE
+- `hud-top-bottom`: SAME AS ONE PLAYER, top and bottom stays compact
+- `fov-split-own`: SPLIT SCREEN FOV 120 (left view), FOV 90
+- `fov-split-one-player`: SPLIT SCREEN FOV is not used with one player
+- `hud-fov-rows`: The two rows in SETTINGS
+
 ## split-join-10x: SPLIT SCREEN: JOIN IN PROGRESS
 
 File `split-join-10x.txt`, 3 tests.
@@ -2273,6 +2444,17 @@ SPLIT SCREEN JOIN CARD: the card a pad with no player gets from its START shows 
 
 - `card-shown`: A pad's START opens the join card
 - `card-refused`: The host keeps joining off: the card says so
+
+## squad-port-play: CAMPAIGN AI SQUAD: PLAYED
+
+File `squad-port-play.txt`, 4 tests.
+
+CAMPAIGN AI SQUAD, PLAYED: the squad as it walks with you. Each member walks to a place behind you picked on the ground
+
+- `a10-start`: Pillar of Autumn: out of cryo and over the pipes
+- `a10-doors`: Pillar of Autumn: the first door after Keyes
+- `b30-beach`: Silent Cartographer: up the beach
+- `b30-faster`: Silent Cartographer: faster than they are
 
 ## steam-buttons-rc4: STEAM CONTROLLER BUTTONS
 
@@ -2305,6 +2487,21 @@ STEAM CONTROLLER (2026) rc6 TEXT: SETTINGS > CONTROLS' TRACKPAD section and EXTR
 - `notice-menu-world-c`: Linux access notice in the menus
 - `notice-game-low`: Low battery in a game
 - `notice-game-split`: Low battery in a 2-player split
+
+## steam-controller-rumble: RUMBLE ON TWO-MOTOR PADS
+
+File `steam-controller-rumble.txt`, 8 tests.
+
+RUMBLE on a pad that is not a DualSense (a Steam Controller, an Xbox pad): the DualSense's events on the two motors, from the
+
+- `pulse-human`: DEV pulse: a human weapon's round
+- `pulse-covenant`: DEV pulse: a Covenant weapon's round
+- `pulse-br`: DEV pulse: the battle rifle's round
+- `game-br`: Fire the battle rifle
+- `game-shotgun`: Fire the shotgun
+- `game-plasma`: Plasma pistol: taps and the charge
+- `game-light`: TRIGGER STRENGTH LIGHT
+- `game-strong`: TRIGGER STRENGTH STRONG
 
 ## steam-pad-rc4: STEAM CONTROLLER
 
@@ -2393,6 +2590,14 @@ TARGET FRAMERATE and FRAME RATE LIMIT adjust together (V-SYNC off): a target abo
 - `lower`: A lower limit brings the target down
 - `vsync-on`: With V-SYNC on nothing moves
 
+## text-cache-rc8: MENU TEXT rc8: THE TEXT LOOKS THE SAME
+
+File `text-cache-rc8.txt`, 1 tests.
+
+MENU TEXT rc8: the AE menus measure each letter once and remember it. Each test opens on its scene; the checks say
+
+- `menu-text`: AE MENUS: the text looks as it did
+
 ## theater-100: THEATER: RECORD A GAME, WATCH IT BACK
 
 File `theater-100.txt`, 4 tests.
@@ -2414,6 +2619,32 @@ The Theater's engine: a bot game recorded, then played back through a bot's eyes
 - `eyes`: BLOOD GULCH replay at 15 s: a bot's eyes
 - `free`: BLOOD GULCH replay at 15 s: the free camera
 - `end`: BLOOD GULCH replay: seek to 50 s, then the end
+
+## theater: THEATER: THE SCREEN AND THE PLAYBACK
+
+File `theater.txt`, 19 tests.
+
+THEATER, as Content Evolved has it (rc8): the main menu's THEATER row and its screen (the recordings, A watch, X delete, Y record), and the
+
+- `main-row`: MAIN MENU: THEATER is a door now
+- `list-empty`: THEATER: no recordings
+- `list`: THEATER: three recordings
+- `watch-refused`: THEATER: A on a recording that cannot play
+- `delete`: THEATER: X asks before it deletes
+- `record`: THEATER: Y turns recording on and off
+- `record-game`: BLOOD GULCH: play 40 seconds with the bots, then pass
+- `strip`: REPLAY: the lines over it
+- `pause`: REPLAY: Start pauses
+- `speed`: REPLAY: speed and the next player
+- `free`: REPLAY: the free camera
+- `eyes-steady`: REPLAY: eyes view, the gun holds steady as in play
+- `behind`: REPLAY: the view behind the player
+- `bots-smooth`: REPLAY: a bot seen from behind moves as in play
+- `cinematic`: REPLAY: the cinematic camera
+- `view-order`: REPLAY: Y goes round the views
+- `seek-card`: REPLAY: a seek shows a card, not the fast game
+- `skip-back`: REPLAY: a skip back
+- `end`: REPLAY: the end
 
 ## thumbs-rc4: MAP PICTURES: WHOLE, NEVER CUT OR SQUASHED
 

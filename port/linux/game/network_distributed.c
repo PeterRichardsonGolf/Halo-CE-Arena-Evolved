@@ -7650,3 +7650,4 @@ long network_wire_self_test(
 }
 #endif
 #endif
+#include "ae_replay_facings.inc" /* AE hook */

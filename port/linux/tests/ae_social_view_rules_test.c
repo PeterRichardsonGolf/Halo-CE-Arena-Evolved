@@ -16,12 +16,20 @@ int main(void)
 	struct ae_social_counts counts;
 
 	CHECK_TEXT(ae_social_view_rank(14, t, 200), "RANK 14");
-	CHECK_TEXT(ae_social_view_exp(37, t, 200), "37 EXP");
+	CHECK_TEXT(ae_social_view_rank_badge(3, 14, t, 200), "RANK 14");
+	CHECK_TEXT(ae_social_view_rank_badge(0, 1, t, 200), "");
+	CHECK_TEXT(ae_social_view_foot_rank(3, 10, t, 200), "SKILL RANK 10");
+	CHECK_TEXT(ae_social_view_foot_rank(0, 1, t, 200), "NO GAMES YET");
+	if (ae_social_view_foot_rank(3, 10, (char[200]){0}, 200) != 1 || ae_social_view_foot_rank(0, 1, (char[200]){0}, 200) != 0)
+	{
+		printf("FAIL line %d: foot_rank return\n", __LINE__);
+		failures++;
+	}
 	/* table A: rank 14 at 35, rank 15 at 40: 37 EXP is 3 wins from rank 15 */
-	CHECK_TEXT(ae_social_view_wins_to(37, t, 200), "3 WINS TO RANK 15");
-	CHECK_TEXT(ae_social_view_wins_to(39, t, 200), "1 WIN TO RANK 15");
+	CHECK_TEXT(ae_social_view_wins_to(37, t, 200), "3 WINS OR TIES TO RANK 15");
+	CHECK_TEXT(ae_social_view_wins_to(39, t, 200), "1 WIN OR TIE TO RANK 15");
 	CHECK_TEXT(ae_social_view_wins_to(5000, t, 200), "TOP RANK");
-	CHECK_TEXT(ae_social_view_overall_to(312, t, 200), "38 EXP TO OVERALL RANK 23");
+	CHECK_TEXT(ae_social_view_overall_to(312, t, 200), "38 WINS OR TIES TO OVERALL RANK 23");
 	CHECK_TEXT(ae_social_view_overall_to(99999, t, 200), "TOP OVERALL RANK");
 	memset(&list, 0, sizeof(list));
 	list.teams = 2;
@@ -81,16 +89,21 @@ int main(void)
 	counts.workshop = 0; counts.stock_present = 8;
 	CHECK_TEXT(ae_social_view_bot_line(0, t, 200), "Matched to how you play");
 	CHECK_TEXT(ae_social_view_bot_line(4, t, 200), "Every bot HEROIC");
-	CHECK_TEXT(ae_social_view_postgame_sub("TEAM SLAYER", 0, 1, 8, 40, t, 200), "TEAM SLAYER \xC2\xB7 RANK 15 \xC2\xB7 10 TO RANK 16");
-	CHECK_TEXT(ae_social_view_postgame_sub("FREE FOR ALL", 1, 0, 8, 52, t, 200),
-		"FREE FOR ALL \xC2\xB7 4TH OR BETTER EARNS EXP \xC2\xB7 RANK 16");
+	CHECK_TEXT(ae_social_view_postgame_sub("TEAM SLAYER", 0, 1, 8, 14, 40, t, 200), "Team Slayer \xC2\xB7 up from rank 14 \xC2\xB7 10 wins or ties to rank 16");
+	CHECK_TEXT(ae_social_view_postgame_sub("TEAM SLAYER", 0, 1, 8, 15, 40, t, 200), "Team Slayer \xC2\xB7 10 wins or ties to rank 16");
+	CHECK_TEXT(ae_social_view_postgame_sub("TEAM SLAYER", 0, 0, 8, 15, 40, t, 200), "Team Slayer \xC2\xB7 no change for a loss");
+	CHECK_TEXT(ae_social_view_postgame_sub("FREE FOR ALL", 1, 0, 8, 16, 52, t, 200), "Free For All \xC2\xB7 top 4 counts as a win");
+	CHECK_TEXT(ae_social_view_postgame_sub("TEAM SLAYER", 0, 1, 8, 50, 5000, t, 200), "Team Slayer \xC2\xB7 the top rank");
 	CHECK_TEXT(ae_social_view_ordinal(0, t, 200), "1ST");
 	CHECK_TEXT(ae_social_view_ordinal(10, t, 200), "11TH");
 	CHECK_TEXT(ae_social_view_ordinal(21, t, 200), "22ND");
 	CHECK_TEXT(ae_social_view_quit_body("TEAM SLAYER", 37, t, 200),
-		"This is a tournament TEAM SLAYER game. Leaving before the end costs 1 EXP (37 to 36) and counts as left early. "
+		"This is a tournament TEAM SLAYER game. Leaving before the end moves your skill back one win and counts as left early. "
 		"Leaving at the post-game costs nothing.");
-	CHECK_TEXT(ae_social_view_quit_help("TEAM SLAYER", t, 200), "Leave the game: -1 EXP in TEAM SLAYER.");
+	CHECK_TEXT(ae_social_view_quit_body("TEAM SLAYER", 0, t, 200),
+		"This is a tournament TEAM SLAYER game. You have no wins to lose, but leaving before the end counts as left early. "
+		"Leaving at the post-game costs nothing.");
+	CHECK_TEXT(ae_social_view_quit_help("TEAM SLAYER", t, 200), "Leave the game: your TEAM SLAYER skill moves back one win.");
 	CHECK_TEXT(ae_social_view_dev_line(2200, t, 200), "DEV \xC2\xB7 MATCH 23.0 \xC2\xB7 TIER 9 HEROIC / NORMAL \xC2\xB7 RANGE 17-30");
 	if (failures)
 		return 1;

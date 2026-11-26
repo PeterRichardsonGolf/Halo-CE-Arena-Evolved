@@ -18,7 +18,7 @@ SCALE), so every resolution and aspect draws the same layout. Include after cser
 
 enum
 {
-	AE_FLOW_ROWS = 22,
+	AE_FLOW_ROWS = 32,
 	AE_FLOW_PROMPTS = 8,
 	/* the row kinds the flow knows; a screen's own start at AE_FLOW_ROW_OWN */
 	AE_FLOW_ROW_HEADER = 0,
@@ -55,7 +55,9 @@ struct ae_flow_row { short kind, option; const char *label, *value, *help, *reas
 	short danger;
 	/* (menus phase 1) a row that opens nothing yet (COMING SOON): the disabled look with no reason (its group's label
 	says it), still focusable, its help shown */
-	short muted; };
+	short muted;
+	/* a status row whose value is drawn in the title colour */
+	short value_title; };
 
 struct ae_flow_screen
 {
@@ -80,6 +82,8 @@ struct ae_flow_screen
 	short inline_help;
 	/* (0.9.3) the rows start this many u under AE_FLOW_CONTENT_Y (SETTINGS' FIND A SETTING field heads them) */
 	float rows_top_offset_u;
+	/* the rows end this many u above the footer's room: a screen that draws its own line under the rows (CAREER's help) keeps them off it */
+	float rows_bottom_reserve_u;
 };
 
 float ae_flow_u(struct ae_flow_screen const *flow, float spec_units);

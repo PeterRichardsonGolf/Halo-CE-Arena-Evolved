@@ -41,6 +41,9 @@ gametype_options[] kinds (gametype_option_value / gametype_option_value_set), in
 #include "ae_variant_ext.h"
 #include "ae_weapon_registry.h"
 #include "ae_weapon_selection_game.h"
+#include "ae_firefight_variants.h"
+#include "halo_firefight.h"
+#include "ae_glue_pve_menus.h"
 
 void platform_log(char const *format, ...);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
@@ -52,7 +55,9 @@ word network_game_server_get_state(struct network_game_server *server, short *su
 typedef char verify_vehicle_kinds[AE_SETUP_VEHICLE_KINDS == NUMBER_OF_VARIANT_VEHICLES ? 1 : -1];
 typedef char verify_engines[AE_SETUP_ENGINE_CTF == game_engine_ctf && AE_SETUP_ENGINE_SLAYER == game_engine_slayer &&
 	AE_SETUP_ENGINE_ODDBALL == game_engine_oddball && AE_SETUP_ENGINE_KING == game_engine_king &&
-	AE_SETUP_ENGINE_RACE == game_engine_race && AE_SETUP_ENGINE_BOMB == game_engine_bomb ? 1 : -1];
+	AE_SETUP_ENGINE_RACE == game_engine_race && AE_SETUP_ENGINE_BOMB == game_engine_bomb &&
+	AE_SETUP_ENGINE_FIREFIGHT == game_engine_firefight ? 1 : -1];
+typedef char verify_firefight_rows[AE_SETUP_FF_ROWS == AE_FFV_ROWS ? 1 : -1];
 
 enum
 {
@@ -89,7 +94,15 @@ enum
 	_encoding_opence_mode,      /* the options' OpenCE MODE, and the teams it plays on (menu_functions.c gametype_options_save) */
 	_encoding_ext,              /* a field of the AE block (ae_variant_ext_rules.h): bits of its byte (argument: their mask), shifted down */
 	_encoding_aecw_flag,        /* the AECW payload's AE WEAPONS bit (ae_weapon_selection.h): 1 when set; off clears the set too */
-	_encoding_aecw_set          /* the AECW payload's set id (0 casual, 1 comp, 2 BTB; a larger id reads as casual) */
+	_encoding_aecw_set,         /* the AECW payload's set id (0 casual, 1 comp, 2 BTB; a larger id reads as casual) */
+	/* Firefight's rules (the Firefight options are firefight_options, kept in the copy beside the variant and the options) */
+	_encoding_ff_variant8,      /* a byte of the variant's Firefight rules, its value itself */
+	_encoding_ff_variant16,     /* a short of the variant's Firefight rules */
+	_encoding_ff_option8,       /* a byte of the Firefight options */
+	_encoding_ff_option16,      /* a short of the Firefight options */
+	_encoding_ff_unit,          /* bits of the Firefight options' unit toggles (argument: the mask), 1 when on */
+	_encoding_ff_skulls,        /* STARTING SKULLS: one value that opens a screen; its stored value the skulls the variant starts with, folded */
+	_encoding_ff_item_set       /* ITEM SET: one value that opens a list; its stored value the options' item set hash */
 };
 
 struct encoding { short kind; short offset; unsigned long argument; short count; long values[28]; };
@@ -114,6 +127,15 @@ struct encoding { short kind; short offset; unsigned long argument; short count;
 #define EXT_FIELD(field) (short)offsetof(struct ae_variant_ext, field)
 #define EXT(field, mask, count, ...) { _encoding_ext, EXT_FIELD(field), (mask), count, { __VA_ARGS__ } }
 #define EXT_BIT(field, bit) EXT(field, bit, 2, 0, 1)
+/* Firefight's rules: the variant's fields and the Firefight options' (Content Evolved's table, the value stored for each choice) */
+#define FF_VARIANT(field) (short)offsetof(struct game_variant, game_engine_variant.firefight.field)
+#define FF_OPTION(field) (short)offsetof(struct firefight_options, field)
+#define FFV8(field, count, ...) { _encoding_ff_variant8, FF_VARIANT(field), 0, count, { __VA_ARGS__ } }
+#define FFV16(field, count, ...) { _encoding_ff_variant16, FF_VARIANT(field), 0, count, { __VA_ARGS__ } }
+#define FFO8(field, count, ...) { _encoding_ff_option8, FF_OPTION(field), 0, count, { __VA_ARGS__ } }
+#define FFO16(field, count, ...) { _encoding_ff_option16, FF_OPTION(field), 0, count, { __VA_ARGS__ } }
+#define FFU(mask) { _encoding_ff_unit, 0, (mask), 2, { 1, 0 } }
+#define FF_FLINCH(n) (FIREFIGHT_PLASMA_FLINCH_SET | (n))
 
 static struct encoding const encodings[AE_SETUP_OPTIONS] =
 {
@@ -360,6 +382,72 @@ static struct encoding const encodings[AE_SETUP_OPTIONS] =
 	[AE_SO_X_MELEE_LUNGE] = EXT(melee_lunge, 0xFF, 3, AE_EXT_MELEE_LUNGE_OFF, AE_EXT_MELEE_LUNGE_AE, AE_EXT_MELEE_LUNGE_STRONG),
 	[AE_SO_X_SHOOTABLE_GRENADES] = EXT(shootable_grenades, 0xFF, 2, AE_EXT_SHOOTABLE_GRENADES_OFF, AE_EXT_SHOOTABLE_GRENADES_ON),
 	[AE_SO_X_SPLIT_JOIN] = EXT(split_join, 0xFF, 2, AE_EXT_SPLIT_JOIN_OFF, AE_EXT_SPLIT_JOIN_ON),
+	/* Firefight's rules: WAVES & LIVES */
+	[AE_SO_FF_SET_LIMIT] = FFV16(set_limit, 6, 0, 1, 2, 3, 5, 10),
+	[AE_SO_FF_START_LIVES] = FFV16(starting_lives, 8, -1, 0, 3, 5, 7, 10, 15, 20),
+	[AE_SO_FF_ROUND_LIVES] = FFV16(bonus_lives_per_round, 5, 0, 1, 2, 3, 5),
+	[AE_SO_FF_BONUS_LIVES] = FFV16(bonus_lives_per_set, 6, 0, 1, 2, 3, 5, 10),
+	[AE_SO_FF_MAX_LIVES] = FFV16(max_lives_cap, 7, 0, 5, 10, 15, 20, 30, 50),
+	[AE_SO_FF_PREP_TIME] = FFO8(firefight_prep_countdown, 5, 0, 1, 2, 3, 4),
+	[AE_SO_FF_WAVE_LIMIT] = FFO8(firefight_next_wave_mode, 5, _firefight_next_wave_reach_default, _firefight_next_wave_timer_60s,
+		_firefight_next_wave_timer_90s, _firefight_next_wave_timer_120s, _firefight_next_wave_clear_all),
+	[AE_SO_FF_BONUS_ROUND] = FFV8(bonus_round_enabled, 2, 1, 0),
+	[AE_SO_FF_BONUS_DUR] = FFO8(firefight_bonus_seconds, 5, 30, 45, 60, 90, 120),
+	/* ENEMIES & AI */
+	[AE_SO_FF_FACTION] = FFV8(wave_faction, 10, _firefight_faction_covenant, _firefight_faction_grunts,
+		_firefight_faction_elites_heavies, _firefight_faction_mixed, _firefight_faction_flood, _firefight_faction_sentinels,
+		_firefight_faction_covenant_flood, _firefight_faction_covenant_sentinels, _firefight_faction_flood_sentinels,
+		_firefight_faction_unsc_humans),
+	[AE_SO_FF_ALLEGIANCE] = FFO8(firefight_faction_diplomacy, 2, _firefight_diplomacy_allied_against_players,
+		_firefight_diplomacy_classic_infighting),
+	[AE_SO_FF_DIFFICULTY] = FFV8(difficulty, 4, 0, 1, 2, 3),
+	[AE_SO_FF_ESCALATION] = FFO8(firefight_set_escalation, 5, _firefight_escalation_medium, _firefight_escalation_off,
+		_firefight_escalation_low, _firefight_escalation_high, _firefight_escalation_extreme),
+	[AE_SO_FF_ENEMY_HP] = FFO8(firefight_enemy_health_scale, 5, 0, 1, 2, 3, 4),
+	[AE_SO_FF_ENEMY_SHD] = FFO8(firefight_enemy_shield_scale, 5, 0, 1, 2, 3, 4),
+	[AE_SO_FF_WAVE_SIZE] = FFO8(firefight_wave_size_scale, 6, _firefight_wave_size_50, _firefight_wave_size_100,
+		_firefight_wave_size_150, _firefight_wave_size_200, _firefight_wave_size_250, _firefight_wave_size_300),
+	[AE_SO_FF_BOSS_FREQ] = FFO8(firefight_boss_wave_mode, 3, 0, 1, 2),
+	[AE_SO_FF_PLASMA_FLINCH] = FFO8(firefight_plasma_flinch, 5, FF_FLINCH(0), FF_FLINCH(1), FF_FLINCH(2), FF_FLINCH(3),
+		FF_FLINCH(4)),
+	/* ENEMY UNITS */
+	[AE_SO_FF_ENEMY_LOADOUT] = FFO8(firefight_enemy_loadout, 4, _firefight_enemy_loadout_default, _firefight_enemy_loadout_human,
+		_firefight_enemy_loadout_covenant, _firefight_enemy_loadout_random),
+	[AE_SO_FF_U_GRUNTS] = FFU(1u << _ff_unit_covenant_grunts_bit),
+	[AE_SO_FF_U_JACKALS] = FFU(1u << _ff_unit_covenant_jackals_bit),
+	[AE_SO_FF_U_ELITES] = FFU(1u << _ff_unit_covenant_elites_bit),
+	[AE_SO_FF_U_SPECOPS] = FFU(1u << _ff_unit_covenant_specops_stealth_bit),
+	[AE_SO_FF_U_ZEALOTS] = FFU(1u << _ff_unit_covenant_zealots_bit),
+	[AE_SO_FF_U_HUNTERS] = FFU(1u << _ff_unit_covenant_hunters_bit),
+	[AE_SO_FF_U_FLOOD_C] = FFU(1u << _ff_unit_flood_combat_bit),
+	[AE_SO_FF_U_FLOOD_K] = FFU((1u << _ff_unit_flood_infection_bit) | (1u << _ff_unit_flood_carrier_bit)),
+	[AE_SO_FF_U_SENTS] = FFU((1u << _ff_unit_sentinels_bit) | (1u << _ff_unit_human_marines_bit) |
+		(1u << _ff_unit_human_odst_heavies_bit)),
+	/* VEHICLES & DROPS */
+	[AE_SO_FF_DROPSHIPS] = FFO8(firefight_dropship_mode, 4, 0, 1, 2, 3),
+	[AE_SO_FF_BOSS_VEH] = FFV8(vehicle_drops_enabled, 5, 1, 0, 2, 3, 4),
+	[AE_SO_FF_ORDNANCE] = FFV8(ordnance_drops, 4, 0, 1, 2, 3),
+	/* (the engine has three ways: none, 2 each round, 4 at the set's start) */
+	[AE_SO_FF_ALLIES] = FFO8(firefight_friendly_ai, 3, _firefight_friendly_ai_off, _firefight_friendly_ai_round_duo,
+		_firefight_friendly_ai_set_squad),
+	[AE_SO_FF_GENERATORS] = FFV16(generator_count, 4, 0, 1, 2, 3),
+	[AE_SO_FF_GEN_FAIL] = FFV8(generator_fail_mode, 2, 0, 1),
+	[AE_SO_FF_GEN_ATTACKERS] = FFV8(generator_attackers, 5, _firefight_generator_attackers_none, _firefight_generator_attackers_25,
+		_firefight_generator_attackers_50, _firefight_generator_attackers_75, _firefight_generator_attackers_all),
+	/* SKULLS & PLAYERS */
+	[AE_SO_FF_PROG_SKULLS] = FFO8(firefight_skull_progression_mode, 3, _firefight_skull_prog_off, _firefight_skull_prog_standard,
+		_firefight_skull_prog_random_round),
+	[AE_SO_FF_START_SKULLS] = { _encoding_ff_skulls, 0, 0, 1, { 0 } },
+	[AE_SO_FF_PRIMARY] = FFO8(primary_weapon, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+	[AE_SO_FF_SECONDARY] = FFO8(secondary_weapon, 10, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9),
+	/* (the engine has four: normal, none, 2x, 4x) */
+	[AE_SO_FF_SHIELDS] = FFO8(firefight_player_shields, 4, _firefight_shields_normal, _firefight_shields_none,
+		_firefight_shields_overshield, _firefight_shields_super),
+	[AE_SO_FF_SPEED] = FFO8(firefight_player_speed, 4, 0, 1, 2, 3),
+	[AE_SO_FF_GRAVITY] = FFO8(firefight_player_gravity, 4, 0, 1, 2, 3),
+	[AE_SO_FF_AMMO] = FFO8(firefight_infinite_ammo, 3, 0, 1, 2),
+	[AE_SO_FF_GEN_HP] = FFO16(firefight_generator_health, 4, 2000, 1000, 4000, 8000),
+	[AE_SO_FF_TAG_PROFILE] = { _encoding_ff_item_set, 0, 0, 1, { 0 } },
 };
 
 /* a variant's flags word bit 0 (playlist_profile.c's _game_variant_is_system_default_bit): a built-in gametype */
@@ -375,7 +463,9 @@ static short changes_now(void);
 /* (weapon: the gametype file's AECW payload (ae_weapon_selection.h), where a start weapon the legacy bytes cannot carry
 lives; no legacy byte of it is used) */
 struct rules { struct game_variant variant; struct game_variant_options options; struct ae_variant_ext ext;
-	struct ae_weapon_selection_bytes weapon; };
+	struct ae_weapon_selection_bytes weapon;
+	/* a Firefight variant's own options (the game's options carry none of them): the rows' stored fields, the skulls and the item set */
+	struct firefight_options ff; };
 
 static struct
 {
@@ -383,7 +473,20 @@ static struct
 	long profile;
 	struct rules edit, base;
 	int nhe_here;      /* the picked map is an NHE map, or the NHE disc is loaded (read when the edit opens) */
+	/* a Firefight copy begun from a built-in variant: the skulls the variant itself carries (shown on, locked, in STARTING SKULLS) */
+	unsigned long ff_locked[2];
 } setup_edit;
+
+/* the multiplayer copy that was open when a Firefight copy began (ae_setup_edit_begin_firefight), put back as the FIREFIGHT lobby is left:
+a Firefight copy is never the copy a multiplayer lobby opens on */
+static struct
+{
+	int held;
+	struct rules edit, base;
+	int open, nhe_here;
+	long profile;
+	unsigned long ff_locked[2];
+} setup_edit_firefight_aside;
 
 /* (ae_setup_edit_push) the edit put aside, and whether one is */
 static struct
@@ -392,6 +495,7 @@ static struct
 	struct rules edit, base;
 	int open, nhe_here;
 	long profile;
+	unsigned long ff_locked[2];
 } setup_edit_aside;
 
 static long raw_get(struct encoding const *encoding, struct rules const *rules);
@@ -446,6 +550,24 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 	case _encoding_short: return *(short const *)(o + encoding->offset);
 	case _encoding_option_byte: case _encoding_opence_mode: return o[encoding->offset];
 	case _encoding_ext: return ext_field_get(((byte const *)&rules->ext)[encoding->offset], encoding->argument);
+	case _encoding_ff_variant8: return v[encoding->offset];
+	case _encoding_ff_variant16: return *(short const *)(v + encoding->offset);
+	case _encoding_ff_option8: return ((byte const *)&rules->ff)[encoding->offset];
+	case _encoding_ff_option16: return *(short const *)((byte const *)&rules->ff + encoding->offset);
+	case _encoding_ff_unit:
+	{
+		unsigned short mask = rules->ff.firefight_unit_toggles ? rules->ff.firefight_unit_toggles : FIREFIGHT_UNIT_MASK_ALL;
+
+		return (mask & (unsigned short)encoding->argument) != 0;
+	}
+	case _encoding_ff_skulls:
+	{
+		unsigned long words[2];
+
+		firefight_starting_skulls_get(&variant->game_engine_variant.firefight, &rules->ff, words);
+		return (long)((words[0] ^ (words[1] * 31UL)) & 0x7FFFFFFFUL);
+	}
+	case _encoding_ff_item_set: return (long)((rules->ff.firefight_tag_profile ^ (rules->ff.firefight_tag_profile >> 31)) & 0x7FFFFFFFUL);
 	case _encoding_aecw_flag:
 		return rules->weapon.aecw_present && (rules->weapon.aecw[0] & AE_WEAPON_SELECTION_AECW_FLAG_AE_WEAPONS) ? 1 : 0;
 	case _encoding_aecw_set:
@@ -500,6 +622,62 @@ static long raw_get(struct encoding const *encoding, struct rules const *rules)
 	}
 	}
 	return 0;
+}
+
+/* ---------- Firefight's rules */
+
+/* the last change was refused: turning every enemy of the faction off (once read, cleared) */
+static int ff_refused;
+
+/* a Firefight copy's rules kept consistent after a change (menu_functions.c's gametype_options_save does the same when a rules
+screen's OK is pressed): the faction's units not all off, the skull rotation's off the variant's too, the loadout custom */
+static void ff_settle(struct rules *rules)
+{
+	struct firefight_options *ff = &rules->ff;
+	struct game_engine_firefight_variant *variant = &rules->variant.game_engine_variant.firefight;
+
+	if (!ff->firefight_unit_toggles ||
+		!firefight_validate_unit_toggles(variant->wave_faction, ff->firefight_unit_toggles))
+		ff->firefight_unit_toggles = FIREFIGHT_UNIT_MASK_ALL;
+	variant->progression_skulls = ff->firefight_skull_progression_mode != _firefight_skull_prog_off;
+	ff->loadout = _loadout_custom;
+}
+
+static void ff_set(struct encoding const *encoding, long value, struct rules *rules)
+{
+	byte *v = (byte *)&rules->variant, *o = (byte *)&rules->ff;
+	struct firefight_options *ff = &rules->ff;
+
+	switch (encoding->kind)
+	{
+	case _encoding_ff_variant8: v[encoding->offset] = (byte)value; break;
+	case _encoding_ff_variant16: *(short *)(v + encoding->offset) = (short)value; break;
+	case _encoding_ff_option8: o[encoding->offset] = (byte)value; break;
+	case _encoding_ff_option16: *(short *)(o + encoding->offset) = (short)value; break;
+	case _encoding_ff_unit:
+	{
+		unsigned short mask = ff->firefight_unit_toggles ? ff->firefight_unit_toggles : FIREFIGHT_UNIT_MASK_ALL;
+		unsigned short next = (unsigned short)(value ? (mask | (unsigned short)encoding->argument) :
+			(mask & ~(unsigned short)encoding->argument));
+
+		/* (at least one enemy of the faction stays on: CE's "cannot disable all enemy types") */
+		if (!value && !firefight_validate_unit_toggles(rules->variant.game_engine_variant.firefight.wave_faction, next))
+		{
+			ff_refused = 1;
+			platform_log("ae game options: firefight: at least one enemy type stays on");
+			return;
+		}
+		ff->firefight_unit_toggles = next;
+		break;
+	}
+	}
+	ff_settle(rules);
+}
+
+/* the Firefight options a copy starts from: the game's defaults (every enemy on) */
+static void ff_defaults(struct rules *rules)
+{
+	firefight_variant_options_default(&rules->ff);
 }
 
 /* the Xbox's vehicle set: red's, if it is one of the Xbox's (menu_functions.c vehicles_keep) */
@@ -650,6 +828,10 @@ static void raw_set(struct encoding const *encoding, long value, struct rules *r
 	case _encoding_short: *(short *)(o + encoding->offset) = (short)value; break;
 	case _encoding_option_byte: o[encoding->offset] = (byte)value; break;
 	case _encoding_ext: ext_field_set(&((byte *)&rules->ext)[encoding->offset], encoding->argument, value); break;
+	case _encoding_ff_variant8: case _encoding_ff_variant16: case _encoding_ff_option8: case _encoding_ff_option16:
+	case _encoding_ff_unit:
+		ff_set(encoding, value, rules);
+		break;
 	case _encoding_aecw_flag:
 		if (value)
 			rules->weapon.aecw[0] |= AE_WEAPON_SELECTION_AECW_FLAG_AE_WEAPONS;
@@ -894,6 +1076,7 @@ int ae_setup_edit_begin(long profile)
 	}
 	playlist_profile_get_ext(profile, &rules.ext);
 	ae_weapon_selection_profile_get(profile, &rules.weapon);
+	ff_defaults(&rules);
 	/* (a preset gametype built in (read-only), or known by its name alone: its table's block, with the casual seed rules. A gametype of the
 	player's own that holds none plays Halo CE's rules, as all off saved: not the table's) */
 	if (ae_variant_ext_is_default(&rules.ext) && TEST_FLAG(profile, _saved_game_file_index_read_only_bit))
@@ -901,6 +1084,7 @@ int ae_setup_edit_begin(long profile)
 	setup_edit.edit = rules;
 	setup_edit.base = rules;
 	setup_edit.profile = profile;
+	setup_edit.ff_locked[0] = setup_edit.ff_locked[1] = 0;
 	setup_edit.open = 1;
 	setup_edit.nhe_here = ae_setup_current_map_is_nhe();
 	narrow_name(rules.variant.human_readable_game_description, name, sizeof(name));
@@ -917,6 +1101,11 @@ int ae_setup_edit_begin_rules(struct game_variant const *variant, struct game_va
 	csmemset(&setup_edit.edit, 0, sizeof(setup_edit.edit));
 	setup_edit.edit.variant = *variant;
 	setup_edit.edit.options = *options;
+	ff_defaults(&setup_edit.edit);
+	/* (a Firefight variant started by name, a test launch's: the options of the built-in it is) */
+	if (variant->game_engine_index == game_engine_firefight)
+		firefight_builtin_variant_options(variant, &setup_edit.edit.ff);
+	setup_edit.ff_locked[0] = setup_edit.ff_locked[1] = 0;
 	/* (the settings the game is on now: a preset gametype's, or what GAME OPTIONS set before; no file holds them) */
 	setup_edit.edit.ext = *ae_variant_ext_game();
 	ae_weapon_selection_chosen_get(&setup_edit.edit.weapon);
@@ -984,8 +1173,11 @@ static int weapon_carried(void *context, unsigned int weapon_id)
 	return entry != NULL && entry->kind == AE_CACHE_KIND_WEAPON;
 }
 
+static void ff_summaries(void);
+
 void ae_setup_edit_access(struct ae_setup_access *access)
 {
+	ff_summaries();
 	access->get = access_get;
 	access->changed = access_changed;
 	access->context = NULL;
@@ -1105,6 +1297,17 @@ int ae_setup_edit_reset_row(int option)
 		memcpy(setup_edit.edit.variant.human_readable_game_description,
 			setup_edit.base.variant.human_readable_game_description,
 			sizeof(setup_edit.edit.variant.human_readable_game_description));
+	else if (encoding->kind == _encoding_ff_skulls)
+	{
+		/* (the skulls it starts with: the base's words, and the variant's own) */
+		memcpy(setup_edit.edit.ff.firefight_starting_skulls, setup_edit.base.ff.firefight_starting_skulls,
+			sizeof(setup_edit.edit.ff.firefight_starting_skulls));
+		setup_edit.edit.ff.firefight_custom_skulls = setup_edit.base.ff.firefight_custom_skulls;
+		setup_edit.edit.variant.game_engine_variant.firefight.custom_skulls =
+			setup_edit.base.variant.game_engine_variant.firefight.custom_skulls;
+	}
+	else if (encoding->kind == _encoding_ff_item_set)
+		setup_edit.edit.ff.firefight_tag_profile = setup_edit.base.ff.firefight_tag_profile;
 	else
 		/* (the base's own stored value, set the way a change sets it: the same dependent rules (a mode's teams...)) */
 		raw_set(encoding, raw_get(encoding, &setup_edit.base), &setup_edit.edit);
@@ -1240,6 +1443,8 @@ static int free_name(char *candidate, int size, wchar_t *wide)
 	return 1;
 }
 
+static int ff_free_name(char *candidate, int size);
+
 int ae_setup_edit_free_name(char *name, int size)
 {
 	wchar_t wide[MAXIMUM_GAME_VARIANT_NAME_LENGTH];
@@ -1247,11 +1452,20 @@ int ae_setup_edit_free_name(char *name, int size)
 
 	if (size > 0)
 		name[0] = 0;
+	if (setup_edit.open && setup_edit.edit.variant.game_engine_index == game_engine_firefight)
+	{
+		if (size <= 0 || !ff_free_name(candidate, sizeof(candidate)))
+			return 0;
+		snprintf(name, (size_t)size, "%s", candidate);
+		return 1;
+	}
 	if (!setup_edit.open || size <= 0 || !free_name(candidate, sizeof(candidate), wide))
 		return 0;
 	snprintf(name, (size_t)size, "%s", candidate);
 	return 1;
 }
+
+static int ff_save_as_new(char *name, int size);
 
 int ae_setup_edit_save_as_new(char *name, int size)
 {
@@ -1260,6 +1474,8 @@ int ae_setup_edit_save_as_new(char *name, int size)
 	long profile = NONE;
 	int index;
 
+	if (setup_edit.open && setup_edit.edit.variant.game_engine_index == game_engine_firefight)
+		return size > 0 && ff_save_as_new(name, size);
 	if (!setup_edit.open || size <= 0 || !free_name(candidate, sizeof(candidate), wide))
 		return 0;
 	csmemset(setup_edit.edit.variant.human_readable_game_description, 0,
@@ -1308,6 +1524,9 @@ int ae_setup_name_taken(char const *name)
 
 	if (!name || !name[0])
 		return 0;
+	/* (a Firefight variant's name is taken among Firefight's variants only: they are no multiplayer gametype) */
+	if (setup_edit.open && setup_edit.edit.variant.game_engine_index == game_engine_firefight)
+		return ae_ffv_name_taken(name);
 	/* (each listed gametype's names: its stored name, the table's display name, a player's own longer one) */
 	count = ui_widget_port_gametypes(indices, (short)NUMBEROF(indices), &last);
 	for (index = 0; index < count; index++)
@@ -1404,6 +1623,9 @@ int ae_setup_edit_apply(void)
 	variant = setup_edit.edit.variant;
 	player_ui_set_game_variant(&variant);
 	player_ui_set_game_variant_options(&setup_edit.edit.options);
+	/* (a Firefight copy: the game runs by its own options, which only a Firefight game reads) */
+	if (variant.game_engine_index == game_engine_firefight)
+		firefight_options_set(&setup_edit.edit.ff);
 	ae_variant_ext_choose(&setup_edit.edit.ext);
 	ae_weapon_selection_choose_bytes(&setup_edit.edit.weapon);
 	/* (the server takes a gametype in its pregame only: it asserts so) */
@@ -1492,6 +1714,8 @@ void ae_setup_edit_push(void)
 	setup_edit_aside.open = setup_edit.open;
 	setup_edit_aside.nhe_here = setup_edit.nhe_here;
 	setup_edit_aside.profile = setup_edit.profile;
+	setup_edit_aside.ff_locked[0] = setup_edit.ff_locked[0];
+	setup_edit_aside.ff_locked[1] = setup_edit.ff_locked[1];
 	setup_edit_aside.pushed = 1;
 }
 
@@ -1504,5 +1728,313 @@ void ae_setup_edit_pop(void)
 	setup_edit.open = setup_edit_aside.open;
 	setup_edit.nhe_here = setup_edit_aside.nhe_here;
 	setup_edit.profile = setup_edit_aside.profile;
+	setup_edit.ff_locked[0] = setup_edit_aside.ff_locked[0];
+	setup_edit.ff_locked[1] = setup_edit_aside.ff_locked[1];
 	setup_edit_aside.pushed = 0;
+}
+
+/* ---------- Firefight's variants (the FIREFIGHT lobby and its rules screen) */
+
+static int ff_edit(void)
+{
+	return setup_edit.open && setup_edit.edit.variant.game_engine_index == game_engine_firefight;
+}
+
+int ae_setup_edit_is_firefight(void)
+{
+	return ff_edit();
+}
+
+int ae_setup_edit_refused(void)
+{
+	int refused = ff_refused;
+
+	ff_refused = 0;
+	return refused;
+}
+
+/* a record of the copy's rules: each row's stored value (the two rows that open a screen keep theirs apart), the skulls the variant
+starts with, its item set */
+static void ff_record_from(struct rules const *rules, char const *name, struct ae_ffv_record *record)
+{
+	int option;
+
+	memset(record, 0, sizeof(*record));
+	snprintf(record->name, sizeof(record->name), "%s", name);
+	for (option = AE_SO_FF_FIRST; option < AE_SO_FF_LAST; option++)
+	{
+		struct encoding const *encoding = encoding_of(option);
+
+		if (encoding && encoding->kind != _encoding_ff_skulls && encoding->kind != _encoding_ff_item_set)
+			record->raw[option - AE_SO_FF_FIRST] = raw_get(encoding, rules);
+	}
+	firefight_starting_skulls_get(&rules->variant.game_engine_variant.firefight, &rules->ff, record->skulls);
+	record->item_set = rules->ff.firefight_tag_profile;
+}
+
+/* a record's rules put in a copy (the rows in their order: the faction before the units it limits) */
+static void ff_record_apply(struct rules *rules, struct ae_ffv_record const *record)
+{
+	int option;
+
+	for (option = AE_SO_FF_FIRST; option < AE_SO_FF_LAST; option++)
+	{
+		struct encoding const *encoding = encoding_of(option);
+
+		if (encoding && encoding->kind != _encoding_ff_skulls && encoding->kind != _encoding_ff_item_set)
+			ff_set(encoding, record->raw[option - AE_SO_FF_FIRST], rules);
+	}
+	firefight_starting_skulls_set(&rules->variant.game_engine_variant.firefight, &rules->ff, record->skulls);
+	rules->ff.firefight_tag_profile = record->item_set;
+	ff_settle(rules);
+}
+
+int ae_setup_edit_begin_firefight(int entry)
+{
+	char names[AE_FFV_LIST][24];
+	int builtin[AE_FFV_LIST], count = ae_ffv_entries(names, builtin, AE_FFV_LIST);
+	struct rules rules;
+	unsigned long locked[2] = { 0UL, 0UL };
+
+	if (entry < 0 || entry >= count)
+		return 0;
+	csmemset(&rules, 0, sizeof(rules));
+	if (builtin[entry])
+	{
+		if (!firefight_build_variant_by_name(ae_ffv_builtin_key(entry), &rules.variant))
+			return 0;
+		game_variant_options_default(&rules.variant, &rules.options);
+		ff_defaults(&rules);
+		firefight_builtin_variant_options(&rules.variant, &rules.ff);
+		ff_settle(&rules);
+		firefight_starting_skulls_get(&rules.variant.game_engine_variant.firefight, &rules.ff, locked);
+	}
+	else
+	{
+		struct ae_ffv_record saved[AE_FFV_SAVED];
+		int saved_count = ae_ffv_saved_load(saved, AE_FFV_SAVED), index = entry - AE_FFV_BUILTINS, at;
+
+		if (index < 0 || index >= saved_count || !firefight_build_variant_by_name("firefight", &rules.variant))
+			return 0;
+		game_variant_options_default(&rules.variant, &rules.options);
+		ff_defaults(&rules);
+		csmemset(rules.variant.human_readable_game_description, 0, sizeof(rules.variant.human_readable_game_description));
+		for (at = 0; saved[index].name[at] && at < MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1; at++)
+			rules.variant.human_readable_game_description[at] = (wchar_t)(unsigned char)saved[index].name[at];
+		SET_FLAG(rules.variant.flags, SYSTEM_DEFAULT_BIT, FALSE);
+		ff_record_apply(&rules, &saved[index]);
+	}
+	/* (a multiplayer copy open is put aside once: a Firefight copy begun from another keeps it) */
+	if (!ff_edit() && !setup_edit_firefight_aside.held)
+	{
+		setup_edit_firefight_aside.held = 1;
+		setup_edit_firefight_aside.edit = setup_edit.edit;
+		setup_edit_firefight_aside.base = setup_edit.base;
+		setup_edit_firefight_aside.open = setup_edit.open;
+		setup_edit_firefight_aside.nhe_here = setup_edit.nhe_here;
+		setup_edit_firefight_aside.profile = setup_edit.profile;
+		setup_edit_firefight_aside.ff_locked[0] = setup_edit.ff_locked[0];
+		setup_edit_firefight_aside.ff_locked[1] = setup_edit.ff_locked[1];
+	}
+	setup_edit.edit = rules;
+	setup_edit.base = rules;
+	setup_edit.profile = NONE;
+	setup_edit.open = 1;
+	setup_edit.nhe_here = 0;
+	setup_edit.ff_locked[0] = locked[0];
+	setup_edit.ff_locked[1] = locked[1];
+	platform_log("ae game options: begin firefight '%s' (%s)", names[entry], builtin[entry] ? "built in" : "saved");
+	return 1;
+}
+
+/* the name a new variant of the copy takes: the copy's name with " 2", " 3" ... until it is free (a name typed in the rules
+kept as typed when it is free) */
+static int ff_free_name(char *candidate, int size)
+{
+	char stored[16], base[AE_FFV_NAME], typed[AE_FFV_NAME];
+	int number;
+
+	narrow_name(setup_edit.edit.variant.human_readable_game_description, stored, sizeof(stored));
+	if (!ae_ffv_name_clean(stored, base, sizeof(base)))
+		snprintf(base, sizeof(base), "Firefight");
+	if (memcmp(setup_edit.edit.variant.human_readable_game_description, setup_edit.base.variant.human_readable_game_description,
+		sizeof(setup_edit.edit.variant.human_readable_game_description)) &&
+		ae_ffv_name_clean(stored, typed, sizeof(typed)) && !ae_ffv_name_taken(typed))
+	{
+		snprintf(candidate, (size_t)size, "%s", typed);
+		return 1;
+	}
+	for (number = 2; number < 100; number++)
+	{
+		char suffix[4];
+		int keep = (int)strlen(base), length;
+
+		snprintf(suffix, sizeof(suffix), " %d", number);
+		length = (int)strlen(suffix);
+		if (keep > AE_FFV_NAME - 1 - length)
+			keep = AE_FFV_NAME - 1 - length;
+		snprintf(candidate, (size_t)size, "%.*s%s", keep, base, suffix);
+		if (!ae_ffv_name_taken(candidate))
+			return 1;
+	}
+	platform_log("ae game options: firefight: no free name for '%s'", base);
+	return 0;
+}
+
+static int ff_save_as_new(char *name, int size)
+{
+	char candidate[16];
+	struct ae_ffv_record record, saved[AE_FFV_SAVED];
+	int count, dropped = 0, at;
+
+	if (!ff_free_name(candidate, sizeof(candidate)))
+		return 0;
+	ff_record_from(&setup_edit.edit, candidate, &record);
+	count = ae_ffv_saved_load(saved, AE_FFV_SAVED);
+	count = ae_ffv_list_add(saved, count, &record, &dropped);
+	if (!ae_ffv_saved_store(saved, count))
+		return 0;
+	csmemset(setup_edit.edit.variant.human_readable_game_description, 0,
+		sizeof(setup_edit.edit.variant.human_readable_game_description));
+	for (at = 0; candidate[at] && at < MAXIMUM_GAME_VARIANT_NAME_LENGTH - 1; at++)
+		setup_edit.edit.variant.human_readable_game_description[at] = (wchar_t)(unsigned char)candidate[at];
+	SET_FLAG(setup_edit.edit.variant.flags, SYSTEM_DEFAULT_BIT, FALSE);
+	setup_edit.base = setup_edit.edit;
+	setup_edit.ff_locked[0] = setup_edit.ff_locked[1] = 0;
+	snprintf(name, (size_t)size, "%s", candidate);
+	platform_log("ae game options: saved firefight variant '%s'%s", candidate, dropped ? " (the oldest dropped)" : "");
+	return 1;
+}
+
+void ae_setup_edit_firefight_skulls(unsigned long words[2], unsigned long locked[2])
+{
+	words[0] = words[1] = locked[0] = locked[1] = 0UL;
+	if (!ff_edit())
+		return;
+	firefight_starting_skulls_get(&setup_edit.edit.variant.game_engine_variant.firefight, &setup_edit.edit.ff, words);
+	locked[0] = setup_edit.ff_locked[0];
+	locked[1] = setup_edit.ff_locked[1];
+}
+
+void ae_setup_edit_firefight_skulls_set(unsigned long const words[2])
+{
+	if (!ff_edit())
+		return;
+	firefight_starting_skulls_set(&setup_edit.edit.variant.game_engine_variant.firefight, &setup_edit.edit.ff, words);
+	platform_log("ae game options: firefight starting skulls %08lx %08lx", words[0], words[1]);
+}
+
+unsigned long ae_setup_edit_firefight_item_set(void)
+{
+	return ff_edit() ? setup_edit.edit.ff.firefight_tag_profile : 0UL;
+}
+
+void ae_setup_edit_firefight_item_set_set(unsigned long hash)
+{
+	if (!ff_edit())
+		return;
+	setup_edit.edit.ff.firefight_tag_profile = hash;
+	platform_log("ae game options: firefight item set %08lx", hash);
+}
+
+/* STARTING SKULLS' and ITEM SET's value texts (the model keeps them), made when the access is asked for */
+static void ff_summaries(void)
+{
+	static unsigned long item_seen = 1UL;
+	static char item_text[48];
+	unsigned long words[2], locked[2];
+	char text[48];
+	int count = 0, bit;
+
+	if (!ff_edit())
+		return;
+	ae_setup_edit_firefight_skulls(words, locked);
+	for (bit = 0; bit < 64; bit++)
+		count += (words[bit >> 5] >> (bit & 31)) & 1UL ? 1 : 0;
+	if (count)
+		snprintf(text, sizeof(text), "%d ON", count);
+	else
+		snprintf(text, sizeof(text), "NONE");
+	ae_setup_firefight_summary_set(AE_SO_FF_START_SKULLS, text);
+	if (setup_edit.edit.ff.firefight_tag_profile != item_seen)
+	{
+		struct ae_pve_item_set sets[AE_PVE_ITEM_SETS];
+		int found = ae_pve_item_sets(sets, AE_PVE_ITEM_SETS), index, at;
+
+		item_seen = setup_edit.edit.ff.firefight_tag_profile;
+		snprintf(item_text, sizeof(item_text), "%s", item_seen ? "NOT ON THIS PC" : "NONE");
+		for (index = 0; item_seen && index < found; index++)
+		{
+			if (firefight_tag_profile_hash(sets[index].folder) == item_seen)
+			{
+				snprintf(item_text, sizeof(item_text), "%.40s", sets[index].name);
+				for (at = 0; item_text[at]; at++)
+					item_text[at] = item_text[at] >= 'a' && item_text[at] <= 'z' ? (char)(item_text[at] - 32) : item_text[at];
+				break;
+			}
+		}
+	}
+	ae_setup_firefight_summary_set(AE_SO_FF_TAG_PROFILE, item_text);
+}
+
+int ae_setup_edit_firefight_item_sets(char (*names)[48], unsigned long *hashes, int maximum)
+{
+	struct ae_pve_item_set sets[AE_PVE_ITEM_SETS];
+	int found = ae_pve_item_sets(sets, AE_PVE_ITEM_SETS), index, at, written = 0;
+
+	if (maximum <= 0)
+		return 0;
+	snprintf(names[written], 48, "NONE");
+	hashes[written++] = 0UL;
+	for (index = 0; index < found && written < maximum; index++)
+	{
+		snprintf(names[written], 48, "%.40s", sets[index].name);
+		for (at = 0; names[written][at]; at++)
+			names[written][at] = names[written][at] >= 'a' && names[written][at] <= 'z' ? (char)(names[written][at] - 32) :
+				names[written][at];
+		hashes[written++] = firefight_tag_profile_hash(sets[index].folder);
+	}
+	return written;
+}
+
+unsigned char ae_setup_edit_firefight_content(void)
+{
+	return ff_edit() ? setup_edit.edit.ff.firefight_map_content : 0;
+}
+
+void ae_setup_edit_firefight_content_set(unsigned char content)
+{
+	if (ff_edit())
+		setup_edit.edit.ff.firefight_map_content = content;
+}
+
+unsigned char ae_setup_edit_firefight_vehicles(void)
+{
+	return ff_edit() ? setup_edit.edit.ff.firefight_vehicle_spawns : 0;
+}
+
+void ae_setup_edit_firefight_vehicles_set(unsigned char mode)
+{
+	if (ff_edit() && mode < NUMBER_OF_FIREFIGHT_VEHICLE_SPAWNS)
+		setup_edit.edit.ff.firefight_vehicle_spawns = mode;
+}
+
+void ae_setup_edit_firefight_leave(void)
+{
+	if (!setup_edit_firefight_aside.held && !ff_edit())
+		return;
+	if (setup_edit_firefight_aside.held)
+	{
+		setup_edit.edit = setup_edit_firefight_aside.edit;
+		setup_edit.base = setup_edit_firefight_aside.base;
+		setup_edit.open = setup_edit_firefight_aside.open;
+		setup_edit.nhe_here = setup_edit_firefight_aside.nhe_here;
+		setup_edit.profile = setup_edit_firefight_aside.profile;
+		setup_edit.ff_locked[0] = setup_edit_firefight_aside.ff_locked[0];
+		setup_edit.ff_locked[1] = setup_edit_firefight_aside.ff_locked[1];
+		setup_edit_firefight_aside.held = 0;
+	}
+	else
+		setup_edit.open = 0;
+	platform_log("ae game options: the firefight copy left: %s", setup_edit.open ? "the multiplayer copy is back" : "no copy open");
 }

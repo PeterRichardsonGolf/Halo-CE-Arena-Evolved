@@ -26,6 +26,9 @@ void ae_net_extensions_host_handle(long machine_index, void const *data, long si
 void ae_net_extensions_client_reset(void);
 /* the client: the host's announcement, kept and answered */
 void ae_net_extensions_client_handle(void const *data, long size);
+/* the host, each frame for each client machine (ae_silent_host_machine): in a Firefight game, its rules sent to a machine that
+has Arena Evolved when they are new to it or changed, and again once a game has ended and the lobby is back */
+void ae_net_extensions_host_firefight(long machine_index, boolean remote_joined, boolean firefight_game);
 /* the host: whether the machine told it the capability at that version or later; the client: whether the host did */
 boolean ae_net_extensions_agreed(long machine_index, char const *key, unsigned short version);
 boolean ae_net_extensions_host_has(char const *key, unsigned short version);

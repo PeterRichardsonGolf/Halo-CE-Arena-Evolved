@@ -358,6 +358,9 @@ static void replay_prune(
 
 		if (!ae_replay_name_is_own(name))
 			continue;
+		/* (a kept recording is left out: it is neither counted nor removed) */
+		if (network_replay_kept(name))
+			continue;
 		snprintf(path, sizeof(path), "%s/%s", folder, name);
 		if (posix_stat(path, &information) != 0 || (information.flags & _posix_file_is_directory))
 			continue;
@@ -616,6 +619,9 @@ void network_replay_record_game_message(
 	network_replay_record(_network_replay_game_message, message, size);
 }
 
+/* (DEV MODE `replay keep`) the recording being written is kept however short; cleared as it ends */
+static boolean replay_short_kept;
+
 void network_replay_stop(
 	void)
 {
@@ -639,7 +645,7 @@ void network_replay_stop(
 			ae_replay_cost_add(&replay.cost, (unsigned long)(replay.cost_tick_seconds * 1000000.0));
 		replay.cost_tick = NONE;
 		/* (a game of a few seconds, left at once, is no replay) */
-		if (ticks < REPLAY_MINIMUM_TICKS)
+		if (ticks < REPLAY_MINIMUM_TICKS && !replay_short_kept)
 		{
 			platform_log("replay: %s was %ld ticks long, under %d seconds: %s", replay.path, ticks,
 				REPLAY_MINIMUM_TICKS / TICKS_PER_SECOND, remove(replay.path) == 0 ? "removed" : "NOT removed");
@@ -662,7 +668,136 @@ void network_replay_stop(
 			platform_log("replay: no datagrams were recorded: the replay will play black");
 		replay.name[0] = 0;
 	}
+	replay_short_kept = FALSE;
 	replay.considered = FALSE;
+}
+
+static boolean replay_marker_path(
+	char const *name,
+	char *path,
+	long size)
+{
+	char marker[AE_REPLAY_NAME_SIZE + 8];
+	char folder[REPLAY_PATH_SIZE];
+
+	if (!ae_replay_keep_marker(name, marker, sizeof(marker)))
+		return FALSE;
+	network_replay_folder(folder, sizeof(folder));
+	return (size_t)snprintf(path, (size_t)size, "%s/%s", folder, marker) < (size_t)size;
+}
+
+int network_replay_kept(
+	char const *name)
+{
+	char path[REPLAY_PATH_SIZE + AE_REPLAY_NAME_SIZE + 8];
+	struct posix_file_information information;
+
+	return replay_marker_path(name, path, sizeof(path)) && posix_stat(path, &information) == 0;
+}
+
+int network_replay_keep(
+	char const *name,
+	int on)
+{
+	char path[REPLAY_PATH_SIZE + AE_REPLAY_NAME_SIZE + 8];
+	FILE *file;
+
+	if (!replay_marker_path(name, path, sizeof(path)))
+		return 0;
+	if (!on)
+		return remove(path) == 0 || !network_replay_kept(name);
+	file = fopen(path, "wb");
+	if (!file)
+		return 0;
+	fclose(file);
+	return 1;
+}
+
+int network_replay_delete(
+	char const *name)
+{
+	char path[REPLAY_PATH_SIZE + AE_REPLAY_NAME_SIZE];
+	char marker[REPLAY_PATH_SIZE + AE_REPLAY_NAME_SIZE + 8];
+	char folder[REPLAY_PATH_SIZE];
+
+	if (!ae_replay_name_is_safe(name))
+		return 0;
+	network_replay_folder(folder, sizeof(folder));
+	snprintf(path, sizeof(path), "%s/%s", folder, name);
+	if (replay_marker_path(name, marker, sizeof(marker)))
+		remove(marker);
+	return remove(path) == 0;
+}
+
+boolean network_replay_keep_short(
+	void)
+{
+	if (!replay.file)
+		return FALSE;
+	replay_short_kept = TRUE;
+	return TRUE;
+}
+
+/* the test recordings DEV MODE's `replay stage` makes: a header and no records (they list, and refuse to play), named for them */
+#define REPLAY_STAGED_TAG "_theatertest"
+
+long network_replay_stage(
+	long count)
+{
+	char folder[REPLAY_PATH_SIZE];
+	char names[64][AE_REPLAY_NAME_SIZE];
+	long listed, index, staged = 0;
+
+	if (count < 0 || count > 8)
+		return -1;
+	network_replay_folder(folder, sizeof(folder));
+	posix_make_directory(folder);
+	listed = network_replay_list(names, NUMBEROF(names));
+	for (index = 0; index < listed; index++)
+	{
+		if (strstr(names[index], REPLAY_STAGED_TAG))
+			network_replay_delete(names[index]);
+	}
+	for (index = 1; index <= count; index++)
+	{
+		struct ae_replay_header fields;
+		unsigned char header[AE_REPLAY_HEADER_SIZE];
+		char name[AE_REPLAY_NAME_SIZE], stamp[16], map[32];
+		char path[REPLAY_PATH_SIZE + AE_REPLAY_NAME_SIZE];
+		FILE *file;
+
+		csmemset(&fields, 0, sizeof(fields));
+		fields.format = AE_REPLAY_FORMAT;
+		fields.network_version = HALO_PORT_NETWORK_VERSION;
+		fields.build = 1;
+		fields.ticks_per_second = TICKS_PER_SECOND;
+		fields.start_tick = 1;
+		fields.time = 1767268800ULL + (unsigned long long)index * 3600ULL;
+		fields.length_ticks = (unsigned long)(75 * index * TICKS_PER_SECOND);
+		snprintf(fields.map, sizeof(fields.map), "levels\\test\\bloodgulch\\bloodgulch");
+		snprintf(fields.variant, sizeof(fields.variant), "slayer");
+		snprintf(fields.version, sizeof(fields.version), "test");
+		snprintf(fields.server, sizeof(fields.server), "THEATER TEST %ld", index);
+		snprintf(fields.player, sizeof(fields.player), "TEST");
+		ae_replay_header_write(header, &fields);
+		/* (a stamp of a day far back, one a recording: a real recording stays above them in the list) */
+		snprintf(stamp, sizeof(stamp), "20260101-1200%02ld", index);
+		snprintf(map, sizeof(map), "theatertest%ld", index);
+		if (!ae_replay_name_make(name, sizeof(name), stamp, map))
+			return -1;
+		snprintf(path, sizeof(path), "%s/%s", folder, name);
+		file = fopen(path, "wb");
+		if (!file)
+			return -1;
+		if (fwrite(header, sizeof(header), 1, file) != 1)
+		{
+			fclose(file);
+			return -1;
+		}
+		fclose(file);
+		staged++;
+	}
+	return staged;
 }
 
 long network_replay_list(

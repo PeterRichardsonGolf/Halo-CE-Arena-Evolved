@@ -335,6 +335,7 @@ void skulls_text_from_set(struct skull_set set, char *text, unsigned int size)
 }
 
 extern int config_write(char const *name, char const *value);
+extern boolean community_challenge_running(void);
 
 /* the question answered: unlocking by playing, ALL SKULLS on or off (the
 answer "all" ALL SKULLS on, and so is a setting of "all" from before,
@@ -345,7 +346,8 @@ int skulls_unlock_mode(void)
 
 	if (mode && !_stricmp(mode, "all"))
 	{
-		if (config_write("game.skulls_unlock_mode", "play") && config_write("game.skulls_all_unlocked", "true"))
+		/* (a daily challenge's run changes no progress) */
+		if (!community_challenge_running() && config_write("game.skulls_unlock_mode", "play") && config_write("game.skulls_all_unlocked", "true"))
 			error(_error_silent, "skulls: game.skulls_unlock_mode \"all\" is now \"play\", with ALL SKULLS on");
 		return _skulls_unlock_play;
 	}
@@ -359,6 +361,9 @@ static void skulls_keep(struct skull_set set)
 {
 	char text[SKULLS_TEXT_LENGTH];
 
+	/* (a daily challenge's run unlocks nothing for good: its skulls are the run's alone) */
+	if (community_challenge_running())
+		return;
 	skulls_text_from_set(skull_set_union(skulls_set_from_text(config_string("game.skulls_unlocked")), set), text,
 		sizeof(text));
 	if (!config_write("game.skulls_unlocked", text))

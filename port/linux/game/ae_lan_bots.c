@@ -61,6 +61,7 @@ input.
 #include "ae_server_bots.h"
 #include "ae_server_bots_rules.h"
 #include "ae_companion.h"
+#include "ae_dev_cmd.h"
 #include "../src/server_mode.h"
 
 #include <stdio.h>
@@ -1267,6 +1268,17 @@ static void lan_tick_ended(void)
 	lan.tick_seconds = 0.0;
 }
 
+/* whether the host's update takes its bots' input from the brain (ae_lan_bots_action) */
+static boolean lan_builds_actions(void)
+{
+	return lan_any() && game_connection() == _game_connection_network_server && lan_hosting() && game_engine_running();
+}
+
+boolean ae_lan_bots_build_actions(void)
+{
+	return lan_builds_actions();
+}
+
 void ae_lan_bots_action(long absolute_player_index, struct player_action *action)
 {
 	long player_index;
@@ -1275,14 +1287,18 @@ void ae_lan_bots_action(long absolute_player_index, struct player_action *action
 	double started;
 	boolean network_bots;
 
-	/* (a campaign game's AI squad: the bots' brain's controls for its bodies, ae_companion.c) */
-	if (ae_companion_action(absolute_player_index, action))
+	/* (DEV MODE's test player walking a route: its controls, ae_dev_cmd.c) */
+	if (ae_dev_puppet_action(absolute_player_index, action))
 		return;
-	if (!lan_any() || !player_data || !action || game_connection() != _game_connection_network_server ||
-		!lan_hosting() || !game_engine_running())
+	/* (a campaign game's AI squad: the bots' brain's controls for its bodies, ae_companion.c; timed for its cost line) */
+	started = lan_now();
+	if (ae_companion_action(absolute_player_index, action))
 	{
+		bots_squad_note_cost((lan_now() - started) * 1000.0, game_time_get());
 		return;
 	}
+	if (!player_data || !action || !lan_builds_actions())
+		return;
 	player_index = lan_bot_player_index(absolute_player_index, &bot_index);
 	if (player_index == NONE)
 		return;

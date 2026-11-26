@@ -557,6 +557,8 @@ static const char *const x_indicator_help[] = { "Defenders see the bomb as the g
 
 /* ---------- the rows */
 
+#include "ae_setup_firefight_texts.inc"
+
 #define VALUES(list) list, COUNT(list)
 #define ROW(label, group, engines, team_only, ae, values, helps) \
 	{ label, group, engines, team_only, ae, VALUES(values), VALUES(helps) }
@@ -816,10 +818,12 @@ static struct ae_setup_row const rows[AE_SETUP_OPTIONS] =
 		x_bomb_resistance_help),
 	[AE_SO_X_BOMB_INDICATOR] = ROW("ENEMY BOMB INDICATOR", AE_SG_MODE, BOMB, 0, AE_SRC_AE, x_indicator_values,
 		x_indicator_help),
+#include "ae_setup_firefight_rows.inc"
 };
 
 static const char *const group_names[AE_SETUP_GROUPS] = { "MATCH", "RESPAWN", "SPARTAN", "LOADOUT", "WEAPONS", "TEAMS",
-	"VEHICLES", "MODE", "CONTROLS", "HUD & AIDS", "SOUND", "CLASSIC COMP" };
+	"VEHICLES", "MODE", "CONTROLS", "HUD & AIDS", "SOUND", "CLASSIC COMP", "WAVES & LIVES", "ENEMIES & AI", "ENEMY UNITS",
+	"VEHICLES & DROPS", "SKULLS & PLAYERS" };
 
 /* the order of the rows in their groups (every option once: the unit test checks); a group's rows keep this order
 whatever the enum's */
@@ -866,7 +870,16 @@ static const short display_order[] = {
 	AE_SO_CONTROLLER_CROUCH, AE_SO_MOUSE_AIM_ASSIST, AE_SO_MELEE_UNZOOMS, AE_SO_X_MELEE_LUNGE,
 	AE_SO_COMBAT_FEEDBACK, AE_SO_TIMERS, AE_SO_TRAINING, AE_SO_PRACTICE, AE_SO_FRIENDS_ON_SCREEN, AE_SO_MARKS_THROUGH_WALLS, AE_SO_CUSTOM_CROSSHAIRS,
 	AE_SO_SOUND_PRESET, AE_SO_SILENT_MOVEMENT, AE_SO_SILENT_WEAPONS,
-	AE_SO_NHE_MODE, AE_SO_NHE_EXTRAS
+	AE_SO_NHE_MODE, AE_SO_NHE_EXTRAS,
+	AE_SO_FF_SET_LIMIT, AE_SO_FF_START_LIVES, AE_SO_FF_ROUND_LIVES, AE_SO_FF_BONUS_LIVES, AE_SO_FF_MAX_LIVES,
+	AE_SO_FF_PREP_TIME, AE_SO_FF_WAVE_LIMIT, AE_SO_FF_BONUS_ROUND, AE_SO_FF_BONUS_DUR, AE_SO_FF_FACTION,
+	AE_SO_FF_ALLEGIANCE, AE_SO_FF_DIFFICULTY, AE_SO_FF_ESCALATION, AE_SO_FF_ENEMY_HP, AE_SO_FF_ENEMY_SHD,
+	AE_SO_FF_WAVE_SIZE, AE_SO_FF_BOSS_FREQ, AE_SO_FF_PLASMA_FLINCH, AE_SO_FF_ENEMY_LOADOUT, AE_SO_FF_U_GRUNTS,
+	AE_SO_FF_U_JACKALS, AE_SO_FF_U_ELITES, AE_SO_FF_U_SPECOPS, AE_SO_FF_U_ZEALOTS, AE_SO_FF_U_HUNTERS,
+	AE_SO_FF_U_FLOOD_C, AE_SO_FF_U_FLOOD_K, AE_SO_FF_U_SENTS, AE_SO_FF_DROPSHIPS, AE_SO_FF_BOSS_VEH, AE_SO_FF_ORDNANCE,
+	AE_SO_FF_ALLIES, AE_SO_FF_GENERATORS, AE_SO_FF_GEN_FAIL, AE_SO_FF_GEN_ATTACKERS, AE_SO_FF_PROG_SKULLS,
+	AE_SO_FF_START_SKULLS, AE_SO_FF_PRIMARY, AE_SO_FF_SECONDARY, AE_SO_FF_SHIELDS, AE_SO_FF_SPEED, AE_SO_FF_GRAVITY,
+	AE_SO_FF_AMMO, AE_SO_FF_GEN_HP, AE_SO_FF_TAG_PROFILE
 };
 #define DISPLAY_ORDER_COUNT ((int)(sizeof(display_order) / sizeof(display_order[0])))
 
@@ -950,6 +963,14 @@ struct ae_setup_row const *ae_setup_row(int option)
 }
 
 static char name_text[16];
+
+void ae_setup_firefight_summary_set(int option, const char *text)
+{
+	int slot = option == AE_SO_FF_START_SKULLS ? 0 : option == AE_SO_FF_TAG_PROFILE ? 1 : -1;
+
+	if (slot >= 0)
+		snprintf(ff_summary_text[slot], sizeof(ff_summary_text[slot]), "%s", text ? text : "");
+}
 
 void ae_setup_name_set(const char *name)
 {
@@ -1049,7 +1070,10 @@ int ae_setup_applies(struct ae_setup_access const *access, int option)
 	/* (HIJACK is held from 0.8.0: no row, so no menu line, no DEV MODE option, no change count) */
 	if (option == AE_SO_X_HIJACK && !AE_HIJACK_SHIPPED)
 		return 0;
-	return !row->engines || (access->engine > 0 && access->engine < 16 && (row->engines & ENGINE(access->engine)));
+	/* (a row of no engine in particular is every engine's but Firefight's: its rules are the five pages' alone) */
+	if (!row->engines)
+		return access->engine != AE_SETUP_ENGINE_FIREFIGHT;
+	return access->engine > 0 && access->engine < 16 && (row->engines & ENGINE(access->engine));
 }
 
 static int vehicle_count_side(int option)
@@ -1199,6 +1223,9 @@ short ae_setup_filter_count(struct ae_setup_access const *access, int filter)
 
 int ae_setup_filter_selectable(struct ae_setup_access const *access, int filter)
 {
+	/* (a Firefight variant's rules have the two chips: the source chips sort rows its pages do not have) */
+	if (access && access->engine == AE_SETUP_ENGINE_FIREFIGHT)
+		return filter == AE_SF_ALL || filter == AE_SF_CHANGED;
 	/* (0.9.3 CHANGED stays a place to go with nothing in it: its card says so) */
 	return filter == AE_SF_ALL || filter == AE_SF_CHANGED || ae_setup_filter_count(access, filter) > 0;
 }

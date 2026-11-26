@@ -11,6 +11,7 @@ A level's saved game file in the profile folder. See ae_saved_game_file.h.
 
 #include "ae_saved_game_file.h"
 #include "ae_campaign_save_rules.h"
+#include "ae_test_start.h"
 #include "mcc_workshop.h"
 
 /* the scenario loaded (scenario.h, tag_files.h) */
@@ -71,6 +72,9 @@ const char *ae_saved_game_file(void)
 	const char *level = asked_level[0] ? asked_level : scenario_loaded();
 	int kind;
 
+	/* (a TEST RUN's campaign level loading: its start point's file, ae_test_start.h) */
+	if (ae_test_start_file())
+		return ae_test_start_file();
 	kind = level_file(level, file);
 	if (kind < 0)
 		return NULL;
@@ -81,8 +85,11 @@ int ae_saved_game_file_readable(void)
 {
 	const char *level = asked_level[0] ? asked_level : scenario_loaded();
 	char file[AE_CAMPAIGN_SAVE_FILE_SIZE], directory[512], path[600];
-	int kind = level_file(level, file);
+	int kind;
 
+	if (ae_test_start_file())
+		return ae_test_start_readable();
+	kind = level_file(level, file);
 	if (kind <= 0)
 		return kind == 0;
 	directory[0] = 0;

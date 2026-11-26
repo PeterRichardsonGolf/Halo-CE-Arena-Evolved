@@ -34,6 +34,10 @@ MATCH FOUND on.
 #include "ae_strings.h"
 #include "ae_ui.h"
 #include "ae_widgets.h"
+#include "ae_career_draw.h"
+#include "ae_career_view_rules.h"
+#include "ae_glue_career.h"
+#include "ae_mcc_career.h"
 #include "ae_dev_events.h"
 
 void platform_log(char const *format, ...);
@@ -63,6 +67,11 @@ static struct
 	int started;                /* GO taken */
 	int picture, picture_w, picture_h;
 	int rank[AE_SOCIAL_LOCAL];
+	/* the career rank of each local player (the plate and the name before the skill rank); valid 0 for a guest */
+	struct ae_career_view career[AE_SOCIAL_LOCAL];
+	int career_valid[AE_SOCIAL_LOCAL];
+	/* whether each local player has played this playlist (an unplayed one shows "SKILL —") */
+	int skill_played[AE_SOCIAL_LOCAL];
 	int open;
 	/* the map vote (vote_on: the lobby has one) */
 	int vote_on;
@@ -454,7 +463,61 @@ static void roster_draw(float x, float y, float width)
 				ae_widget_separator(&flow->density, right_x, mid, 5.0f, AE_COLOR_MUTED);
 				right_x -= ae_flow_u(flow, 16.5f);
 			}
-			tracked(flow, 18.0f, right_x, mid, AE_ALIGN_RIGHT, human ? AE_COLOR_TEXT : AE_COLOR_MUTED, right);
+			if (human)
+			{
+				/* (the skill rank leads: "SKILL 10" larger and brighter, or MCC's picture with the word SKILL before it; then the career
+				rank's name, quieter, with MCC's insignia before it) */
+				int local = seat < AE_SOCIAL_LOCAL ? seat : 0;
+				float side = ae_flow_u(flow, 34.0f), edge = right_x;
+				unsigned int skill_color = focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_TITLE, name_color = focused ? AE_COLOR_SELECTION_TEXT : AE_COLOR_TEXT;
+				char skill[24];
+
+				if (lobby.skill_played[local] && ae_career_art_shown() && ae_skill_picture_draw(lobby.rank[local], right_x - side * 0.5f, mid, side, 1.0f))
+				{
+					float word = ae_draw_text_width(AE_FONT_BODY, ae_flow_u(flow, 18.0f), "SKILL");
+
+					ctext(flow, AE_FONT_BODY, 18.0f, right_x - side - ae_flow_u(flow, 10.0f), mid, AE_ALIGN_RIGHT, name_color, "SKILL");
+					edge = right_x - side - ae_flow_u(flow, 10.0f) - word;
+				}
+				else
+				{
+					if (lobby.skill_played[local])
+						snprintf(skill, sizeof(skill), "SKILL %d", lobby.rank[local]);
+					else
+						snprintf(skill, sizeof(skill), "SKILL %s", AE_CV_DASH);
+					ae_draw_text_tracked(AE_FONT_ROW, ae_flow_u(flow, 20.0f), 0.06f, right_x, ae_flow_cap_top(AE_FONT_ROW, ae_flow_u(flow, 20.0f), mid),
+						AE_ALIGN_RIGHT, skill_color, skill);
+					edge = right_x - ae_draw_text_tracked_width(AE_FONT_ROW, ae_flow_u(flow, 20.0f), 0.06f, skill);
+				}
+				if (lobby.career_valid[local] && !lobby.career[local].guest)
+				{
+					char name[48], fitted[48];
+					int each;
+					float name_right = edge - ae_flow_u(flow, 24.0f), room = ae_flow_u(flow, ae_career_art_shown() ? 322.0f : 360.0f), name_w;
+					float size = 18.0f;
+
+					for (each = 0; lobby.career[local].name[each] && each < (int)sizeof(name) - 1; each++)
+						name[each] = lobby.career[local].name[each] >= 'a' && lobby.career[local].name[each] <= 'z' ?
+							(char)(lobby.career[local].name[each] - 32) : lobby.career[local].name[each];
+					name[each] = 0;
+					/* (18 u, stepping down to 15 u before the name is cut) */
+					while (size > 15.0f && ae_draw_text_width(AE_FONT_BODY, ae_flow_u(flow, size), name) > room)
+						size -= 1.0f;
+					ae_fit_text(AE_FONT_BODY, ae_flow_u(flow, size), name, room, fitted, sizeof(fitted));
+					name_w = ae_draw_text_width(AE_FONT_BODY, ae_flow_u(flow, size), fitted);
+					ctext(flow, AE_FONT_BODY, size, name_right, mid, AE_ALIGN_RIGHT, name_color, fitted);
+					if (ae_career_art_shown())
+					{
+						int image = ae_mcc_career_menu_image(0, lobby.career[local].rank);
+
+						if (image)
+							ae_draw_image(image, name_right - name_w - ae_flow_u(flow, 12.0f) - ae_flow_u(flow, 30.0f), mid - ae_flow_u(flow, 15.0f),
+								ae_flow_u(flow, 30.0f), ae_flow_u(flow, 30.0f), 0xFFFFFFFFu);
+					}
+				}
+			}
+			else
+				tracked(flow, 18.0f, right_x, mid, AE_ALIGN_RIGHT, AE_COLOR_MUTED, right);
 		}
 	}
 	if (count > shown)
@@ -620,7 +683,7 @@ static void card_draw(float x, float y, float width)
 	char map[AE_SOCIAL_MAP], line[120], kind[96], fitted[160], extra[3][64];
 	struct ae_social_playlist const *list = ae_social_playlist_by_id(plan->playlist);
 
-	/* (one layout for every map: the picture in its 16:9 frame, the words beside it, the bot skill and EXP below) */
+	/* (one layout for every map: the picture in its 16:9 frame, the words beside it, the bot skill and the skill step below) */
 	map_caption(plan->map, map, sizeof(map));
 	line[0] = 0;
 	if (list && list->teams == 2)
@@ -661,7 +724,7 @@ static void card_draw(float x, float y, float width)
 	ctext(flow, AE_FONT_ROW, 24.0f, x + width - pad, y + ae_flow_u(flow, foot + 26.0f), AE_ALIGN_RIGHT, AE_COLOR_ACCENT,
 		plan->mode ? ae_social_skill_name(plan->mode) : "AUTO");
 	tracked(flow, 18.0f, x + pad, y + ae_flow_u(flow, foot + 58.0f), AE_ALIGN_LEFT, AE_COLOR_MUTED, "A WIN OR A TIE");
-	ctext(flow, AE_FONT_ROW, 24.0f, x + width - pad, y + ae_flow_u(flow, foot + 58.0f), AE_ALIGN_RIGHT, AE_COLOR_ACCENT, "+1 EXP");
+	ctext(flow, AE_FONT_ROW, 24.0f, x + width - pad, y + ae_flow_u(flow, foot + 58.0f), AE_ALIGN_RIGHT, AE_COLOR_ACCENT, "SKILL UP ONE");
 }
 
 /* ---------- the vote card */
@@ -850,7 +913,7 @@ static void vote_card_draw(float x, float y, float width)
 
 /* ---------- the screen */
 
-/* the LAST GAME card over the roster: the result, the score and map, the rank now, the EXP the game gave */
+/* the LAST GAME card over the roster: the result, the score and map, the rank now, how the skill moved */
 static void last_draw(float x, float y, float width)
 {
 	struct ae_flow_screen *flow = &lobby.flow;
@@ -869,10 +932,25 @@ static void last_draw(float x, float y, float width)
 	else
 		snprintf(line, sizeof(line), "%s", map);
 	{
-		/* (the score and map between the title and the rank: cut with "..." when the room is short) */
+		/* (the score and map between the title and the rank: cut with "..." when the room is short; the room left of the
+		right edge is what the value shown and "NOW RANK n" take) */
 		float title_w = ae_draw_text_width(AE_FONT_ROW, ae_flow_u(flow, 30.0f), last->title[0] ? last->title : "GAME OVER");
-		float from = x + pad + title_w + ae_flow_u(flow, 28.0f), to = right - ae_flow_u(flow, 120.0f) - ae_draw_text_width(AE_FONT_ROW,
-			ae_flow_u(flow, 21.0f), "NOW RANK 99") - ae_flow_u(flow, 20.0f);
+		float value_w = 0.0f, rank_w = 0.0f, from, to;
+
+		if (last->exp_delta || last->rank_after)
+		{
+			value_w = ae_draw_text_width(AE_FONT_ROW, ae_flow_u(flow, 30.0f), last->exp_delta > 0 ? "UP ONE" :
+				last->exp_delta < 0 ? "BACK ONE" : "NO CHANGE") + ae_flow_u(flow, 24.0f);
+			if (last->rank_after > 0)
+			{
+				char rank_text[24];
+
+				snprintf(rank_text, sizeof(rank_text), "NOW RANK %d", last->rank_after);
+				rank_w = ae_draw_text_width(AE_FONT_ROW, ae_flow_u(flow, 21.0f), rank_text) + ae_flow_u(flow, 24.0f);
+			}
+		}
+		from = x + pad + title_w + ae_flow_u(flow, 28.0f);
+		to = right - value_w - rank_w;
 		char fitted[96];
 
 		/* (the score alone when the map does not fit beside it) */
@@ -886,15 +964,16 @@ static void last_draw(float x, float y, float width)
 	}
 	if (last->exp_delta || last->rank_after)
 	{
-		snprintf(exp, sizeof(exp), "%+d", last->exp_delta);
-		tracked(flow, 15.0f, right, y + ae_flow_u(flow, 24.0f), AE_ALIGN_RIGHT, AE_COLOR_MUTED, "EXP");
+		snprintf(exp, sizeof(exp), "%s", last->exp_delta > 0 ? "UP ONE" : last->exp_delta < 0 ? "BACK ONE" : "NO CHANGE");
+		tracked(flow, 15.0f, right, y + ae_flow_u(flow, 24.0f), AE_ALIGN_RIGHT, AE_COLOR_MUTED, "SKILL");
 		ctext(flow, AE_FONT_ROW, 30.0f, right, y + ae_flow_u(flow, 56.0f), AE_ALIGN_RIGHT, last->exp_delta > 0 ? AE_COLOR_ACCENT : AE_COLOR_TEXT, exp);
 		if (last->rank_after > 0)
 		{
 			char rank[24];
 
 			snprintf(rank, sizeof(rank), "NOW RANK %d", last->rank_after);
-			ctext(flow, AE_FONT_ROW, 21.0f, right - ae_flow_u(flow, 120.0f), y + ae_flow_u(flow, 57.0f), AE_ALIGN_RIGHT, AE_COLOR_TITLE, rank);
+			ctext(flow, AE_FONT_ROW, 21.0f, right - ae_draw_text_width(AE_FONT_ROW, ae_flow_u(flow, 30.0f), exp) - ae_flow_u(flow, 24.0f),
+				y + ae_flow_u(flow, 57.0f), AE_ALIGN_RIGHT, AE_COLOR_TITLE, rank);
 		}
 	}
 }
@@ -1470,6 +1549,13 @@ static int lobby_start(int now, int no_vote, int rematch, struct dev_vote const 
 		if (!ae_social_profile_name(local, lobby.you[local], sizeof(lobby.you[local])))
 			snprintf(lobby.you[local], sizeof(lobby.you[local]), "PLAYER %d", (int)local + 1);
 		lobby.rank[local] = ae_social_screen_key(local, key, sizeof(key)) ? ae_social_profile_rank(key, lobby.plan.playlist) : 1;
+		lobby.career_valid[local] = ae_career_xp_view(local, &lobby.career[local]);
+		{
+			struct ae_career_social const *played = ae_social_screen_key(local, key, sizeof(key)) ?
+				ae_career_social_find(ae_career_store(), key, lobby.plan.playlist) : NULL;
+
+			lobby.skill_played[local] = played && played->games > 0;
+		}
 	}
 	lobby.picture = ae_setup_map_picture_named(lobby.plan.map, &lobby.picture_w, &lobby.picture_h);
 	lobby.flow.hit_rows = HIT_LOBBY;
@@ -1664,6 +1750,13 @@ int ae_social_game_dev_lobby_vote(char const *playlist, unsigned long seed, int 
 }
 
 /* DEV MODE: the post-game lobby on a made-up last game (the REMATCH of the playlist) */
+static int dev_result;
+
+void ae_screen_social_lobby_dev_result(int kind)
+{
+	dev_result = kind;
+}
+
 int ae_social_game_dev_lobby_post(char const *playlist, unsigned long seed, int left_seconds, int const *votes, int has_votes,
 	int online, int still, int bots, char *text, size_t size)
 {
@@ -1733,8 +1826,15 @@ int ae_social_game_dev_lobby_post(char const *playlist, unsigned long seed, int 
 	snprintf(lobby.pg.last.title, sizeof(lobby.pg.last.title), "RED TEAM WINS");
 	snprintf(lobby.pg.last.score, sizeof(lobby.pg.last.score), "50 - 38");
 	snprintf(lobby.pg.last.map, sizeof(lobby.pg.last.map), "%s", lobby.plan.map);
-	lobby.pg.last.exp_delta = 60;
-	lobby.pg.last.rank_after = 2;
+	lobby.pg.last.exp_delta = dev_result == 3 ? 0 : dev_result == 4 ? -1 : 1;
+	lobby.pg.last.rank_after = dev_result ? 10 : 2;
+	if (dev_result == 3)
+		snprintf(lobby.pg.last.title, sizeof(lobby.pg.last.title), "BLUE TEAM WINS");
+	else if (dev_result == 2)
+		snprintf(lobby.pg.last.title, sizeof(lobby.pg.last.title), "TIE GAME");
+	else if (dev_result == 4)
+		snprintf(lobby.pg.last.title, sizeof(lobby.pg.last.title), "GAME OVER");
+	dev_result = 0;
 	for (seat = 0; seat < roster->count; seat++)
 	{
 		lobby.pg.seat[seat].ping = -1;

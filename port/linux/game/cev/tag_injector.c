@@ -81,6 +81,9 @@ machine's, and a network game's machines must have the same tag table.
 #include "game/players.h"
 #include "memory/data.h"
 #include "cutscene/cinematics.h"
+#include "effects/effect_definitions.h"
+#include "effects/particle_system_definitions.h"
+#include "effects/particles.h"
 #include "interface/hud_messaging.h"
 #include "interface/unit_hud_interface_definition.h"
 #include "cache_file_formats.h"
@@ -123,6 +126,25 @@ enum
 	SHADER_TRANSPARENT_CHICAGO_EXTENDED_GROUP_TAG = 'scex',
 	SHADER_TRANSPARENT_WATER_GROUP_TAG = 'swat',
 	SKY_GROUP_TAG = 'sky ',
+	/* (an effect's and a decal's: drawn as a card, a sprite of their
+	bitmap, preview_card_build) */
+	DECAL_GROUP_TAG = 'deca',
+	PARTICLE_GROUP_TAG = 'part',
+	PARTICLE_SYSTEM_GROUP_TAG = 'pctl',
+	GARBAGE_GROUP_TAG = 'garb',
+	PROJECTILE_GROUP_TAG = 'proj',
+	PLACEHOLDER_GROUP_TAG = 'plac',
+	SOUND_SCENERY_GROUP_TAG = 'ssce',
+	/* (a decal's, decals.c's: its blend function, and its map) */
+	DECAL_DEFINITION_BYTES = 0x10C,
+	DECAL_BLEND_FUNCTION_OFFSET = 0xC0,
+	DECAL_MAP_OFFSET = 0xD8,
+	/* (an effect event's particles, tag_schema_effects.c's: their size, and
+	their particle) */
+	EFFECT_PARTICLES_BYTES = 0xE8,
+	EFFECT_PARTICLES_PARTICLE_OFFSET = 0x54,
+	/* how deep an effect's effects are looked into for what it shows */
+	PREVIEW_MAXIMUM_EFFECT_DEPTH = 3,
 
 	/* the most maps listed (Custom Edition's, then MCC's), and tags of a
 	category */
@@ -218,6 +240,9 @@ enum
 	PREVIEW_TEXTURE_SIZE = 128,
 	/* (a sky's: it is seen from inside, filling the preview) */
 	PREVIEW_SKY_TEXTURE_SIZE = 512,
+	/* (a card's or a particle's: a sprite is a part of its sheet, the sheet
+	read large enough that the sprite is not blurred) */
+	PREVIEW_CARD_TEXTURE_SIZE = 1024,
 	PREVIEW_MAXIMUM_BITMAP_SIZE = 4096,
 };
 
@@ -520,6 +545,8 @@ static struct
 	{ "DOORS & DEVICES", 'mach', TRUE },
 	{ "SKIES", 'sky ', TRUE },
 	{ "FIRST PERSON HANDS", 'mod2', TRUE },
+	{ "EFFECTS", 'effe', TRUE },
+	{ "DECALS", 'deca', TRUE },
 };
 
 boolean tag_injector_group_in_category(
@@ -2585,9 +2612,13 @@ struct preview_build
 	float colors[PREVIEW_CHANGE_COLORS][3];
 	short shader_materials[PREVIEW_MAXIMUM_SHADERS];
 	long texture_tags[TAG_INJECTOR_MESH_MAXIMUM_TEXTURES];
+	/* (and which of its bitmaps: a card's sprite may be on any) */
+	short texture_bitmaps[TAG_INJECTOR_MESH_MAXIMUM_TEXTURES];
 	/* (a sky's model: its transparent shaders' parts too, and its textures
 	larger) */
 	boolean sky;
+	/* (a card's or an effect's particles': their sprite sheets larger) */
+	boolean card;
 };
 
 /* what of a preview's tags' files is read: a gbxmodel part's vertices or
@@ -2775,9 +2806,10 @@ static void preview_change_colors(
 /* The texture of a bitmap tag a shader names (its index in the mesh's
 textures, read the first time one names it); NONE for none (no bitmap the
 preview draws). */
-static short preview_texture(
+static short preview_texture_bitmap(
 	struct preview_build *build,
 	struct tag_reference const *reference,
+	short bitmap_index,
 	struct tag_injector_mesh *mesh)
 {
 	unsigned long group_tag = 0;
@@ -2795,16 +2827,16 @@ static short preview_texture(
 		return NONE;
 	for (index = 0; index < mesh->texture_count; index++)
 	{
-		if (build->texture_tags[index] == reference->index)
+		if (build->texture_tags[index] == reference->index && build->texture_bitmaps[index] == bitmap_index)
 			return index;
 	}
 	group = (struct bitmap_group const *)preview_tag(build->source, reference->index, &group_tag);
-	if (!group || group_tag != BITMAP_GROUP_TAG || group->bitmaps.count <= 0 ||
+	if (!group || group_tag != BITMAP_GROUP_TAG || bitmap_index < 0 || bitmap_index >= group->bitmaps.count ||
 		mesh->texture_count >= TAG_INJECTOR_MESH_MAXIMUM_TEXTURES)
 	{
 		return NONE;
 	}
-	bitmap = TAG_BLOCK_GET_ELEMENT(&group->bitmaps, 0, struct bitmap_data);
+	bitmap = TAG_BLOCK_GET_ELEMENT(&group->bitmaps, bitmap_index, struct bitmap_data);
 	width = bitmap->width;
 	height = bitmap->height;
 	if (bitmap->type != _preview_bitmap_type_2d || width <= 0 || height <= 0 ||
@@ -2816,7 +2848,8 @@ static short preview_texture(
 	/* (its largest level no larger than the preview draws: Halo PC's
 	levels one after another, the largest first) */
 	for (level = 0; level < bitmap->mipmap_count &&
-		MAX(width, height) > (build->sky ? PREVIEW_SKY_TEXTURE_SIZE : PREVIEW_TEXTURE_SIZE); level++)
+		MAX(width, height) > (build->card ? PREVIEW_CARD_TEXTURE_SIZE : build->sky ? PREVIEW_SKY_TEXTURE_SIZE :
+		PREVIEW_TEXTURE_SIZE); level++)
 	{
 		offset += preview_level_size(bitmap->format, width, height);
 		width = MAX(1, width >> 1);
@@ -2844,8 +2877,18 @@ static short preview_texture(
 	texture->height = (short)height;
 	texture->size = size;
 	build->texture_tags[mesh->texture_count] = reference->index;
+	build->texture_bitmaps[mesh->texture_count] = bitmap_index;
 
 	return mesh->texture_count++;
+}
+
+/* (a shader's map: its bitmap tag's first bitmap) */
+static short preview_texture(
+	struct preview_build *build,
+	struct tag_reference const *reference,
+	struct tag_injector_mesh *mesh)
+{
+	return preview_texture_bitmap(build, reference, 0, mesh);
 }
 
 /* The material of a model's shader (its index in the mesh's materials,
@@ -3121,6 +3164,563 @@ static void preview_mesh_part(
 		free(strip);
 }
 
+/* whether a group's tags are objects (an object_definition first), those
+whose model a preview draws */
+static boolean preview_object_group(
+	unsigned long group_tag)
+{
+	return group_tag == WEAPON_DEFINITION_TAG || group_tag == EQUIPMENT_GROUP_TAG || group_tag == VEHICLE_GROUP_TAG ||
+		group_tag == BIPED_GROUP_TAG || group_tag == SCENERY_GROUP_TAG || group_tag == MACHINE_GROUP_TAG ||
+		group_tag == CONTROL_GROUP_TAG || group_tag == LIGHT_FIXTURE_GROUP_TAG || group_tag == GARBAGE_GROUP_TAG ||
+		group_tag == PROJECTILE_GROUP_TAG || group_tag == PLACEHOLDER_GROUP_TAG || group_tag == SOUND_SCENERY_GROUP_TAG;
+}
+
+/* A sprite sequence of a bitmap tag: the texture of the bitmap of its
+first sprite (NONE when it cannot be drawn), the bounds of each of its
+sprites on that bitmap (u0, u1, v0, v1; at most `maximum`; the sequence's
+first bitmap whole when it has no sprites, else the tag's first), and its
+first frame's width over its height. */
+static short preview_sprite_sequence(
+	struct preview_build *build,
+	struct tag_reference const *reference,
+	short sequence_index,
+	float (*frames)[4],
+	short maximum,
+	short *frame_count,
+	float *aspect,
+	struct tag_injector_mesh *mesh)
+{
+	struct bitmap_group const *group;
+	unsigned long group_tag = 0;
+	short bitmap_index = 0;
+	short count = 0;
+	short texture;
+
+	*frame_count = 0;
+	*aspect = 1.0f;
+	if (!reference || reference->index == NONE || maximum <= 0)
+		return NONE;
+	group = (struct bitmap_group const *)preview_tag(build->source, reference->index, &group_tag);
+	if (!group || group_tag != BITMAP_GROUP_TAG || group->bitmaps.count <= 0)
+		return NONE;
+	if (group->sequences.count > 0)
+	{
+		struct bitmap_group_sequence const *sequence = TAG_BLOCK_GET_ELEMENT(&group->sequences,
+			PIN(sequence_index, 0, group->sequences.count - 1), struct bitmap_group_sequence);
+		long sprite_index;
+
+		for (sprite_index = 0; sprite_index < sequence->sprites.count && count < maximum; sprite_index++)
+		{
+			struct bitmap_group_sprite const *sprite = TAG_BLOCK_GET_ELEMENT(&sequence->sprites, sprite_index,
+				struct bitmap_group_sprite);
+			float bounds[4] = { sprite->bounds.x0, sprite->bounds.x1, sprite->bounds.y0, sprite->bounds.y1 };
+			short corner;
+			boolean usable = TRUE;
+
+			/* (the first sprite's bitmap's alone: one texture a sequence) */
+			if (count == 0)
+				bitmap_index = sprite->bitmap_index;
+			else if (sprite->bitmap_index != bitmap_index)
+				continue;
+			/* (a NaN fails every comparison) */
+			for (corner = 0; corner < 4; corner++)
+				usable = usable && bounds[corner] >= 0.0f && bounds[corner] <= 1.0f;
+			if (!usable || !(bounds[1] > bounds[0]) || !(bounds[3] > bounds[2]))
+				continue;
+			memcpy(frames[count++], bounds, sizeof(bounds));
+		}
+		if (count == 0 && sequence->bitmap_count > 0)
+			bitmap_index = sequence->first_bitmap_index;
+	}
+	if (bitmap_index < 0 || bitmap_index >= group->bitmaps.count)
+	{
+		bitmap_index = 0;
+		count = 0;
+	}
+	if (count == 0)
+	{
+		frames[0][0] = frames[0][2] = 0.0f;
+		frames[0][1] = frames[0][3] = 1.0f;
+		count = 1;
+	}
+	{
+		struct bitmap_data const *bitmap = TAG_BLOCK_GET_ELEMENT(&group->bitmaps, bitmap_index, struct bitmap_data);
+		float width = (frames[0][1] - frames[0][0]) * (float)MAX(bitmap->width, 1);
+		float height = (frames[0][3] - frames[0][2]) * (float)MAX(bitmap->height, 1);
+
+		*aspect = PIN(width / MAX(height, 0.001f), 0.05f, 20.0f);
+	}
+	build->card = TRUE;
+	texture = preview_texture_bitmap(build, reference, bitmap_index, mesh);
+	if (texture == NONE)
+		return NONE;
+	*frame_count = count;
+	return texture;
+}
+
+/* a material of a texture drawn by a blend function (shader_transparent_
+generic's order); NONE when there is no room */
+static short preview_sprite_material(
+	short texture,
+	short blend_function,
+	struct tag_injector_mesh *mesh)
+{
+	struct tag_injector_mesh_material *material;
+
+	if (mesh->material_count >= TAG_INJECTOR_MESH_MAXIMUM_MATERIALS)
+		return NONE;
+	material = &mesh->materials[mesh->material_count];
+	memset(material, 0, sizeof(*material));
+	material->base_texture = texture;
+	material->mask_texture = NONE;
+	material->blend = (short)(_tag_injector_blend_alpha + PIN(blend_function, 0, _tag_injector_blend_count -
+		_tag_injector_blend_alpha - 1));
+	return mesh->material_count++;
+}
+
+/* A card's mesh (tag_injector_mesh's card): a sprite of a bitmap tag, the
+first of the sequence it names (preview_sprite_sequence's), drawn flat
+facing the eye by the blend function it is drawn with in a game; FALSE when
+its bitmap cannot be drawn (the mesh is then let go). */
+static boolean preview_card_build(
+	struct preview_source const *source,
+	struct tag_reference const *reference,
+	short sequence_index,
+	short blend_function,
+	struct tag_injector_mesh *mesh)
+{
+	struct preview_build build;
+	float frame[1][4];
+	short frame_count;
+	float aspect;
+	short texture;
+	short corner;
+
+	memset(&build, 0, sizeof(build));
+	build.source = source;
+	texture = preview_sprite_sequence(&build, reference, sequence_index, frame, 1, &frame_count, &aspect, mesh);
+	if (texture == NONE)
+	{
+		tag_injector_mesh_free(mesh);
+		return FALSE;
+	}
+	mesh->positions = malloc(4 * sizeof(*mesh->positions));
+	mesh->normals = malloc(4 * sizeof(*mesh->normals));
+	mesh->texcoords = malloc(4 * sizeof(*mesh->texcoords));
+	mesh->triangles = malloc(2 * sizeof(*mesh->triangles));
+	mesh->triangle_materials = malloc(2 * sizeof(*mesh->triangle_materials));
+	if (!mesh->positions || !mesh->normals || !mesh->texcoords || !mesh->triangles || !mesh->triangle_materials)
+	{
+		tag_injector_mesh_free(mesh);
+		return FALSE;
+	}
+	/* (its corners across and down, the first its top left: y across, z
+	up, as a model's front) */
+	for (corner = 0; corner < 4; corner++)
+	{
+		boolean right = corner == 1 || corner == 2;
+		boolean bottom = corner >= 2;
+
+		mesh->positions[corner][0] = 0.0f;
+		mesh->positions[corner][1] = (right ? 0.5f : -0.5f) * aspect;
+		mesh->positions[corner][2] = bottom ? -0.5f : 0.5f;
+		mesh->normals[corner][0] = 1.0f;
+		mesh->normals[corner][1] = 0.0f;
+		mesh->normals[corner][2] = 0.0f;
+		mesh->texcoords[corner][0] = right ? frame[0][1] : frame[0][0];
+		mesh->texcoords[corner][1] = bottom ? frame[0][3] : frame[0][2];
+	}
+	mesh->vertex_count = 4;
+	mesh->triangles[0][0] = 0;
+	mesh->triangles[0][1] = 1;
+	mesh->triangles[0][2] = 2;
+	mesh->triangles[1][0] = 0;
+	mesh->triangles[1][1] = 2;
+	mesh->triangles[1][2] = 3;
+	mesh->triangle_materials[0] = mesh->triangle_materials[1] =
+		preview_sprite_material(texture, blend_function, mesh);
+	mesh->triangle_count = 2;
+	mesh->card = TRUE;
+
+	return TRUE;
+}
+
+/* (an effect event's particles, tag_schema_effects.c's) */
+struct preview_effect_particles
+{
+	short environment;
+	short disposition;
+	short camera_mode;
+	short unused006;
+	short location_index;
+	short unused00a;
+	real_euler_angles2d direction;
+	real_vector3d offset;
+	real_vector3d runtime_direction;
+	long unused02c[10];
+	struct tag_reference particle;
+	unsigned long flags;
+	short distribution_function;
+	short unused06a;
+	short count_lower_bound;
+	short count_upper_bound;
+	real distribution_radius_lower_bound;
+	real distribution_radius_upper_bound;
+	long unused078[3];
+	real velocity_lower_bound;
+	real velocity_upper_bound;
+	real velocity_cone_angle;
+	real angular_velocity_lower_bound;
+	real angular_velocity_upper_bound;
+	long unused098[2];
+	real radius_lower_bound;
+	real radius_upper_bound;
+	long unused0a8[2];
+	real_argb_color tint_lower_bound;
+	real_argb_color tint_upper_bound;
+	long unused0d0[4];
+	unsigned long scale_a_flags;
+	unsigned long scale_b_flags;
+};
+typedef char verify_preview_effect_particles_size[sizeof(struct preview_effect_particles) == 0xE8 ? 1 : -1];
+typedef char verify_preview_effect_particles_particle_offset[
+	offsetof(struct preview_effect_particles, particle) == 0x54 ? 1 : -1];
+
+/* a float read from a tag, or `otherwise` when it is not one between the
+bounds */
+static float preview_float(
+	float value,
+	float minimum,
+	float maximum,
+	float otherwise)
+{
+	return value >= minimum && value <= maximum ? value : otherwise;
+}
+
+/* (two bounds read, the lower not above the upper) */
+static void preview_bounds(
+	float lower,
+	float upper,
+	float minimum,
+	float maximum,
+	float otherwise,
+	float *bounds)
+{
+	bounds[0] = preview_float(lower, minimum, maximum, otherwise);
+	bounds[1] = preview_float(upper, minimum, maximum, bounds[0]);
+	if (bounds[1] < bounds[0])
+	{
+		float swap = bounds[0];
+
+		bounds[0] = bounds[1];
+		bounds[1] = swap;
+	}
+}
+
+/* An emitter of an effect event's particles (or a particle system's
+first particle state, made to drift about where it is) onto the mesh;
+FALSE when it cannot be drawn, or there is no room. An effect's particles
+at its "normal" marker (where it hits a surface) go up from the ground. */
+static boolean preview_emitter_add(
+	struct preview_source const *source,
+	struct effect_definition const *effect,
+	struct effect_event_definition const *event,
+	struct preview_effect_particles const *particles,
+	byte *system_root,
+	struct preview_build *build,
+	struct tag_injector_mesh *mesh)
+{
+	struct tag_injector_mesh_emitter *emitter;
+	struct tag_reference const *bitmap;
+	struct particle_definition const *particle = NULL;
+	short sequence_index = 0;
+	short blend_function = 0;
+	short texture;
+	short channel;
+
+	if (mesh->emitter_count >= TAG_INJECTOR_MESH_MAXIMUM_EMITTERS)
+		return FALSE;
+	emitter = &mesh->emitters[mesh->emitter_count];
+	memset(emitter, 0, sizeof(*emitter));
+	if (particles)
+	{
+		unsigned long group_tag = 0;
+
+		particle = particles->particle.index == NONE ? NULL :
+			(struct particle_definition const *)preview_tag(source, particles->particle.index, &group_tag);
+		if (!particle || group_tag != PARTICLE_GROUP_TAG)
+			return FALSE;
+		bitmap = &particle->bitmap;
+		sequence_index = particle->first_sequence_index;
+		blend_function = particle->shader.framebuffer_blend_function;
+	}
+	else
+	{
+		struct particle_system_definition const *system = (struct particle_system_definition const *)system_root;
+		struct particle_system_type const *type;
+		struct particle_system_type_particle_state const *state;
+
+		if (!system || system->types.count <= 0)
+			return FALSE;
+		type = TAG_BLOCK_GET_ELEMENT(&system->types, 0, struct particle_system_type);
+		if (type->particle_states.count <= 0)
+			return FALSE;
+		state = TAG_BLOCK_GET_ELEMENT(&type->particle_states, 0, struct particle_system_type_particle_state);
+		bitmap = &state->bitmaps;
+		sequence_index = state->sequence_index;
+		blend_function = state->shader.framebuffer_blend_function;
+	}
+	/* (the build the effect's emitters share: a texture each bitmap) */
+	texture = preview_sprite_sequence(build, bitmap, sequence_index, emitter->frames,
+		TAG_INJECTOR_MESH_MAXIMUM_FRAMES, &emitter->frame_count, &emitter->aspect, mesh);
+	if (texture == NONE)
+		return FALSE;
+	emitter->material = preview_sprite_material(texture, blend_function, mesh);
+	if (emitter->material == NONE)
+		return FALSE;
+	if (particles)
+	{
+		float yaw = preview_float(particles->direction.yaw, -100.0f, 100.0f, 0.0f);
+		float pitch = preview_float(particles->direction.pitch, -100.0f, 100.0f, 0.0f);
+		float direction[3] = { cosf(pitch) * cosf(yaw), cosf(pitch) * sinf(yaw), sinf(pitch) };
+		float offset[3] = {
+			preview_float(particles->offset.i, -100.0f, 100.0f, 0.0f),
+			preview_float(particles->offset.j, -100.0f, 100.0f, 0.0f),
+			preview_float(particles->offset.k, -100.0f, 100.0f, 0.0f) };
+		boolean normal = FALSE;
+
+		if (particles->location_index >= 0 && particles->location_index < effect->locations.count)
+		{
+			char const *marker = (char const *)tag_block_get_element_with_size(&effect->locations, /* AE hook */
+				particles->location_index, 32);
+
+			normal = marker && !_strnicmp(marker, "normal", 32);
+		}
+		/* (a surface's: its forward, x, the surface's normal, up) */
+		if (normal)
+		{
+			float swap = direction[0];
+
+			direction[0] = -direction[2];
+			direction[2] = swap;
+			swap = offset[0];
+			offset[0] = -offset[2];
+			offset[2] = swap;
+		}
+		memcpy(emitter->direction, direction, sizeof(direction));
+		memcpy(emitter->offset, offset, sizeof(offset));
+		emitter->count[0] = (short)PIN(particles->count_lower_bound, 0, 64);
+		emitter->count[1] = (short)PIN(particles->count_upper_bound, emitter->count[0], 64);
+		if (emitter->count[1] <= 0)
+			emitter->count[0] = emitter->count[1] = 1;
+		emitter->distribution = particles->distribution_function;
+		preview_bounds(particles->distribution_radius_lower_bound, particles->distribution_radius_upper_bound, 0.0f,
+			50.0f, 0.0f, emitter->distribution_radius);
+		preview_bounds(particles->velocity_lower_bound, particles->velocity_upper_bound, 0.0f, 200.0f, 0.0f,
+			emitter->velocity);
+		emitter->cone = preview_float(particles->velocity_cone_angle, 0.0f, 7.0f, 0.0f);
+		preview_bounds(particles->angular_velocity_lower_bound, particles->angular_velocity_upper_bound, -100.0f,
+			100.0f, 0.0f, emitter->angular_velocity);
+		/* (its own radius, else its particle's) */
+		preview_bounds(particles->radius_lower_bound, particles->radius_upper_bound, 0.0f, 50.0f, 0.0f,
+			emitter->radius);
+		if (!(emitter->radius[1] > 0.0f))
+		{
+			preview_bounds(particle->radius_lower_bound, particle->radius_upper_bound, 0.0f, 50.0f, 0.1f,
+				emitter->radius);
+		}
+		emitter->tint[0][0] = particles->tint_lower_bound.alpha;
+		emitter->tint[0][1] = particles->tint_lower_bound.red;
+		emitter->tint[0][2] = particles->tint_lower_bound.green;
+		emitter->tint[0][3] = particles->tint_lower_bound.blue;
+		emitter->tint[1][0] = particles->tint_upper_bound.alpha;
+		emitter->tint[1][1] = particles->tint_upper_bound.red;
+		emitter->tint[1][2] = particles->tint_upper_bound.green;
+		emitter->tint[1][3] = particles->tint_upper_bound.blue;
+		preview_bounds(particle->life_span_lower_bound, particle->life_span_upper_bound, 0.01f, 30.0f, 1.0f,
+			emitter->life);
+		emitter->fade_in = preview_float(particle->fade_in_time, 0.0f, 30.0f, 0.0f);
+		emitter->fade_out = preview_float(particle->fade_out_time, 0.0f, 30.0f, 0.0f);
+		preview_bounds(particle->frames_per_second_lower_bound, particle->frames_per_second_upper_bound, 0.0f,
+			120.0f, 0.0f, emitter->frames_per_second);
+	}
+	else
+	{
+		/* (a particle system: some drifting about where it is) */
+		emitter->direction[2] = 1.0f;
+		emitter->count[0] = emitter->count[1] = 24;
+		emitter->distribution = 2;
+		emitter->distribution_radius[1] = 1.0f;
+		emitter->velocity[0] = 0.05f;
+		emitter->velocity[1] = 0.3f;
+		emitter->cone = 3.14159265f;
+		emitter->angular_velocity[0] = -1.0f;
+		emitter->angular_velocity[1] = 1.0f;
+		emitter->radius[0] = 0.05f;
+		emitter->radius[1] = 0.15f;
+		emitter->life[0] = 1.0f;
+		emitter->life[1] = 2.0f;
+		emitter->fade_in = 0.3f;
+		emitter->fade_out = 0.5f;
+	}
+	/* (no tint, or one not a number: white) */
+	for (channel = 0; channel < 4; channel++)
+	{
+		emitter->tint[0][channel] = preview_float(emitter->tint[0][channel], 0.0f, 1.0f, 0.0f);
+		emitter->tint[1][channel] = preview_float(emitter->tint[1][channel], 0.0f, 1.0f, emitter->tint[0][channel]);
+	}
+	if (emitter->tint[0][0] + emitter->tint[1][0] + emitter->tint[0][1] + emitter->tint[1][1] + emitter->tint[0][2] +
+		emitter->tint[1][2] + emitter->tint[0][3] + emitter->tint[1][3] <= 0.0f)
+	{
+		for (channel = 0; channel < 4; channel++)
+			emitter->tint[0][channel] = emitter->tint[1][channel] = 1.0f;
+	}
+	else if (emitter->tint[0][0] + emitter->tint[1][0] <= 0.0f)
+		emitter->tint[0][0] = emitter->tint[1][0] = 1.0f;
+	if (event)
+	{
+		preview_bounds(event->delay_lower_bound, event->delay_upper_bound, 0.0f, 10.0f, 0.0f, emitter->delay);
+		preview_bounds(event->duration_lower_bound, event->duration_upper_bound, 0.0f, 10.0f, 0.0f, emitter->duration);
+	}
+	else
+	{
+		emitter->duration[0] = emitter->duration[1] = 2.0f;
+	}
+	mesh->emitter_count++;
+	return TRUE;
+}
+
+static boolean preview_mesh_build(
+	struct preview_source const *source,
+	byte *root,
+	unsigned long group_tag,
+	struct tag_injector_mesh *mesh);
+
+/* the card of a particle's, a particle system's (its first type's first
+particle state's) or a decal's bitmap; FALSE for another tag, or one whose
+bitmap cannot be drawn */
+static boolean preview_sprite_build(
+	struct preview_source const *source,
+	byte *root,
+	unsigned long group_tag,
+	struct tag_injector_mesh *mesh)
+{
+	if (!root)
+		return FALSE;
+	if (group_tag == PARTICLE_GROUP_TAG)
+	{
+		struct particle_definition const *particle = (struct particle_definition const *)root;
+
+		return preview_card_build(source, &particle->bitmap, particle->first_sequence_index,
+			particle->shader.framebuffer_blend_function, mesh);
+	}
+	if (group_tag == PARTICLE_SYSTEM_GROUP_TAG)
+	{
+		struct particle_system_definition const *system = (struct particle_system_definition const *)root;
+		long type_index;
+
+		for (type_index = 0; type_index < system->types.count; type_index++)
+		{
+			struct particle_system_type const *type = TAG_BLOCK_GET_ELEMENT(&system->types, type_index,
+				struct particle_system_type);
+			long state_index;
+
+			for (state_index = 0; state_index < type->particle_states.count; state_index++)
+			{
+				struct particle_system_type_particle_state const *state = TAG_BLOCK_GET_ELEMENT(
+					&type->particle_states, state_index, struct particle_system_type_particle_state);
+
+				if (preview_card_build(source, &state->bitmaps, state->sequence_index,
+					state->shader.framebuffer_blend_function, mesh))
+				{
+					return TRUE;
+				}
+			}
+		}
+		return FALSE;
+	}
+	if (group_tag == DECAL_GROUP_TAG)
+	{
+		short blend_function = 0;
+
+		memcpy(&blend_function, root + DECAL_BLEND_FUNCTION_OFFSET, sizeof(blend_function));
+		return preview_card_build(source, (struct tag_reference const *)(root + DECAL_MAP_OFFSET), 0, blend_function,
+			mesh);
+	}
+	return FALSE;
+}
+
+/* What an effect is seen as: the particles of all its events, and of the
+particle systems of their parts, played (tag_injector_mesh's emitters);
+else the first sprite of its parts (a particle or a decal: a card), else
+the first object of its parts (its model: debris, a projectile), else the
+first effect of its parts' (as deep as PREVIEW_MAXIMUM_EFFECT_DEPTH); FALSE
+for none (its sounds, lights and damage are not drawn). */
+static boolean preview_effect_build(
+	struct preview_source const *source,
+	byte *root,
+	short depth,
+	struct tag_injector_mesh *mesh)
+{
+	struct effect_definition const *effect = (struct effect_definition const *)root;
+	struct preview_build build;
+	short pass;
+
+	if (!root || depth >= PREVIEW_MAXIMUM_EFFECT_DEPTH)
+		return FALSE;
+	memset(&build, 0, sizeof(build));
+	build.source = source;
+	for (pass = 0; pass < 4; pass++)
+	{
+		long event_index;
+
+		for (event_index = 0; event_index < MIN(effect->events.count, MAXIMUM_EFFECT_EVENTS); event_index++)
+		{
+			struct effect_event_definition const *event = TAG_BLOCK_GET_ELEMENT(&effect->events, event_index,
+				struct effect_event_definition);
+			long index;
+
+			if (pass == 0)
+			{
+				for (index = 0; index < MIN(event->particles.count, MAXIMUM_EFFECT_PARTICLES_PER_EVENT); index++)
+				{
+					preview_emitter_add(source, effect, event, (struct preview_effect_particles const *)
+						tag_block_get_element_with_size(&event->particles, index, sizeof(struct preview_effect_particles)), /* AE hook */
+						NULL, &build, mesh);
+				}
+			}
+			for (index = 0; index < MIN(event->parts.count, MAXIMUM_EFFECT_PARTS_PER_EVENT); index++)
+			{
+				struct effect_part_definition const *part = TAG_BLOCK_GET_ELEMENT(&event->parts, index,
+					struct effect_part_definition);
+				unsigned long group_tag = 0;
+				byte *tag = part->reference.index == NONE ? NULL :
+					preview_tag(source, part->reference.index, &group_tag);
+
+				if (!tag)
+					continue;
+				if (pass == 0 && group_tag == PARTICLE_SYSTEM_GROUP_TAG)
+					preview_emitter_add(source, effect, event, NULL, tag, &build, mesh);
+				if (pass == 1 && preview_sprite_build(source, tag, group_tag, mesh))
+					return TRUE;
+				if (pass == 2 && preview_object_group(group_tag) && preview_mesh_build(source, tag, group_tag, mesh))
+					return TRUE;
+				if (pass == 3 && group_tag == EFFECT_DEFINITION_TAG && tag != root &&
+					preview_effect_build(source, tag, (short)(depth + 1), mesh))
+				{
+					return TRUE;
+				}
+			}
+		}
+		if (pass == 0 && mesh->emitter_count > 0)
+			return TRUE;
+		/* (none: its textures let go, for what is tried next) */
+		if (pass == 0)
+			tag_injector_mesh_free(mesh);
+	}
+	return FALSE;
+}
+
 /* the mesh of the model of a tag of a preview's source (tag_injector_mesh's),
 as the game draws an object of it: its change colors too (an actor
 variant's, its unit's); FALSE when it has none (the mesh is then let go) */
@@ -3135,11 +3735,18 @@ static boolean preview_mesh_build(
 	short pass;
 	short index;
 
+	/* (an effect's and a decal's: a card of what they show) */
+	if (root && group_tag == EFFECT_DEFINITION_TAG)
+		return preview_effect_build(source, root, 0, mesh);
+	if (root && group_tag == DECAL_GROUP_TAG)
+		return preview_sprite_build(source, root, group_tag, mesh);
 	memset(&build, 0, sizeof(build));
 	build.source = source;
 	build.sky = group_tag == SKY_GROUP_TAG;
-	/* (an object's or an actor variant's: no sky's or model's) */
-	if (group_tag != GBXMODEL_GROUP_TAG && group_tag != SKY_GROUP_TAG)
+	/* (an object's or an actor variant's alone: another tag's fields are
+	not an object's, a decal's read as its change colors walked off its
+	data) */
+	if (root && (group_tag == ACTOR_VARIANT_GROUP_TAG || preview_object_group(group_tag)))
 		preview_change_colors(source, root, group_tag, &build);
 	if (root && group_tag == ACTOR_VARIANT_GROUP_TAG)
 		root = preview_tag(source, ((struct actor_variant_definition const *)root)->unit_reference.index, &group_tag);
@@ -3148,9 +3755,7 @@ static boolean preview_mesh_build(
 		root = preview_tag(source, ((struct tag_reference const *)root)->index, &group_tag);
 	if (root && group_tag == GBXMODEL_GROUP_TAG)
 		build.model = (struct model const *)root;
-	else if (!root || (group_tag != WEAPON_DEFINITION_TAG && group_tag != EQUIPMENT_GROUP_TAG && group_tag != VEHICLE_GROUP_TAG &&
-		group_tag != BIPED_GROUP_TAG && group_tag != SCENERY_GROUP_TAG &&
-		group_tag != MACHINE_GROUP_TAG && group_tag != CONTROL_GROUP_TAG && group_tag != LIGHT_FIXTURE_GROUP_TAG))
+	else if (!root || !preview_object_group(group_tag))
 	{
 		return FALSE;
 	}

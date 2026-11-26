@@ -35,7 +35,21 @@ Rules (words; a <tag> matches a tag path that holds it, "_" and " " alike, any c
                                                    last closing, 4 closed)
     round_wait [player N]                          a player who joined during a round waits for the next
     match_over                                     a round mode's match ended
-    no <rule>                                      the rule is never met in the window
+    hurt [player N] [taken max|min N] [blocked max|min N]
+                                                   the hits on a player in the window ("hurt" events): taken, the ones
+                                                   that player took; blocked, the ones DEV god took for them. god: player 0
+                                                   blocked min 1 taken max 0; unseen: player 0 taken max 0 (the window's
+                                                   seconds said). Name the player: in co-op the AI squad are players too
+    stat <group> <key> max|min N                   the campaign AI squad's counter lines ("squad <group>: key value
+                                                   ..."): a count's rise from the test's first such line to its last, or
+                                                   a distance's (pair, player) or a cost's (rays, ms, p99ms, grid, gridticks,
+                                                   p50, p95) most (max) or least (min) over the test's lines
+    member stuck|lip|gap90 max|min N               each squad member's own line ("squad member K: stuck S lip L gap90
+                                                   G"): seconds stuck or at a lip, their rise over the test; the gap's
+                                                   90th percentile, its last; judged on the worst member
+    crossed x|y lt|gt V N within S                 the player's first position line past the plane, then at least N
+                                                   squad members past it within S seconds (the squad's position lines)
+    no <rule>                                     the rule is never met in the window
 
 Player numbers are slots: 0 is the first local player. A rule that cannot be judged (unknown words, a key with no
 number) is BAD RULE, a failure, "no" before it or not. A test's window opens at its "start" event: after the reset
@@ -214,9 +228,35 @@ def validate(rule):
         return None if len(words) > 1 else f"{kind} needs text"
     if kind == "option":
         return None if len(words) == 3 else "option needs a row and a value"
+    if kind == "stat":
+        if len(words) != 5 or words[3] not in ("max", "min"):
+            return "stat needs a group, a key, max|min and a number"
+        try:
+            float(words[4])
+        except ValueError:
+            return f"stat: '{words[4]}' is not a number"
+        return None
+    if kind == "member":
+        if len(words) != 4 or words[1] not in MEMBER_KEYS or words[2] not in ("max", "min"):
+            return f"member needs {'|'.join(MEMBER_KEYS)}, max|min and a number"
+        try:
+            float(words[3])
+        except ValueError:
+            return f"member: '{words[3]}' is not a number"
+        return None
+    if kind == "crossed":
+        if len(words) != 7 or words[1] not in ("x", "y") or words[2] not in ("lt", "gt") or words[5] != "within":
+            return "crossed needs x|y, lt|gt, a value, a count, within and seconds"
+        try:
+            float(words[3]), int(words[4]), float(words[6])
+        except ValueError:
+            return "crossed: its value, count and seconds are numbers"
+        return None
     if kind == "cmd":
         rest = words[1:-1] if words[-1] in ("ok", "error") else words[1:]
         return None if rest else "cmd needs text"
+    if kind == "hurt":
+        return validate_hurt(words[1:])
     if kind == "game_over":
         return None if len(words) == 1 else "game_over takes no words"
     if kind == "match_over":
@@ -323,6 +363,12 @@ def judge(rule, window):
             if event.get("ev") == "log" and part in norm(event.get("text", "")):
                 return True, f"log: {event['text'][:80]}", [event["_line"]]
         return False, f"no log line with {part}", []
+    if kind == "stat":
+        return judge_stat(words, window)
+    if kind == "member":
+        return judge_member(words, window)
+    if kind == "crossed":
+        return judge_crossed(words, window)
     if kind == "option":
         row, value = words[1].replace("_", "").lower(), words[2].replace("_", "").lower()
         for event in window:
@@ -333,6 +379,8 @@ def judge(rule, window):
                     said[-1].replace("_", "") == value:
                 return True, f"option: {event['text']}", [event["_line"]]
         return False, f"no option {words[1]} {words[2]} answered ok", []
+    if kind == "hurt":
+        return judge_hurt(words, window)
     if kind == "hud":
         part = norm(" ".join(words[1:]))
         for event in window:
@@ -361,6 +409,142 @@ def judge(rule, window):
     return False, f"unknown rule {kind}", []
 
 
+STAT_GAUGES = ("pair", "player", "p50", "p95", "rays", "ms", "grid", "gridticks", "p99ms")
+
+
+def hurt_terms(words):
+    """(player or None, [(field, bound, limit)]) of a hurt rule's words after its kind, or a str: why not"""
+    player, terms, index = None, [], 0
+    while index < len(words):
+        if words[index] == "player" and index + 1 < len(words) and words[index + 1].isdigit():
+            player, index = int(words[index + 1]), index + 2
+        elif words[index] in ("taken", "blocked") and index + 2 < len(words) and words[index + 1] in ("max", "min") \
+                and words[index + 2].isdigit():
+            terms.append((words[index], words[index + 1], int(words[index + 2])))
+            index += 3
+        else:
+            return f"hurt: '{words[index]}' (player N, taken max|min N, blocked max|min N)"
+    return (player, terms) if terms else "hurt needs taken or blocked, max|min and a number"
+
+
+def validate_hurt(words):
+    parsed = hurt_terms(words)
+    return parsed if isinstance(parsed, str) else None
+
+
+def judge_hurt(words, window):
+    """hurt [player N] [taken max|min N] [blocked max|min N]: the window's hits on the player, counted"""
+    player, terms = hurt_terms(words[1:])
+    counts, lines = {"taken": 0, "blocked": 0}, []
+    for event in window:
+        if event.get("ev") == "hurt" and (player is None or event.get("player") == player):
+            counts["blocked" if event.get("blocked") else "taken"] += 1
+            lines.append(event["_line"])
+    times = [event.get("t", 0) for event in window]
+    seconds = (max(times) - min(times)) / 1000 if times else 0
+    failed = [f"{field} {counts[field]} (wanted {bound} {limit})" for field, bound, limit in terms
+              if (counts[field] > limit if bound == "max" else counts[field] < limit)]
+    said = f"taken {counts['taken']}, blocked {counts['blocked']} in {seconds:.0f} s"
+    return (False, f"{'; '.join(failed)}: {said}", lines[:8]) if failed else (True, said, lines[:8])
+
+
+def judge_stat(words, window):
+    """stat <group> <key> max|min N over the window's "squad <group>:" lines"""
+    group, key, bound, limit = words[1], words[2], words[3], float(words[4])
+    head = f"squad {group}:"
+    seen = []
+    for event in window:
+        text = event.get("text", "") if event.get("ev") == "log" else ""
+        if not text.startswith(head):
+            continue
+        parts = text[len(head):].split()
+        for index in range(len(parts) - 1):
+            if parts[index] == key:
+                try:
+                    seen.append((float(parts[index + 1]), event["_line"]))
+                except ValueError:
+                    pass
+                break
+    if not seen:
+        return False, f"no squad {group} line with {key}", []
+    if key in STAT_GAUGES:
+        value, line = (max if bound == "max" else min)(seen)
+        what = f"{key} {'most' if bound == 'max' else 'least'} {value:g}"
+    else:
+        value, line = seen[-1][0] - seen[0][0], seen[-1][1]
+        what = f"{key} rose {value:g}"
+    passed = value <= limit if bound == "max" else value >= limit
+    return passed, f"{what} (wanted {bound} {limit:g})", [line]
+
+
+MEMBER_KEYS = ("stuck", "lip", "gap90")
+MEMBER_LINE = re.compile(r"^squad member (\d+): stuck ([\d.]+) lip ([\d.]+) gap90 ([\d.]+)")
+POSITIONS_LINE = re.compile(r"^companion: positions t\+(\d+)s human (-?[\d.]+) (-?[\d.]+) -?[\d.]+ \(")
+MEMBER_AT = re.compile(r", (\d+) (-?[\d.]+) (-?[\d.]+) -?[\d.]+ \(")
+
+
+def log_texts(window):
+    """(text, line) of the window's log lines"""
+    return [(event.get("text", ""), event["_line"]) for event in window if event.get("ev") == "log"]
+
+
+def judge_member(words, window):
+    """member stuck|lip|gap90 max|min N over the window's "squad member K:" lines: seconds stuck or at a lip, their rise over
+    the test; the gap's 90th percentile, its last; the worst member's"""
+    key, bound, limit = words[1], words[2], float(words[3])
+    column = MEMBER_KEYS.index(key) + 2
+    first, last = {}, {}
+    for text, line in log_texts(window):
+        found = MEMBER_LINE.match(text)
+        if not found:
+            continue
+        member, value = int(found.group(1)), float(found.group(column))
+        first.setdefault(member, value)
+        last[member] = (value, line)
+    if not last:
+        return False, "no squad member line", []
+    values = {member: (last[member][0] if key == "gap90" else last[member][0] - first[member]) for member in last}
+    pick = max if bound == "max" else min
+    worst = pick(values, key=lambda member: values[member])
+    value = values[worst]
+    passed = value <= limit if bound == "max" else value >= limit
+    what = "last" if key == "gap90" else "rose"
+    return passed, f"worst member {worst} {key} {what} {value:g} (wanted {bound} {limit:g})", [last[worst][1]]
+
+
+def judge_crossed(words, window):
+    """crossed x|y lt|gt V N within S: the player's first position line past the plane, then at least N members past it
+    by S seconds after (the squad's positions lines)"""
+    axis, side, plane, count, seconds = words[1], words[2], float(words[3]), int(words[4]), float(words[6])
+    index = 0 if axis == "x" else 1
+
+    def past(value):
+        return value < plane if side == "lt" else value > plane
+    rows = []
+    for text, line in log_texts(window):
+        found = POSITIONS_LINE.match(text)
+        if found:
+            members = {int(m.group(1)): (float(m.group(2)), float(m.group(3))) for m in MEMBER_AT.finditer(text)}
+            rows.append((int(found.group(1)), (float(found.group(2)), float(found.group(3))), members, line))
+    anchor = next((row for row in rows if past(row[1][index])), None)
+    if not anchor:
+        return False, f"the player never crossed {axis} {side} {plane:g}", [rows[-1][3]] if rows else []
+    members = sorted({member for row in rows for member in row[2]})
+    times, late = {}, []
+    for member in members:
+        at = next((row[0] for row in rows if member in row[2] and past(row[2][member][index])), None)
+        if at is not None and at - anchor[0] <= seconds:
+            times[member] = max(0, at - anchor[0])
+        else:
+            late.append(f"member {member} " + (f"after {at - anchor[0]} s" if at is not None else "never"))
+    passed = len(times) >= count
+    across = ", ".join(f"member {member} {times[member]} s" for member in sorted(times))
+    reason = f"{len(times)} of {len(members)} across within {seconds:g} s of the player (wanted {count})"
+    reason += f": {across}" if across else ""
+    reason += f"; {', '.join(late)}" if late else ""
+    return passed, reason, [anchor[3]]
+
+
 def report(list_path, events_path, log_path=None):
     """Every check of the list judged: [{test, check, text, rule, verdict, reason, evidence}]. log_path: the game's own
     log of the run (game.log); its lines of each test count as log lines for `log` rules, after the event stream's."""
@@ -372,6 +556,9 @@ def report(list_path, events_path, log_path=None):
     results = []
     for test in tests:
         window = found.get(test["id"])
+        setup_failed = [(f"game log {number}", line.split("SETUP ERROR:", 1)[1].strip()[:80])
+                        for number, line in logged.get(test["id"], [])
+                        if line.startswith(f"test run: {list_id} {test['id']} SETUP ERROR")]
         if window is not None:
             window = window + [{"ev": "log", "text": line, "_line": f"game log {number}"}
                                for number, line in logged.get(test["id"], [])]
@@ -384,6 +571,9 @@ def report(list_path, events_path, log_path=None):
                 row.update(verdict="BAD RULE", reason=next(validate(rule) for rule in rules if validate(rule)), evidence=[])
             elif window is None:
                 row.update(verdict="NOT RUN", reason="the test never started", evidence=[])
+            elif setup_failed:
+                # (its setup failed: the window holds no play, and a "no" rule would pass on it)
+                row.update(verdict="NOT RUN", reason=f"its setup failed: {setup_failed[0][1]}", evidence=[setup_failed[0][0]])
             else:
                 # (every expect line of the check is judged; the first that fails is the check's reason)
                 judged = [judge(rule, window) for rule in rules]

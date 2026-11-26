@@ -2445,7 +2445,7 @@ void actor_customize_unit(
 		}
 	}
 
-	if (!randomizer_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && !ae_campaign_weapons_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && actor_variant_definition->ranged_combat.reference.index != NONE) /* AE hook */
+	if (!randomizer_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index, actor_variant_definition_index) && !ae_campaign_weapons_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && actor_variant_definition->ranged_combat.reference.index != NONE) /* AE hook */
 	{
 		long weapon_index;
 
@@ -2758,6 +2758,7 @@ long actor_place(
 	struct object_placement_data placement_data;
 	char encounter_name[256];
 	long unit_index;
+	long ae_original_unit = NONE, ae_requested_variant = NONE; /* AE hook */
 
 	match_assert("c:\\halo\\SOURCE\\ai\\actors.c", 603, starting_location);
 	/* port: none on a client of the distributed netcode (actor_new) */
@@ -2779,6 +2780,7 @@ long actor_place(
 			actor_variant_definition_get(actor_variant_definition_index);
 	}
 
+	ae_original_unit = actor_variant_definition->unit_reference.index; ae_requested_variant = actor_variant_definition_index; /* AE hook */
 	if ((actor_variant_definition_index = randomizer_actor_variant(actor_variant_definition_index, encounter_index, squad_index, starting_location)) == NONE) return NONE; /* AE hook */
 	actor_variant_definition = actor_variant_definition_get(actor_variant_definition_index); /* AE hook */
 	actor_definition =
@@ -2787,6 +2789,7 @@ long actor_place(
 		&placement_data,
 		actor_variant_definition->unit_reference.index,
 		NONE);
+	if (ae_original_unit != NONE && ae_original_unit != actor_variant_definition->unit_reference.index) placement_data.owner_team_index = unit_definition_get(ae_original_unit)->unit.default_team; /* AE hook */
 	placement_data.position = starting_location->position;
 	vector3d_from_angle(&placement_data.forward, starting_location->facing);
 	placement_data.variant_number = initial_variant;
@@ -2920,6 +2923,7 @@ long actor_place(
 		else
 		{
 			actor_verify_activation(actor_index);
+			randomizer_actor_placed(actor_index, ae_requested_variant); /* AE hook */
 		}
 
 		return actor_index;

@@ -332,6 +332,15 @@ static void test_names(void)
 		!strcmp(name, "20261118-183000____x_y.ocreplay"));
 	CHECK(ae_replay_name_is_safe(name) && ae_replay_name_is_own(name));
 	CHECK(!ae_replay_name_is_safe("20261118-183000_..ocreplay") && !ae_replay_name_is_own("20261118-183000_..ocreplay"));
+	/* a kept recording's marker sits beside it, is no recording itself, and is made only for a recording's name */
+	{
+		char marker[64];
+
+		CHECK(ae_replay_keep_marker("20261118-183000_map.ocreplay", marker, sizeof marker) &&
+			!strcmp(marker, "20261118-183000_map.ocreplay.keep") && !ae_replay_name_is_safe(marker));
+		CHECK(!ae_replay_keep_marker("../x.ocreplay", marker, sizeof marker) && !ae_replay_keep_marker("notes.txt", marker, sizeof marker));
+		CHECK(!ae_replay_keep_marker("20261118-183000_map.ocreplay", marker, 20));
+	}
 	CHECK(ae_replay_name_make(name, sizeof name, "20261118-183000", "") &&
 		!strcmp(name, "20261118-183000_map.ocreplay"));
 	CHECK(ae_replay_name_make(name, sizeof name, "20261118-183000", NULL) && ae_replay_name_is_own(name));

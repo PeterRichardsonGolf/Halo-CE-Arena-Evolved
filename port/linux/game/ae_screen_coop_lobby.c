@@ -27,6 +27,12 @@ level is over, as CREATE GAME's).
 #include "ae_invite_share.h"
 #include "ae_lobby_countdown.h"
 #include "ae_screen_coop_lobby.h"
+#include "../src/port_config.h"
+#include "ae_pve_menus_rules.h"
+#include "ae_pve_menus_ui.h"
+#include "ae_screen_coop_options.h"
+#include "ae_screen_scoring.h"
+#include "ae_screen_skulls.h"
 #include "ae_screen_lobby_profile.h"
 #include "ae_setup_flow.h"
 #include "ae_sound.h"
@@ -56,7 +62,7 @@ enum
 	NOTE_MS = 3500
 };
 enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_LEVEL = AE_FLOW_ROW_OWN, ROW_DIFFICULTY, ROW_PLAYERS, ROW_PUBLIC, ROW_INVITE,
-	ROW_START, ROW_WAIT };
+	ROW_START, ROW_WAIT, ROW_RULE_SKULLS, ROW_RULE_RANDOMIZER, ROW_RULE_SCORING, ROW_RULE_COOP };
 enum { STEP_IDLE, STEP_JOINING, STEP_LIVE, STEP_FAILED };
 
 static struct
@@ -109,6 +115,26 @@ static void rows_make(void)
 		flow->rows[count++] = (struct ae_flow_row){ ROW_INVITE, -1, "INVITE",
 			ae_invite_share_copied() ? "COPIED" : coop.invite_shown[0] ? coop.invite_shown : "BEING MADE...",
 			"{A} copies the invite link: send it to a friend, who pastes it in JOIN WITH INVITE.", NULL, 0, 1 };
+	}
+	/* (RULES: the campaign lobby's rows. The host opens them; a guest reads them. The randomizer plays on one PC, never online) */
+	{
+		static char skulls_text[16], scoring_text[8], coop_text[12];
+		int skulls = config_boolean("game.skulls") ? ae_pve_menus_ui_skulls_on_count() : 0;
+
+		ae_pve_menus_skulls_value(skulls, skulls_text, sizeof(skulls_text));
+		snprintf(scoring_text, sizeof(scoring_text), "%s", config_boolean("game.campaign_score") ? "ON" : "OFF");
+		snprintf(coop_text, sizeof(coop_text), "%s", ae_screen_coop_options_standard() ? "STANDARD" : "CHANGED");
+		flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "RULES", NULL, NULL, NULL };
+		flow->rows[count++] = (struct ae_flow_row){ ROW_RULE_SKULLS, -1, "SKULLS", skulls_text,
+			coop.joiner ? "The host's skulls." : "Skulls change the campaign's rules. {A} opens the list.", NULL, 0, 0, coop.joiner, 1 };
+		flow->rows[count++] = (struct ae_flow_row){ ROW_RULE_RANDOMIZER, -1, "RANDOMIZER", NULL,
+			"The randomizer plays in games on one PC: alone or split screen. Online, everyone plays the campaign's own enemies and weapons.",
+			"NOT IN ONLINE GAMES", 0, 0, 1 };
+		flow->rows[count++] = (struct ae_flow_row){ ROW_RULE_SCORING, -1, "SCORING", scoring_text,
+			coop.joiner ? "The host's scoring." : "Score, time and medals for each mission. {A} opens it.", NULL, 0, 0, coop.joiner, 1 };
+		flow->rows[count++] = (struct ae_flow_row){ ROW_RULE_COOP, -1, "CO-OP OPTIONS", coop_text,
+			coop.joiner ? "The host's co-op options." : "Friendly fire, extra enemies and pickups, what happens when the team falls.", NULL, 0, 0,
+			coop.joiner, 1 };
 	}
 	if (coop.joiner)
 		flow->rows[count++] = (struct ae_flow_row){ ROW_WAIT, -1,
@@ -587,6 +613,23 @@ static void accept(short row)
 	case ROW_INVITE:
 		invite_copy();
 		break;
+	case ROW_RULE_SKULLS:
+	case ROW_RULE_SCORING:
+	case ROW_RULE_COOP:
+		/* (a guest reads the host's rules) */
+		if (coop.joiner)
+			break;
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		if (coop.flow.rows[row].kind == ROW_RULE_SKULLS)
+			ae_screen_skulls_open();
+		else if (coop.flow.rows[row].kind == ROW_RULE_SCORING)
+			ae_screen_scoring_open(0, 1);
+		else
+			ae_screen_coop_options_open("CO-OP CAMPAIGN");
+		break;
+	case ROW_RULE_RANDOMIZER:
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		break;
 	default:
 		ae_sound_request(AE_SOUND_FAILURE, 0);
 		break;
@@ -616,9 +659,10 @@ static void coop_draw(struct ae_screen *instance)
 	{
 		short kind = focused_kind();
 
-		if (!coop.joiner)
+		if (!coop.joiner && kind != ROW_RULE_RANDOMIZER)
 			flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_A, kind == ROW_START ? "Start game" :
-				kind == ROW_INVITE ? "Copy invite" : "Change", AE_ACTION_ACCEPT);
+				kind == ROW_INVITE ? "Copy invite" : (kind == ROW_RULE_SKULLS || kind == ROW_RULE_SCORING || kind == ROW_RULE_COOP) ? "Open" :
+				"Change", AE_ACTION_ACCEPT);
 		if (!coop.joiner && coop.network == AE_COOP_NET_ONLINE && kind != ROW_INVITE)
 			flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_X, "Copy invite", AE_ACTION_X);
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_B, "Leave", AE_ACTION_BACK);

@@ -2638,6 +2638,7 @@ static void main_won_map_private(
 		return;
 	}
 
+	{ extern boolean community_challenge_running(void); extern void community_daily_won(void); if (community_challenge_running()) { main_globals.won_map = FALSE; if (game_connection() == _game_connection_network_server && network_coop_active()) { network_game_server_port_cooperative_won(NULL); return; } community_daily_won(); main_goto_main_menu(); return; } } /* AE hook */
 	/* port: when a network co-op level is won, the round ends for everyone as
 	in multiplayer, back to the lobby, and the next round is the campaign's
 	next level (The Maw's: The Pillar of Autumn), or the one the scripts named.
@@ -4264,6 +4265,7 @@ static boolean main_loop_iteration(
 			network_test_update(main_globals.main_menu_scenario_loaded, main_globals.seconds_elapsed);
 			{ extern void ae_test_run_update(void); ae_test_run_update(); } /* AE hook */
 			{ extern void benchmark_update(boolean main_menu_loaded); benchmark_update(main_globals.main_menu_scenario_loaded); } /* AE hook */
+			{ extern void community_update(boolean main_menu); community_update(main_globals.main_menu_scenario_loaded); } /* AE hook */
 			/* port: a dedicated server's hosting, rotation and commands
 			(port/linux/game/server_director.c) */
 			server_update(main_globals.main_menu_scenario_loaded, main_globals.seconds_elapsed);

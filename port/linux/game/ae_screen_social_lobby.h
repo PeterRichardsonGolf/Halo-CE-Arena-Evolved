@@ -24,5 +24,7 @@ int ae_screen_social_lobby_open_rematch(void);
 /* the hold that runs the lobby to its STARTING stage (DEV MODE "hold starting") */
 #define AE_SOCIAL_LOBBY_DEV_HOLD_STARTING (-2)
 void ae_screen_social_lobby_dev_hold(int seconds);
+/* the next staged post-game lobby's LAST GAME card: 1 win, 2 tie, 3 loss, 4 quit (0: the default made-up win) */
+void ae_screen_social_lobby_dev_result(int kind);
 
 #endif

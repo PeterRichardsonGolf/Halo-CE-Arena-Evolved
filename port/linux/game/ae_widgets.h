@@ -78,7 +78,9 @@ enum
 	of a row that still has its gametype's own muted (accent is for what was changed) */
 	AE_ROW_HOVER_BASE = 1 << 21, AE_ROW_VALUE_MUTED = 1 << 22,
 	/* (0.9.3 FIND A SETTING) the FOUND badge (outlined, in the accent) first among the badges after the label */
-	AE_ROW_FOUND = 1 << 23
+	AE_ROW_FOUND = 1 << 23,
+	/* a status row's value in the title colour (a value that is a result, as a played rank) instead of muted */
+	AE_ROW_VALUE_TITLE = 1 << 24
 };
 enum { AE_ROW_BADGES = 2 };
 struct ae_row

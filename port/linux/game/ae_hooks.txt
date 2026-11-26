@@ -205,10 +205,10 @@ port/linux/game/hud_hires_tags.c	{ struct bitmap_data const *ae_sprite = ae_butt
 port/linux/src/xbox_textures.c	#include "ae_buttons.h" /* AE hook */
 port/linux/src/xbox_textures.c	if (ae_buttons_drawn(entry->data)) /* AE hook */\nreturn ae_buttons_entry_texture(entry->data, description);
 port/linux/src/xbox_textures.c	ae_buttons_uploaded(entry->data, entry->address, entry->description.width, entry->description.height, entry->description.levels > 1 ? xgpu_texture_level_offset(&entry->description, 1) : xgpu_texture_face_size(&entry->description)); /* AE hook */
-tools/embed_assets.py	sys.path.insert(0, str(Path(__file__).resolve().parent)); import ae_button_glyphs, ae_medal_art  # AE hook
-tools/embed_assets.py	*ae_button_glyphs.inputs(), *ae_medal_art.inputs(),  # AE hook
-tools/embed_assets.py	inputs += ae_button_glyphs.configure_inputs() + ae_medal_art.configure_inputs()  # AE hook
-tools/embed_assets.py	lines.extend(ae_button_glyphs.embedded_lines(words, png_size) + ae_medal_art.embedded_lines(words, png_size))  # AE hook
+tools/embed_assets.py	sys.path.insert(0, str(Path(__file__).resolve().parent)); import ae_button_glyphs, ae_medal_art, ae_ce_art  # AE hook
+tools/embed_assets.py	*ae_button_glyphs.inputs(), *ae_medal_art.inputs(), *ae_ce_art.inputs(),  # AE hook
+tools/embed_assets.py	inputs += ae_button_glyphs.configure_inputs() + ae_medal_art.configure_inputs() + ae_ce_art.configure_inputs()  # AE hook
+tools/embed_assets.py	lines.extend(ae_button_glyphs.embedded_lines(words, png_size) + ae_medal_art.embedded_lines(words, png_size) + ae_ce_art.embedded_lines(words, png_size))  # AE hook
 # gamepads (DamnationCE v0.3.41): Linux PlayStation pads through the kernel's driver, each pad's kind in debug.txt
 # (port/linux/src/ae_gamepads.c)
 port/linux/src/sdl_platform.c	#include "ae_gamepads.h" /* AE hook */
@@ -293,6 +293,7 @@ source/networking/network_client_manager.c	ae_join_helper_rejected(rejection_cod
 source/networking/network_client_manager.c	if (!ae_join_helper_taken()) /* AE hook */
 source/networking/network_client_manager.c	ae_silent_join_rejected(rejection_code); /* AE hook */
 source/networking/network_client_manager.c	ae_silent_join_request_mark(join_game_request.machine_name, MAXIMUM_MACHINE_NAME_LENGTH); /* AE hook */
+source/networking/network_client_manager.c	ae_silent_own_join_begin(); /* AE hook */
 source/networking/network_server_manager.c	#include "ae_silent.h" /* AE hook */
 source/networking/network_server_manager.c	if (!network_game_server_client_machine_is_local(server, machine) && ae_silent_join_refused_now(machine, machine_index, &server->game.variant, &server->game.variant_options, &network_game_server_refusal_code)) /* AE hook */\nreturn FALSE;
 source/networking/network_server_manager.c	ae_silent_host_machine(client_machine->machine_index, network_game_server_client_machine_is_joined_to_game(server, client_machine) && !network_game_server_client_machine_is_local(server, client_machine), &server->game.variant, &server->game.variant_options); /* AE hook */
@@ -469,6 +470,8 @@ source/rasterizer/xbox/rasterizer_xbox_plasma_energy.c	ae_shield_fx_draw_end(); 
 source/objects/damage.c	for (ae_blood = ae_shield_fx_guest_blood_pop(object_index, damage); ae_blood > 0; ae_blood--) damage_effect_new_at_location(ae_shield_fx_blood_effect(ae_shield_fx_hit_effect(object_index)), object_index, NONE, &damage->epicenter, ae_shield_fx_blood_direction(&damage->direction, ae_blood), NULL); /* AE hook */
 port/linux/game/network_damage.c	#include "ae_shield_fx.h" /* AE hook */
 port/linux/game/network_damage.c	ae_shield_fx_guest_hit(event->being_damaged_flags, event->body_damage); /* AE hook */
+# (Theater, CE parity) a replay's cinematic camera is told who hurt the player watched (it does nothing but while a replay plays)
+port/linux/game/network_damage.c	{ void network_replay_playback_damage(long, long, long, real_point3d const *); if (event->shield_damage > 0.0f || event->body_damage > 0.0f) network_replay_playback_damage(event->object_index, damage.owner_player_index, damage.owner_object_index, &damage.origin); } /* AE hook */
 port/linux/game/shield_glow.c	#include "ae_shield_fx.h" /* AE hook */
 port/linux/game/shield_glow.c	value = ae_shield_fx_glow_value(unit_index, value); /* AE hook */
 port/linux/game/shield_glow.c	ae_shield_fx_glow_color(unit_index, color); /* AE hook */
@@ -680,6 +683,8 @@ port/linux/game/bots.c	aim_point.y += target_object->object.translational_veloci
 port/linux/game/bots.c	aim_point.z += target_object->object.translational_velocity.k * ticks * skill->lead * vertical; /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_drop(bot, tick, &aim_point); /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_grenade(bot, tick, reaction_ticks); /* AE hook */
+# the original fight's grenade at middle range only when no teammate is near the landing or in the throw's path (ae_bots_combat.inc)
+port/linux/game/bots.c		ae_bots_fight_grenade_safe(bot, tick)) /* AE hook */
 port/linux/game/bots.c	ae_bots_fight_move(bot, tick); /* AE hook */
 port/linux/game/bots.c	ae_bots_look_about(bot, tick); /* AE hook */
 port/linux/game/bots.c	ae_bots_crouch_jump_tick(bot, &tick); /* AE hook */
@@ -1265,7 +1270,6 @@ source/game/game_engine.c	ae_key_prompts_score_text(player_index, buffer, buffer
 # before its render_state_bitmap (the HUD's custom lines only in ui_widget.c), which asks AE first; the key drawn there
 source/interface/hud_messaging.c	#include "ae_key_prompts.h" /* AE hook */
 source/interface/hud_messaging.c	if (ae_key_prompts_icon(cursor_bounds, TEST_FLAG(icon->flags, _hud_icon_use_color_bit) ? icon->color : color)) return; /* AE hook */
-source/interface/hud_messaging.c	ae_key_prompts_note(element->data, icon_index, local_player_count() > 1 ? 0.75f : 1.0f); /* AE hook */
 source/interface/ui_widget.c	#include "ae_key_prompts.h" /* AE hook */
 source/interface/ui_widget.c	if (ae_key_prompts_icon(cursor_bounds, color)) return; /* AE hook */
 source/interface/ui_widget.c	if (ignore_icon_color) ae_key_prompts_note_text_icon(remapped_icon_type, icon_index, hud_globals_get_scale(local_player_count() > 1)); /* AE hook */
@@ -1879,6 +1883,8 @@ port/linux/src/port_config.c	{ "controls.dev_shoulder", _config_string, "\"F3\""
 port/linux/src/port_config.c	{ "controls.dev_free_camera", _config_string, "\"F6\"", "HALO_KEY_DEV_FREE_CAMERA", _environment_value, /* AE hook */
 # (the dev cameras keep the player's own controls: CE's debug camera controls, which the right stick toggles on any other camera, would take the look)
 source/camera/director.c	(director_camera_update_proc)following_camera_update && !ae_dev_camera_is_third((void *)director->camera_proc) && !ae_dev_camera_free(local_player_index)) /* AE hook */
+# (Theater, CE parity) the game's own seated view worked out from the unit alone, for a replay's rider seen from behind (ae_following_view.inc)
+source/camera/following_camera.c	#include "ae_following_view.inc" /* AE hook */
 # (0.3.9) AE's Bomb rules (ae_bomb_assault.c), a Bomb game not melee only: FLAG SPAWNS (the attacking team's flag,
 # the defenders can't take it, sides swap each round), DEFUSE (a defender stands on the planted bomb 3 s), FUSE (5 s)
 source/game/game_engine_bomb.c	#include "ae_bomb_assault.h" /* AE hook */
@@ -1965,6 +1971,8 @@ source/game/player_control.c	#include "ae_pause.h" /* AE hook */
 source/game/player_control.c	if (ae_pause_player_open(local_player_index)) csmemset(&input, 0, sizeof(input)); /* AE hook */
 source/game/game_engine.c	#include "ae_pause.h" /* AE hook */
 source/game/game_engine.c	if (ae_pause_scoreboard_shown(local_player_index)) fade = 1.0f; /* AE hook */
+# (Theater) a replay's pause card or seek card is over the view: the scoreboard Back opens stays shut
+source/game/game_engine.c	{ unsigned char network_replay_scores_hidden(void); if (network_replay_scores_hidden()) fade = 0.0f; } /* AE hook */
 # (0.4.0) AE SCOREBOARD (ae_scoreboard.c): HUD STYLE AE draws the full-screen scoreboard in the AE menus' look;
 # the mouse's player picking, co-op and split screen keep game_engine.c's
 source/game/game_engine.c	#include "ae_scoreboard.h" /* AE hook */
@@ -2328,6 +2336,9 @@ source/interface/hud.c	if (ae_marks_running() && !cinematic_in_progress()) ae_ma
 source/interface/hud_item_timers.c	short hud_item_timers_ae_name_tags(short v, rectangle2d *b, short most) { short n = 0; if (v >= 0 && v < MAXIMUM_LOCAL_PLAYERS) for (; n < hud_waypoint_name_tags[v].count && n < most; n++) b[n] = hud_waypoint_name_tags[v].bounds[n]; return n; } /* AE hook */
 # display.mark_prompt (HUD > RETICLE, each player's, ON) and the calls the wheel has sent, which the legend of hints counts
 port/linux/src/port_config.c	{ "display.mark_prompt", _config_boolean, "true", "HALO_MARK_PROMPT", _environment_value, _platform_all, /* AE hook */
+# display.mark_prompt_look / display.mark_prompt_place (HUD > RETICLE, each player's): the prompt's strength and its place
+port/linux/src/port_config.c	{ "display.mark_prompt_look", _config_string, "\"full\"", "HALO_MARK_PROMPT_LOOK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "display.mark_prompt_place", _config_string, "\"beside\"", "HALO_MARK_PROMPT_PLACE", _environment_value, _platform_all, /* AE hook */
 # the kill feed (ae_killfeed.c, rules ae_killfeed_rules.c): the killing blow kept, a row for each local player when a player dies, the game's
 # kill lines left out for a player who has it on, and the panel drawn after the medals
 source/objects/damage.c	#include "ae_killfeed.h" /* AE hook */
@@ -4031,6 +4042,26 @@ port/linux/src/port_config.c	{ "debug.dynamic_resolution_force", _config_integer
 port/linux/src/port_config.c	{ "display.max_fps_own", _config_integer, "-2", "HALO_MAX_FPS_OWN", _environment_value, _platform_desktop, /* AE hook */
 port/linux/src/port_config.c	{ "display.split_graphics", { "auto", "same", "quality", "performance", NULL }, "\"auto\"" }, /* AE hook */
 port/linux/src/port_config.c	{ "display.split_two_players", { "auto", "top_and_bottom", "side_by_side", NULL }, "\"auto\"" }, /* AE hook */
+# (rc8) SPLIT SCREEN FOV (display.split_fov) and SPLIT SCREEN HUD (display.split_hud), each player's own: two players side by
+# side can draw one player's HUD (the game's split-screen choices go through ae_split_layout_hud_one_player and
+# ae_split_layout_hud_small), and the field of view for two to four players has its own value
+port/linux/src/port_config.c	{ "display.split_fov", _config_real, "-1.0", "HALO_SPLIT_FOV", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "display.split_hud", _config_string, "\"compact\"", "HALO_SPLIT_HUD", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "display.split_hud", { "compact", "one_player", NULL }, "\"compact\"" }, /* AE hook */
+port/linux/game/view_fov.c	unsigned long changes = ae_config_player_changes() ^ (local_player_count() > 1 ? 0x80000000ul : 0ul); /* AE hook */
+port/linux/game/view_fov.c	double degrees = ae_split_layout_fov_degrees(); /* AE hook */
+source/interface/hud_draw.c	#include "ae_split_layout.h" /* AE hook */
+source/interface/hud_draw.c	if (local_player_count() > 1 && !ae_split_layout_hud_one_player()) /* AE hook */
+source/interface/hud_unit.c	#include "ae_split_layout.h" /* AE hook */
+source/interface/hud_unit.c	unit_definition_get(unit_get(player->unit_index)->definition_index), ae_split_layout_hud_small()); /* AE hook */
+source/interface/hud_unit.c	SET_FLAG(draw_flags, _hud_draw_in_multiplayer_bit, ae_split_layout_hud_small()); /* AE hook */
+source/interface/hud_messaging.c	#include "ae_split_layout.h" /* AE hook */
+source/interface/hud_messaging.c	hud_calculate_point(local_player_index, &placement, &offset, NULL, ae_split_layout_hud_small(), scale, &point); /* AE hook */
+source/interface/hud_messaging.c	if (ae_split_layout_hud_small() && /* AE hook */
+source/interface/hud_messaging.c	ae_key_prompts_note(element->data, icon_index, ae_split_layout_hud_small() ? 0.75f : 1.0f); /* AE hook */
+port/linux/game/hud_hires_tags.c	#include "ae_split_layout.h" /* AE hook */
+port/linux/game/hud_hires_tags.c	viewport = ae_split_layout_hud_small() ? 0.75f : 1.0f; /* AE hook */
+port/linux/game/hud_hires_tags.c	viewport = ae_split_layout_hud_small() ? 0.75f : 1.0f; /* AE hook */
 # (0.9.0) SPLIT SCREEN's layout (ae_split_layout.c): two players side by side or with side bars, the views and their
 # safe frames, the dividers and bars (black each frame), a side-by-side view's widened field of view and its weapon
 # drawn as one player's in a 16:9 band at the view's foot (an off-centre projection),
@@ -4445,6 +4476,14 @@ port/linux/game/bots.c	return ae_bots_fire_line_clear(eye, &vector, target_unit_
 port/linux/game/bots.c	static boolean bots_is_seen_enemy(struct player_datum *player, struct player_datum *other) /* AE hook */
 port/linux/game/bots.c	if (!bots_is_seen_enemy(player, other)) /* AE hook */
 port/linux/game/bots.c	if (bots_is_seen_enemy(player, other)) /* AE hook */
+# the campaign AI squad's path data (ae_bots_squad.inc): a door that opens for a body stays open to the searches, its surfaces
+# and a failed search's learnt scenery recorded to be opened again; a machine is never learnt in the way.
+port/linux/game/bots.c	static boolean ae_squad_paths_keep_open(long object_index); /* AE hook */
+port/linux/game/bots.c	static boolean ae_squad_paths_may_learn(long object_index); /* AE hook */
+port/linux/game/bots.c	static void ae_squad_paths_closed(long object_index, long surface_index); /* AE hook */
+port/linux/game/bots.c	if (ae_squad_paths_keep_open(iterator.index)) continue; /* AE hook */
+port/linux/game/bots.c	ae_squad_paths_closed(object_index, surface_index); /* AE hook */
+port/linux/game/bots.c	if (!ae_squad_paths_may_learn(iterator.index)) continue; /* AE hook */
 # sv_vpn_fetch on a server publishing to several masters: every master's netlist is due at once and asked once, then
 # the thread waits again (with fetch_now kept set, the due search stopped at master 0 every time and never waited)
 port/linux/src/server_netlist.c	if (now >= netlist.masters[index].next_fetch) /* AE hook */
@@ -4594,6 +4633,7 @@ port/linux/src/port_config.c	{ "game.companions_brain", _config_string, "\"bot\"
 port/linux/src/port_config.c	{ "game.companions_skill", _config_string, "\"heroic\"", "HALO_COMPANIONS_SKILL", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.companions_loadout", _config_string, "\"standard\"", "HALO_COMPANIONS_LOADOUT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.companions_player_down", _config_string, "\"checkpoint\"", "HALO_COMPANIONS_PLAYER_DOWN", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.companions_door_stack", _config_string, "\"order\"", "HALO_COMPANIONS_DOOR_STACK", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.campaign_skip_training", _config_boolean, "false", "HALO_CAMPAIGN_SKIP_TRAINING", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.script_refuse", _config_string, "\"\"", "HALO_SCRIPT_REFUSE", _environment_value, _platform_all, /* AE hook */
 source/hs/hs.c	static short game_difficulty_level_get_ignore_easy_told(void) { return ae_skip_training_difficulty_told(game_difficulty_level_get_ignore_easy()); } /* AE hook */
@@ -4631,6 +4671,8 @@ port/linux/game/network_distributed.c	if (connection == _game_connection_network
 port/linux/game/network_distributed.c	if (machine_index < 0 || machine_index >= DISTRIBUTED_VIEWING_MACHINES) /* AE hook */
 port/linux/game/network_distributed.c	if (machine_index == DISTRIBUTED_RECORDER_MACHINE) { network_replay_record(_network_replay_reliable_to_machine, message, size); return; } /* AE hook */
 port/linux/game/network_distributed.c	#include "network_replay.h" /* AE hook */
+# (Theater, CE parity) the players' facings a recorded message carries, read for a replay's eyes view (ae_replay_facings.inc)
+port/linux/game/network_distributed.c	#include "ae_replay_facings.inc" /* AE hook */
 port/linux/game/network_distributed.c	long distributed_recorder_machine(void) { if (!distributed_machines.valid) { long machine_indices[HALO_PORT_MAXIMUM_NETWORK_MACHINES]; distributed_client_machines(machine_indices, HALO_PORT_MAXIMUM_NETWORK_MACHINES); } return distributed_machines.recorder; } /* AE hook */
 port/linux/game/network_distributed.c	long machine_indices[DISTRIBUTED_VIEWING_MACHINES]; short machine_count = distributed_viewing_machines(machine_indices, DISTRIBUTED_VIEWING_MACHINES); /* AE hook */
 port/linux/game/network_distributed.c	long recorder; /* AE hook */
@@ -4656,6 +4698,9 @@ port/linux/game/network_distributed.c	/* (a replay's playback) a denylist: every
 port/linux/game/network_distributed.c	if (network_replay_playing() && !network_distributed_replay_allows(message, size)) return; /* AE hook */
 source/game/game_time.c	/* (a replay's playback: the records of the tick reached, before it runs) */ unsigned char network_replay_playing(void); void network_replay_playback_tick(void); /* AE hook */
 source/game/game_time.c	if (network_replay_playing()) network_replay_playback_tick(); /* AE hook */
+# (Theater, CE parity) a replay's seek runs up to 60 ticks a frame (CE's network_replay_ticks_per_frame)
+source/game/game_time.c	/* (a replay's seek: the ticks a frame runs) */ long network_replay_ticks_per_frame(long ticks); /* AE hook */
+source/game/game_time.c	if (network_replay_playing()) connection = network_replay_ticks_per_frame(connection); /* AE hook */
 source/main/main.c	/* (a replay's playback has no local player: window 0 is local player 0's, drawn with the playback's view) */ if (window_index == 0 && network_replay_playing()) { struct observer_result const *replay_view = network_replay_camera(); if (replay_view) { window->local_player_index = 0; observer = replay_view; } } /* AE hook */
 source/main/main.c	#include "network_replay.h" /* AE hook */
 source/networking/network_client_manager.c	/* (a replay's playback, network_replay_playback.c: a client with no connection to anyone, whose messages are the replay's) */ boolean network_replay_playing(void); boolean network_replay_playback_starting(void); void network_replay_playback_started(void); boolean network_replay_playback_idle(struct network_game_client *client); void network_replay_playback_stop(void); /* AE hook */
@@ -4750,7 +4795,7 @@ source/hs/hs_library_external.c	#include "ae_companion.h" /* AE hook */
 source/hs/hs_library_external.c	if (player->unit_index != NONE && !ae_companion_script_skips(player_index)) /* AE hook */
 source/hs/hs_library_external.c	if (player->unit_index != NONE && !ae_companion_script_skips(iterator.datum_index) && /* AE hook */
 source/game/players.c	if (!players_globals->input_disabled && !ae_companion_is_driven(player->unit_index)) /* AE hook */
-source/ai/actors.c	if (!randomizer_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && !ae_campaign_weapons_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && actor_variant_definition->ranged_combat.reference.index != NONE) /* AE hook */
+source/ai/actors.c	if (!randomizer_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index, actor_variant_definition_index) && !ae_campaign_weapons_actor_weapon(actor_variant_definition->ranged_combat.reference.index, unit_index) && actor_variant_definition->ranged_combat.reference.index != NONE) /* AE hook */
 source/ai/actors.c	#include "ae_campaign_weapons.h" /* AE hook */
 source/ai/actors.c	if ((actor_variant_definition_index = randomizer_actor_variant(actor_variant_definition_index, encounter_index, squad_index, starting_location)) == NONE) return NONE; /* AE hook */
 source/ai/actors.c	actor_variant_definition = actor_variant_definition_get(actor_variant_definition_index); /* AE hook */
@@ -4904,6 +4949,20 @@ port/linux/game/network_distributed.c	if (player) /* AE hook */
 port/linux/game/network_distributed.c	speed_multiplier *= ae_traits_speed_multiplier(DATUM_INDEX_NEW(player_index, player->identifier)); /* AE hook */
 port/linux/game/network_distributed.c	information ? information->double_speed_multiplier : 1.f, speed_multiplier, 0.f); /* AE hook */
 port/linux/game/network_distributed.c	information ? information->double_speed_multiplier : 1.f, speed_multiplier, jump_speed); /* AE hook */
+# (online party) the setting that turns the party service on (empty: off)
+port/linux/src/port_config.c	{ "network.party_service", _config_string, "\"\"", "HALO_NET_PARTY_SERVICE", _environment_value, _platform_all, /* AE hook */
+# (online party) STEAM FRIENDS' opt-in setting (off)
+port/linux/src/port_config.c	{ "network.steam_friends", _config_boolean, "false", "HALO_NET_STEAM_FRIENDS", _environment_value, _platform_all, /* AE hook */
+# (party review fixes) the party leader's hosted-game invite is replaced when a member has gone (ae_party_follow.c)
+port/linux/src/p2p.c	void p2p_hosting_rotate_invite(void) { pthread_mutex_lock(&p2p_lock); p2p_new_invite(); pthread_mutex_unlock(&p2p_lock); } /* AE hook */
+port/linux/src/p2p.h	void p2p_hosting_rotate_invite(void); /* AE hook */
+# (party review fixes) update_https_request runs in turn with the other Mbed TLS users (ae_https_guard.c); the log shows an address without its query
+port/linux/src/posix_update.c	#define update_https_request ae_update_https_request_unlocked /* AE hook */
+port/linux/src/posix_update.c	#undef update_https_request /* AE hook */
+port/linux/src/posix_update.c	snprintf(error, (size_t)error_size, "plain http:// only to this machine: %s", host); /* AE hook */
+port/linux/src/posix_update.c	snprintf(error, (size_t)error_size, "not an https:// address"); /* AE hook */
+port/linux/src/master_list.c	#include "ae_https_guard.h" /* AE hook */
+port/linux/src/master_list.c	platform_log("server browser: %s: %s", ae_https_log_address(url), error); /* AE hook */
 # (rc6) REJOIN AFTER A DROP (ae_rejoin.c): the setting and its test drop; the host's replace rule at a join request (a
 # stale machine of the same name and machine dropped first, the lobby's fullness read again); the client's test drop in
 # the game, and a silent test drop's stream kept open as its socket closes; the host's silence and drop of a machine
@@ -4950,8 +5009,6 @@ source/objects/damage.c	(game_engine_running() || firing_range_multiplayer_targe
 source/objects/damage.c	if (firing_range_damage_ignored(damage->owner_object_index, object_index)) return; /* AE hook */
 source/objects/damage.c	if (!firing_range_multiplayer_target(object_index)) /* AE hook */
 # (the firing range) its level's roster: the campaign's actors copied in as Firefight's are; a Custom Edition or MCC map loaded leaves the range if asked for
-port/linux/game/randomizer.c	#include "firing_range.h" /* AE hook */
-port/linux/game/randomizer.c	if (firing_range_level_profile(scenario_name)) { range_tags_loaded(scenario_name); return; } /* AE hook */
 source/cache/cache_files.c	firing_range_tags_loaded("", NONE); /* AE hook */
 source/game/game_engine.c	variant->game_engine_index = firefight_engine_index_kept(variant->game_engine_index); /* AE hook */
 # a network test's co-op of a level given by its path (an MCC package's mcc_maps\<package>\<map>) takes the path's
@@ -4967,3 +5024,125 @@ port/linux/game/mcc_geometry.c	#include "ae_mcc_skinning.h" /* AE hook */
 port/linux/game/mcc_geometry.c	void const *ae_nodes=many ? mg_block(r,&model->nodes,sizeof(struct model_node)) : NULL; /* AE hook */
 port/linux/game/mcc_geometry.c	if (many) { vertices[i].nodes[j]=ae_mcc_model_skinned_node(ae_nodes,model->nodes.count,local ? palette[node] : node); continue; } /* AE hook */
 port/linux/game/mcc_geometry.c	if (many) for (i=0;i<2;i++) if (part->centroid_nodes[i]>=0) part->centroid_nodes[i]=ae_mcc_model_skinned_node(ae_nodes,model->nodes.count,part->centroid_nodes[i]); /* AE hook */
+# (rc8) Content Evolved's tag injector at its latest: its effect preview reads a block's elements through
+# tag_block_get_element_with_size (the 64-bit build's blocks hold Xbox addresses; tag_groups.h)
+port/linux/game/cev/tag_injector.c	char const *marker = (char const *)tag_block_get_element_with_size(&effect->locations, /* AE hook */
+port/linux/game/cev/tag_injector.c	tag_block_get_element_with_size(&event->particles, index, sizeof(struct preview_effect_particles)), /* AE hook */
+# (rc8) Content Evolved's tag_campaign.c: its Custom Edition and tag injector units are the cev/ copy
+# (cev_names.h gives that copy's names); Forge is off here (opence_features.h)
+port/linux/game/tag_campaign.c	#include "cev/cev_names.h" /* AE hook */
+port/linux/game/tag_campaign.c	#include "cev/tag_injector.h" /* AE hook */
+port/linux/include/opence_features.h	#define OPENCE_ENABLE_FORGE          0  /* 3D Monitor editor, runtime tags, .fmap cache builder */ /* AE hook */
+# (rc8) Content Evolved's campaign randomizer, as it is: randomizer.c, over this build's 64-bit pointers (an Xbox address in a tag),
+# played in a campaign or Firefight game alone (ae_randomizer_glue.inc: ae_randomizer_campaign_game); the rest is ae_randomizer_glue.*
+source/ai/actors.c	long ae_original_unit = NONE, ae_requested_variant = NONE; /* AE hook */
+source/ai/actors.c	ae_original_unit = actor_variant_definition->unit_reference.index; ae_requested_variant = actor_variant_definition_index; /* AE hook */
+source/ai/actors.c	if (ae_original_unit != NONE && ae_original_unit != actor_variant_definition->unit_reference.index) placement_data.owner_team_index = unit_definition_get(ae_original_unit)->unit.default_team; /* AE hook */
+source/ai/actors.c	randomizer_actor_placed(actor_index, ae_requested_variant); /* AE hook */
+source/units/units.c	if (!result && weapon_label && strcmp(weapon_label, "unarmed")) { extern char const *randomizer_borrowed_weapon_label(long, char const *, int); static boolean borrowing; int nth; if (!borrowing) { borrowing = TRUE; for (nth = 0; !result; nth++) { char const *borrowed = randomizer_borrowed_weapon_label(object_index, weapon_label, nth); if (!borrowed) break; result = unit_set_or_test_seat_and_weapon_label(object_index, seat_label, borrowed, change_flag); } borrowing = FALSE; } } /* AE hook */
+port/linux/game/randomizer.c	static int ae_randomizer_campaign_game(char const *scenario_name); /* AE hook */
+port/linux/game/randomizer.c	typedef char randomizer_pointer_size[1]; /* AE hook */
+port/linux/game/randomizer.c	XPTR(char) name; /* AE hook */
+port/linux/game/randomizer.c	XPTR(void) base_address; /* AE hook */
+port/linux/game/randomizer.c	block->definition = 0; /* AE hook */
+port/linux/game/randomizer.c	if (!ae_randomizer_campaign_game(scenario_name)) return; /* AE hook */
+port/linux/game/randomizer.c	#include "ae_randomizer_glue.inc" /* AE hook */
+port/linux/game/randomizer.h	#include "ae_randomizer_glue.h" /* AE hook */
+port/linux/src/port_config.c	{ "game.daily_challenge", _config_boolean, "false", "HALO_DAILY_CHALLENGE", _environment_value, _platform_all, /* AE hook */
+port/linux/game/randomizer.c	#include "tag_field_bits.h" /* AE hook */
+port/linux/game/randomizer.c	unit_name = tag_import_string(donor, FIELD_BITS(variant->unit_reference.name)); /* AE hook */
+port/linux/game/randomizer.c	tag_import_address(donor, FIELD_BITS(scenario->ai_actor_palette.address), /* AE hook */
+port/linux/game/randomizer.c	tag_import_address(donor, FIELD_BITS(block->address), (unsigned long)block->count * sizeof(short)) : NULL; /* AE hook */
+port/linux/game/randomizer.c	seats = graph->unit_seats.count > 0 ? tag_import_address(donor, FIELD_BITS(graph->unit_seats.address), /* AE hook */
+port/linux/game/randomizer.c	FIELD_BITS(seat->weapon_classes.address), (unsigned long)seat->weapon_classes.count * sizeof(*classes)); /* AE hook */
+port/linux/game/randomizer.c	FIELD_BITS(weapon_class->weapon_types.address), /* AE hook */
+port/linux/game/randomizer.c	#include "cev/cev_names.h" /* AE hook */
+port/linux/game/randomizer.c	#include "cev/tag_injector.h" /* AE hook */
+# (rc8) Content Evolved's campaign score, medals, service rank and Firefight stats, as they are (ae_pve_glue.c): played in a campaign
+# or Firefight game only (ae_pve_rules.c); the stats' upload and loopback socket wait for the community services' opt-in
+port/linux/game/campaign_score.c	#include "ae_pve_glue.h" /* AE hook */
+port/linux/game/campaign_score.c	#include "cev/custom_edition_maps.h" /* AE hook */
+port/linux/game/firefight_stats.c	#include "halo_emblems.h" /* AE hook */
+port/linux/game/firefight_stats.c	#include "ae_pve_glue.h" /* AE hook */
+port/linux/game/firefight_stats.c	if (!ae_stats_upload_allowed()) { free(payload); return; } /* AE hook */
+port/linux/game/firefight_stats.c	if (!ae_stats_socket_allowed()) return FALSE; /* AE hook */
+port/linux/game/campaign_medals.c	#include "ae_pve_glue.h" /* AE hook */
+port/linux/game/campaign_score.c	if (!ae_pve_records_allowed()) return; /* AE hook */
+port/linux/game/campaign_medals.c	if (!ae_pve_records_allowed()) return; /* AE hook */
+port/linux/game/firefight_stats.c	if (!ae_pve_records_allowed()) return; /* AE hook */
+port/linux/game/campaign_score.c	real_vector3d blow = { { 0.0f, 0.0f, 0.0f } }; /* AE hook */
+# (rc8) the rows Content Evolved's randomizer, medals, score and stats read: the randomizer's own, and every default that keeps the
+# multiplayer medals and score, the campaign medals and the stats off
+port/linux/src/port_config.c	{ "game.randomizer_ally_custom_type", _config_string, "\"\"", "HALO_RANDOMIZER_ALLY_CUSTOM_TYPE", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_ally_elite_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_ELITE_RANK", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_ally_flood_combat_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_FLOOD_COMBAT_RANK", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_ally_grunt_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_GRUNT_RANK", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_ally_hunter_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_HUNTER_RANK", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_ally_jackal_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ALLY_JACKAL_RANK", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_crazy", _config_boolean, "false", "HALO_RANDOMIZER_CRAZY", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.randomizer_crazy_enemies", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_ENEMIES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_crazy_flamethrower", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_FLAMETHROWER", /* AE hook */\n_environment_value, _platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_crazy_pods", _config_integer, "30", "HALO_RANDOMIZER_CRAZY_PODS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_crazy_weapons", _config_boolean, "true", "HALO_RANDOMIZER_CRAZY_WEAPONS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_custom_type", _config_string, "\"\"", "HALO_RANDOMIZER_CUSTOM_TYPE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_elite_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_ELITE_RANK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.randomizer_extra_enemies", _config_integer, "1", "HALO_RANDOMIZER_EXTRA_ENEMIES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_flood_combat_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_FLOOD_COMBAT_RANK", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_grunt_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_GRUNT_RANK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.randomizer_hunter_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_HUNTER_RANK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.randomizer_jackal_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_JACKAL_RANK", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.randomizer_pickup_custom", _config_string, "\"\"", "HALO_RANDOMIZER_PICKUP_CUSTOM", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_tag_profile", _config_string, "\"\"", "HALO_RANDOMIZER_TAG_PROFILE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_weapon_custom", _config_string, "\"\"", "HALO_RANDOMIZER_WEAPON_CUSTOM", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.campaign_medals", _config_boolean, "false", "HALO_CAMPAIGN_MEDALS", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "game.multiplayer_medals", _config_boolean, "false", "HALO_MULTIPLAYER_MEDALS", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.multiplayer_scoring", _config_boolean, "false", "HALO_MULTIPLAYER_SCORING", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.multiplayer_score_hud", _config_boolean, "false", "HALO_MULTIPLAYER_SCORE_HUD", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "stats.api_url", _config_string, "\"\"", NULL, _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "stats.web_url", _config_string, "\"\"", NULL, _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "stats.auto_export_json", _config_boolean, "false", NULL, _environment_value, _platform_all, /* AE hook */
+# (rc8) the Firefight game is the next game's (game_variant_global, set before its map loads), not the last game's (global_variant); the UI's
+# last variant is not one; a network game is never randomized, so the lobby does not say it is
+port/linux/game/randomizer.c	extern struct game_variant game_variant_global; /* AE hook */
+port/linux/game/randomizer.c	if (game_variant_global.game_engine_index == game_engine_firefight) /* AE hook */
+port/linux/game/randomizer.c	if (FALSE && player_ui_game_variant_specified(&spec_variant) && /* AE hook */
+port/linux/game/randomizer.c	if (game) return 0; /* AE hook */
+# (the campaign's rule screens and end card, rc8) AE's menus read the score's multipliers and par times and draw the level
+# summary themselves (ae_pve_score_menus.inc, ae_screen_end_card.c): the game's card is drawn only with AE's menus off
+port/linux/game/campaign_score.c	#include "ae_pve_score_menus.h" /* AE hook */
+port/linux/game/campaign_score.c	if (ae_end_card_wanted()) return; /* AE hook */
+port/linux/game/campaign_score.c	#include "ae_pve_score_menus.inc" /* AE hook */
+# (the randomizer's saved setups and the item set switch, rc8) config entries the randomizer screens write
+port/linux/src/port_config.c	{ "game.randomizer_profile_1", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_1", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_2", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_2", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_3", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_3", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_4", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_4", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_5", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_5", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_6", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_6", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_7", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_7", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.randomizer_profile_8", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_8", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.tag_injection", _config_boolean, "false", "HALO_TAG_INJECTION", _environment_value, _platform_all, /* AE hook */
+# (1.0.x DAILY CHALLENGE, community.c) the settings a challenge sets for its run, read before the file's and the environment's; and the community.* settings (every one off or empty: nothing is sent or asked until the player turns ONLINE on)
+port/linux/src/port_config.c	static struct config_value config_overrides[NUMBER_OF_CONFIG_SETTINGS]; /* AE hook */
+port/linux/src/port_config.c	static unsigned char config_overridden[NUMBER_OF_CONFIG_SETTINGS]; /* AE hook */
+port/linux/src/port_config.c	if (config_overridden[index]) /* AE hook */\nreturn &config_overrides[index]; /* AE hook */
+port/linux/src/port_config.c	int config_override(const char *name, const char *value) { long index = config_setting_index(name); if (index < 0 || !value || strlen(value) > 160) return 0; config_value(name, config_settings[index].type); pthread_mutex_lock(&config_lock); config_set_from_text(&config_overrides[index], config_settings[index].type, value); config_overridden[index] = 1; config_change_count++; pthread_mutex_unlock(&config_lock); return 1; } /* AE hook */
+port/linux/src/port_config.c	void config_overrides_clear(void) { size_t index; int any = 0; pthread_mutex_lock(&config_lock); for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS; index++) { if (config_overridden[index]) { config_overridden[index] = 0; any = 1; } } if (any) config_change_count++; pthread_mutex_unlock(&config_lock); } /* AE hook */
+port/linux/src/port_config.c	{ "community.enabled", _config_boolean, "false", "HALO_COMMUNITY", _environment_value, _platform_all, /* AE hook */
+port/linux/src/port_config.c	{ "community.server_mode", _config_string, "\"default\"", "HALO_COMMUNITY_SERVER_MODE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "community.custom_server", _config_string, "\"\"", "HALO_COMMUNITY_CUSTOM_SERVER", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "community.upload_scores", _config_boolean, "false", "HALO_COMMUNITY_UPLOAD_SCORES", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "community.key", _config_string, "\"\"", "HALO_COMMUNITY_KEY", _environment_value, _platform_all, /* AE hook */
+# (1.0.x DAILY CHALLENGE) the community answers picked up each frame, and a challenge's level won: back to the menus (the lobby of a co-op host), never on to the next level
+source/main/main.c	{ extern void community_update(boolean main_menu); community_update(main_globals.main_menu_scenario_loaded); } /* AE hook */
+source/main/main.c	{ extern boolean community_challenge_running(void); extern void community_daily_won(void); if (community_challenge_running()) { main_globals.won_map = FALSE; if (game_connection() == _game_connection_network_server && network_coop_active()) { network_game_server_port_cooperative_won(NULL); return; } community_daily_won(); main_goto_main_menu(); return; } } /* AE hook */
+# (1.0.x DAILY CHALLENGE) a setting a challenge sets for its run is never written to config.toml
+port/linux/src/port_config.c	static int config_write_overridden(long index, const char *name) { static unsigned char told[NUMBER_OF_CONFIG_SETTINGS]; if (!config_overridden[index]) return 0; if (!told[index]) { told[index] = 1; platform_log("settings: %s is set for this run (a daily challenge), config.toml keeps the player's own value", name); } return 1; } /* AE hook */
+port/linux/src/port_config.c	if (config_write_overridden(index, name)) return 0; /* AE hook */
+# (1.0.x DAILY CHALLENGE) a map loaded that is not the challenge's level takes the challenge's settings away, before its tags or a lobby read them
+source/game/game.c	{ extern void community_map_loading(char const *map_name); community_map_loading(options->map_name); } /* AE hook */
+# (rc8 ITEM SETS, PLAYER LOADOUT) AE's weapons in the loadout picker: a SET value of AE's, the fall back to the level's own loadout when the
+# primary is missing, and AE's weapons among RANDOM's choices (ae_randomizer_loadout.c)
+port/linux/game/randomizer.c	if (ae_randomizer_loadout_weapon(value, &index)) return index; /* AE hook */
+port/linux/game/randomizer.c	if (ae_randomizer_loadout_primary_missing(current.loadout_weapons[0], loadout_set[0])) loadout_set[0] = loadout_set[1] = NONE; /* AE hook */
+port/linux/game/randomizer.c	ae_randomizer_loadout_add_ae(loadout_choice.definitions, &loadout_choice.count, WEAPON_MAX); /* AE hook */

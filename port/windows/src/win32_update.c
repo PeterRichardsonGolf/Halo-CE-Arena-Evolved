@@ -172,6 +172,12 @@ done:
 
 /* ---------- any request */
 
+/* (WinHTTP has its own timeouts for each step and no shared TLS lock to hold: no total deadline) */
+void update_https_deadline(unsigned long milliseconds)
+{
+	(void)milliseconds;
+}
+
 int update_https_request(const char *method, const char *url, const char *headers, const void *body,
 	unsigned long body_size, unsigned long maximum, struct update_response *response, char *error, int error_size)
 {

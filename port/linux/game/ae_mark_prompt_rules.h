@@ -84,4 +84,20 @@ middle with every turn: the row keeps the side it has until the target is past t
 it had, 0 for none (right, or the side the target is on) */
 int ae_prompt_side_keep(float target_middle, float view_middle, float scale, int last);
 
+/* display.mark_prompt_look: how strong the row is drawn. "full" is the default; the others fade the button and the word */
+enum { AE_PROMPT_LOOK_FULL, AE_PROMPT_LOOK_SOFT, AE_PROMPT_LOOK_FAINT };
+/* the look of a setting's text; an unknown or NULL text is FULL */
+int ae_prompt_look_from_text(char const *text);
+/* the opacity of a look, 0 to 1 */
+float ae_prompt_look_alpha(int look);
+
+/* display.mark_prompt_place: "beside" is the default (above the target, or by the reticle); "below" puts the row
+under the reticle's zone, centred on the view's middle, wherever the target is */
+enum { AE_PROMPT_PLACE_BESIDE, AE_PROMPT_PLACE_BELOW };
+/* the place setting's text; an unknown or NULL text is BESIDE */
+int ae_prompt_place_from_text(char const *text);
+/* the fixed place under the reticle: AE_PROMPT_BELOW, or AE_PROMPT_NONE when the view's edge, the cap from the middle or a
+text row is in the way (the caller then places it as BESIDE does) */
+int ae_prompt_place_low(struct ae_prompt_in const *in, float *x, float *y);
+
 #endif

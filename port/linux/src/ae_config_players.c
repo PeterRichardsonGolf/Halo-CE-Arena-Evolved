@@ -34,7 +34,7 @@ static const char *const names[] =
 	"display.enemy_name_color", "display.dead_ally_markers", "display.scoreboard_team_layout", "display.scoreboard_background",
 	"display.scoreboard_fade", "display.show_quit_players", "display.scoreboard_background_color",
 	"display.waypoint_style", "display.waypoint_size", "display.power_list", "display.shotgun_power",
-	"display.spawn_heat", "display.mark_prompt", "display.medals", "display.medal_style", "display.kill_feed", "display.wheel_calls_sent",
+	"display.spawn_heat", "display.mark_prompt", "display.mark_prompt_look", "display.mark_prompt_place", "display.medals", "display.medal_style", "display.kill_feed", "display.wheel_calls_sent",
 	/* SERVER BROWSER / JOIN LAN GAMES: the chips left on */
 	"display.server_filter", "display.server_empty", "display.server_full", "display.server_ae_games",
 	/* CROSSHAIR v3 (HUD > RETICLE): the main, the 8 saved ones, the per-weapon table, the
@@ -54,7 +54,9 @@ static const char *const names[] =
 	/* (rc4) a Steam Controller's Steam button and its quick access button */
 	"input.back_steam", "input.back_quick", "input.back_trackpad",
 	/* (campaign companions) how many join this player's campaign levels */
-	"game.companions"
+	"game.companions",
+	/* (rc8) SPLIT SCREEN FOV (VIEW) and SPLIT SCREEN HUD (HUD): two to four players on this PC each have their own */
+	"display.split_fov", "display.split_hud"
 	/* (CALLOUTS, CALLOUT DETAIL, CALLOUT VOICE: one voice on this PC's speakers for every player, so this PC's) */
 };
 
@@ -63,7 +65,7 @@ static const char *const names[] =
 static const char types[] =
 	"iissrsbsrssbsssrrrrrbbbs" "ss"
 	"rrbbbbbbsbsbss"
-	"ssbsbbbbbsbsrsbsbsbssrsbs" "bbsbi" "sbbb" "ssssssssss" "i" "s" "s" "ss" "ss" "s" "ss" "sss" "i";
+	"ssbsbbbbbsbsrsbsbsbssrsbs" "bssbsbi" "sbbb" "ssssssssss" "i" "s" "s" "ss" "ss" "s" "ss" "sss" "i" "rs";
 typedef char ae_config_players_types_match[sizeof(types) - 1 == sizeof(names) / sizeof(names[0]) ? 1 : -1];
 
 struct player_value

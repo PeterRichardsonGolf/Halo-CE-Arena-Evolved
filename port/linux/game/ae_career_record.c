@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "ae_career_record.h"
+#include "ae_career_xp_rules.h"
 #include "ae_social_rules.h"
 #include "ae_social_match_rules.h"
 
@@ -428,6 +429,77 @@ int ae_career_match_restart(struct ae_career *career, char const *profile, unsig
 	return moved;
 }
 
+/* ---- career XP and challenges (version 3) ---- */
+
+struct ae_career_xp *ae_career_xp_find(struct ae_career *career, char const *profile)
+{
+	char key[AE_CAREER_ID];
+	int index;
+
+	ae_career_id(profile, key, sizeof(key));
+	for (index = 0; index < career->xp_count; index++)
+		if (!strcmp(career->xp[index].profile, key))
+			return &career->xp[index];
+	return NULL;
+}
+
+struct ae_career_xp *ae_career_xp_entry(struct ae_career *career, char const *profile)
+{
+	struct ae_career_xp *entry = ae_career_xp_find(career, profile);
+
+	if (entry)
+		return entry;
+	if (career->xp_count >= AE_CAREER_XP_PROFILES)
+		return NULL;
+	entry = &career->xp[career->xp_count++];
+	memset(entry, 0, sizeof(*entry));
+	ae_career_id(profile, entry->profile, sizeof(entry->profile));
+	if (!entry->profile[0])
+	{
+		career->xp_count--;
+		return NULL;
+	}
+	return entry;
+}
+
+long ae_career_xp_get(struct ae_career const *career, char const *profile)
+{
+	struct ae_career_xp const *entry = ae_career_xp_find((struct ae_career *)career, profile);
+
+	return entry ? entry->xp : 0;
+}
+
+struct ae_career_challenges *ae_career_challenges_find(struct ae_career *career, char const *profile)
+{
+	char key[AE_CAREER_ID];
+	int index;
+
+	ae_career_id(profile, key, sizeof(key));
+	for (index = 0; index < career->challenge_count; index++)
+		if (!strcmp(career->challenges[index].profile, key))
+			return &career->challenges[index];
+	return NULL;
+}
+
+struct ae_career_challenges *ae_career_challenges_entry(struct ae_career *career, char const *profile)
+{
+	struct ae_career_challenges *entry = ae_career_challenges_find(career, profile);
+
+	if (entry)
+		return entry;
+	if (career->challenge_count >= AE_CAREER_XP_PROFILES)
+		return NULL;
+	entry = &career->challenges[career->challenge_count++];
+	memset(entry, 0, sizeof(*entry));
+	ae_career_id(profile, entry->profile, sizeof(entry->profile));
+	if (!entry->profile[0])
+	{
+		career->challenge_count--;
+		return NULL;
+	}
+	return entry;
+}
+
 static unsigned long checksum(char const *text, size_t length)
 {
 	unsigned long hash = 2166136261u;
@@ -444,7 +516,9 @@ long ae_career_write(struct ae_career const *career, char *buffer, long size)
 	int ladder, index;
 	int n;
 
-	n = snprintf(buffer, (size_t)size, "# AE career\nversion = %d\n", AE_CAREER_VERSION);
+	/* (the XP lines make a version 3 file; a file without them stays version 2, as a 0.9.x reader takes it) */
+	n = snprintf(buffer, (size_t)size, "# AE career\nversion = %d\n",
+		career->xp_count || career->challenge_count ? AE_CAREER_VERSION_XP : AE_CAREER_VERSION);
 	if (n < 0 || n >= size)
 		return -1;
 	at = n;
@@ -505,6 +579,36 @@ long ae_career_write(struct ae_career const *career, char *buffer, long size)
 	{
 		n = snprintf(buffer + at, (size_t)(size - at), "experience = %s | %d\n", career->experience[index].profile,
 			career->experience[index].value);
+		if (n < 0 || n >= size - at)
+			return -1;
+		at += n;
+	}
+	for (index = 0; index < career->xp_count; index++)
+	{
+		n = snprintf(buffer + at, (size_t)(size - at), "xp = %s | %ld %lu\n", career->xp[index].profile, career->xp[index].xp,
+			career->xp[index].last);
+		if (n < 0 || n >= size - at)
+			return -1;
+		at += n;
+	}
+	for (index = 0; index < career->challenge_count; index++)
+	{
+		struct ae_career_challenges const *c = &career->challenges[index];
+		int each;
+
+		n = snprintf(buffer + at, (size_t)(size - at), "challenges = %s | %ld %ld", c->profile, c->day, c->week);
+		if (n < 0 || n >= size - at)
+			return -1;
+		at += n;
+		for (each = 0; each < AE_CAREER_CHALLENGE_SLOTS; each++)
+		{
+			n = snprintf(buffer + at, (size_t)(size - at), " | %s %ld %d", c->slot[each].kind[0] ? c->slot[each].kind : "-",
+				c->slot[each].progress, c->slot[each].done ? 1 : 0);
+			if (n < 0 || n >= size - at)
+				return -1;
+			at += n;
+		}
+		n = snprintf(buffer + at, (size_t)(size - at), "\n");
 		if (n < 0 || n >= size - at)
 			return -1;
 		at += n;
@@ -635,6 +739,87 @@ static int social_line(struct ae_career *career, char const *key, char *value)
 			return 0;
 		ae_career_experience_set(career, value, (int)number);
 	}
+	else if (!strcmp(key, "xp"))
+	{
+		char *first = strchr(value, '|'), *end;
+		long number[2];
+		struct ae_career_xp *entry;
+
+		if (!first)
+			return 0;
+		*first = 0;
+		end = first;
+		while (end > value && end[-1] == ' ')
+			*--end = 0;
+		if (!value[0] || strlen(value) >= AE_CAREER_ID || !numbers(first + 1, number, 2))
+			return 0;
+		if (ae_career_xp_find(career, value))
+			return -1;
+		entry = ae_career_xp_entry(career, value);
+		if (!entry)
+			return 0;
+		entry->xp = number[0] > AE_XP_MAX ? AE_XP_MAX : number[0];
+		entry->last = (unsigned long)number[1];
+	}
+	else if (!strcmp(key, "challenges"))
+	{
+		char *bar = strchr(value, '|'), *end, *piece;
+		long number[2];
+		struct ae_career_challenges *entry, fresh;
+		int each = 0;
+
+		if (!bar)
+			return 0;
+		*bar = 0;
+		end = bar;
+		while (end > value && end[-1] == ' ')
+			*--end = 0;
+		if (!value[0] || strlen(value) >= AE_CAREER_ID)
+			return 0;
+		memset(&fresh, 0, sizeof(fresh));
+		piece = bar + 1;
+		/* (the day and the week, then a slot after each bar: its kind's id, the counter and 0 or 1) */
+		bar = strchr(piece, '|');
+		if (bar)
+			*bar = 0;
+		if (!numbers(piece, number, 2))
+			return 0;
+		fresh.day = number[0];
+		fresh.week = number[1];
+		while (bar && each < AE_CAREER_CHALLENGE_SLOTS)
+		{
+			char *space, *next;
+			long counted[2];
+			size_t length;
+
+			piece = bar + 1;
+			bar = strchr(piece, '|');
+			if (bar)
+				*bar = 0;
+			next = piece;
+			while (*next == ' ')
+				next++;
+			space = strchr(next, ' ');
+			if (!space)
+				return 0;
+			*space = 0;
+			length = strlen(next);
+			if (!length || length >= AE_CAREER_CHALLENGE_ID || !numbers(space + 1, counted, 2) || counted[1] > 1)
+				return 0;
+			snprintf(fresh.slot[each].kind, sizeof(fresh.slot[each].kind), "%s", strcmp(next, "-") ? next : "");
+			fresh.slot[each].progress = counted[0];
+			fresh.slot[each].done = (int)counted[1];
+			each++;
+		}
+		if (ae_career_challenges_find(career, value))
+			return -1;
+		entry = ae_career_challenges_entry(career, value);
+		if (!entry)
+			return 0;
+		entry->day = fresh.day;
+		entry->week = fresh.week;
+		memcpy(entry->slot, fresh.slot, sizeof(entry->slot));
+	}
 	return 0;
 }
 
@@ -678,7 +863,7 @@ int ae_career_read(struct ae_career *career, char const *text)
 			if (strcmp(key, "version") || !numbers(value, &version, 1) || version < 1)
 				goto bad;
 			header = 1;
-			career->newer = version > AE_CAREER_VERSION;
+			career->newer = version > AE_CAREER_VERSION_MAX;
 			continue;
 		}
 		/* (the checksum is the last line: anything after it, a second header or a second checksum is an edited file) */
@@ -752,7 +937,7 @@ int ae_career_read(struct ae_career *career, char const *text)
 	if (!header)
 		goto bad;
 	if (!summed && (career->count[0] || career->count[1] || career->match_count || career->social_count || career->pending_count ||
-		career->experience_count))
+		career->experience_count || career->xp_count || career->challenge_count))
 		goto edited;
 	return AE_CAREER_READ_OK;
 edited:

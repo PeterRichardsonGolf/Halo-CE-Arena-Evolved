@@ -160,6 +160,16 @@ NO_BLOCK to code 66 and the others to AE_CACHE_REJECTION_CODE and the T69 text *
 int ae_silent_join_cache_decide(int uses_cache, int told, unsigned int client_format, unsigned int client_generation,
 	unsigned char const *client_digest4, unsigned int host_format, unsigned int host_generation,
 	unsigned char const *host_digest4);
+/* whether a lobby's game needs the weapon cache of its guests: a game with a game engine, when the host's chosen weapon
+block uses it; a co-op game (no engine) only when its own AE weapons do (campaign_needs_cache), whatever gametype the host
+chose before */
+int ae_silent_lobby_uses_cache(int has_engine, int selection_uses_cache, int campaign_needs_cache);
+/* whether the host's per-frame lobby gates (packs, grenades, rounds, ...) are run for a machine: only one joined from
+elsewhere; in a local game (split screen, no remote connections) every machine is the host's own, which no gate refuses */
+int ae_silent_host_checks_machine(int remote_joined, int local_game);
+/* whether a join request is exempt from the lobby gates: a local game's, or the host's own client's (own_pending: it is
+joining the host's own server and has not been read yet) */
+int ae_silent_join_exempt(int local_game, int own_pending);
 
 /* ---- 0.7.7: the MCC MARK, the machine name's index length - 8 (one place before the cache block's mark; 24 of 32):
 AE_SILENT_JOIN_MCC_MARK | bit 0 (the machine has MCC's files: found, game.mcc_use not "no"). The name must end before it, a

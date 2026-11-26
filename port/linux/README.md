@@ -581,7 +581,7 @@ game, run the list again: it resumes at the first test the crashed run did not
 record. The tests that run already gave a FAIL or SKIP for are still pending, so
 they are played after the resumed ones.
 
-Writing a list (for agents). One text file in `tools/ae_test/test_runs/`,
+Writing a list (for contributors). One text file in `tools/ae_test/test_runs/`,
 named `<id>.txt`. One key and its value per line; a line that starts with `#`
 is a comment. The format is in `port/linux/game/ae_test_run_list.h`, and
 `tools/ae_test/test_runs/sample.txt` shows every key. A list has `list <id>`,
@@ -595,6 +595,30 @@ must be played again: a PASS from before that revision no longer counts. A
 `revision` bump alone re-opens nothing. Check a list before you ship it:
 
     python3 tools/ae_test/test_run_lint.py tools/ae_test/test_runs/<id>.txt
+
+Before a person plays a list (for contributors). Four steps, each a script, in this
+order:
+
+    python3 tools/ae_test/box_sync.py <host>:<folder> --owner "<who made it>"
+    # build there with plain `ninja linux64` (the program and the files beside it)
+    python3 tools/ae_test/preflight.py --owner tools/ae_test/test_runs/<id>.txt --game build/linux64/halo --root <folder>
+    python3 tools/ae_test/deploy_latest.py --from <host>:<folder> --label <name> --lists [--cache <host>:<cache>] --go
+    python3 tools/ae_test/testenv.py check <install> <id> --preflight <host>:<folder>
+
+`box_sync.py` copies the tree's files so that ninja rebuilds what changed, and
+writes `BUILD_COMMIT`, so the build and every result it records name their
+commit. `preflight.py --owner` plays the list the way a person does: one game,
+the tests in order, the verdicts pressed on a pad (BACK + A), the NOTE box and
+the screens as in a run by hand. It fails a list whose setup line was refused,
+whose press never reached TEST RUN, or whose `expect` line the setup alone does
+not meet (nobody moves in it). It writes `<id>.preflight.json` in its root.
+`deploy_latest.py` prints its plan unless given `--go`, then puts the program,
+the playlists and the changelog in place with a backup of each, and writes
+`halo-latest.deploy.json`. `testenv.py check` passes only when the install's
+program and files are the deployed ones, the list lints, the install's copy is
+the repo's, the list still has tests to play, and its run-by-hand preflight
+passed on this list text and this build. `testenv.py left <install> <id>`
+names the tests the list will open.
 
 Lists are for testing. They are not part of a release package.
 
@@ -930,6 +954,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.nvidia_threaded` | `true` | `HALO_NVIDIA_THREADED` | Linux with an NVIDIA GPU: turns on the driver's own threaded mode (`__GL_THREADED_OPTIMIZATIONS=1`) at start, which hands the game's GL calls to a driver thread: many more frames a second where the game, not the GPU, sets the pace. `__GL_THREADED_OPTIMIZATIONS` set in the environment wins. Other drivers and Windows ignore it. |
 | `debug.dynamic_resolution_force` | `0` | `HALO_DYNAMIC_RESOLUTION_FORCE` | For tests: holds `display.target_framerate`'s scale at this percent (50 to 100) while a game is drawn, whatever `display.target_framerate` and `display.split_target_framerate` say; the log says so once. `0`: the settings decide. |
 | `display.split_two_players` | `"auto"` | `HALO_SPLIT_TWO_PLAYERS` | How two players share the screen: `"top_and_bottom"`, `"side_by_side"` (each view the screen's full height, as wide across as a 16:9 view at `display.fov`), or `"auto"`: side by side on a screen 21:9 or wider (2.2:1), top and bottom on a narrower one. A side-by-side view shows more above and below than one player's, so things and the first-person weapon look smaller; its HUD is the four-player HUD at the view's corners. Three and four players are laid out as before. SPLIT SCREEN > TWO PLAYERS. |
+| `display.split_hud` | `"compact"` | `HALO_SPLIT_HUD` | The HUD of a view while two players play side by side: `"one_player"` draws the one-player HUD (meters, weapon elements, motion sensor, messages, and the AE HUD style's panels, medals, marks and wheel at one player's size); `"compact"` is split screen's smaller HUD. Top and bottom, and three or four players, always use `"compact"`. The reticle and the scoreboard are unchanged. A player's own value, in their `ae.toml`. Settings > HUD > SPLIT SCREEN HUD. |
 | `display.split_side_bars` | `false` | `HALO_SPLIT_SIDE_BARS` | Two players top and bottom: each view no wider than 1440:538, centred with black bars beside it (on 16:9, 240 pixels each side; on 2560x1080, 560): fewer pixels to draw and a less stretched view. The HUD keeps the two-player size inside the narrowed view. Not with side by side. SPLIT SCREEN > SIDE BARS. |
 | `display.window_size` | `""` | `HALO_WINDOW_SIZE` | The size of the window, as `"<width>x<height>"`, such as `"1920x1080"`, 640x480 or more. You can change the size of the window; the game's picture takes its shape. Empty: `display.window_scale` decides. Video Setup's Window Size sets it, from sizes of each shape (4:3, 16:10, 16:9 and 21:9) that fit the desktop; it shows with Windowed. |
 | `display.window_scale` | `2` | `HALO_WINDOW_SCALE` | Used when `display.window_size` is empty: the size of the window, as a multiple of 640x480. |
@@ -944,6 +969,7 @@ the setting for one start of the game. It has priority over the file.
 | `display.show_fps` | `false` | `HALO_SHOW_FPS=1` sets `true` | `true`: the frame rate at the bottom right of a game, counted over half a second and green from 30 frames each second, red below. The game's own counter, which the Xbox version's `display_framerate` console variable showed. Refer to "Frame rate". |
 | `display.direct_camera` | `true` | `HALO_DIRECT_CAMERA` | `true`: in first person, on foot, the view points where the player aims in each frame, not where the last tick left it. Refer to "Frame rate". |
 | `display.fov` | `0.0` (0.7.8 to 0.8.0: `85.0`, kept by a config.toml of theirs) | `HALO_FOV` | The first-person view's field of view on foot, in degrees across at 16:9, from 20 to 150. `0`: the stock view. Refer to "Field of view". |
+| `display.split_fov` | `-1.0` | `HALO_SPLIT_FOV` | The field of view while two to four players share the screen, in degrees across at 16:9, from 20 to 150. `0`: the stock view. `-1`: `display.fov`'s. One player always plays with `display.fov`. A player's own value, in their `ae.toml`. Settings > View > First Person > SPLIT SCREEN FOV. |
 | `display.viewmodel_fov` | `0.0` (0.7.8 to 0.8.0: `85.0`, kept by a config.toml of theirs) | `HALO_VIEWMODEL_FOV` | The first-person weapon's and hands' field of view, in degrees across at 16:9, from 20 to 150. `0`: the weapon's stock view, also when `display.fov` widens the world. Refer to "Field of view". |
 | `display.viewmodel_visible` | `true` | `HALO_VIEWMODEL_VISIBLE` | `true`: the first-person weapon, hands and what is attached to them are drawn. `false`: they are not; firing, animation, sound and lights go on, and other players' models are drawn. |
 | `display.zoom_blur` | `false` | `HALO_ZOOM_BLUR` | `true`: a zoomed weapon's scope blurs the screen's edges, as Halo does (the weapon HUD's screen effect, its convolution, in a single view only). `false`: the view stays clear to the edges; the scope's mask and tint stay. ZOOM BLUR on Video Setup > FOV AND VIEWMODELS. |
@@ -1305,7 +1331,7 @@ the setting for one start of the game. It has priority over the file.
 | `debug.fixed_step` | `false` | `HALO_FIXED_STEP` | `true`: a game of this computer alone runs one tick a frame, whatever time has passed, so that it plays the same every time (tests). |
 | `debug.dev_camera` | `""` | `HALO_DEV_CAMERA` | For tests, with `system.dev_mode`: the dev camera on from the start, as `controls.dev_camera` (`"third"`), it then `controls.dev_shoulder` (`"third_left"`) or `controls.dev_free_camera` (`"free"`) would. Empty: none. |
 | `debug.test_run` | `""` | `HALO_TEST_RUN` | Test only, with `system.dev_mode`: start this TEST RUN list (`test-runs/<id>.txt` in the data root) once the main menu has loaded. Empty: none. Refer to "DEV MODE and TEST RUN". |
-| `debug.test_run_auto` | `""` | `HALO_TEST_RUN_AUTO` | Test only, for the automated tests of TEST RUN: the verdicts to give, each after that many seconds with the test ready, cycling, for example `"PASS:6,FAIL:6,NOTE:6,SKIP:6"`. Empty: none. |
+| `debug.test_run_auto` | `""` | `HALO_TEST_RUN_AUTO` | Test only, for the automated tests of TEST RUN: the verdicts to give, each after that many seconds with the test ready, cycling, for example `"PASS:6,FAIL:6,NOTE:6,SKIP:6"`. With `OWNER` in it (`"OWNER,PASS:6"`) PASS and SKIP are pressed on the first pad as BACK + A and BACK + Y, and the run goes the way a run by hand goes: the preflight of `tools/ae_test/preflight.py --owner`. Empty: none. |
 | `debug.exit_after` | `0.0` | `HALO_EXIT_AFTER` | The game stops after this number of seconds (from when its window opens; with `debug.null_renderer`, or no display, from its first frame; a dedicated server stops as `quit` stops it). `0`: never. |
 | `debug.screenshot_directory`, `debug.screenshot_every`, `debug.screenshot_format` | `""`, `0`, `"bmp"` | `HALO_SCREENSHOT_DIR`, `HALO_SCREENSHOT_EVERY`, `HALO_SCREENSHOT_FORMAT` | The game writes each Nth frame to this folder as a BMP file, or a PNG file with `"png"`. |
 | `debug.record_seconds` | `0.0` | `HALO_RECORD_SECONDS` | Record this number of seconds (as F9 does) from the first frame of play, a map other than the main menu's, one time. `0`: never. |

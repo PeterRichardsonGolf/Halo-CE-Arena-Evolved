@@ -1,0 +1,203 @@
+# THEATER, as Content Evolved has it (rc8): the main menu's THEATER row and its screen (the recordings, A watch, X delete, Y record), and the
+# playback's controls over a replay (pause, skip, speed, the next player, the free camera, the lines over the screen). The screen's tests
+# open on their scene from `menu theater`: `replay stage N` makes N test recordings (a header and no records: they list, and refuse to
+# play), the screen's `empty` shows it as when the folder holds none, nothing real is deleted. The last group records one game with the
+# bots (`replay keep` keeps it however short; a preflight's few seconds do) and plays it back with `replay play newest`, which
+# skips the staged test recordings; the playback tests open on their second with `replay seek`.
+list theater
+revision 4
+title THEATER: THE SCREEN AND THE PLAYBACK
+
+group screen
+
+test main-row
+title MAIN MENU: THEATER is a door now
+check THEATER sits under FIREFIGHT, above COMING SOON
+check COMING SOON holds FORGE and FRIENDS only
+check A on THEATER opens the Theater screen
+menus
+
+test list-empty
+title THEATER: no recordings
+check One row: NO RECORDINGS YET, with how to record
+check The footer has Record: ON or OFF; no Delete prompt
+check The right side explains what RECORD does
+menus
+setup menu theater empty
+expect 1 log ae theater: open
+
+test list
+title THEATER: three recordings
+setup replay stage 3
+setup menu theater
+check Three rows, the newest first, each with a length
+check The right side: map, day, LENGTH, SIZE, RECORDED BY
+check Up and down move the focus; the right side follows
+menus
+expect 1 cmd replay stage ok
+expect 1 log ae theater: open
+
+test watch-refused
+title THEATER: A on a recording that cannot play
+setup replay stage 1
+setup menu theater
+check A shows THIS RECORDING DID NOT PLAY with a reason
+check B closes the notice; the list stays
+menus
+expect 1 cmd replay stage ok
+
+test delete
+title THEATER: X asks before it deletes
+setup replay stage 2
+setup menu theater delete
+check DELETE THIS RECORDING? opens with CANCEL focused
+check DELETE is red; it removes the row, one is left
+check B cancels: nothing is removed
+menus
+expect 1 cmd replay stage ok
+expect 1 log ae theater: open
+
+test record
+title THEATER: Y turns recording on and off
+setup config network.record_replays false
+setup menu theater empty
+check The footer reads Record: OFF; the right side says OFF
+check Y turns it ON: the footer and the right side change
+check Y again turns it OFF
+menus
+expect 1 log ae theater: open
+
+group record
+map bloodgulch
+set network.record_replays true
+
+test record-game
+retest 4
+title BLOOD GULCH: play 40 seconds with the bots, then pass
+setup bots 7 even normal
+setup replay keep
+setup replay status
+check Play 40 seconds, then pass (a short game is kept too)
+expect 1 cmd replay status ok
+
+group watch
+map chillout
+set network.record_replays false
+
+test strip
+title REPLAY: the lines over it
+setup replay play newest
+setup replay seek 15
+setup replay eyes 1
+check Top left: PLAYER 1, a name, EYES and 1x
+check Bottom: the controls and a seek bar at about 0:15
+check B hides the lines, B shows them again
+expect 1 cmd replay play ok
+
+test pause
+title REPLAY: Start pauses
+setup replay play newest
+setup replay seek 15
+setup replay pause
+check PAUSED card, no scoreboard; the bar: Skip, Speed only
+check D-pad left and right skip 10 seconds, still paused
+check Start resumes; B in the pause leaves to the Theater
+expect 1 cmd replay pause ok
+
+test speed
+title REPLAY: speed and the next player
+setup replay play newest
+setup replay seek 15
+setup replay eyes 1
+check The shoulders change the speed; the top shows it
+check A picks the next player, X the one before
+check The view never steps or jumps between frames
+expect 1 cmd replay eyes ok
+
+test free
+title REPLAY: the free camera
+retest 3
+setup replay play newest
+setup replay seek 15
+setup replay free
+check It starts behind the player and keeps them in frame
+check Right stick takes the aim; its click tracks them again
+check Left stick moves it, eased; jump and crouch rise
+expect 1 cmd replay free ok
+
+test eyes-steady
+title REPLAY: eyes view, the gun holds steady as in play
+setup replay play newest
+setup replay seek 15
+setup replay eyes 1
+check The view turns smoothly with the player, never in steps
+check The gun sways with that turn and sits still when they do
+expect 1 log facings of the players kept
+expect 1 cmd replay eyes ok
+
+test behind
+title REPLAY: the view behind the player
+setup replay play newest
+setup replay seek 15
+setup replay behind
+check The camera is behind the player, turned as they face
+check Right stick flies it round them; left stick up zooms
+check The top line says BEHIND; Y goes to the eyes
+expect 1 cmd replay behind ok
+
+test bots-smooth
+title REPLAY: a bot seen from behind moves as in play
+setup replay play newest
+setup replay seek 15
+setup replay eyes 2
+setup replay behind
+check Its body and legs move smoothly: no stepping or stutter
+check It turns and aims as a player does: no sudden snaps
+check Walk and run hold: no flicker between standing and walking
+expect 1 cmd replay behind ok
+
+test cinematic
+title REPLAY: the cinematic camera
+setup replay play newest
+setup replay seek 15
+setup replay cinematic
+check A tripod behind the player: it turns to keep them framed
+check Left stick up and down sets how far it follows
+check The top line says CINEMATIC; Y goes to behind
+expect 1 cmd replay cinematic ok
+
+test view-order
+title REPLAY: Y goes round the views
+setup replay play newest
+setup replay seek 15
+setup replay eyes 1
+check Y: FREE CAMERA, then CINEMATIC, then BEHIND
+check Y again is the EYES; the prompt names the next view
+check A and X keep the view and pick another player
+expect 1 cmd replay eyes ok
+
+test seek-card
+title REPLAY: a seek shows a card, not the fast game
+retest 3
+setup replay play newest
+setup replay seek 30
+check SEEKING 0:30 on black, the line fills in a second or two
+check At 0:30 the card goes and the game shows at normal speed
+expect 1 cmd replay seek ok
+
+test skip-back
+title REPLAY: a skip back
+setup replay play newest
+setup replay seek 30
+setup replay eyes 1
+check D-pad left: a SEEKING card (no fast game), then 10 s back
+check The bar's playhead is at about 0:20; view and speed kept
+expect 1 cmd replay seek ok
+
+test end
+title REPLAY: the end
+setup replay play newest
+setup replay seek 36
+check The replay ends by itself
+check The Theater is back with the recording listed
+expect 1 cmd replay seek ok

@@ -11,6 +11,10 @@ the order only reads the goal again when they are over. Host only: bots live the
 #include "errors.h"
 
 /* a member that could not reach its slot stands where it is until (per brain) */
+/* (ae_bots_squad.inc) a campaign AI squad member's walk to its slot: -1 when the bot is not the squad's */
+static int ae_squad_walk_tether(struct bots_bot *bot, struct bots_tick *tick, real_point3d const *goal);
+static real ae_squad_fight_radius(struct bots_bot *bot, real radius);
+
 static long ae_fireteam_settle_until[BOTS_BRAINS];
 /* arena rules: a member whose squad's order was released keeps following the leader until this tick (the members leave one by one) */
 static long ae_fireteam_release_after[BOTS_BRAINS];
@@ -398,6 +402,8 @@ static boolean ae_bots_fireteam_tether(struct bots_bot *bot, struct bots_tick *t
 		return FALSE;
 	slot = ae_bots_fireteam_slot_point(fireteam, bot_index, &leader);
 	radius = ae_bots_fireteam_radius(fireteam);
+	if (tick->fighting)
+		radius = ae_squad_fight_radius(bot, radius);
 	leader_distance = bots_distance3d(&tick->position, &leader);
 	slot_distance = bots_distance3d(&tick->position, &slot);
 	tolerance = ae_fireteam_order_of(fireteam) == _ae_order_regroup ? AE_FIRETEAM_REGROUP_TOLERANCE : AE_FIRETEAM_FOLLOW_TOLERANCE;
@@ -420,6 +426,10 @@ static boolean ae_bots_fireteam_tether(struct bots_bot *bot, struct bots_tick *t
 		slot_distance = 0.0f;
 	/* (0.7.8, owner: "on a regroup they are supposed to follow and fire") a REGROUP keeps the slot in a fight too: the member
 	walks to it while the fight aims and fires; a FOLLOW still lets it fight from where it is inside the radius */
+	/* (a campaign AI squad member out of a fight walks to its slot by its own walk: it arrives close, never walks straight at
+	a wall; a failed path sends it along the player's track, ae_bots_squad.inc) */
+	if ((!tick->fighting || ae_fireteam_order_of(fireteam) == _ae_order_regroup) && ae_squad_walk_tether(bot, tick, &slot) >= 0)
+		return TRUE;
 	action = ae_fireteam_tether(leader_distance, slot_distance,
 		tick->fighting && ae_fireteam_order_of(fireteam) != _ae_order_regroup, cosine, tolerance, radius);
 	if (action == AE_TETHER_STOP || action == AE_TETHER_HOLD)

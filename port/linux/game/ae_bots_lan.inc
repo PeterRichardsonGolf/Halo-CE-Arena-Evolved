@@ -17,6 +17,7 @@ getting around's (ae_bots_travel.inc) and the deaths by the bots' own hand
 */
 
 #include "ae_lan_bots.h"
+#include "game/player_queues_new.h"
 #include "main/main.h"
 #include "ae_horn.h"
 #include "ae_objective_log.h"

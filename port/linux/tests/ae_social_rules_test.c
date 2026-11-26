@@ -9,6 +9,12 @@ int main(void)
 	int rank, outcome, players, place;
 	long exp;
 
+	/* a profile lost to a game's teardown is put back; a guest, one never had, or one still held is not */
+	EQ(ae_social_profile_put_back(0x1234, -1, 0), 1);
+	EQ(ae_social_profile_put_back(0x1234, 0x1234, 0), 0);
+	EQ(ae_social_profile_put_back(-1, -1, 0), 0);
+	EQ(ae_social_profile_put_back(0x1234, -1, 1), 0);
+
 	/* every outcome's EXP */
 	EQ(ae_social_exp_change(AE_SOCIAL_WIN), 1);
 	EQ(ae_social_exp_change(AE_SOCIAL_TIE), 1);

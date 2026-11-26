@@ -317,6 +317,16 @@ UNITS = {
     "ae_career_record_test.c": ([UI / "ae_career_record.c", UI / "ae_rating_result.c", UI / "ae_rating_rules.c",
                                  UI / "ae_social_rules.c", UI / "ae_social_match_rules.c"],
                                 ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (career XP ladder, daily and weekly challenges, their lines in the career record, the MCC rank pictures' rules; the test reads
+    # the real pack too when AE_MCC_RANK_TEST_DIR names a folder with the two main menu pack files)
+    "ae_career_xp_test.c": ([UI / "ae_career_xp.c", UI / "ae_career_xp_rules.c", UI / "ae_career_challenge_rules.c", UI / "ae_career_view_rules.c",
+                             UI / "ae_career_record.c", UI / "ae_rating_result.c", UI / "ae_rating_rules.c", UI / "ae_social_rules.c",
+                             UI / "ae_social_match_rules.c", UI / "ae_mcc_rank_rules.c", UI / "ae_medal_pack_rules.c"],
+                            ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the career insignia of an MCC install: the pak's footer, index and entries, the data asset's order, the pictures; the test reads
+    # the real pak too when AE_MCC_PAK_TEST names it, or a sparse copy with its footer, index and the 43 entries in place)
+    "ae_career_pak_test.c": ([UI / "ae_pak_rules.c", UI / "ae_mcc_career_rules.c"], ["-fsanitize=address,undefined",
+                                                                                  "-fno-sanitize-recover=all"], []),
     # (0.9.3 pending social games: a failed settlement keeps both the line and crash mark; platforms without a mark forgive)
     "ae_glue_career_test.c": ([UI / "ae_glue_career.c", UI / "ae_career_record.c", UI / "ae_rating_result.c",
                                 UI / "ae_rating_rules.c", UI / "ae_social_rules.c", UI / "ae_social_match_rules.c"],
@@ -468,6 +478,9 @@ UNITS = {
     # (a Steam Controller's EXTRA BUTTONS: its seven rows' keys, labels and helps, the groups, the summary, the dialogs' texts)
     "ae_extra_buttons_rules_test.c": ([UI / "ae_extra_buttons_rules.c"], ["-fsanitize=address,undefined",
                                                                          "-fno-sanitize-recover=all"], []),
+    # (the DualSense's event rumble pinned: every kind's event pulses at light / normal / strong, and the charge ramp, as they were)
+    "ae_ds5_event_pins_test.c": ([SRC / "ae_ds5_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
+                                                           "-fno-sanitize-recover=all"], ["-lm"]),
     # (the DualSense's profiles, weapon states, powerups, trigger effect bytes, report framing and CRC)
     "ae_ds5_rules_test.c": ([SRC / "ae_ds5_rules.c"], [f"-I{SRC}", "-fsanitize=address,undefined",
                                                         "-fno-sanitize-recover=all"], []),
@@ -484,12 +497,18 @@ UNITS = {
     # rows that fit, sizes and counts as written; under the sanitizers)
     "ae_maps_hub_rules_test.c": ([UI / "ae_maps_hub_rules.c"], ["-fsanitize=address,undefined",
                                                                "-fno-sanitize-recover=all"], []),
+    # (ITEM SETS: the kinds' words, an item's name and the folders above it cut to fit, the engine's reasons in a player's words, what
+    # a set does in which kind of game (a campaign level played alone through the randomizer only: no multiplayer, online, co-op,
+    # Firefight or challenge game), the footers, and the made-up table behind the staged scenes; under the sanitizers)
+    "ae_item_sets_rules_test.c": ([UI / "ae_item_sets_rules.c", UI / "ae_item_sets_data.c"], ["-fsanitize=address,undefined",
+                                                                                              "-fno-sanitize-recover=all"], []),
     # (Workshop collections: which maps a get asks for, the words of the rows, the question's size, what a remove takes; under
     # the sanitizers)
     "ae_collections_rules_test.c": ([UI / "ae_collections_rules.c"], ["-fsanitize=address,undefined",
                                                                      "-fno-sanitize-recover=all"], []),
-    "ae_dev_cmd_rules_test.c": ([UI / "ae_dev_cmd_rules.c", UI / "ae_weapon_tune_rules.c", UI / "ae_steam_rules.c", UI / "ae_maps_hub_rules.c"], ["-fsanitize=address,undefined",
-                                                               "-fno-sanitize-recover=all"], []),
+    "ae_dev_cmd_rules_test.c": ([UI / "ae_dev_cmd_rules.c", UI / "ae_weapon_tune_rules.c", UI / "ae_steam_rules.c", UI / "ae_maps_hub_rules.c",
+                                 SRC / "ae_ds5_rules.c"], ["-fsanitize=address,undefined",
+                                                               "-fno-sanitize-recover=all"], ["-lm"]),
     # (1.0 STEAM ACCOUNT: the client's state as the screen's page, its messages, the shared files' rows, the staged
     # states of `menu steam`; under the sanitizers)
     "ae_steam_rules_test.c": ([UI / "ae_steam_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
@@ -615,6 +634,9 @@ UNITS = {
                                                                "-fno-sanitize-recover=all"], []),
     # (TEST RUN's decision machine: keys while loading, a held key once, FAIL and NOTE through the note box, BACK,
     # RELOAD, the summary, the DEV MODE gate; under the sanitizers)
+    # (TEST RUN's verdict chords: BACK + A is PASS, never SKIP, with the keyboard's Tab merged in as Y; F7; the OWNER press)
+    "ae_test_run_input_test.c": ([UI / "ae_test_run_hide_rules.c"], ["-iquote", "port/linux/include", "-iquote",
+                                                                     "port/include/xdk"], []),
     "ae_test_run_test.c": ([UI / "ae_test_run_machine.c", UI / "ae_test_run_clip.c", UI / "ae_test_run_results.c", UI / "ae_test_run_list.c"],
                            ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (TEST RUN's setup lines: sent in list order, each after the one before was accepted; the first waits for the game to
@@ -754,8 +776,15 @@ UNITS = {
     # the scopes and the tag table; under the sanitizers, as the join's name is a remote machine's)
     "ae_silent_rules_test.c": ([UI / "ae_silent_rules.c"], ["-fsanitize=address,undefined",
                                                             "-fno-sanitize-recover=all"], []),
-    # (the test-only modes' doors: Firefight's engine, its data build and the skulls' messages need DEV MODE / the setting)
+    # (the modes' doors: Firefight's engine and its data build need the FIREFIGHT lobby or DEV MODE, the skulls' messages the setting)
     "ae_firefight_doors_rules_test.c": ([UI / "ae_firefight_doors_rules.c"], ["-fsanitize=address,undefined",
+                                                                              "-fno-sanitize-recover=all"], []),
+    # (Firefight's saved variants: a name made fit, a record's line round trip, the hostile lines, the eight kept)
+    "ae_firefight_variants_rules_test.c": ([UI / "ae_firefight_variants_rules.c"], ["-fsanitize=address,undefined",
+                                                                                    "-fno-sanitize-recover=all"], []),
+    # (Firefight's lobby rows and its MAP CONTENT and OBJECTIVES screens: the settings they may write (Firefight's alone), the
+    # objectives' kinds, the content byte's bits, the words)
+    "ae_firefight_menus_rules_test.c": ([UI / "ae_firefight_menus_rules.c"], ["-fsanitize=address,undefined",
                                                                               "-fno-sanitize-recover=all"], []),
     # (what a gametype names of the weapon cache: sets, the legacy bytes, the AECW block, the START rules, the old
     # grenade bits)
@@ -861,6 +890,8 @@ UNITS = {
     # the recordings' names and caps)
     "ae_replay_rules_test.c": ([UI / "ae_replay_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
+    # (the Theater: a recording's row and length, the speed steps, a skip's landing, the next player a button picks)
+    "ae_theater_rules_test.c": ([UI / "ae_theater_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     "ae_objective_log_rules_test.c": ([UI / "ae_objective_log_rules.c"], ["-fsanitize=address,undefined",
                                       "-fno-sanitize-recover=all"], []),
     # (the score strip's mode choice per engine and gametype: a round mode is always the rounds strip)
@@ -982,6 +1013,20 @@ UNITS = {
     # (the CAMPAIGN screen's SKIP TRAINING row, CONTINUE with an AI squad, its dialog and the party count)
     "ae_campaign_rows_rules_test.c": ([UI / "ae_campaign_rows_rules.c"], ["-fsanitize=address,undefined",
         "-fno-sanitize-recover=all"], []),
+    # (the campaign's rule screens: the settings they may write (no multiplayer one), how skulls are found, FEWEST / MOST,
+    # STANDARD co-op options, the leaderboard's order, the end card's presses)
+    "ae_pve_menus_rules_test.c": ([UI / "ae_pve_menus_rules.c"], ["-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all"], []),
+    # (MCC's skull pictures: the pack's index in the medal pack's layout, a Content Evolved skull's record by its key)
+    "ae_skull_pack_rules_test.c": ([UI / "ae_skull_pack_rules.c", UI / "ae_medal_pack_rules.c"], ["-fsanitize=address,undefined",
+        "-fno-sanitize-recover=all"], []),
+    # (the DAILY CHALLENGE screens: a day's names and its countdown, where the day comes from, the online rows' consent words
+    # and that the screens' keys are no multiplayer setting)
+    "ae_daily_rules_test.c": ([UI / "ae_daily_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (the campaign randomizer's screens: which rows show, what a choice may be, the hub's words, the saved setups' text and
+    # their eight; its keys are no multiplayer setting and none of the rule screens')
+    "ae_randomizer_menus_rules_test.c": ([UI / "ae_randomizer_menus_rules.c", UI / "ae_pve_menus_rules.c"],
+        ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (SKIP TRAINING: the difficulty the first level's startup script is told)
     "ae_skip_training_rules_test.c": ([UI / "ae_skip_training_rules.c"], ["-fsanitize=address,undefined",
         "-fno-sanitize-recover=all"], []),
@@ -1043,6 +1088,41 @@ UNITS = {
     # (an invite's code in a player's text: JOIN WITH INVITE, the lobby's join; under the sanitizers, as it is pasted)
     "ae_invite_rules_test.c": ([UI / "ae_invite_rules.c"], ["-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                                []),
+    # (online party: a friend code from the player key, typed codes read back; under the sanitizers)
+    "ae_friend_code_test.c": ([UI / "ae_friend_code.c", UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c"], [f"-I{UI}",
+                                                                                                        "-fsanitize=address,undefined",
+                                                                                                        "-fno-sanitize-recover=all"], []),
+    # (online party: members, seats, the leader, privacy, what fits a game with less room; under the sanitizers)
+    "ae_party_net_rules_test.c": ([UI / "ae_party_net_rules.c", UI / "ae_friend_code.c", UI / "mcc_sha256.c",
+                                   UI / "ae_mcc_sha256_blocks.c"], [f"-I{UI}", "-fsanitize=address,undefined",
+                                                                    "-fno-sanitize-recover=all"], []),
+    # (online party: the party service's wire, game side: URLs, queries, the answers read; under the sanitizers, as it reads a server's text)
+    "ae_party_client_rules_test.c": ([UI / "ae_party_client_rules.c", UI / "ae_party_net_rules.c", UI / "ae_friend_code.c",
+                                      UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c", SRC / "server_json.c"],
+                                     [f"-I{UI}", f"-I{SRC}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (online party: the party key's own file, made once, signing only "ae-party-" texts; its dependencies stubbed)
+    "ae_party_key_test.c": ([SRC / "ae_party_key.c", SRC / "ae_worker.c", UI / "ae_friend_code.c", UI / "mcc_sha256.c",
+                             UI / "ae_mcc_sha256_blocks.c"],
+                            [f"-I{UI}", f"-I{SRC}", "-D_POSIX_C_SOURCE=200809L", "-pthread", "-Wno-enum-compare",
+                             "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-pthread"]),
+    # (online party: the client's view across a session, the service's answers stubbed: none before, the party once polled, none after stop)
+    "ae_party_client_session_test.c": ([SRC / "ae_party_client.c", SRC / "ae_worker.c", UI / "ae_party_client_rules.c", UI / "ae_party_follow_rules.c", UI / "ae_party_net_rules.c",
+                                        UI / "ae_friend_code.c", UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c", SRC / "server_json.c"],
+                                       [f"-I{UI}", f"-I{SRC}", f"-I{ROOT / 'port' / 'linux' / 'include'}", "-D_POSIX_C_SOURCE=200809L", "-pthread",
+                                        "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], ["-pthread"]),
+    # (online party: the service's seat ticket read against its key, a server's holds and who they admit; under the sanitizers)
+    "ae_party_ticket_rules_test.c": ([UI / "ae_party_ticket_rules.c", UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c",
+                                      ROOT / "port" / "third_party" / "monocypher" / "monocypher.c",
+                                      ROOT / "port" / "third_party" / "monocypher" / "monocypher-ed25519.c"], [f"-I{UI}",
+                                     "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (online party: what a member's PC does with the service's view: follow a found server or the leader's hosted game, CONTINUE; under the sanitizers)
+    "ae_party_follow_rules_test.c": ([UI / "ae_party_follow_rules.c", UI / "ae_party_client_rules.c", UI / "ae_party_net_rules.c",
+                                      UI / "ae_friend_code.c", UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c", SRC / "server_json.c"],
+                                     [f"-I{UI}", f"-I{SRC}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
+    # (online party: STEAM FRIENDS' short hashes, the query chunks and the rows; under the sanitizers)
+    "ae_steam_friends_rules_test.c": ([UI / "ae_steam_friends_rules.c", UI / "ae_party_client_rules.c", UI / "ae_party_net_rules.c",
+                                       UI / "ae_friend_code.c", UI / "mcc_sha256.c", UI / "ae_mcc_sha256_blocks.c", SRC / "server_json.c"],
+                                      [f"-I{UI}", f"-I{SRC}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"], []),
     # (0.7.6 a hosted playlist: weights, order, the weighted pick, the vote with SAME AGAIN, the rotation file)
     "ae_playlist_test.c": ([UI / "ae_playlist.c"], [f"-I{UI}", "-fsanitize=address,undefined", "-fno-sanitize-recover=all"],
                            []),
@@ -1105,6 +1185,12 @@ UNITS = {
                                                                        "-fno-sanitize-recover=all"], []),
     "ae_address_rules_test.c": ([UI / "ae_address_rules.c"], ["-fsanitize=address,undefined",
                                                              "-fno-sanitize-recover=all"], []),
+    # (rc8: the campaign randomizer plays no multiplayer game)
+    "ae_randomizer_rules_test.c": ([UI / "ae_randomizer_rules.c"], ["-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
+    # (rc8: the campaign score, medals, service rank and Firefight stats do nothing in a multiplayer game)
+    "ae_pve_rules_test.c": ([UI / "ae_pve_rules.c"], ["-fsanitize=address,undefined",
+                                                     "-fno-sanitize-recover=all"], []),
     # (0.7.9 join race: a machine downloading the map is kept in the lobby while the transfer moves)
     "ae_pack_versions_rules_test.c": ([UI / "ae_pack_versions_rules.c"], ["-fsanitize=address,undefined",
                                                                       "-fno-sanitize-recover=all"], []),
@@ -1378,11 +1464,11 @@ def test_button_canon_b_labels_and_changed_footers():
     # (the invite's answer, and the dev widget gallery's own sample footers)
     # (screen-pinned exceptions, not general labels: Quit closes the program from the main menu, Resume goes back into the
     # game from the pause menu)
-    skip = {"ae_screen_community.c": {"Decline"}, "ae_screen_main_menu.c": {"Quit"}, "ae_screen_pause.c": {"Resume"},
+    skip = {"ae_screen_community.c": {"Decline"}, "ae_screen_end_card.c": {"Campaign"}, "ae_screen_main_menu.c": {"Quit"}, "ae_screen_pause.c": {"Resume"},
             # (1.0 the approved mockups: Esc Stop typing, B Cancel sign-in, B Not now)
             "ae_screen_steam.c": {"Stop typing", "Cancel sign-in"}, "ae_screen_steam_first.c": {"Not now"},
             # (MAPS & MODS: the search field being typed into)
-            "ae_screen_maps_hub.c": {"Stop typing"}}
+            "ae_screen_maps_hub.c": {"Stop typing"}, "ae_screen_item_sets.c": {"Stop typing"}}
     game = ROOT / "port" / "linux" / "game"
     for path in sorted(game.glob("ae_screen_*.c")):
         for button, label in _prompt_calls(path.read_text(encoding="utf-8")):
@@ -1691,3 +1777,152 @@ def test_layout_stacking_check_sees_two_weapons_close_together():
     close = two + [{"index": 2, "kind": "weapon", "x": 1, "y": 0, "z": 0, "games": "all"}]
     assert stacking.stacked(["comp", "remove item 2", "end comp"], close) == []
     assert stacking.stacked(["remove item 1", "comp", "remove item 2", "end comp"], close)[0][:2] == ("map item 0", "map item 2")
+
+
+def test_pve_menus_do_nothing_in_a_multiplayer_game():
+    """(rc8) The campaign's rule screens write settings that only a campaign level (or a co-op game this PC hosts) reads: the
+    engine's guards are still in place, and no screen of the family writes a setting but through the allowed list."""
+    skulls = (UI / "skulls.c").read_text(encoding="utf-8")
+    active = skulls.split("int skull_active(int skull)")[1].split("int skull_on_for_level")[0]
+    assert "_scenario_type_solo" in active
+    score = (UI / "campaign_score.c").read_text(encoding="utf-8")
+    level = score.split("static boolean campaign_score_level(")[1].split("/* a multiplayer game")[0]
+    assert "game_engine_running()" in level and "_scenario_type_solo" in level
+    for name in ("coop_enemies.c", "coop_pickups.c", "coop_vehicles.c"):
+        text = (UI / name).read_text(encoding="utf-8")
+        assert "network_coop_active()" in text and "_game_connection_network_server" in text, name
+    for name in ("ae_screen_skulls.c", "ae_screen_skull_rules.c", "ae_screen_scoring.c", "ae_screen_coop_options.c",
+                 "ae_screen_saved_games.c", "ae_screen_leaderboard.c", "ae_screen_end_card.c"):
+        text = (UI / name).read_text(encoding="utf-8")
+        assert "config_write(" not in text and "config_set(" not in text, name
+    ui = (UI / "ae_pve_menus_ui.c").read_text(encoding="utf-8")
+    assert ui.count("config_write(") == 1 and "ae_pve_menus_key_allowed(key)" in ui.split("int ae_pve_menus_ui_write")[1].split("}")[0]
+
+
+def test_randomizer_menus_do_nothing_in_a_multiplayer_game():
+    """(rc8) The randomizer's screens write only randomizer settings through the one allowed writer, and the engine still plays
+    the randomizer only in a campaign level alone or in split screen and in Firefight, never in a multiplayer or network game."""
+    rules = (UI / "ae_randomizer_rules.c").read_text(encoding="utf-8")
+    plays = rules.split("int ae_randomizer_rules_plays")[1]
+    assert "if (network)" in plays and "return 0;" in plays and "solo_scenario" in plays
+    glue = (UI / "ae_randomizer_glue.inc").read_text(encoding="utf-8")
+    assert "ae_randomizer_rules_plays(" in glue and "network_game_distributed_client()" in glue
+    for name in ("ae_screen_randomizer.c", "ae_randomizer_menus_rules.c"):
+        text = (UI / name).read_text(encoding="utf-8")
+        assert "config_write(" not in text and "config_set(" not in text, name
+    screen = (UI / "ae_screen_randomizer.c").read_text(encoding="utf-8")
+    assert screen.count("ae_pve_menus_ui_write(") == 1, "one writer: write_value"
+    ui = (UI / "ae_pve_menus_ui.c").read_text(encoding="utf-8")
+    write = ui.split("int ae_pve_menus_ui_write")[1].split("}")[0]
+    assert "ae_randomizer_menus_key(key)" in write and "ae_pve_menus_key_allowed(key)" in write
+    # (the item set switch is read only where a campaign or Firefight level loads its tags)
+    campaign = (UI / "tag_campaign.c").read_text(encoding="utf-8")
+    assert 'config_boolean("game.tag_injection")' in campaign
+    injector = (UI / "cev" / "tag_injector.c").read_text(encoding="utf-8")
+    assert 'config_boolean("game.tag_injection")' in injector.split("tag_injector_profile_playable")[1].split("}")[0]
+
+
+def test_firefight_menus_do_nothing_in_a_multiplayer_game():
+    """(rc8) The FIREFIGHT lobby and its screens change no multiplayer game: Firefight's rules are rows of the Firefight engine alone
+    (and no other row applies to it), a saved Firefight variant is never a gametype file, the engine starts only from the lobby (or
+    DEV MODE), the screens write only Firefight's own settings through one allowed writer, and the multiplayer copy is put back."""
+    options = (UI / "ae_setup_options.c").read_text(encoding="utf-8")
+    applies = options.split("int ae_setup_applies")[1].split("\n}")[0]
+    assert "access->engine != AE_SETUP_ENGINE_FIREFIGHT" in applies and "if (!row->engines)" in applies
+    rows = [line for line in (UI / "ae_setup_firefight_rows.inc").read_text(encoding="utf-8").splitlines()
+            if line.strip().startswith("[AE_SO_FF_")]
+    assert len(rows) == 45 and all("ENGINE(AE_SETUP_ENGINE_FIREFIGHT)" in line for line in rows)
+    # (a saved variant is one text file of its own: no gametype file, no multiplayer list, no config key)
+    variants = (UI / "ae_firefight_variants.c").read_text(encoding="utf-8")
+    for banned in ("playlist_profile", "saved_game", "config_write", "ui_widget_port_gametypes"):
+        assert banned not in variants, banned
+    # (the engine: the lobby's flag, DEV MODE or a client)
+    rules = (UI / "ae_firefight_doors_rules.c").read_text(encoding="utf-8")
+    allowed = rules.split("int ae_firefight_doors_engine_allowed")[1].split("}")[0]
+    assert "lobby_open" in allowed and "dev_mode_setting" in allowed and "network_client" in allowed
+    doors = (UI / "ae_firefight_doors.c").read_text(encoding="utf-8")
+    assert "ae_firefight_doors_engine_allowed(ae_dev_mode_setting(), network_game_distributed_client(), lobby_is_open)" in doors
+    # (the content screens: one writer, behind Firefight's allowed list)
+    content = (UI / "ae_screen_firefight_content.c").read_text(encoding="utf-8")
+    assert content.count("config_write(") == 2 and content.count("ae_ffm_key_allowed(key)") == 1
+    writer = content.split("static void setting_write")[1].split("\n}\n")[0]
+    assert "ae_ffm_key_allowed(key)" in writer and "config_write(key, value)" in writer
+    # (Firefight's settings are read by Firefight's own files and the menus' alone)
+    readers = {path.name for path in UI.glob("*.c") if "game.firefight_" in path.read_text(encoding="utf-8")}
+    assert readers <= {"firefight.c", "firefight_objectives.c", "firefight_spawner.c", "ae_firefight_doors.c", "ae_firefight_menus_rules.c",
+                       "tag_pack_conditions.c"}, readers
+    # (the lobby: the multiplayer copy put back, no multiplayer lobby opens on a Firefight copy, the flag off with the lobby)
+    lobby = (UI / "ae_screen_create_game.c").read_text(encoding="utf-8")
+    leave = lobby.split("static void leave_now")[1].split("\n}")[0]
+    assert "ae_firefight_doors_lobby_set(0)" in leave and "ae_setup_edit_firefight_leave()" in leave
+    assert lobby.count("!mp_edit_ready()") == 5 and "ae_setup_edit_open() && !ae_setup_edit_begin_named" not in lobby
+    assert "ae_firefight_doors_lobby_set(0)" in lobby.split("static void create_reset")[1].split("\n}")[0]
+    # (a Slayer or other multiplayer game: no playlist, MORE OPTIONS or gametype row changes for it: the FF branch is its own)
+    assert "if (create.firefight)\n\t\tcount = ff_rows(flow);\n\telse" in lobby
+    menu = (UI / "ae_screen_main_menu.c").read_text(encoding="utf-8")
+    assert "ae_firefight_doors_lobby_set(0)" in menu
+
+
+def test_item_sets_never_reach_a_multiplayer_game():
+    """(rc8 ITEM SETS) A set that plays adds its items to a campaign level played alone through the randomizer and to no multiplayer, online,
+    ranked, tournament, matchmaking or co-op game, Firefight or challenge: the page writes the randomizer's two settings alone, those settings
+    are read only where a level's tags are loaded for a campaign level played alone, and a game of any multiplayer engine, a client and a
+    challenge are left before that code."""
+    glue = (UI / "ae_glue_item_sets.c").read_text(encoding="utf-8")
+    screen = (UI / "ae_screen_item_sets.c").read_text(encoding="utf-8")
+    # (the page's two writes, nothing else is written: no engine call of the page names another setting)
+    keys = re.findall(r"config_write\((\w+),", glue)
+    assert len(keys) == 4 and set(keys) == {"SWITCH_KEY", "PROFILE_KEY"}, keys
+    assert 'PROFILE_KEY "game.randomizer_tag_profile"' in glue and 'SWITCH_KEY "game.tag_injection"' in glue
+    assert "config_write(" not in screen and "config_set(" not in screen
+    # (the sets are off until the player plays one: the defaults are untouched)
+    config = (SRC / "port_config.c").read_text(encoding="utf-8")
+    assert '{ "game.tag_injection", _config_boolean, "false"' in config
+    assert '{ "game.randomizer_tag_profile", _config_string, "\\"\\""' in config
+    # (the files that read the two settings)
+    readers = {path.name for path in UI.rglob("*.c")
+               if 'config_string("game.randomizer_tag_profile")' in path.read_text(encoding="utf-8")}
+    assert "tag_injector.c" in readers and readers <= {"tag_injector.c", "ae_glue_pve_menus.c", "ae_glue_item_sets.c"}, readers
+    # (the engine: the level's tags loading. A multiplayer engine's game returns for its mode's tags, a client takes the host's setup and a
+    # challenge its own, all before the randomizer's setup is read from the config, which is where the playing set is chosen)
+    randomizer = (UI / "randomizer.c").read_text(encoding="utf-8")
+    leave = randomizer.index("game->variant.game_engine_index != game_engine_none)\n\t{\n\t\tgame_modes_tags_loaded(scenario_name);\n\t\treturn;\n\t}")
+    client = randomizer.index("else if (network_game_distributed_client())\n\t{\n\t\tif (remote_on)")
+    config_branch = randomizer.index("else if (config_boolean(\"game.randomizer\"))\n\t{\n\t\tsetup_from_config(&current);")
+    play = randomizer.index("(randomize || loadout_imports) && current.custom_tags && !game && !network_game_distributed_client() &&")
+    assert leave < client < config_branch < play
+    assert "setup->custom_tags = !network_game_distributed_client() && !community_challenge_running() &&" in randomizer
+    rules = (UI / "ae_randomizer_rules.c").read_text(encoding="utf-8")
+    assert "if (network)" in rules.split("int ae_randomizer_rules_plays")[1].split("}")[0]
+    # (the page says what it does in words the engine's gate gives)
+    item_rules = (UI / "ae_item_sets_rules.c").read_text(encoding="utf-8")
+    assert "game == AE_IS_GAME_CAMPAIGN_ALONE && randomizer_on" in item_rules
+
+
+def test_loadout_picker_offers_ae_and_set_weapons_and_falls_back():
+    """(rc8) PLAYER LOADOUT's picker lists Content Evolved's nine, AE's seven (registry ids) and the playing set's weapons; a SET value the
+    level cannot load is logged and the level's own loadout is used; RANDOM draws AE's weapons only with AE WEAPONS IN LEVELS on."""
+    loadout = (UI / "ae_randomizer_loadout.c").read_text(encoding="utf-8")
+    assert 'config_boolean("game.campaign_ae_weapons")' in loadout.split("void ae_randomizer_loadout_add_ae")[1]
+    assert "ae_weapon_id_available(id)" in loadout.split("int ae_randomizer_loadout_weapon")[1].split("\n}")[0]
+    assert loadout.count("platform_log(") >= 4
+    # (the seven registry ids are those of the campaign weapons' table, in its order of kinds: assault rifles, pistols, sniper, rocket launcher)
+    campaign = (UI / "ae_campaign_weapons_rules.c").read_text(encoding="utf-8")
+    ids = [int(n) for n in re.findall(r"\d+", re.search(r"ae_loadout_ids\[[A-Z_]+\] = \{([^}]*)\}",
+                                                           (UI / "ae_randomizer_menus_rules.c").read_text(encoding="utf-8")).group(1))]
+    table = []
+    for name in ("assault_rifles", "pistols", "sniper_rifles", "rocket_launchers"):
+        table += [int(n) for n in re.findall(r"\d+", re.search(name + r"\[\] = \{([^}]*)\}", campaign).group(1))]
+    assert sorted(ids) == sorted(table) and len(ids) == 7, (ids, table)
+    # (the hooks in randomizer.c: three lines, each calls AE's file)
+    randomizer = (UI / "randomizer.c").read_text(encoding="utf-8")
+    for call in ("ae_randomizer_loadout_weapon(value, &index)", "ae_randomizer_loadout_primary_missing(current.loadout_weapons[0], loadout_set[0])",
+                 "ae_randomizer_loadout_add_ae(loadout_choice.definitions, &loadout_choice.count, WEAPON_MAX)"):
+        assert randomizer.count(call) == 1, call
+    build = randomizer.split("static void loadout_build")[1].split("\n}\n")[0]
+    assert build.index("loadout_set[1] = loadout_weapon") < build.index("ae_randomizer_loadout_primary_missing") < build.index("loadout_ready =")
+    assert "ae_randomizer_loadout_add_ae" in build.split("loadout_choice.count < WEAPON_MAX)")[1]
+    # (the screen fills the picker's set slots each time the page opens, and the staged scenes exist)
+    screen = (UI / "ae_screen_randomizer.c").read_text(encoding="utf-8")
+    assert "loadout_choices_refresh();" in screen.split("static int page_open(int which)\n{")[1].split("\n}")[0]
+    assert '"loadout-ae", "loadout-set"' in (UI / "ae_dev_cmd_rules.c").read_text(encoding="utf-8").replace("\n\t\t\t\t", " ")

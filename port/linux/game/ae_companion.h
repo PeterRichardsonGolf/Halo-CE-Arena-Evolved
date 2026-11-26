@@ -85,6 +85,12 @@ int ae_companion_on_deck(long unit_index);
 int ae_companion_track_goal(real_point3d const *from, real_point3d *goal);
 /* the same, and the cue of the track there (ae_companion_track_cue: AE_COMPANION_TRACK_JUMPED, _CROUCHED) */
 int ae_companion_track_goal_cue(real_point3d const *from, real_point3d *goal, int *cue);
+/* the same for one member, never back to a crumb older than the one it last walked from (a track that doubles back); and that
+member's oldest crumb forgotten (a warp, a new body) */
+int ae_companion_track_goal_cue_for(long slot, real_point3d const *from, real_point3d *goal, int *cue);
+void ae_companion_track_forget(long slot);
+/* the crumb a cue of ae_companion_track_goal_cue is of (the one before the goal), 0 none */
+int ae_companion_track_cue_crumb(real_point3d const *from, real_point3d *crumb);
 
 /* the co-op scoreboard (game_engine.c): whether a player's row is the AI squad's (a bot machine's player in a campaign level),
 drawn AI SQUAD with no ping and never picked; whether every player not on this machine is the squad's (no one to pick) */

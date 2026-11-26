@@ -9,6 +9,7 @@
 #include "game/players.h"
 #include "memory/data.h"
 #include "tag_files/tag_files.h"
+#include "ae_glue_career_xp.h"
 #include "ae_glue_pgcr.h"
 #include "ae_bomb_assault.h"
 #include "ae_glue_service_record.h"
@@ -335,6 +336,7 @@ void ae_glue_pgcr_keep(struct ae_pgr_report const *report)
 
 void ae_glue_pgcr_forget(void)
 {
+	ae_career_xp_last_forget();
 	memset(&kept, 0, sizeof(kept));
 	recorded = 0;
 }

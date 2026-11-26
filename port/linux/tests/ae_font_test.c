@@ -4,6 +4,18 @@
 #include <string.h>
 #include "../src/ae_font.h"
 
+/* stb's own answers, uncached, for comparing ae_font's cached ones with (a second static copy, as ae_font.c has) */
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-function"
+#endif
+#define STBTT_STATIC
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "../../third_party/stb/stb_truetype.h"
+#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC diagnostic pop
+#endif
+
 static int failures;
 #define CHECK(c) do { if (!(c)) { printf("FAIL %s:%d %s\n", __FILE__, __LINE__, #c); failures++; } } while (0)
 
@@ -35,6 +47,95 @@ static unsigned char *read_file(const char *path, int *size)
 	if (data)
 		*size = (int)length;
 	return data;
+}
+
+/* a code point as stb takes it (as ae_font.c does) */
+static int reference_codepoint(unsigned int codepoint)
+{
+	return codepoint <= 0x10FFFF ? (int)codepoint : 0xFFFD;
+}
+
+/* ae_font_advance's answer by stb's code point calls, one at a time */
+static float reference_advance(stbtt_fontinfo const *info, float em, unsigned int codepoint, unsigned int previous)
+{
+	int advance = 0, bearing = 0;
+
+	stbtt_GetCodepointHMetrics(info, reference_codepoint(codepoint), &advance, &bearing);
+	if (previous)
+		advance += stbtt_GetCodepointKernAdvance(info, reference_codepoint(previous), reference_codepoint(codepoint));
+	return (float)advance * stbtt_ScaleForMappingEmToPixels(info, em);
+}
+
+/* ae_font_measure's answer by stb's code point calls, one at a time */
+static float reference_measure(stbtt_fontinfo const *info, float em, float tracking_em, const char *utf8, float *top,
+	float *bottom)
+{
+	const char *cursor = utf8;
+	unsigned int codepoint, previous = 0;
+	int units = 0, count = 0, ink_top, ink_bottom = 0, advance, bearing, x0, y0, x1, y1;
+	float scale = stbtt_ScaleForMappingEmToPixels(info, em);
+
+	stbtt_GetCodepointBox(info, 'H', &x0, &y0, &x1, &ink_top);
+	while ((codepoint = ae_font_utf8_next(&cursor)) != 0)
+	{
+		stbtt_GetCodepointHMetrics(info, reference_codepoint(codepoint), &advance, &bearing);
+		units += advance;
+		if (previous)
+			units += stbtt_GetCodepointKernAdvance(info, reference_codepoint(previous), reference_codepoint(codepoint));
+		if (stbtt_GetCodepointBox(info, reference_codepoint(codepoint), &x0, &y0, &x1, &y1))
+		{
+			if (y1 > ink_top)
+				ink_top = y1;
+			if (-y0 > ink_bottom)
+				ink_bottom = -y0;
+		}
+		previous = codepoint;
+		count++;
+	}
+	*top = (float)ink_top * scale;
+	*bottom = (float)ink_bottom * scale;
+	return (float)units * scale + (count > 1 ? tracking_em * em * (float)(count - 1) : 0.0f);
+}
+
+/* every face's measures and advances equal stb's uncached ones exactly, the first time and again (the cache) */
+static void check_cached_measures(int face, unsigned char const *data)
+{
+	static const char *const texts[] =
+	{
+		"AVAWAY To Wa Yo Te LT", "SIGN IN WITH STEAM",
+		"Halo: The Master Chief Collection is in Steam on this PC, but Arena Evolved isn't using its files.",
+		"\xC3\x9Cn\xC3\xAF" "c\xC3\xB6" "d\xC3\xA9 \xC3\x80\xC3\x89\xC3\x8E \xC3\x97\xC3\xB7 \xC3\x9F",
+		"\xCE\xA9 \xE2\x80\x94 \xE2\x80\xA6 \xE2\x82\xAC \xE2\x98\x85 \xE6\x97\xA5", "\xF0\x9F\x8E\xAE A",
+		"\xC3 bad \xFF\x80 bytes", "x", "",
+	};
+	static const unsigned int extra[] = { 0xA0, 0xE9, 0xFF, 0x100, 0x2014, 0x2026, 0xFFFD, 0x1F3AE, 0x80000000u };
+	stbtt_fontinfo info;
+	unsigned int codepoints[95 + sizeof(extra) / sizeof(extra[0])];
+	int count = 0, pass, text, a, b;
+
+	CHECK(stbtt_InitFont(&info, data, 0));
+	for (a = 32; a < 127; a++)
+		codepoints[count++] = (unsigned int)a;
+	for (a = 0; a < (int)(sizeof(extra) / sizeof(extra[0])); a++)
+		codepoints[count++] = extra[a];
+	for (pass = 0; pass < 2; pass++)
+	{
+		for (text = 0; text < (int)(sizeof(texts) / sizeof(texts[0])); text++)
+		{
+			float top, bottom, want_top, want_bottom;
+			float width = ae_font_measure(face, 23.0f, 0.02f, texts[text], &top, &bottom);
+			float want = reference_measure(&info, 23.0f, 0.02f, texts[text], &want_top, &want_bottom);
+
+			CHECK(width == want && top == want_top && bottom == want_bottom);
+		}
+		for (a = 0; a < count; a++)
+		{
+			CHECK(ae_font_advance(face, 31.0f, codepoints[a], 0) == reference_advance(&info, 31.0f, codepoints[a], 0));
+			for (b = 0; b < count; b++)
+				CHECK(ae_font_advance(face, 31.0f, codepoints[a], codepoints[b]) ==
+					reference_advance(&info, 31.0f, codepoints[a], codepoints[b]));
+		}
+	}
 }
 
 int main(void)
@@ -144,6 +245,14 @@ int main(void)
 	CHECK(!ae_font_has(AE_FACE_OVERPASS_900, 0x110000));
 	bitmap = ae_font_glyph(AE_FACE_OVERPASS_900, 20.0f, 0xFFFFFFFFu, &w, &h, &xo, &yo);
 	ae_font_free(bitmap);
+
+	/* the cache answers as stb does; a face loaded again with other data forgets the old data's answers */
+	for (face = 0; face < AE_NUMBER_OF_FACES; face++)
+		check_cached_measures(face, data[face]);
+	CHECK(ae_font_load(AE_FACE_OPENCE, data[AE_FACE_OVERPASS_900], sizes[AE_FACE_OVERPASS_900]));
+	check_cached_measures(AE_FACE_OPENCE, data[AE_FACE_OVERPASS_900]);
+	CHECK(ae_font_load(AE_FACE_OPENCE, data[AE_FACE_OPENCE], sizes[AE_FACE_OPENCE]));
+	check_cached_measures(AE_FACE_OPENCE, data[AE_FACE_OPENCE]);
 
 	/* garbage and truncated data: refused, nothing crashes (built with the sanitizers) */
 	memset(garbage, 0xFF, sizeof(garbage));

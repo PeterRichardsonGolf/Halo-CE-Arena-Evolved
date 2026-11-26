@@ -23,6 +23,11 @@ void display_error_text_when_main_menu_loaded(wchar_t const *text);
 void network_game_abort(void);
 void distributed_tell_removed(long machine_index, char const *why);
 int ae_silent_machine_marked(long machine_index);
+boolean game_in_progress(void);
+int ae_firefight_net_rules(unsigned long *values, unsigned char *widths, int maximum);
+int ae_firefight_net_widths(unsigned char *widths, int maximum);
+void ae_firefight_net_apply(unsigned long const *values, int count);
+void ae_firefight_net_clear(void);
 
 enum
 {
@@ -64,6 +69,11 @@ static struct
 	unsigned long announced_time;
 	unsigned long removed_time;
 	struct ae_netext_peer peer;
+	/* the Firefight rules last sent to it, and whether a game was running when they were */
+	boolean ff_sent;
+	boolean ff_was_running;
+	int ff_count;
+	unsigned long ff_values[AE_NETEXT_FIREFIGHT_MAXIMUM_RULES];
 } host_machines[MACHINES];
 
 static struct
@@ -97,6 +107,22 @@ static unsigned long required_now(void)
 	}
 
 	return required;
+}
+
+/* a built message to the machine (the host) or the host (NONE) */
+static boolean send_bytes(unsigned char const *data, long size, long machine_index)
+{
+	unsigned char buffer[AE_NETEXT_MAXIMUM_BYTES + 16];
+	void *message = create_message(MESSAGE_TYPE_PACKET, (void *)data, (unsigned long)size, buffer, (word)sizeof(buffer));
+	word message_size;
+
+	if (!message)
+		return FALSE;
+	message_size = (word)GET_MESSAGE_SIZE(*(word *)message);
+
+	return machine_index == NONE ?
+		network_distributed_client_send_reliably(message, message_size) :
+		network_distributed_server_send_to_machine_reliably(machine_index, message, message_size);
 }
 
 /* a message of `kind` with the table's capabilities, those of `required` flagged, to the machine (the host) or the
@@ -204,6 +230,40 @@ void ae_net_extensions_host_machine(long machine_index, boolean remote_joined)
 	}
 }
 
+void ae_net_extensions_host_firefight(long machine_index, boolean remote_joined, boolean firefight_game)
+{
+	unsigned long values[AE_NETEXT_FIREFIGHT_MAXIMUM_RULES];
+	unsigned char widths[AE_NETEXT_FIREFIGHT_MAXIMUM_RULES];
+	unsigned char data[AE_NETEXT_MAXIMUM_BYTES + 1];
+	boolean running;
+	int count, changed;
+	long size;
+
+	if (machine_index < 0 || machine_index >= MACHINES || !remote_joined || !host_machines[machine_index].present)
+		return;
+	/* (a game just ended: the lobby is back, and the client's copy went with its game: sent again) */
+	running = game_in_progress() != 0;
+	if (host_machines[machine_index].ff_was_running && !running)
+		host_machines[machine_index].ff_sent = FALSE;
+	host_machines[machine_index].ff_was_running = running;
+	if (!firefight_game)
+		return;
+	count = ae_firefight_net_rules(values, widths, AE_NETEXT_FIREFIGHT_MAXIMUM_RULES);
+	if (count < 1)
+		return;
+	changed = !host_machines[machine_index].ff_sent || host_machines[machine_index].ff_count != count ||
+		memcmp(host_machines[machine_index].ff_values, values, (size_t)count * sizeof(values[0]));
+	if (!ae_netext_firefight_send(1, ae_net_extensions_agreed(machine_index, AE_NETEXT_AE_ARENA_EVOLVED, 1), changed))
+		return;
+	size = ae_netext_firefight_build(values, widths, count, data, (long)sizeof(data));
+	if (size < 0 || !send_bytes(data, size, machine_index))
+		return;
+	host_machines[machine_index].ff_sent = TRUE;
+	host_machines[machine_index].ff_count = count;
+	memcpy(host_machines[machine_index].ff_values, values, (size_t)count * sizeof(values[0]));
+	platform_log("net extensions: sent %d Firefight rules to machine #%ld", count, machine_index);
+}
+
 void ae_net_extensions_host_handle(long machine_index, void const *data, long size)
 {
 	struct ae_netext_peer read;
@@ -262,6 +322,7 @@ boolean ae_net_extensions_agreed(long machine_index, char const *key, unsigned s
 void ae_net_extensions_client_reset(void)
 {
 	memset(&client, 0, sizeof(client));
+	ae_firefight_net_clear();
 }
 
 /* the host's game requires a capability this build has not: the player told why, and the game left */
@@ -294,6 +355,26 @@ void ae_net_extensions_client_handle(void const *data, long size)
 
 	if (size < 1)
 		return;
+	/* (the host's Firefight rules: kept for this game; a message that does not fit this build's rules is dropped, its
+	game on this machine's own) */
+	{
+		unsigned long values[AE_NETEXT_FIREFIGHT_MAXIMUM_RULES];
+		unsigned char widths[AE_NETEXT_FIREFIGHT_MAXIMUM_RULES];
+		int count = ae_firefight_net_widths(widths, AE_NETEXT_FIREFIGHT_MAXIMUM_RULES);
+		int rules = count > 0 ? ae_netext_firefight_parse(data, size, widths, count, values) : AE_NETEXT_PARSE_OTHER;
+
+		if (rules == AE_NETEXT_PARSE_OK)
+		{
+			ae_firefight_net_apply(values, count);
+			platform_log("net extensions: the host's %d Firefight rules are in use for this game", count);
+			return;
+		}
+		if (rules == AE_NETEXT_PARSE_MALFORMED)
+		{
+			platform_log("net extensions: the host's Firefight rules did not fit (%ld bytes): dropped", size);
+			return;
+		}
+	}
 	table_make();
 	result = ae_netext_parse(data, size, AE_NETEXT_KIND_ANNOUNCEMENT, table, TABLE_COUNT, &read);
 	if (result == AE_NETEXT_PARSE_MALFORMED)

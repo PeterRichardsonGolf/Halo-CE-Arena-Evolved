@@ -506,3 +506,5 @@ static void camera_track_splut(
 
 	return;
 }
+
+#include "ae_following_view.inc" /* AE hook */

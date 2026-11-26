@@ -239,6 +239,24 @@ int main(void)
 	/* (and a narrowed view's 0.85, a top-and-bottom view's) */
 	CHECK(NEAR(0.5 + 0.5 * sqrt((853.0 / 640.0) * (640.0 * 240.0) / (853.0 * 480.0)), 0.8536, 0.001));
 
+	/* SPLIT SCREEN HUD: the setting's text, then the rule (side by side + one player's + two views only) */
+	CHECK(ae_split_hud_value("one_player") == 1);
+	CHECK(ae_split_hud_value("compact") == 0 && ae_split_hud_value("") == 0 && ae_split_hud_value("full") == 0);
+	CHECK(ae_split_hud_value(NULL) == 0);
+	CHECK(ae_split_hud_one_player(2, 1, 1));
+	CHECK(!ae_split_hud_one_player(2, 0, 1)); /* top and bottom keeps the compact HUD */
+	CHECK(!ae_split_hud_one_player(3, 1, 1) && !ae_split_hud_one_player(4, 1, 1)); /* three and four players too */
+	CHECK(!ae_split_hud_one_player(2, 1, 0)); /* COMPACT */
+	CHECK(!ae_split_hud_one_player(1, 1, 1)); /* one player: nothing to choose */
+	/* (the one-player HUD's size: the share times the factor reaches the whole screen, so the size factor is 1) */
+	CHECK(0.5 * AE_SPLIT_HUD_ONE_PLAYER_SHARE >= 1.0 && 0.25 * AE_SPLIT_HUD_ONE_PLAYER_SHARE >= 1.0);
+
+	/* SPLIT SCREEN FOV: -1 keeps display.fov's, 0 (stock) and 80 to 145 are the split value, only with 2 to 4 players */
+	CHECK(ae_split_fov_pick(90.0, -1.0, 2) == 90.0 && ae_split_fov_pick(0.0, -1.0, 4) == 0.0);
+	CHECK(ae_split_fov_pick(90.0, 120.0, 2) == 120.0 && ae_split_fov_pick(90.0, 120.0, 4) == 120.0);
+	CHECK(ae_split_fov_pick(90.0, 0.0, 2) == 0.0);
+	CHECK(ae_split_fov_pick(90.0, 120.0, 1) == 90.0 && ae_split_fov_pick(90.0, 0.0, 1) == 90.0);
+
 	/* a cutscene title's shift: the whole screen as before, or the view side bars left (106 to 746 of 852) */
 	CHECK(ae_split_title_shift(0, 640, 597, 0) == 0);
 	CHECK(ae_split_title_shift(0, 852, 597, 0) == 197);

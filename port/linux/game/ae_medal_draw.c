@@ -96,9 +96,9 @@ void ae_medal_display_reset(void)
 static void view_metrics(short local_player_index, struct ae_mm_metrics *metrics)
 {
 	/* (SPLIT SCREEN's side-by-side view is the screen's height: sized as a quarter view, half that, as its HUD is) */
-	real height = views[local_player_index].height * (ae_split_layout_side_by_side_now() ? 0.5f : 1.0f);
+	real height = views[local_player_index].height * (ae_split_layout_side_by_side_now() && ae_split_layout_hud_small() ? 0.5f : 1.0f);
 
-	ae_mm_metrics_of(views[local_player_index].width, height, (boolean)(local_player_count() > 1), metrics);
+	ae_mm_metrics_of(views[local_player_index].width, height, ae_split_layout_hud_small(), metrics);
 }
 
 /* whether the stack, at its fullest, is clear of the lines of this view's message list by AE_MM_CLEAR: two views use it only then */
@@ -126,7 +126,8 @@ static boolean stack_clears(short local_player_index)
 cannot be placed in */
 static boolean modern_stack(short local_player_index)
 {
-	short views_on_screen = local_player_count();
+	/* (two views with the one-player HUD, side by side: each is a one-player screen) */
+	short views_on_screen = ae_split_layout_hud_small() ? local_player_count() : 1;
 
 	if (!views[local_player_index].known || ae_medal_style_is_mcc(local_player_index) || views_on_screen > 2)
 		return FALSE;
@@ -426,7 +427,7 @@ void ae_medal_display_draw(short local_player_index)
 		ae_medal_holder_reset(&holders[local_player_index]);
 	ae_mm_step(&stacks[local_player_index], &metrics, now);
 	/* (two views: a message line that came after the stack can take its room; the stack waits, its clock going on) */
-	if (stacks[local_player_index].rows[0].used && (local_player_count() < 2 || stack_clears(local_player_index)))
+	if (stacks[local_player_index].rows[0].used && (!ae_split_layout_hud_small() || stack_clears(local_player_index)))
 		draw_stack(local_player_index, now);
 	if (holders[local_player_index].count < 1 || !(ppu > 0.0f))
 		return;

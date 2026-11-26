@@ -21,6 +21,7 @@ cmap pointing nowhere, is still trusted: AE's fonts are its own.)
 #include <math.h>
 #include <stddef.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* (stb's many static functions AE does not call would warn as unused: -Wall -Wextra -Werror in the unit tests) */
 #if defined(__GNUC__) || defined(__clang__)
@@ -44,6 +45,29 @@ static struct
 	/* the top of 'H' in font units */
 	int cap;
 } faces[AE_NUMBER_OF_FACES];
+
+/* code points below this keep their glyph, advance, box and kerning after the first look (every menu redraws its
+text each frame, and each look is a search of the font's tables); the rest are looked up each time */
+#define CACHED_CODEPOINTS 256
+
+/* one code point's glyph: its index, advance and ink box in font units */
+struct glyph
+{
+	int index;
+	int advance;
+	int has_box;
+	int x0, y0, x1, y1;
+};
+
+/* each face's answers so far, forgotten when the face is loaded again */
+static struct
+{
+	unsigned char known[CACHED_CODEPOINTS];
+	struct glyph glyphs[CACHED_CODEPOINTS];
+	/* a pair's kerning: known (one bit a pair, by the previous code point) and its value, when it fits a short */
+	unsigned char kern_known[CACHED_CODEPOINTS][CACHED_CODEPOINTS / 8];
+	short kerns[CACHED_CODEPOINTS][CACHED_CODEPOINTS];
+} caches[AE_NUMBER_OF_FACES];
 
 /* ---------- checking the data */
 
@@ -143,6 +167,8 @@ int ae_font_load(int face, const unsigned char *data, int size)
 	if (face < 0 || face >= AE_NUMBER_OF_FACES)
 		return 0;
 	faces[face].ready = 0;
+	memset(caches[face].known, 0, sizeof(caches[face].known));
+	memset(caches[face].kern_known, 0, sizeof(caches[face].kern_known));
 	if (size <= 0 || !data_fits(data, (unsigned int)size))
 		return 0;
 	if (!stbtt_InitFont(&faces[face].info, data, 0))
@@ -160,11 +186,17 @@ int ae_font_ready(int face)
 	return face_info(face) != NULL;
 }
 
+static void glyph_of(int face, stbtt_fontinfo const *info, unsigned int codepoint, struct glyph *glyph);
+
 int ae_font_has(int face, unsigned int codepoint)
 {
 	stbtt_fontinfo *info = face_info(face);
+	struct glyph glyph;
 
-	return info && codepoint <= 0x10FFFF && stbtt_FindGlyphIndex(info, (int)codepoint) != 0;
+	if (!info || codepoint > 0x10FFFF)
+		return 0;
+	glyph_of(face, info, codepoint, &glyph);
+	return glyph.index != 0;
 }
 
 /* a code point as stb takes it (an int): past U+10FFFF, U+FFFD (a huge unsigned would turn negative) */
@@ -186,22 +218,65 @@ float ae_font_cap_height(int face, float em)
 	return info ? (float)faces[face].cap * scale_of(info, em) : 0.0f;
 }
 
-/* a code point's advance in font units, with the kerning after the previous (0: none) */
-static int advance_units(stbtt_fontinfo const *info, unsigned int codepoint, unsigned int previous)
+/* a code point's glyph (what stb's code point calls look up, once for a cached code point) */
+static void glyph_of(int face, stbtt_fontinfo const *info, unsigned int codepoint, struct glyph *glyph)
 {
-	int advance = 0, bearing = 0;
+	int bearing = 0;
 
-	stbtt_GetCodepointHMetrics(info, stb_codepoint(codepoint), &advance, &bearing);
-	if (previous)
-		advance += stbtt_GetCodepointKernAdvance(info, stb_codepoint(previous), stb_codepoint(codepoint));
-	return advance;
+	if (codepoint < CACHED_CODEPOINTS && caches[face].known[codepoint])
+	{
+		*glyph = caches[face].glyphs[codepoint];
+		return;
+	}
+	glyph->index = stbtt_FindGlyphIndex(info, stb_codepoint(codepoint));
+	glyph->advance = 0;
+	stbtt_GetGlyphHMetrics(info, glyph->index, &glyph->advance, &bearing);
+	glyph->has_box = stbtt_GetGlyphBox(info, glyph->index, &glyph->x0, &glyph->y0, &glyph->x1, &glyph->y1);
+	if (codepoint < CACHED_CODEPOINTS)
+	{
+		caches[face].glyphs[codepoint] = *glyph;
+		caches[face].known[codepoint] = 1;
+	}
+}
+
+/* the kerning between two glyphs in font units (stbtt_GetCodepointKernAdvance's answer) */
+static int kern_units(int face, stbtt_fontinfo const *info, unsigned int previous, struct glyph const *before,
+	unsigned int codepoint, struct glyph const *glyph)
+{
+	int kern;
+
+	if (!info->kern && !info->gpos)
+		return 0;
+	if (previous < CACHED_CODEPOINTS && codepoint < CACHED_CODEPOINTS &&
+		caches[face].kern_known[previous][codepoint / 8] & 1 << (codepoint % 8))
+		return caches[face].kerns[previous][codepoint];
+	kern = stbtt_GetGlyphKernAdvance(info, before->index, glyph->index);
+	if (previous < CACHED_CODEPOINTS && codepoint < CACHED_CODEPOINTS && kern >= -32768 && kern <= 32767)
+	{
+		caches[face].kerns[previous][codepoint] = (short)kern;
+		caches[face].kern_known[previous][codepoint / 8] |= (unsigned char)(1 << (codepoint % 8));
+	}
+	return kern;
+}
+
+/* a code point's advance in font units, with the kerning after the previous (0: none; before: its glyph) */
+static int advance_units(int face, stbtt_fontinfo const *info, unsigned int codepoint, struct glyph const *glyph,
+	unsigned int previous, struct glyph const *before)
+{
+	return glyph->advance + (previous ? kern_units(face, info, previous, before, codepoint, glyph) : 0);
 }
 
 float ae_font_advance(int face, float em, unsigned int codepoint, unsigned int previous)
 {
 	stbtt_fontinfo *info = face_info(face);
+	struct glyph glyph, before;
 
-	return info ? (float)advance_units(info, codepoint, previous) * scale_of(info, em) : 0.0f;
+	if (!info)
+		return 0.0f;
+	glyph_of(face, info, codepoint, &glyph);
+	if (previous)
+		glyph_of(face, info, previous, &before);
+	return (float)advance_units(face, info, codepoint, &glyph, previous, &before) * scale_of(info, em);
 }
 
 unsigned int ae_font_utf8_next(const char **cursor)
@@ -253,7 +328,8 @@ float ae_font_measure(int face, float em, float tracking_em, const char *utf8, f
 	stbtt_fontinfo *info = face_info(face);
 	const char *cursor = utf8;
 	unsigned int codepoint, previous = 0;
-	int units = 0, count = 0, ink_top, ink_bottom = 0, x0, y0, x1, y1;
+	int units = 0, count = 0, ink_top, ink_bottom = 0;
+	struct glyph glyph, before;
 	float scale;
 
 	if (top)
@@ -265,15 +341,17 @@ float ae_font_measure(int face, float em, float tracking_em, const char *utf8, f
 	ink_top = faces[face].cap;
 	while (utf8 && (codepoint = ae_font_utf8_next(&cursor)) != 0)
 	{
-		units += advance_units(info, codepoint, previous);
-		if (stbtt_GetCodepointBox(info, stb_codepoint(codepoint), &x0, &y0, &x1, &y1))
+		glyph_of(face, info, codepoint, &glyph);
+		units += advance_units(face, info, codepoint, &glyph, previous, &before);
+		if (glyph.has_box)
 		{
-			if (y1 > ink_top)
-				ink_top = y1;
-			if (-y0 > ink_bottom)
-				ink_bottom = -y0;
+			if (glyph.y1 > ink_top)
+				ink_top = glyph.y1;
+			if (-glyph.y0 > ink_bottom)
+				ink_bottom = -glyph.y0;
 		}
 		previous = codepoint;
+		before = glyph;
 		count++;
 	}
 	scale = scale_of(info, em);

@@ -21,7 +21,9 @@ enum
 {
 	/* (0.9.0) SPLIT SCREEN right after VIDEO */
 	AE_SETTINGS_CONTROLS, AE_SETTINGS_VIDEO, AE_SETTINGS_SPLIT, AE_SETTINGS_VIEW, AE_SETTINGS_AUDIO, AE_SETTINGS_HUD, AE_SETTINGS_CHAT,
-	AE_SETTINGS_ONLINE, AE_SETTINGS_ACCESSIBILITY, AE_SETTINGS_SYSTEM, AE_SETTINGS_GROUPS
+	AE_SETTINGS_ONLINE, AE_SETTINGS_ACCESSIBILITY,
+	/* (rc8) the campaign's rules, before SYSTEM */
+	AE_SETTINGS_CAMPAIGN, AE_SETTINGS_SYSTEM, AE_SETTINGS_GROUPS
 };
 /* (0.7.7) HUD > RETICLE's own pages, reached from its rows and not listed in SETTINGS: the CROSSHAIR editor and the
 per-weapon list (CROSSHAIR WEAPONS); B goes back to HUD */
@@ -58,6 +60,8 @@ enum
 	AE_SETTINGS_WHEN_TRACKPAD,
 	/* MEDALS is on (display.medals): MEDAL STYLE shows */
 	AE_SETTINGS_WHEN_MEDALS,
+	/* MARK PROMPT is on (display.mark_prompt): its LOOK and PLACE show */
+	AE_SETTINGS_WHEN_MARK_PROMPT,
 	/* HUD STYLE is not AE (display.hud_style): AE's style draws Kenney's glyphs whatever BUTTON STYLE says; CLASSIC's pictures are the ones it chooses */
 	AE_SETTINGS_WHEN_NOT_AE_HUD,
 	/* (TEST RUN) DEV MODE is on (system.dev_mode): the TEST RUN row */
@@ -77,7 +81,13 @@ enum
 	TRACKPAD AIM on; the greyed conditions: Steam Input is not driving the pad; GYRO AIMING answers (not Steam's pad
 	without a gyroscope) */
 	AE_SETTINGS_WHEN_TRACKPAD_PAD, AE_SETTINGS_WHEN_TRACKPAD_PAD_AIM, AE_SETTINGS_WHEN_STEAM_INPUT_OFF,
-	AE_SETTINGS_WHEN_GYRO_LIVE, AE_SETTINGS_WHEN_GYRO_PAD
+	AE_SETTINGS_WHEN_GYRO_LIVE, AE_SETTINGS_WHEN_GYRO_PAD,
+	/* (rc8, CAMPAIGN) GO CRAZY is on (game.randomizer_crazy): its four rows show; SCORING is on (game.campaign_score): the rows
+	that need it (the greyed rows' condition) */
+	AE_SETTINGS_WHEN_CRAZY, AE_SETTINGS_WHEN_CAMPAIGN_SCORE,
+	/* (rc8, DAILY CHALLENGE) COMMUNITY SERVICES is on (network.community_services "yes"): ONLINE DAY AND BOARDS applies; ONLINE DAY AND BOARDS
+	is on as well: the online rows under it apply */
+	AE_SETTINGS_WHEN_COMMUNITY_SERVICES, AE_SETTINGS_WHEN_DAILY_ONLINE
 };
 struct ae_settings_row
 {
@@ -208,6 +218,9 @@ struct ae_settings_whole { long minimum, maximum; const char *suffix; };
 int ae_settings_row_whole(struct ae_settings_row const *row, struct ae_settings_whole *whole);
 /* the value as shown: a list value's text, else the number itself ("237") */
 void ae_settings_whole_shown(struct ae_settings_row const *row, const char *value, char *text, size_t size);
+/* the TARGET FRAMERATE rows (one player's and split screen's) show only a value their list has: a value it lacks shows as
+its own text in capitals ("75"), not as a nearby entry. 1 when the row is one of them and the text was written */
+int ae_settings_exact_shown(struct ae_settings_row const *row, const char *value, char *text, size_t size);
 /* whether a text may stand in the field as it is typed: digits, at most AE_SETTINGS_WHOLE_TYPED of them (empty too) */
 enum { AE_SETTINGS_WHOLE_TYPED = 4 };
 int ae_settings_whole_typing_ok(const char *typed);

@@ -10,7 +10,7 @@ See ae_main_menu_rules.h.
 
 static const char *const main_labels[AE_MAIN_ROWS] = {
 	"CAMPAIGN", "AE TOURNAMENT", "MULTIPLAYER", "MAPS & MODS", "SETTINGS", "MESSAGE OF THE DAY", "WHAT'S NEW",
-	"FIREFIGHT", "FORGE", "THEATER", "FRIENDS"
+	"FIREFIGHT", "THEATER", "FORGE", "FRIENDS"
 };
 
 static const char *const mp_labels[AE_MP_ROWS] = {
@@ -19,7 +19,7 @@ static const char *const mp_labels[AE_MP_ROWS] = {
 
 int ae_main_row_coming_soon(int row)
 {
-	return row >= AE_MAIN_FIREFIGHT && row < AE_MAIN_ROWS;
+	return row >= AE_MAIN_FORGE && row < AE_MAIN_ROWS;
 }
 
 int ae_main_first_focus(int last_used_row)

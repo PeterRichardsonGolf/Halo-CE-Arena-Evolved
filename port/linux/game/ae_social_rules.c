@@ -40,6 +40,11 @@ int ae_social_exp_change(int outcome)
 	return outcome == AE_SOCIAL_WIN || outcome == AE_SOCIAL_TIE ? 1 : outcome == AE_SOCIAL_QUIT ? -1 : 0;
 }
 
+int ae_social_profile_put_back(long saved, long now, int guest)
+{
+	return saved != -1 && now == -1 && !guest;
+}
+
 long ae_social_exp_after(long exp, int outcome)
 {
 	exp += ae_social_exp_change(outcome);

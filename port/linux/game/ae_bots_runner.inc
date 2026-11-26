@@ -9,7 +9,9 @@ The runner's player stays a person to the rest of the game (its machine is no bo
 For tests only; nothing in the menus.
 */
 
-/* (bots.c's bots_update_actions, after its loop over the bots) the runner's tick */
+/* (bots.c's bots_update_actions, after its loop over the bots) the bots' actions of the tick put in the update the tick ran
+(a local game's bots are driven here, after the update was built from their queues: the action history, which the
+recording and the relay of players' input read, would hold nothing of what they did), then the runner's tick */
 static void ae_bots_runner_tick(struct player_action *actions, long count)
 {
 	static boolean refused_logged = FALSE;
@@ -19,6 +21,20 @@ static void ae_bots_runner_tick(struct player_action *actions, long count)
 	long player_index, absolute_index;
 	long bot_index = BOTS_BRAINS - 1;
 
+	if (count > 0 && !ae_lan_bots_build_actions())
+	{
+		data_iterator_new(&iterator, player_data);
+		while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+		{
+			long driven_index = DATUM_INDEX_TO_ABSOLUTE_INDEX(iterator.datum_index);
+
+			if (player->local_player_index == NONE && bots_machine_is_bot(player->network_player_data.machine_index) &&
+				driven_index >= 0 && driven_index < HALO_PORT_MAXIMUM_NETWORK_PLAYERS)
+			{
+				update_server_note_driven_action(driven_index, &actions[driven_index]);
+			}
+		}
+	}
 	if (count <= 0 || !config_boolean("debug.bot_runner"))
 		return;
 	player_index = local_player_get_player_index(0);

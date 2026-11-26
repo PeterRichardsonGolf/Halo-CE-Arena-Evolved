@@ -30,6 +30,8 @@ with "-" for players: heard of, not answering).
 #include "ae_glue_social_game.h"
 #include "ae_social_rules.h"
 #include "ae_social_view_rules.h"
+#include "ae_career_record.h"
+#include "ae_glue_career.h"
 #include "ae_screen_career.h"
 #include "ae_screen_social_lobby.h"
 #include "ae_hooks.h"
@@ -653,8 +655,8 @@ static void filter_chips_draw(struct ae_flow_screen *flow)
 {
 	struct ae_rect rects[2];
 	float x = ae_flow_left_x(flow), y = ae_flow_u(flow, 190.0f), room = flow->frame.rect.width * AE_FLOW_ROWS_WIDTH, end, minor;
-	char const *line = mm.filter == FILTER_CASUAL ? "Offline games against bots. EXP and ranks stay on this PC." :
-		"Offline bot games on competitive rules. EXP and ranks stay on this PC.";
+	char const *line = mm.filter == FILTER_CASUAL ? "Offline games against bots. Skill ranks and XP stay on this PC." :
+		"Offline bot games on competitive rules. Skill ranks and XP stay on this PC.";
 
 	mm.chips[0] = (struct ae_chip){ "CASUAL", -1, mm.filter == FILTER_CASUAL ? AE_CHIP_ON : 0 };
 	mm.chips[1] = (struct ae_chip){ "COMP", -1, mm.filter == FILTER_COMP ? AE_CHIP_ON : 0 };
@@ -682,7 +684,13 @@ static void rank_badges_draw(struct ae_flow_screen *flow)
 
 		if (r->width <= 0.0f || !list)
 			continue;
-		ae_social_view_rank(have ? ae_social_profile_rank(key, list->id) : 1, text, (int)sizeof(text));
+		{
+			struct ae_career_social const *entry = have ? ae_career_social_find(ae_career_store(), key, list->id) : NULL;
+
+			ae_social_view_rank_badge(entry ? entry->games : 0, have ? ae_social_profile_rank(key, list->id) : 1, text, (int)sizeof(text));
+		}
+		if (!text[0])
+			continue;
 		label_w = ae_draw_text_width(AE_FONT_ROW, label_size, list->label);
 		w = ae_draw_text_tracked_width(AE_FONT_ROW, small, 0.06f, text) + ae_flow_u(flow, 16.0f);
 		x = r->x + ae_flow_u(flow, 20.0f) + label_w + ae_flow_u(flow, 14.0f);
@@ -804,22 +812,21 @@ static void social_card_draw(float x, float y, float width)
 			AE_ALIGN_LEFT, AE_COLOR_MUTED, text);
 		foot += 34.0f;
 	}
-	/* the foot: a rule, RANK and EXP, the bar and the wins to the next rank */
+	/* the foot: a rule, the rank, the bar and the wins to the next rank */
 	{
 		float rule_y = y + ae_flow_u(flow, foot + 11.0f), mid = y + ae_flow_u(flow, foot + 37.0f);
 		float bar_x = x + width * 0.42f, bar_w = width - (bar_x - x) - inset;
-		char rank_text[24];
+		char rank_text[32];
 
 		ae_draw_rect(x + inset, rule_y, width - 2.0f * inset, ae_flow_u(flow, 1.0f), 0.0f, AE_COLOR_RULE);
-		ae_social_view_rank(ae_social_rank(exp), rank_text, (int)sizeof(rank_text));
-		ae_draw_text(AE_FONT_ROW, ae_flow_u(flow, 28.0f), x + inset, ae_flow_cap_top(AE_FONT_ROW, ae_flow_u(flow, 28.0f), mid),
-			AE_ALIGN_LEFT, AE_COLOR_TITLE, rank_text);
 		{
-			float rank_w = ae_draw_text_width(AE_FONT_ROW, ae_flow_u(flow, 28.0f), rank_text);
+			struct ae_career_social const *entry = have ? ae_career_social_find(ae_career_store(), key, list->id) : NULL;
+			int has_games = ae_social_view_foot_rank(entry ? entry->games : 0, ae_social_rank(exp), rank_text, (int)sizeof(rank_text));
 
-			ae_social_view_exp(exp, text, (int)sizeof(text));
-			ae_draw_text_tracked(AE_FONT_BODY, minor, 0.09f, x + inset + rank_w + ae_flow_u(flow, 14.0f),
-				ae_flow_cap_top(AE_FONT_BODY, minor, mid + ae_flow_u(flow, 2.0f)), AE_ALIGN_LEFT, AE_COLOR_MUTED, text);
+			ae_draw_text(AE_FONT_ROW, ae_flow_u(flow, 28.0f), x + inset, ae_flow_cap_top(AE_FONT_ROW, ae_flow_u(flow, 28.0f), mid),
+				AE_ALIGN_LEFT, AE_COLOR_TITLE, rank_text);
+			if (!has_games)
+				return;
 		}
 		ae_draw_rect(bar_x, mid - ae_flow_u(flow, 3.0f), bar_w, ae_flow_u(flow, 6.0f), 0.0f, AE_COLOR_RULE);
 		ae_draw_rect(bar_x, mid - ae_flow_u(flow, 3.0f), bar_w * (float)ae_social_rank_percent(exp) / 100.0f, ae_flow_u(flow, 6.0f),

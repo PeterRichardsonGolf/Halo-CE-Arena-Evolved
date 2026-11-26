@@ -46,6 +46,12 @@ int main(void)
 	CHECK(ae_companion_stuck_warp(1, 0, 7.0f, 150, 1, 0, 0) && !ae_companion_stuck_warp(1, 0, 5.0f, 999, 1, 0, 0));
 	CHECK(!ae_companion_stuck_warp(0, 1, 3.6f, 999, 1, 0, 0) && !ae_companion_stuck_warp(1, 1, 2.0f, 999, 1, 0, 0));
 	CHECK(!ae_companion_stuck_warp(1, 1, 3.6f, 999, 1, 1, 0) && !ae_companion_stuck_warp(1, 1, 3.6f, 999, 1, 0, 1));
+	/* its window: a member hopping in place at the pipes, 3.4 to 4.3 away, keeps its window; 1 nearer than its nearest
+	in the window starts a new one, as do leaving the roof, coming within 2.5, or neither cut off this window nor past 6 */
+	CHECK(!ae_companion_stuck_restarts(1, 1, 4.3f, 3.4f) && !ae_companion_stuck_restarts(1, 1, 3.0f, 3.4f));
+	CHECK(ae_companion_stuck_restarts(1, 1, 5.4f, 6.5f) && !ae_companion_stuck_restarts(1, 1, 5.6f, 6.5f));
+	CHECK(ae_companion_stuck_restarts(0, 1, 4.0f, 4.0f) && ae_companion_stuck_restarts(1, 1, 2.4f, 3.0f));
+	CHECK(ae_companion_stuck_restarts(1, 0, 4.0f, 4.0f) && !ae_companion_stuck_restarts(1, 0, 7.0f, 7.0f));
 	/* the track: a straight deck along x, a crumb each 0.75 */
 	{
 		float track[AE_COMPANION_TRACK_MOST][3];
@@ -91,6 +97,14 @@ int main(void)
 			ae_companion_track_push(track, flags, &count, 9.0f + 0.8f * (float)at, 0.0f, 0.0f, at == AE_COMPANION_TRACK_MOST + 1, 0);
 		CHECK(count == AE_COMPANION_TRACK_MOST && fabsf(track[0][0] - (9.0f + 0.8f * 3.0f)) < 0.01f);
 		CHECK(flags[AE_COMPANION_TRACK_MOST - 3] == AE_COMPANION_TRACK_JUMPED && flags[AE_COMPANION_TRACK_MOST - 4] == 0);
+		/* (a drop the members may take, 3 or less: the track goes on over the edge, its last crumb marked a drop; a deeper drop
+		or a rise of 1.5 starts it again) */
+		count = 0;
+		CHECK(ae_companion_track_push(track, flags, &count, 0.0f, 0.0f, 2.0f, 0, 0) == 1);
+		CHECK(ae_companion_track_push(track, flags, &count, 1.0f, 0.0f, 0.0f, 1, 0) == 1 && count == 2 &&
+			(flags[0] & AE_COMPANION_TRACK_DROPPED) && !(flags[1] & AE_COMPANION_TRACK_DROPPED));
+		CHECK(ae_companion_track_push(track, flags, &count, 2.0f, 0.0f, -3.5f, 1, 0) == 1 && count == 1);
+		CHECK(ae_companion_track_push(track, flags, &count, 3.0f, 0.0f, -1.9f, 0, 0) == 1 && count == 1);
 	}
 	{
 		float track[4][3] = { { 0.0f, 0.0f, 0.0f }, { 0.75f, 0.0f, 0.0f }, { 1.5f, 0.0f, 0.0f }, { 2.25f, 0.0f, 0.0f } };
@@ -121,6 +135,28 @@ int main(void)
 	/* the intro ride: no level on the list yet; forced, any level */
 	CHECK(!ae_companion_intro_ride("b30", 0) && !ae_companion_intro_ride("a10", 0) && !ae_companion_intro_ride(NULL, 0));
 	CHECK(!ae_companion_intro_ride("", 0) && ae_companion_intro_ride("b30", 1) && ae_companion_intro_ride(NULL, 1));
+	/* (a track that doubles back: from the fold the member walks on to the newer crumbs, never back to the older beside them) */
+	{
+		float fold[5][3] = { { 0.0f, 0.0f, 0.0f }, { 1.0f, 0.0f, 0.0f }, { 2.0f, 0.0f, 0.0f }, { 1.0f, 0.1f, 0.0f }, { 0.0f, 0.1f, 0.0f } };
+
+		CHECK(ae_companion_track_step_from((float const (*)[3])fold, 5, 1.0f, 0.04f, 0.0f, 0) == 4);
+		CHECK(ae_companion_track_step_from((float const (*)[3])fold, 5, 1.0f, 0.04f, 0.0f, 3) == 4);
+		CHECK(ae_companion_track_step_from((float const (*)[3])fold, 5, 1.0f, 0.04f, 0.0f, 9) == -1);
+	}
+	/* (a walk back along the same line: the newer crumb beside the member is taken although an older one is a little nearer, so
+	the member does not walk on to the turn; an older crumb much nearer than the newer one is still taken) */
+	{
+		float back[9][3] = { { 0.0f, 0.0f, 0.0f }, { 0.75f, 0.0f, 0.0f }, { 1.5f, 0.0f, 0.0f }, { 2.25f, 0.0f, 0.0f },
+			{ 3.0f, 0.0f, 0.0f }, { 2.6f, 0.0f, 0.0f }, { 1.85f, 0.0f, 0.0f }, { 1.1f, 0.0f, 0.0f }, { 0.35f, 0.0f, 0.0f } };
+
+		float wall[9][3] = { { 0.0f, 0.0f, 0.0f }, { 0.75f, 0.0f, 0.0f }, { 1.5f, 0.0f, 0.0f }, { 2.25f, 0.0f, 0.0f },
+			{ 3.0f, 0.4f, 0.0f }, { 2.6f, 0.8f, 0.0f }, { 1.85f, 0.8f, 0.0f }, { 1.1f, 0.8f, 0.0f }, { 0.35f, 0.8f, 0.0f } };
+
+		CHECK(ae_companion_track_step_from((float const (*)[3])back, 9, 1.45f, 0.0f, 0.0f, 0) == 8);
+		CHECK(ae_companion_track_step_from((float const (*)[3])back, 9, 1.5f, 2.0f, 0.0f, 0) == 8);
+		CHECK(ae_companion_track_step_from((float const (*)[3])back, 6, 1.45f, 0.0f, 0.0f, 0) == 3);
+		CHECK(ae_companion_track_step_from((float const (*)[3])wall, 9, 1.45f, 0.0f, 0.0f, 0) == 3);
+	}
 	if (failures)
 		return 1;
 	/* where a squad may be: a hosted campaign game only; a multiplayer lobby (no engine yet), the menus, a client, an engine
@@ -157,6 +193,31 @@ int main(void)
 	CHECK(ae_companion_may_remove(1, 0));
 	CHECK(!ae_companion_may_remove(0, 0));	/* (a multiplayer bot on the squad's machine slot) */
 	CHECK(!ae_companion_may_remove(1, 1));
+	/* (a warp only when the walk to the player failed and the track made no progress for 5 s unseen, 10 s seen; progress is the
+	path left shrinking 0.3 or the crumb on; an impossible link warps at once, with its reason) */
+	CHECK(ae_companion_progress(5.0f, 4.6f, 3, 3) && ae_companion_progress(5.0f, 5.0f, 3, 4) && !ae_companion_progress(5.0f, 4.8f, 3, 3));
+	/* (walking with a goal that moves as fast, a member's way left does not shrink: a walk of 1 from where it last made progress is
+	progress too) */
+	CHECK(ae_companion_walked(1.0f) && !ae_companion_walked(0.9f));
+	CHECK(!ae_companion_warp_due(0, 0, 999, 0) && !ae_companion_warp_due(1, 1, 999, 0));
+	CHECK(ae_companion_warp_due(1, 0, 150, 0) && !ae_companion_warp_due(1, 0, 149, 0) && !ae_companion_warp_due(1, 0, 299, 1) &&
+		ae_companion_warp_due(1, 0, 300, 1));
+	CHECK(ae_companion_warp_now(1, 0, 0, 0) == AE_COMPANION_WARP_TELEPORT && ae_companion_warp_now(0, 1, 0, 0) == AE_COMPANION_WARP_LIFT &&
+		ae_companion_warp_now(0, 0, 1, 0) == AE_COMPANION_WARP_LOCKED && ae_companion_warp_now(0, 0, 0, 1) == AE_COMPANION_WARP_DROP &&
+		ae_companion_warp_now(0, 0, 0, 0) == AE_COMPANION_WARP_NONE);
+	/* (a track reset keeps a link: a drop, a rise, a teleport; a drop the player took with no damage may be followed, 0.2 more) */
+	CHECK(ae_companion_link_kind(0.5f, -2.0f, 0) == AE_COMPANION_LINK_DROP && ae_companion_link_kind(0.5f, 2.0f, 0) == AE_COMPANION_LINK_RISE &&
+		ae_companion_link_kind(6.0f, 0.0f, 0) == AE_COMPANION_LINK_TELEPORT && ae_companion_link_kind(6.0f, 0.0f, 1) == AE_COMPANION_LINK_VEHICLE &&
+		ae_companion_link_kind(1.0f, 0.2f, 0) == AE_COMPANION_LINK_NONE);
+	CHECK(ae_companion_drop_allowed(2.5f, 0, 2.6f) && !ae_companion_drop_allowed(2.5f, 0, 2.8f) && !ae_companion_drop_allowed(2.5f, 1, 2.0f));
+	CHECK(ae_companion_teleported(4.1f) && !ae_companion_teleported(3.9f));
+	/* (a member within 4 of the player is with him: no warp, however long it stands) */
+	CHECK(ae_companion_warp_far(4.1f) && !ae_companion_warp_far(4.0f));
+	if (failures)
+	{
+		printf("ae_companion_rules: %d failures\n", failures);
+		return 1;
+	}
 	printf("ae_companion_rules: ok\n");
 	return 0;
 }

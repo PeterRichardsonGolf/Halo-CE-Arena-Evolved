@@ -123,3 +123,23 @@ def test_event_types_agree():
     assert copied, "ae_input.c has no AE_EVENT_TYPE_BUTTON"
     assert int(copied.group(1)) == upstream["_event_type_button"], \
         "event_manager.c's _event_type_button moved: update AE_EVENT_TYPE_BUTTON in ae_input.c"
+
+
+def test_party_uses_its_own_key():
+    """The online party signs with ae_party_key (party.key), never the player key the OpenCE masters link to a Discord account."""
+    client = (ROOT / "port" / "linux" / "src" / "ae_party_client.c").read_text(errors="replace")
+    assert "player_link" not in client
+    for name in ("player_link.c", "player_link.h"):
+        text = (ROOT / "port" / "linux" / "src" / name).read_text(errors="replace")
+        assert "player_link_identity" not in text and "player_link_sign_text" not in text
+    assert "player_link_identity" not in LIST.read_text(errors="replace")
+
+
+def test_party_autojoin_is_dev_only():
+    """The DEV autojoin (the first invite answered yes at once) is switched on from the DEV command alone."""
+    callers = []
+    for folder in ("game", "src"):
+        for path in (ROOT / "port" / "linux" / folder).glob("*.c"):
+            if "ae_party_client_dev_autojoin(" in path.read_text(errors="replace") and path.name != "ae_party_client.c":
+                callers.append(path.name)
+    assert callers == ["ae_glue_party_online.c"]

@@ -209,6 +209,17 @@ static void test_merge_units(void)
 	HAS(o1, "social = goat | team-slayer | 37 70 33 4 3 1795283100\n");
 	LACKS(o1, "slayer2");
 	HAS(o1, "social = tiger | ctf | 9 9 9 0 0 1795283000\n");
+	/* the career XP and challenge lines of this PC stay through either merge (an import does not carry them) */
+	snprintf(mine_c, sizeof(mine_c), "%s",
+		"# AE career\nversion = 3\ncareer = team_slayer | 1 0 0 12 1 0 31\nxp = goat | 5230 1795283000\n"
+		"challenges = goat | 20415 2916 | d_win2 1 0 | - 0 0 | - 0 0 | - 0 0 | - 0 0 | - 0 0\n");
+	sum(mine_c);
+	EQ(merge_all(AE_PM_MERGE, &file, "goat", mine_c, "", "", NULL), AE_PM_OK);
+	HAS(o1, "xp = goat | 5230 1795283000\n");
+	HAS(o1, "challenges = goat | 20415 2916 | d_win2 1 0");
+	EQ(merge_all(AE_PM_REPLACE, &file, "goat", mine_c, "", "", NULL), AE_PM_OK);
+	HAS(o1, "xp = goat | 5230 1795283000\n");
+	HAS(o1, "career = team_slayer | 1450 6 6 12 7 0 31\n");
 }
 
 static void test_rename(void)

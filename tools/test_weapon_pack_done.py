@@ -136,7 +136,10 @@ def test_corrections_from_a_weapon_cache(tmp_path):
 
 
 def test_the_needler_pack_when_built():
-    built = Path(os.environ.get("AE_NEEDLER_PACK", Path.home() / "src/halo-test/impl-075/packs/ae_needler.aepack"))
+    path = os.environ.get("AE_NEEDLER_PACK")
+    if not path:
+        pytest.skip("AE_NEEDLER_PACK is not set")
+    built = Path(path)
     if not built.is_file():
         pytest.skip("no built needler pack here")
     recipe = json.loads((ROOT / "tools/weapon_pack/needler/recipe.json").read_text())
@@ -200,7 +203,10 @@ def test_a_recipe_that_says_melee_for_a_weapon_that_fires_fails(tmp_path):
 def test_the_sword_pack_when_built():
     """the built energy sword (the build machine's, absent in CI: skipped) passes every check of the pack itself (ZTeam's
     picture is its message icon)"""
-    built = Path(os.environ.get("AE_SWORD_PACK", Path.home() / "ae-pack-cex-sniper/packs-sword/ae_energy_sword.aepack"))
+    path = os.environ.get("AE_SWORD_PACK")
+    if not path:
+        pytest.skip("AE_SWORD_PACK is not set")
+    built = Path(path)
     if not built.is_file():
         pytest.skip("no built energy sword pack here")
     recipe = json.loads(SWORD_RECIPE.read_text())

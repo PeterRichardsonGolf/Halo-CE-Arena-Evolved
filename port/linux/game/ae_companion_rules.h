@@ -42,7 +42,7 @@ the player cannot see it, seated whether it sits in a vehicle */
 #define AE_COMPANION_CATCH_UP_GAIN 1.5f
 int ae_companion_catch_up(float distance, long ticks_without_gain, int unseen, int seated);
 /* STUCK INDOORS, the last resort under a roof: a member cut off from the player by a barrier, or farther than
-AE_COMPANION_STUCK_FAR, that has neither moved nor come AE_COMPANION_STUCK_GAIN nearer for AE_COMPANION_STUCK_TICKS while the
+AE_COMPANION_STUCK_FAR, that has not come AE_COMPANION_STUCK_GAIN nearer for AE_COMPANION_STUCK_TICKS while the
 player does not see it (AE_COMPANION_STUCK_SEEN_TICKS while they do), is put behind the player as at its entry; never one
 nearer than AE_COMPANION_STUCK_NEAR, in a seat or in a fight */
 #define AE_COMPANION_STUCK_NEAR 2.5f
@@ -51,10 +51,15 @@ nearer than AE_COMPANION_STUCK_NEAR, in a seat or in a fight */
 #define AE_COMPANION_STUCK_TICKS 150
 #define AE_COMPANION_STUCK_SEEN_TICKS 300
 int ae_companion_stuck_warp(int indoors, int cut_off, float distance, long ticks_stuck, int unseen, int seated, int fighting);
+/* the stuck window starts again (TRUE) when the member is no longer under a roof, is within AE_COMPANION_STUCK_NEAR, was neither
+cut off in this window (cut_off_seen) nor is past AE_COMPANION_STUCK_FAR, or is AE_COMPANION_STUCK_GAIN nearer than the nearest it
+came in the window (window_nearest); a member hopping in place against a barrier keeps its window */
+int ae_companion_stuck_restarts(int indoors, int cut_off_seen, float distance, float window_nearest);
 
 /* THE PLAYER'S TRACK: the spots the human walked (a crumb each time they are AE_COMPANION_TRACK_STEP from the last, on their
 feet, oldest first, AE_COMPANION_TRACK_MOST kept). On an object's ground (a bridge deck, a lift) a member walks the track in
-single file: from the crumb nearest it (within AE_COMPANION_TRACK_ON in its plane, AE_COMPANION_TRACK_RISE in height) to the
+single file: from the crumb nearest it (within AE_COMPANION_TRACK_ON in its plane, AE_COMPANION_TRACK_RISE in height; a newer one on a
+later stretch of the track, no more than AE_COMPANION_TRACK_NEWER farther, wins) to the
 next newer one once within AE_COMPANION_TRACK_REACH of it. track holds count crumbs (x, y, z): the crumb to walk to, -1 when
 the member is not on the track (it then goes straight to the player) */
 #define AE_COMPANION_TRACK_MOST 48
@@ -62,13 +67,20 @@ the member is not on the track (it then goes straight to the player) */
 #define AE_COMPANION_TRACK_ON 3.0f
 #define AE_COMPANION_TRACK_RISE 1.5f
 #define AE_COMPANION_TRACK_REACH 0.9f
+#define AE_COMPANION_TRACK_NEWER 0.4f
 int ae_companion_track_step(float const track[][3], int count, float x, float y, float z);
+/* the same from crumb least on: a member never goes back to a crumb older than the one it last walked from (a track that
+doubles back passes its older crumbs again) */
+int ae_companion_track_step_from(float const track[][3], int count, float x, float y, float z, int least);
 /* the track's cues, a byte a crumb (flags, beside track): JUMPED, the human left the ground after this crumb (a barrier jumped);
 CROUCHED, the human crouched at it. A crumb is added (1) once the human is AE_COMPANION_TRACK_STEP from the last; a step of more
 than AE_COMPANION_TRACK_GAP or a rise of AE_COMPANION_TRACK_RISE starts the track again; full, the oldest goes. airborne_since:
 the human was in the air since the last crumb (the last one is marked JUMPED); 0 when no crumb was added */
 #define AE_COMPANION_TRACK_JUMPED 1
 #define AE_COMPANION_TRACK_CROUCHED 2
+/* a crumb the player dropped from: the track goes on down a drop of AE_COMPANION_TRACK_DROP_KEPT or less (one a member may take) */
+#define AE_COMPANION_TRACK_DROPPED 4
+#define AE_COMPANION_TRACK_DROP_KEPT 3.0f
 #define AE_COMPANION_TRACK_GAP 4.0f
 int ae_companion_track_push(float track[][3], unsigned char flags[], int *count, float x, float y, float z, int airborne_since,
 	int crouched);
@@ -123,5 +135,34 @@ RESPAWN: the squad's members too */
 int ae_companion_player_down_counts(int is_squad_member, int respawn_mode);
 /* the setting's word: 1 for "respawn", 0 for anything else ("checkpoint", the default) */
 int ae_companion_player_down_respawn(char const *word);
+
+/* THE WARP, LAST: a member is put beside the player only when its walk to him failed and the track made no progress (the path
+left shrinking AE_COMPANION_PROGRESS, or the crumb it walks to moving on) for AE_COMPANION_WARP_UNSEEN_TICKS unseen or
+AE_COMPANION_WARP_SEEN_TICKS seen; at once, unseen, for a way no walk can take (the player teleported, a lift left, a door shut
+for good between them, a drop over the edge rule), with the reason */
+#define AE_COMPANION_PROGRESS 0.3f
+#define AE_COMPANION_WARP_UNSEEN_TICKS 150
+#define AE_COMPANION_WARP_SEEN_TICKS 300
+enum { AE_COMPANION_WARP_NONE, AE_COMPANION_WARP_TELEPORT, AE_COMPANION_WARP_LIFT, AE_COMPANION_WARP_LOCKED, AE_COMPANION_WARP_DROP };
+int ae_companion_progress(float path_left_was, float path_left_now, int crumb_was, int crumb_now);
+/* progress too: a walk of AE_COMPANION_WALKED from where the member last made progress (a goal moving as fast as it walks: the
+player walking on, it behind him) */
+#define AE_COMPANION_WALKED 1.0f
+int ae_companion_walked(float moved);
+int ae_companion_warp_due(int path_failed, int track_progress, long ticks_no_progress, int seen);
+int ae_companion_warp_now(int teleported, int lift_gone, int door_locked_between, int drop_over_rule);
+/* TRAIL LINKS: a step that starts the track again (AE_COMPANION_TRACK_GAP across, AE_COMPANION_TRACK_RISE up or down) is kept as
+a link from the old trail's end to the new one's start: a drop, a rise, a teleport (or a vehicle's ride). A drop the player took
+with no damage may be followed to its height + AE_COMPANION_DROP_SPARE; a teleport is a move of more than AE_COMPANION_TELEPORT in a
+tick */
+#define AE_COMPANION_DROP_SPARE 0.2f
+#define AE_COMPANION_TELEPORT 4.0f
+enum { AE_COMPANION_LINK_NONE, AE_COMPANION_LINK_DROP, AE_COMPANION_LINK_RISE, AE_COMPANION_LINK_TELEPORT, AE_COMPANION_LINK_VEHICLE };
+int ae_companion_link_kind(float across, float up, int in_vehicle);
+int ae_companion_drop_allowed(float link_drop, int player_hurt, float drop);
+int ae_companion_teleported(float moved_in_a_tick);
+/* a member farther than AE_COMPANION_WARP_NEAR from the player may be warped: nearer it is with him, however long it stands */
+#define AE_COMPANION_WARP_NEAR 4.0f
+int ae_companion_warp_far(float distance);
 
 #endif

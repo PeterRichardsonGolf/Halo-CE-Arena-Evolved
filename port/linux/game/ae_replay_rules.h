@@ -201,6 +201,11 @@ int ae_replay_name_is_own(const char *name);
 /* whether a name names a file of the folder (not empty, no '/' or '\\', no "..", ends in the extension, fits) */
 int ae_replay_name_is_safe(const char *name);
 
+/* the marker file a KEPT recording has beside it ("<name>.keep"; it does not end in the recordings' extension, so it is no
+recording of its own); 0 if the name is not a recording's or the marker does not fit */
+#define AE_REPLAY_KEEP_EXTENSION ".keep"
+int ae_replay_keep_marker(const char *name, char *marker, size_t size);
+
 /* the setting's value in its bounds */
 long ae_replay_kept(long value);
 long ae_replay_budget_mb(long value);

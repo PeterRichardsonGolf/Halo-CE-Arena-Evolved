@@ -5,11 +5,13 @@ DEV MODE's command grammar (ae_dev_cmd_rules.h).
 */
 
 #include <ctype.h>
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "ae_dev_cmd_rules.h"
+#include "../src/ae_ds5_rules.h"
 #include "ae_maps_hub_rules.h"
 #include "ae_steam_rules.h"
 #include "ae_weapon_tune_rules.h"
@@ -73,9 +75,9 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "hitch", "hitch <50-5000> [after <1-600>]", 1 },
 	{ "join_lan", "join_lan", 1 },
 	{ "camera", "camera third|first [<1-4>]", 1 },
-	{ "menu", "menu settings [player <1-4>] find [<text>] | menu game_options <filter> [change <option>=<value> ...] | menu tournament [filter casual|comp] [focus <id>] | menu matchmaking [online] [focus <id>] | menu career [player <1-4>] [focus <id>] | menu campaign [seat | players <2-4>] [error] [workshop [demo|fault|none|saved|damaged]] [save <1-10> <0-3>] [focus skip|continue|squad|down|dialog] [difficulty <0-3>] | menu coop [players <1-4>] | menu hostvote [lan] [now|join] | menu lan | menu steam <state> [<percent>] | menu playlist [edit <name>] | menu browser | menu gametype | menu tab | menu credits | menu network [reached|unreached|unknown] | menu bots [player <1-4>] [focus <name>] [sort games|last|record] | menu records [player <1-4>] | menu music [song|playlist] [mcc|standin|none] | menu maps [installed|required|browse|workshop|mods] [<state>] | menu profiles [edit [colours|plain]] [walk <ms>] [turn <deg>] | menu profiles progress export|files|import | menu classic <page>", 1 },
+	{ "menu", "menu settings [player <1-4>] find [<text>] | menu game_options <filter> [change <option>=<value> ...] | menu tournament [filter casual|comp] [focus <id>] | menu matchmaking [online] [focus <id>] | menu career [player <1-4>] [focus <id>] | menu challenges [player <1-4>] | menu skulls [questions] | menu randomizer hub|hub-off|ai|weapons|pickups|loadout|loadout-ae|loadout-set|setups|delete|itemset|name | menu skullrules [reset] | menu scoring [off|on] | menu coopoptions [changed] | menu saved [empty] [delete] | menu theater [empty] [delete] | menu leaderboard [<1-10>] [empty] | menu endcard [players <1-4>] [last] [best] | menu campaign [seat | players <2-4>] [error] [workshop [demo|fault|none|saved|damaged]] [save <1-10> <0-3>] [focus skip|continue|squad|down|dialog] [difficulty <0-3>] | menu coop [players <1-4>] | menu hostvote [lan] [now|join] | menu lan | menu steam <state> [<percent>] | menu playlist [edit <name>] | menu browser | menu gametype | menu tab | menu credits | menu network [reached|unreached|unknown] | menu bots [player <1-4>] [focus <name>] [sort games|last|record] | menu records [player <1-4>] | menu music [song|playlist] [mcc|standin|none] | menu maps [installed|required|browse|workshop|mods|sets] [<state>] | menu profiles [edit [colours|plain]] [walk <ms>] [turn <deg>] | menu profiles progress export|files|import | menu classic <page> | menu daily [today|past|online|unreached|unreached-custom|loading|empty|closed]", 1 },
 	{ "botskill", "botskill [<bot> <shooting> <movement>|<bot> clear|clear]", 1 },
-	{ "social", "social exp <id>|all <0-99999> | reset [<id>|all] | match <id> <0-4999>|tier <1-19> | mode <id> auto|<skill> | roster <id> [seed <n>] | pending <id> [crashed] | maps hide smp|<file>|none | calibration <profile|me> unset|new|some|alot | start <id> [map <name>] [seed <n>] [variant br|evo|magnum|protomag|singleshot|none] [now] | start <id> vote [seed <n>] [votes <a,b,c>] [left <0-10>] [party <1-4>] | postgame win|tie|loss|rankup|place <p> <n> [<id>] [exp <n>] | carnage <id> [seed <n>] [players <1-4>] [cursor <name>]  (each: [player <1-4>] where it applies)", 1 },
+	{ "social", "social exp <id>|all <0-99999> | reset [<id>|all] | match <id> <0-4999>|tier <1-19> | mode <id> auto|<skill> | roster <id> [seed <n>] | pending <id> [crashed] | maps hide smp|<file>|none | calibration <profile|me> unset|new|some|alot | start <id> [map <name>] [seed <n>] [variant br|evo|magnum|protomag|singleshot|none] [now] | start <id> vote [seed <n>] [votes <a,b,c>] [left <0-10>] [party <1-4>] | start <id> postgame [result win|tie|loss|quit] | postgame win|tie|loss|rankup|place <p> <n> [<id>] [exp <n>] | career xp <n> | career rank <1-30> <1-11> | career games <playlist> <n> [<wins> [<ties>]] | career challenge done <1-6> | career last <xp> [rankup] [challenge] | career art auto|off | carnage <id> [seed <n>] [players <1-4>] [cursor <name>]  (each: [player <1-4>] where it applies)", 1 },
 	{ "botstyle", "botstyle [<bot> <style> [<weapon>]|<bot> clear|clear]", 1 },
 	{ "botrecord", "botrecord [demo [seed <n>] [bots <1-60>] | demo off | set <name> <field> <value> ... (games wins ties kills deaths with vs counted counted_v3 seconds caps returns grabs carrier hill ball plants defuses laps) | page <name>|#<n> [game] [page <1-7>] | forget] [player <1-4>]", 1 },
 	{ "playlists", "playlists demo|forget|real", 1 },
@@ -90,7 +92,7 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "split", "split join|leave|pad|card|force <2-4>", 1 },
 	{ "biped", "biped [list|use <1-4>|off|check <1-4>]", 1 },
 	{ "campaign_score", "campaign_score status|on|off|reset | campaign_score add <enemy> <style>", 1 },
-	{ "replay", "replay list|status|info <n>|play <n>|eyes <player>|free|pause|speed <25-400>|seek <s>|skip ahead|skip back|stop", 1 },
+	{ "replay", "replay list|status|info <n>|play <n|newest>|keep|stage <0-8>|eyes <player>|free|behind|cinematic|pause|speed <25-400>|seek <s>|skip ahead|skip back|stop", 1 },
 	{ "inject", "inject status|maps|open <level>|list <category>|take <category> <number|name>|close|on|off|clear", 1 },
 	{ "randomizer", "randomizer status|on|off|seed <n>|reroll|save|pack", 1 },
 	{ "profile_move", "profile_move list | sample [<name> [<games>]] | export <name> | preview|import <file> <name> [merge|replace] | undo <name>", 1 },
@@ -98,15 +100,20 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "ammo", "ammo <0-100>", 1 },
 	{ "spawner", "spawner wait <1-600> | spawner red <1-600> | spawner ready", 1 },
 	{ "medal", "medal <key> [me|<player>]", 1 },
+	{ "party", "party code | party online <status|start|stop|name|invite|answer|leave|kick|promote|privacy|link|newlink|seats|follow|quickplay|cancel> ...", 1 },
 	{ "companion", "companion [<1-4>|off|reset|kill|dry|down|revert|won|wait] | companion near <1-20>", 1 },
 	{ "campaign", "campaign <1-10> [<0-3>] [won <seconds>] | campaign continue", 1 },
 	{ "campaign_weapons", "campaign_weapons status|on|off|share <0-100>|squad standard|ae|goto [<n>]", 1 },
-	{ "firefight", "firefight start [<map>] [<variant>] | wave <1-5> | clear | skull <name>", 1 },
+	{ "firefight", "firefight start [<map>] [<variant>] | wave <1-5> | clear | skull <name> | menu firefight lobby [variant <1-16>] [map <name>] [lan] [content] | rules [variant <1-16>] [change <option>=<value> ...] | skulls | content [mode vanilla|include|only] [custom] | tags | loadout | objectives | data ready|preparing|needsmaps|failed|auto", 1 },
 	{ "range", "range [<profile>]", 1 },
 	{ "skip_training", "skip_training status|on|off", 1 },
 	{ "script_refuse", "script_refuse status|off|<script>", 1 },
-	{ "pad", "pad status | world a|b|c|other|dualsense|keyboard|off | battery <0-100>|charging [<0-100>]|charged|wired|off | mode wired|bluetooth|puck|off | hold on|off | reset | open settings|buttons | open controls [trackpad|extra|gyro]  (each: [player <1-4>])", 1 },
+	{ "pad", "pad status | world a|b|c|other|dualsense|keyboard|off | battery <0-100>|charging [<0-100>]|charged|wired|off | mode wired|bluetooth|puck|off | hold on|off | reset | open settings|buttons | open controls [trackpad|extra|gyro] | pulse <event>  (each: [player <1-4>])", 1 },
 	{ "actor", "actor <variant> [<2-60>] | actor kill [blast]", 1 },
+	{ "door", "door power [on|off]", 1 },
+	{ "intro", "intro play", 1 },
+	{ "player", "player route <x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]>... | player go | player look <deg> | player stop", 1 },
+	{ "point", "point save|load <name>", 1 },
 };
 
 static const char *const skills[] = { "recruit", "easy", "normal", "heroic", "elite", "legendary", "demon", NULL };
@@ -640,14 +647,18 @@ static void check(struct ae_dev_cmd *cmd)
 	}
 	case AE_DEV_CMD_REPLAY:
 	{
-		static const char *const alone[] = { "list", "status", "free", "pause", "stop", NULL };
+		static const char *const alone[] = { "list", "status", "free", "behind", "cinematic", "pause", "stop", "keep", NULL };
 
 		/* (number: info's and play's recording (1 the newest), speed's percent, seek's second) */
 		bad = n < 1 || n > 2;
 		if (!bad && one_of(cmd->word[0], alone))
 			bad = n != 1;
+		else if (!bad && same_text(cmd->word[0], "play") && n == 2 && same_text(cmd->word[1], "newest"))
+			cmd->number = 0;
 		else if (!bad && (same_text(cmd->word[0], "info") || same_text(cmd->word[0], "play")))
 			bad = n != 2 || !whole_number(cmd->word[1], 1, 500, &cmd->number);
+		else if (!bad && same_text(cmd->word[0], "stage"))
+			bad = n != 2 || !whole_number(cmd->word[1], 0, 8, &cmd->number);
 		else if (!bad && same_text(cmd->word[0], "eyes"))
 			bad = n != 2;
 		else if (!bad && same_text(cmd->word[0], "speed"))
@@ -959,6 +970,9 @@ static void check(struct ae_dev_cmd *cmd)
 	case AE_DEV_CMD_JOIN_LAN:
 		bad = n != 0;
 		break;
+	case AE_DEV_CMD_PARTY:
+		bad = n < 1;
+		break;
 	case AE_DEV_CMD_MENU:
 	{
 		int each;
@@ -1031,7 +1045,7 @@ static void check(struct ae_dev_cmd *cmd)
 				same_text(cmd->word[2], "files") || same_text(cmd->word[2], "import"))));
 			break;
 		}
-		if (n >= 1 && same_text(cmd->word[0], "career"))
+		if (n >= 1 && (same_text(cmd->word[0], "career") || same_text(cmd->word[0], "challenges")))
 		{
 			long player = 1;
 			int at = 1;
@@ -1043,6 +1057,104 @@ static void check(struct ae_dev_cmd *cmd)
 			}
 			bad = bad || !(n == at || (n == at + 2 && same_text(cmd->word[at], "focus")));
 			cmd->number = player - 1;
+			break;
+		}
+		/* (menu skulls [questions] | skullrules [reset] | scoring [off|on] | coopoptions [changed] | saved [empty] [delete] |
+		leaderboard [<1-10>] | endcard [players <1-4>] [last] [best]: the campaign's rule screens and the end-of-mission card, each
+		opened as a staged scene; number = the level or the players) */
+		/* (menu firefight <scene> ...: Firefight's lobby and screens, staged scenes: ae_firefight_dev.h) */
+		if (n >= 2 && same_text(cmd->word[0], "firefight"))
+		{
+			static const char *const scenes[] = { "lobby", "multiplayer", "rules", "skulls", "content", "tags", "loadout", "objectives", "data" };
+			size_t scene;
+
+			bad = 1;
+			for (scene = 0; scene < sizeof(scenes) / sizeof(scenes[0]); scene++)
+				if (same_text(cmd->word[1], scenes[scene]))
+					bad = 0;
+			break;
+		}
+		/* (menu randomizer <scene>: the randomizer's screens, each opened as a staged scene) */
+		if (n == 2 && same_text(cmd->word[0], "randomizer"))
+		{
+			static const char *const scenes[] = { "hub", "hub-off", "ai", "weapons", "pickups", "loadout", "setups", "delete", "itemset", "name",
+				"loadout-ae", "loadout-set" };
+			size_t scene;
+
+			bad = 1;
+			for (scene = 0; scene < sizeof(scenes) / sizeof(scenes[0]); scene++)
+				if (same_text(cmd->word[1], scenes[scene]))
+					bad = 0;
+			break;
+		}
+		if (n >= 1 && (same_text(cmd->word[0], "skulls") || same_text(cmd->word[0], "skullrules") || same_text(cmd->word[0], "scoring") ||
+			same_text(cmd->word[0], "coopoptions") || same_text(cmd->word[0], "saved") || same_text(cmd->word[0], "leaderboard") ||
+			same_text(cmd->word[0], "endcard")))
+		{
+			long scratch = 1;
+
+			cmd->number = 1;
+			if (same_text(cmd->word[0], "skulls"))
+				bad = !(n == 1 || (n == 2 && same_text(cmd->word[1], "questions")));
+			else if (same_text(cmd->word[0], "skullrules"))
+				bad = !(n == 1 || (n == 2 && same_text(cmd->word[1], "reset")));
+			else if (same_text(cmd->word[0], "scoring"))
+				bad = !(n == 1 || (n == 2 && (same_text(cmd->word[1], "off") || same_text(cmd->word[1], "on"))));
+			else if (same_text(cmd->word[0], "coopoptions"))
+				bad = !(n == 1 || (n == 2 && same_text(cmd->word[1], "changed")));
+			else if (same_text(cmd->word[0], "saved"))
+			{
+				for (each = 1; !bad && each < n; each++)
+					bad = !(same_text(cmd->word[each], "empty") || same_text(cmd->word[each], "delete"));
+			}
+			else if (same_text(cmd->word[0], "leaderboard"))
+			{
+				/* (leaderboard [<1-10>] [empty]) */
+				for (each = 1; !bad && each < n; each++)
+					if (same_text(cmd->word[each], "empty"))
+						continue;
+					else if (each == 1 && whole_number(cmd->word[each], 1, 10, &scratch))
+						cmd->number = scratch;
+					else
+						bad = 1;
+			}
+			else
+			{
+				for (each = 1; !bad && each < n; each++)
+				{
+					if (same_text(cmd->word[each], "players") && each + 1 < n && whole_number(cmd->word[each + 1], 1, 4, &scratch))
+					{
+						cmd->number = scratch;
+						each++;
+					}
+					else
+						bad = !(same_text(cmd->word[each], "last") || same_text(cmd->word[each], "best"));
+				}
+			}
+			break;
+		}
+		/* (menu theater [empty] [delete]: the Theater over the recordings in the folder, as when there is none with empty (nothing
+		is removed), the delete dialog open on the first with delete) */
+		if (n >= 1 && same_text(cmd->word[0], "theater"))
+		{
+			for (each = 1; !bad && each < n; each++)
+				bad = !(same_text(cmd->word[each], "empty") || same_text(cmd->word[each], "delete"));
+			break;
+		}
+		/* (menu daily [today|past|online|unreached|unreached-custom|loading|empty|closed]: DAILY CHALLENGE as a staged scene, a made-up day, no server asked) */
+		if (n >= 1 && same_text(cmd->word[0], "daily"))
+		{
+			static const char *const scenes[] = { "today", "past", "online", "unreached", "unreached-custom", "loading", "empty", "closed" };
+			size_t scene;
+
+			bad = n > 2;
+			if (n == 2)
+			{
+				bad = 1;
+				for (scene = 0; scene < sizeof(scenes) / sizeof(scenes[0]); scene++)
+					if (same_text(cmd->word[1], scenes[scene]))
+						bad = 0;
+			}
 			break;
 		}
 		/* (menu campaign [seat | players <2-4>] [error] [workshop [demo|fault|none|saved|damaged]]: CAMPAIGN, the players seated as guests (seat: two), the co-op start's error dialog, a custom campaign scene; number = the players) */
@@ -1312,6 +1424,14 @@ static void check(struct ae_dev_cmd *cmd)
 					bad = !(each < cmd->words && same_text(cmd->word[each], "starting")) &&
 						!whole_number(cmd->word[each], 0, 30, &hold_seconds);
 				}
+				else if (same_text(cmd->word[each], "result"))
+				{
+					/* (the post-game lobby's LAST GAME card: win, tie, loss or quit) */
+					static const char *const results[] = { "win", "tie", "loss", "quit", NULL };
+
+					each++;
+					bad = each >= cmd->words || !one_of(cmd->word[each], results);
+				}
 				else if (same_text(cmd->word[each], "bots"))
 				{
 					long party_bots;
@@ -1357,6 +1477,9 @@ static void check(struct ae_dev_cmd *cmd)
 			cmd->position[1] = (float)players;
 			cmd->position[2] = (float)before;
 		}
+		else if (same_text(cmd->word[0], "career"))
+			/* (career xp <n> | rank <1-30> <1-11> | challenge done <1-6> | last <xp> [rankup] [challenge] | art auto|off: the career XP's staging) */
+			bad = at < 3 || at > 6;
 		else if (same_text(cmd->word[0], "party"))
 			bad = at != 2;
 		else if (same_text(cmd->word[0], "recent"))
@@ -1423,6 +1546,34 @@ static void check(struct ae_dev_cmd *cmd)
 		bad = (n != 1 && n != 3) || !whole_number(cmd->word[0], 50, 5000, &cmd->number) ||
 			(n == 3 && (!same_text(cmd->word[1], "after") || !whole_number(cmd->word[2], 1, 600, &after)));
 		cmd->seed = (unsigned long)after;
+		break;
+	}
+	case AE_DEV_CMD_POINT:
+	{
+		static const char *const forms[] = { "save", "load", NULL };
+
+		bad = n != 2 || !one_of(cmd->word[0], forms) || !ae_dev_point_name_ok(cmd->word[1]);
+		break;
+	}
+	case AE_DEV_CMD_PLAYER:
+	{
+		struct ae_dev_puppet_route route;
+		float degrees;
+
+		route.count = 0;
+		if (n >= 1 && same_text(cmd->word[0], "route"))
+			bad = ae_dev_puppet_parse(cmd->rest, &route) <= 0;
+		else if (n == 2 && same_text(cmd->word[0], "look"))
+			bad = !real_number(cmd->word[1], &degrees) || degrees < -360.0f || degrees > 360.0f;
+		else
+			bad = n != 1 || (!same_text(cmd->word[0], "go") && !same_text(cmd->word[0], "stop"));
+		break;
+	}
+	case AE_DEV_CMD_DOOR:
+	{
+		static const char *const state[] = { "on", "off", NULL };
+
+		bad = n < 1 || n > 2 || !same_text(cmd->word[0], "power") || (n == 2 && !one_of(cmd->word[1], state));
 		break;
 	}
 	case AE_DEV_CMD_TTK:
@@ -1678,6 +1829,14 @@ static void check(struct ae_dev_cmd *cmd)
 		else if (same_text(cmd->word[0], "open"))
 			bad = !((n == 2 && one_of(cmd->word[1], places)) ||
 				(n == 3 && same_text(cmd->word[1], "controls") && one_of(cmd->word[2], focuses)));
+		else if (same_text(cmd->word[0], "pulse"))
+		{
+			int at, known = 0;
+
+			for (at = 0; n == 2 && at < ae_ds5_pulse_count(); at++)
+				known |= same_text(cmd->word[1], ae_ds5_pulse_name(at));
+			bad = !known;
+		}
 		else if (same_text(cmd->word[0], "hold"))
 			bad = !(n == 2 && (same_text(cmd->word[1], "on") || same_text(cmd->word[1], "off")));
 		else if (same_text(cmd->word[0], "battery"))
@@ -1718,6 +1877,9 @@ static void check(struct ae_dev_cmd *cmd)
 			bad = !isalnum((unsigned char)*letter) && *letter != '_' && *letter != '-';
 		break;
 	}
+	case AE_DEV_CMD_INTRO:
+		bad = !(n == 1 && same_text(cmd->word[0], "play"));
+		break;
 	case AE_DEV_CMD_HELP:
 		bad = n > 1 || (n == 1 && ae_dev_cmd_find(cmd->word[0]) == AE_DEV_CMD_NONE);
 		break;
@@ -1817,7 +1979,7 @@ int ae_dev_cmd_parse(const char *line, int bare, struct ae_dev_cmd *out)
 	else if (!bare || !commands[ae_dev_cmd_find(tokens[0].text)].bare)
 		return 0;
 	out->id = ae_dev_cmd_find(tokens[first].text);
-	takes_rest = out->id == AE_DEV_CMD_GAMETYPE || out->id == AE_DEV_CMD_MARK || out->id == AE_DEV_CMD_CONFIG ||
+	takes_rest = out->id == AE_DEV_CMD_PLAYER || out->id == AE_DEV_CMD_GAMETYPE || out->id == AE_DEV_CMD_MARK || out->id == AE_DEV_CMD_CONFIG ||
 		out->id == AE_DEV_CMD_AGENT || out->id == AE_DEV_CMD_MENU || out->id == AE_DEV_CMD_MAPS;
 	if (count > TOKENS && !takes_rest)
 	{
@@ -1841,6 +2003,12 @@ int ae_dev_cmd_parse(const char *line, int bare, struct ae_dev_cmd *out)
 	}
 	if (out->id == AE_DEV_CMD_CONFIG)
 	{
+		if (count > first + 2)
+			rest_of(tokens[first + 2].start, out->rest, sizeof out->rest);
+	}
+	else if (out->id == AE_DEV_CMD_PLAYER)
+	{
+		/* (a route's points after "route") */
 		if (count > first + 2)
 			rest_of(tokens[first + 2].start, out->rest, sizeof out->rest);
 	}
@@ -1897,6 +2065,10 @@ int ae_dev_cmd_runs_in_campaign(struct ae_dev_cmd const *cmd)
 	case AE_DEV_CMD_SEAT:
 	case AE_DEV_CMD_RIDE:
 	case AE_DEV_CMD_FIRETEAM:
+	case AE_DEV_CMD_GOD:
+	case AE_DEV_CMD_PLAYER:
+	case AE_DEV_CMD_POINT:
+	case AE_DEV_CMD_UNSEEN:
 		return 1;
 	case AE_DEV_CMD_POWERUP:
 		return ae_dev_cmd_powerup_place(cmd, NULL) == AE_DEV_POWERUP_AHEAD;
@@ -1912,4 +2084,126 @@ int ae_dev_cmd_seat_wanted(const char *kind, int driver, int gunner)
 	if (!strcmp(kind, "gunner"))
 		return gunner != 0 && driver == 0;
 	return driver == 0 && gunner == 0;
+}
+
+int ae_dev_puppet_parse(const char *text, struct ae_dev_puppet_route *route)
+{
+	struct ae_dev_puppet_route next;
+	char word[AE_DEV_CMD_WORD];
+	const char *at = text;
+	int added = 0, coordinate = 0;
+
+	if (!text || !route || route->count < 0 || route->count > AE_DEV_PUPPET_POINTS)
+		return -1;
+	next = *route;
+	for (;;)
+	{
+		int length = 0;
+		float value;
+
+		while (*at == ' ' || *at == '\t')
+			at++;
+		if (!*at)
+			break;
+		while (at[length] && at[length] != ' ' && at[length] != '\t' && length < AE_DEV_CMD_WORD - 1)
+		{
+			word[length] = at[length];
+			length++;
+		}
+		word[length] = 0;
+		if (at[length] && at[length] != ' ' && at[length] != '\t')
+			return -1;
+		at += length;
+		if (coordinate > 0 || real_number(word, &value))
+		{
+			struct ae_dev_puppet_point *point;
+
+			if (!real_number(word, &value))
+				return -1;
+			if (coordinate == 0)
+			{
+				if (next.count >= AE_DEV_PUPPET_POINTS)
+					return -1;
+				point = &next.point[next.count++];
+				memset(point, 0, sizeof *point);
+				point->walk = 1.0f;
+				added++;
+			}
+			point = &next.point[next.count - 1];
+			if (coordinate == 0)
+				point->x = value;
+			else if (coordinate == 1)
+				point->y = value;
+			else
+				point->z = value;
+			coordinate = (coordinate + 1) % 3;
+			continue;
+		}
+		if (!added)
+			return -1;
+		if (same_text(word, "jump"))
+			next.point[next.count - 1].jump = 1;
+		else if (same_text(word, "crouch"))
+			next.point[next.count - 1].crouch = 1;
+		else if (same_text(word, "teleport"))
+			next.point[next.count - 1].teleport = 1;
+		else if (same_text(word, "save"))
+			next.point[next.count - 1].save = 1;
+		else if (same_text(word, "revert"))
+			next.point[next.count - 1].revert = 1;
+		else if (same_text(word, "walk"))
+		{
+			int take = 0;
+
+			while (*at == ' ' || *at == '\t')
+				at++;
+			while (at[take] && at[take] != ' ' && at[take] != '\t' && take < AE_DEV_CMD_WORD - 1)
+			{
+				word[take] = at[take];
+				take++;
+			}
+			word[take] = 0;
+			at += take;
+			if (!real_number(word, &value) || value < 0.1f || value > 1.0f)
+				return -1;
+			next.point[next.count - 1].walk = value;
+		}
+		else
+			return -1;
+	}
+	if (coordinate != 0 || !added)
+		return -1;
+	*route = next;
+	return added;
+}
+
+int ae_dev_puppet_step(float px, float py, float pz, float tx, float ty, float tz, float walk, float *yaw, float *throttle_x,
+	float *throttle_y)
+{
+	float dx = tx - px, dy = ty - py, dz = tz - pz;
+
+	if (dx * dx + dy * dy <= AE_DEV_PUPPET_REACHED * AE_DEV_PUPPET_REACHED && dz <= AE_DEV_PUPPET_RISE &&
+		dz >= -AE_DEV_PUPPET_RISE)
+	{
+		*throttle_x = *throttle_y = 0.0f;
+		return 1;
+	}
+	*yaw = (float)atan2(dy, dx);
+	*throttle_x = walk;
+	*throttle_y = 0.0f;
+	return 0;
+}
+
+int ae_dev_point_name_ok(const char *name)
+{
+	int length;
+
+	if (!name || !name[0])
+		return 0;
+	for (length = 0; name[length]; length++)
+	{
+		if (length >= AE_DEV_POINT_NAME || !(isalnum((unsigned char)name[length]) || name[length] == '-'))
+			return 0;
+	}
+	return 1;
 }

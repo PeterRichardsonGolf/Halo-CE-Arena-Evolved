@@ -1,7 +1,7 @@
 /*
 AE_TEST_RUN_INPUT.H
 
-TEST RUN's verdict controls (DEV MODE): the owner's seven keys, read from the keyboard
+TEST RUN's verdict controls (DEV MODE): the tester's seven keys, read from the keyboard
 (controls.test_*) and from every controller (BACK held with a button):
 
 	pass F7 / BACK+A      fail F8 / BACK+B      note F4 / BACK+X      skip F5 / BACK+Y
@@ -25,6 +25,11 @@ enum ae_test_run_key ae_test_run_input_pressed(void);
 /* whether the card is hidden: a press under 0.3 s toggles it; a longer press hides it while held. reveal clears a toggle
 and shows the card for this read (a new test, a note or verdict box, or the summary). 0 while the reader is off */
 int ae_test_run_input_hidden(int reveal);
+/* A scripted run by hand: the key pressed as a tester presses it on a pad, BACK held with the key's face button (A
+PASS, B FAIL, X NOTE, Y SKIP, LB BACK; d-pad up RELOAD), on the first player's port for a few frames. The chord goes in
+where a real pad's is read (ae_test_run_input_pad_own), so it is taken out of the game the same way and reaches the reader
+as a press next frame. A press asked for while another is held is dropped. */
+void ae_test_run_input_press(enum ae_test_run_key key);
 
 /* The NOTE box's pad (ae_test_run_note.h). While the box is open the pad is the box's: every button of every pad is taken
 from the game (the hook, ae_test_run_input_pad) and the presses of the d-pad, the left stick (as the d-pad's four), A, B, X, Y,
@@ -39,7 +44,7 @@ opened gives none) */
 unsigned ae_test_run_input_note_edges(void);
 /* the device the hints are for, AE's own "last used" (ae_platform_keyboard_last_used: keys, mouse buttons and motion after
 any pad; else the pad's family, ae_platform_input_scheme): an ae_device (ae_ui.h), AE_DEVICE_KEYBOARD_MOUSE while the
-reader is off. Read it every frame: it follows the owner from pad to keyboard and back. */
+reader is off. Read it every frame: it follows the tester from pad to keyboard and back. */
 int ae_test_run_input_device(void);
 
 #endif

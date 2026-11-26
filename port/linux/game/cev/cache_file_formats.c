@@ -2548,6 +2548,17 @@ enum cache_file_status custom_edition_cache_load(
 		{
 			return load_fail(&state, _cache_file_status_bad_tag_handle, handle);
 		}
+		/* port: an empty slot (group NONE, address NONE, named "MISSINGNO."):
+		Invader writes these where a tag index it builds against has a tag the
+		map leaves out (floodgulch_forge_square). Halo PC never reads them, as
+		nothing references them; give them no data, which the validator skips
+		and refuses any reference to. */
+		if (group_tag == 0xFFFFFFFFUL)
+		{
+			write_u32(instance + TAG_INSTANCE_ADDRESS_OFFSET, 0);
+			write_u32(instance + TAG_INSTANCE_IN_RESOURCE_MAP_OFFSET, 0);
+			continue;
+		}
 		/* port: a protected map's tag names may lie anywhere; only a tag held by a
 		resource map needs its name (to find its entry), and is checked again
 		below. The others are given an empty name after the checksum. */

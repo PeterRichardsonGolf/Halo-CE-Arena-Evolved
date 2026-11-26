@@ -28,6 +28,11 @@ enum tag_injector_category
 	them, port/forge/src/forge_map_settings.c) */
 	_tag_injector_skies,
 	_tag_injector_hands,
+	/* (a map's effects and decals, for Forge's EFFECTS and DECALS tabs: an
+	effect spot replays it, a decal is laid on the ground looked at;
+	port/forge/src/forge_runtime_tags.c's forge_profile_catalog_add) */
+	_tag_injector_effects,
+	_tag_injector_decals,
 
 	NUMBER_OF_TAG_INJECTOR_CATEGORIES
 };
@@ -186,6 +191,45 @@ struct tag_injector_mesh_texture
 	unsigned char *pixels;
 };
 
+/* the most particle emitters an effect's preview plays, and animation
+frames of each */
+#define TAG_INJECTOR_MESH_MAXIMUM_EMITTERS 16
+#define TAG_INJECTOR_MESH_MAXIMUM_FRAMES 16
+
+/* An effect's particles, as the preview plays them (tag_preview.c): the
+material their sprites are drawn with (its texture and blend), the frames
+of their sprite's sequence (each u0, u1, v0, v1 of its texture) played at
+frames_per_second (0: a frame each, at random), a frame's width over its
+height; when they come (seconds after the effect starts, of their event's
+delay and duration, by distribution: effect particles' distribution
+function), where (offset, and distribution_radius about it) and how they
+go (speed along direction, in a cone of that angle, radians), turning
+(radians a second), how large (radius), how long they live and fade in and
+out, and their tint (alpha, red, green, blue), each between bounds. */
+struct tag_injector_mesh_emitter
+{
+	short material;
+	short frame_count;
+	float frames[TAG_INJECTOR_MESH_MAXIMUM_FRAMES][4];
+	float aspect;
+	float frames_per_second[2];
+	float delay[2];
+	float duration[2];
+	short distribution;
+	short count[2];
+	float offset[3];
+	float direction[3];
+	float cone;
+	float distribution_radius[2];
+	float velocity[2];
+	float angular_velocity[2];
+	float radius[2];
+	float life[2];
+	float fade_in;
+	float fade_out;
+	float tint[2][4];
+};
+
 /* A tag's model, for the menu's preview of it (tag_preview.c): the triangles
 of the most detailed geometry of the first permutation of each of its
 regions, in the model's space (its default pose), opaque parts alone (all
@@ -263,6 +307,14 @@ struct tag_injector_mesh
 	/* a sky's model: seen from inside, from its origin (where the game
 	draws it about the eye), every part of it */
 	boolean sky;
+	/* an effect's or a decal's: a sprite of its bitmap (its four corners,
+	the first its top left, and its one material, by its blend), drawn flat
+	facing the eye */
+	boolean card;
+	/* an effect's particles: played, the eye turning about them (no
+	triangles of its own) */
+	short emitter_count;
+	struct tag_injector_mesh_emitter emitters[TAG_INJECTOR_MESH_MAXIMUM_EMITTERS];
 };
 
 /* whether a tag has a tag it needs to work: it has it, it has not (it

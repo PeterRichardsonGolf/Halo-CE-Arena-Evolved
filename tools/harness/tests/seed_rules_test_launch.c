@@ -177,6 +177,31 @@ static struct network_game_server *global_network_game_server_get(void)
 #define network_game_server_change_game_variant(server, variant) ((void)(server), (void)(variant))
 #define game_engine_override_game_variant(variant) ((void)(variant))
 
+/* ---------- Firefight (firefight.c): no Firefight game here; the copy's Firefight options are empty */
+
+enum { game_engine_firefight = 99 };
+
+struct firefight_options
+{
+	short unused;
+};
+
+static void firefight_variant_options_default(struct firefight_options *options)
+{
+	memset(options, 0, sizeof(*options));
+}
+
+static void firefight_builtin_variant_options(struct game_variant const *variant, struct firefight_options *options)
+{
+	(void)variant;
+	firefight_variant_options_default(options);
+}
+
+static void firefight_options_set(struct firefight_options const *options)
+{
+	(void)options;
+}
+
 #include "setup.inc"
 
 /* ---------- network_test.c: debug.network_test_gametype, no saved gametype of that name */

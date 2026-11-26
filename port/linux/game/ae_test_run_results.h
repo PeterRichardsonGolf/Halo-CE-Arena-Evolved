@@ -34,6 +34,7 @@ struct ae_test_run_record
 {
 	char run[24], list[32], test[32], note[256], shot[160], video[160], build[48], time[24];
 	char agent[640], events[260];
+	char program[72];  /* the SHA-256 of the program that played it (hex), "" when not known */
 	short revision, ask_later;
 	enum ae_test_run_verdict verdict;
 };

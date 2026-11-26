@@ -208,7 +208,7 @@ Run the server as a user that has nothing else in it: not the login you play Ste
 
 ## Run in a container (docker or podman)
 
-The package carries a `Dockerfile`, `container-start.sh` and `compose.yaml`. The image is `debian:12-slim` with the server in it; MCC is not in the image. The container runs as an ordinary user (uid 10001) with no capabilities, no new privileges and a read-only root. The program and Arena Evolved's weapon data are read-only in the image; everything the server writes (settings, saves, the admin password, the invite link, logs) is in the volume `/var/lib/ae-server`. Your Steam folders are mounted read-only. Only UDP 2302 is published.
+The downloaded package carries `compose.example.yaml` (run with `docker compose -f compose.example.yaml`); the `Dockerfile`, `container-start.sh` and `compose.yaml` this section describes are in the release source's `server/deploy/ae-package` folder. The image is `debian:12-slim` with the server in it; MCC is not in the image. The container runs as an ordinary user (uid 10001) with no capabilities, no new privileges and a read-only root. The program and Arena Evolved's weapon data are read-only in the image; everything the server writes (settings, saves, the admin password, the invite link, logs) is in the volume `/var/lib/ae-server`. Your Steam folders are mounted read-only. Only UDP 2302 is published.
 
 ```
 cd ~/ae-server                                   # the unpacked package

@@ -4,7 +4,7 @@
 Every list lives in tools/ae_test/test_runs/*.txt. INDEX.md beside them names each list, its title, its tests and the
 first line of its header comment, so that the list for a feature is found before a new one is written ("is there a
 vehicle list already?": grep INDEX.md). A test install (the owner's preview, a box run folder) keeps its own
-test-runs/ folder; --sync copies the repo's lists into it.
+test-runs/ folder; --sync copies the repo's lists into it (with each `setup spot <name>` written as its `setup goto` line).
 
 usage:
   list_index.py --write            rewrite tools/ae_test/test_runs/INDEX.md
@@ -15,9 +15,12 @@ usage:
   list_index.py --find WORD...     the lists whose title, header or check lines hold every word (any case)
 """
 import argparse
-import shutil
 import sys
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent / "spots"))
+
+import spots  # noqa: E402 (a list's `setup spot <name>` lines are copied as the `setup goto` lines of the spots)
 
 LISTS = Path(__file__).resolve().parent / "test_runs"
 INDEX = LISTS / "INDEX.md"
@@ -98,12 +101,13 @@ def sync(target, force=False):
     copied, same, differing = [], [], []
     for path in sorted(LISTS.glob("*.txt")):
         there = target / path.name
-        if there.exists() and there.read_bytes() == path.read_bytes():
+        wanted = spots.expand_list(path.read_bytes().decode("utf-8")).encode("utf-8")
+        if there.exists() and there.read_bytes() == wanted:
             same.append(path.name)
         elif there.exists() and not force:
             differing.append(path.name)
         else:
-            shutil.copyfile(path, there)
+            there.write_bytes(wanted)
             copied.append(path.name)
     return copied, same, differing
 

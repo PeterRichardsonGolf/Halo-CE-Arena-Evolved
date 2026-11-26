@@ -27,14 +27,31 @@ static int put(char *text, int size, char const *format, ...)
 	return length >= size ? size - 1 : length;
 }
 
-int ae_social_view_rank(int rank, char *text, int size)
+int ae_social_view_rank_badge(long games, int rank, char *text, int size)
 {
+	if (games <= 0)
+	{
+		if (size > 0)
+			text[0] = 0;
+		return 0;
+	}
 	return put(text, size, "RANK %d", rank);
 }
 
-int ae_social_view_exp(long exp, char *text, int size)
+int ae_social_view_foot_rank(long games, int rank, char *text, int size)
 {
-	return put(text, size, "%ld EXP", exp);
+	if (games <= 0)
+	{
+		put(text, size, "NO GAMES YET");
+		return 0;
+	}
+	put(text, size, "SKILL RANK %d", rank);
+	return 1;
+}
+
+int ae_social_view_rank(int rank, char *text, int size)
+{
+	return put(text, size, "RANK %d", rank);
 }
 
 int ae_social_view_wins_to(long exp, char *text, int size)
@@ -43,7 +60,7 @@ int ae_social_view_wins_to(long exp, char *text, int size)
 
 	if (ae_social_rank(exp) >= AE_SOCIAL_RANKS || left <= 0)
 		return put(text, size, "TOP RANK");
-	return put(text, size, "%ld %s TO RANK %d", left, left == 1 ? "WIN" : "WINS", ae_social_rank(exp) + 1);
+	return put(text, size, "%ld %s TO RANK %d", left, left == 1 ? "WIN OR TIE" : "WINS OR TIES", ae_social_rank(exp) + 1);
 }
 
 int ae_social_view_overall_to(long total, char *text, int size)
@@ -52,7 +69,7 @@ int ae_social_view_overall_to(long total, char *text, int size)
 
 	if (ae_social_overall_rank(total) >= AE_SOCIAL_RANKS || left <= 0)
 		return put(text, size, "TOP OVERALL RANK");
-	return put(text, size, "%ld EXP TO OVERALL RANK %d", left, ae_social_overall_rank(total) + 1);
+	return put(text, size, "%ld %s TO OVERALL RANK %d", left, left == 1 ? "WIN OR TIE" : "WINS OR TIES", ae_social_overall_rank(total) + 1);
 }
 
 int ae_social_view_shape(struct ae_social_playlist const *playlist, int maps, char *text, int size)
@@ -137,34 +154,52 @@ int ae_social_view_ordinal(int place, char *text, int size)
 		n % 10 == 3 ? "RD" : "TH");
 }
 
-int ae_social_view_postgame_sub(char const *label, int ffa, int earns, int players, long exp_after, char *text, int size)
+/* a label in capitals as words with a capital each: "TEAM SLAYER" as "Team Slayer" */
+static void title_case(char const *label, char *out, int size)
+{
+	int each, start = 1;
+
+	for (each = 0; label && label[each] && each < size - 1; each++)
+	{
+		char c = label[each];
+
+		if (c >= 'A' && c <= 'Z' && !start)
+			c = (char)(c + 32);
+		out[each] = c;
+		start = c == ' ' || c == '-';
+	}
+	out[each < size ? each : size - 1] = 0;
+}
+
+int ae_social_view_postgame_sub(char const *label, int ffa, int earns, int players, int rank_before, long exp_after, char *text, int size)
 {
 	int rank = ae_social_rank(exp_after);
 	long left = ae_social_exp_to_next(exp_after);
-	char place[16];
+	char name[48];
 
+	title_case(label, name, (int)sizeof(name));
 	if (ffa && !earns)
-	{
-		int top = players / 2 > 1 ? players / 2 : 1;
-
-		ae_social_view_ordinal(top - 1, place, (int)sizeof(place));
-		return put(text, size, "%s " DOT " %s OR BETTER EARNS EXP " DOT " RANK %d", label, place, rank);
-	}
+		return put(text, size, "%s " DOT " top %d counts as a win", name, players / 2 > 1 ? players / 2 : 1);
+	if (!earns)
+		return put(text, size, "%s " DOT " no change for a loss", name);
 	if (rank >= AE_SOCIAL_RANKS || left <= 0)
-		return put(text, size, "%s " DOT " RANK %d", label, rank);
-	return put(text, size, "%s " DOT " RANK %d " DOT " %ld TO RANK %d", label, rank, left, rank + 1);
+		return put(text, size, "%s " DOT " the top rank", name);
+	if (rank > rank_before)
+		return put(text, size, "%s " DOT " up from rank %d " DOT " %ld %s to rank %d", name, rank_before, left,
+			left == 1 ? "win or tie" : "wins or ties", rank + 1);
+	return put(text, size, "%s " DOT " %ld %s to rank %d", name, left, left == 1 ? "win or tie" : "wins or ties", rank + 1);
 }
 
 int ae_social_view_quit_body(char const *label, long exp, char *text, int size)
 {
 	if (exp <= 0)
-		return put(text, size, "This is a tournament %s game. You have no EXP to lose, but leaving before the end counts as left early. "
+		return put(text, size, "This is a tournament %s game. You have no wins to lose, but leaving before the end counts as left early. "
 			"Leaving at the post-game costs nothing.", label);
-	return put(text, size, "This is a tournament %s game. Leaving before the end costs 1 EXP (%ld to %ld) and counts as left early. "
-		"Leaving at the post-game costs nothing.", label, exp, exp - 1);
+	return put(text, size, "This is a tournament %s game. Leaving before the end moves your skill back one win and counts as left early. "
+		"Leaving at the post-game costs nothing.", label);
 }
 
 int ae_social_view_quit_help(char const *label, char *text, int size)
 {
-	return put(text, size, "Leave the game: -1 EXP in %s.", label);
+	return put(text, size, "Leave the game: your %s skill moves back one win.", label);
 }

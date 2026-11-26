@@ -17,6 +17,7 @@ presses come from ae_test_run_input.c. The editing is ae_test_run_edit.c's. */
 void ae_platform_note_keyboard_used(void);
 /* port/linux/src/sdl_platform.c */
 int platform_clipboard_get(char *text, int size);
+void platform_log(char const *format, ...);
 
 /* (a key stroke's modifiers, as input_xbox.c :171 has them: control bit 1) */
 #define KEY_MODIFIER_CONTROL 0x02
@@ -40,6 +41,7 @@ void ae_test_run_note_open(void)
 	while (input_get_key(&key))
 		;
 	ae_test_run_input_note_edges();
+	platform_log("test run note: the box opens (device %d)", ae_test_run_input_device());
 	cursor = 0;
 	tag_at = 0;
 	picker_on = 0;
@@ -127,9 +129,14 @@ int ae_test_run_note_poll(char *note, int size)
 		/* (a key typed is the keyboard used: AE's record, ae_platform_keyboard_last_used) */
 		ae_platform_note_keyboard_used();
 		if (key.key_code == _key_escape)
+		{
+			platform_log("test run note: closed by the Escape key (device %d)", ae_test_run_input_device());
 			return -1;
+		}
 		if (key.key_code == _key_return)
 		{
+			platform_log("test run note: ended by the Enter key, %d characters (device %d, pad keyboard %d)",
+				(int)strlen(note), ae_test_run_input_device(), picker_on);
 			cursor = edit.cursor;
 			return 1;
 		}
@@ -167,6 +174,9 @@ int ae_test_run_note_poll(char *note, int size)
 		int result = ae_test_run_keyboard_poll(&picker, edges, &edit);
 
 		cursor = edit.cursor;
+		if (result != 0)
+			platform_log("test run note: the pad keyboard %s, %d characters", result < 0 ? "left by B" : "ended",
+				(int)strlen(note));
 		if (result < 0)
 		{
 			note[0] = 0;
@@ -182,9 +192,13 @@ int ae_test_run_note_poll(char *note, int size)
 	if (edges & (AE_TEST_RUN_PAD_RIGHT | AE_TEST_RUN_PAD_DOWN))
 		tag_at = (tag_at + 1) % count;
 	if (edges & AE_TEST_RUN_PAD_B)
+	{
+		platform_log("test run note: closed by the pad's B (device %d)", ae_test_run_input_device());
 		return -1;
+	}
 	if (edges & AE_TEST_RUN_PAD_A)
 	{
+		platform_log("test run note: the pad's A on %s (device %d)", tag_names[tag_at], ae_test_run_input_device());
 		if (tag_at == TAG_TYPE)
 			ae_test_run_note_type_open();
 		else

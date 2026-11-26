@@ -24,6 +24,7 @@ ae_test_run_setup.h). */
 #include "ae_hooks.h"
 #include "ae_test_run_saved.h"
 #include "ae_test_run_setup.h"
+#include "ae_test_start.h"
 #include "ae_weapon_selection_game.h"
 #include "network_coop.h"
 
@@ -60,6 +61,11 @@ static struct
 	short skips;                     /* skips in this load */
 	unsigned long intro_logged_at;   /* when the intro's state was last logged */
 	short fast;                      /* the game runs at INTRO_FAST_SPEED: an intro that cannot be skipped plays */
+	short start;                     /* a campaign test opens at the level's start point (ae_test_start.h), not after its intro */
+	short start_read;                /* the start point's file was there to be read */
+	unsigned long start_loads;       /* ae_test_start_loads() when the load was asked for */
+	short start_squad;               /* the AI squad the setting asks for, joining once the level is up (no companion line does it) */
+	unsigned long loading_first;     /* when the load was first asked for (loading_since moves on a retry) */
 } setup;
 
 /* a campaign level's intro is skipped once it has been skippable this long (the save its skip goes back to is written
@@ -115,6 +121,8 @@ void ae_test_run_setup_undo(void)
 	if (ae_test_run_saved_undo(&setup.saved, restore, NULL))
 		platform_log("test run setup: a value could not be put back");
 	ae_ui_classic_release();
+	ae_test_start_disarm();
+	setup.start = 0;
 	/* (a test's `setup botrecord demo` lasts that test only) */
 	ae_bot_records_demo_end("the test's setup undone");
 	/* (network_test read the test's settings: it reads the restored ones, and its host, rotation and bots stop) */
@@ -154,6 +162,40 @@ static int fail(const char *before, const char *text, const char *after)
 const char *ae_test_run_setup_error(void)
 {
 	return setup.error;
+}
+
+/* what shapes a campaign level as it loads, as a number: the test's `set` lines and the settings that swap its weapons or
+roll its content (the start point of one level is a file for each) */
+static unsigned long start_variant(struct ae_test_run_test const *test)
+{
+	static const char *const keys[] = { "game.campaign_ae_weapons", "game.campaign_ae_weapons_share", "game.randomizer",
+		"game.randomizer_seed", "game.companions_loadout" };
+	unsigned long hash = 2166136261UL;
+	char value[128];
+	short index;
+	size_t each;
+
+	for (index = 0; index < test->sets; index++)
+	{
+		char const *text[2] = { test->set[index].key, test->set[index].value };
+		int part;
+
+		for (part = 0; part < 2; part++)
+			for (each = 0; text[part][each]; each++)
+				hash = ((hash ^ (unsigned char)text[part][each]) * 16777619UL) & 0xffffffffUL;
+		hash = ((hash ^ 0xff) * 16777619UL) & 0xffffffffUL;
+	}
+	for (each = 0; each < sizeof(keys) / sizeof(keys[0]); each++)
+	{
+		size_t at;
+
+		if (!config_text(keys[each], value, sizeof(value)))
+			value[0] = 0;
+		for (at = 0; value[at]; at++)
+			hash = ((hash ^ (unsigned char)value[at]) * 16777619UL) & 0xffffffffUL;
+		hash = ((hash ^ 0xfe) * 16777619UL) & 0xffffffffUL;
+	}
+	return hash;
 }
 
 int ae_test_run_setup_apply(struct ae_test_run_test const *test)
@@ -233,12 +275,31 @@ int ae_test_run_setup_apply(struct ae_test_run_test const *test)
 	setting's) */
 	if (setup.campaign)
 	{
-		int squad = -1;
+		int squad = -1, line = 0, ride = 0;
 
 		for (index = 0; index < test->setups; index++)
+		{
 			if (!strncmp(test->setup[index], "companion ", 10) && atoi(test->setup[index] + 10) > 0)
 				squad = atoi(test->setup[index] + 10);
-		ae_companion_next_level(squad);
+			if (!strncmp(test->setup[index], "companion", 9))
+				line = 1;
+			if (!strcmp(test->setup[index], "intro play"))
+				ride = 1;
+		}
+		setup.start = !ride;
+		setup.start_read = 0;
+		setup.start_squad = 0;
+		if (ride)
+			ae_companion_next_level(squad);
+		else
+		{
+			/* (the start point is the level with no squad: the squad joins in the level, as a `companion` line sends it) */
+			ae_companion_next_level(0);
+			setup.start_read = (short)ae_test_start_arm(test->map, start_variant(test));
+			setup.start_loads = ae_test_start_loads();
+			if (!line && config_integer("game.companions") > 0)
+				setup.start_squad = (short)config_integer("game.companions");
+		}
 	}
 	network_test_restart();
 	ae_ui_test_screen_rearm();
@@ -248,6 +309,7 @@ int ae_test_run_setup_apply(struct ae_test_run_test const *test)
 		main_goto_main_menu();
 	setup.stable_since = 0;
 	setup.loading_since = system_milliseconds();
+	setup.loading_first = setup.loading_since;
 	setup.retries = 0;
 	setup.skippable_since = 0;
 	setup.skipped_at = 0;
@@ -340,6 +402,8 @@ static void log_weapons(void)
 
 int ae_test_run_setup_keep(struct ae_test_run_test const *test)
 {
+	short index;
+
 	/* (the game itself still playing is enough: a player dead or not yet back, a reset's at the end of the test before,
 	is put back by the reset that comes first in this one) */
 	/* (a campaign level, co-op with no game engine, is kept while its game plays) */
@@ -348,6 +412,10 @@ int ae_test_run_setup_keep(struct ae_test_run_test const *test)
 	{
 		return 0;
 	}
+	/* (a test that plays the level's intro loads the level again) */
+	for (index = 0; index < test->setups; index++)
+		if (!strcmp(test->setup[index], "intro play"))
+			return 0;
 	snprintf(setup.id, sizeof(setup.id), "%s", test->id);
 	platform_log("test run setup kept %s (no load)", setup.id);
 	return 1;
@@ -399,6 +467,27 @@ int ae_test_run_setup_ready(void)
 	if (now - setup.stable_since < (setup.screen || setup.menus ? SCREEN_STABLE_MS : MAP_STABLE_MS))
 		return 0;
 	setup.phase = PHASE_READY;
+	if (setup.start)
+	{
+		/* (the engine took the start point's saved game: the level opened at first control; else this load played the intro
+		and is the point's first: it is taken now) */
+		if (ae_test_start_loads() != setup.start_loads)
+			platform_log("test run setup: %s: opened at the level's start point (no intro) in %lu ms", setup.id,
+				now - setup.loading_first);
+		else
+		{
+			platform_log("test run setup: %s: the level's intro played (%lu ms): the start point is taken now", setup.id,
+				now - setup.loading_first);
+			ae_test_start_capture();
+		}
+		ae_test_start_disarm();
+		if (setup.start_squad > 0)
+		{
+			char text[96];
+
+			ae_companion_spawn(setup.start_squad, text, sizeof(text));
+		}
+	}
 	platform_log("test run setup ready %s", setup.id);
 	log_weapons();
 	return 1;

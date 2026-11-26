@@ -264,6 +264,16 @@ static void test_cache_block(void)
 		CHECK(ae_silent_join_cache_decide(1, 1, 1, 3, other, 1, 3, host) == AE_CACHE_JOIN_DIFFERENT_BUILD);
 		CHECK(ae_silent_join_cache_decide(1, 1, 1, 3, host, 1, 3, host) == AE_CACHE_JOIN_ACCEPT);
 		CHECK(AE_CACHE_REJECTION_CODE == 69);
+		/* (what a lobby needs the cache for: a game with a game engine reads the host's chosen weapon block; a co-op game
+		(no engine) needs it only for its own AE weapons, never for a gametype chosen before it) */
+		CHECK(ae_silent_lobby_uses_cache(1, 1, 0) && !ae_silent_lobby_uses_cache(1, 0, 0) && ae_silent_lobby_uses_cache(1, 0, 1));
+		CHECK(!ae_silent_lobby_uses_cache(0, 1, 0) && ae_silent_lobby_uses_cache(0, 1, 1) && ae_silent_lobby_uses_cache(0, 0, 1));
+		CHECK(!ae_silent_lobby_uses_cache(0, 0, 0));
+		/* (the host's per-frame lobby gates are for a machine joined from elsewhere; a local game has none) */
+		CHECK(ae_silent_host_checks_machine(1, 0) && !ae_silent_host_checks_machine(0, 0) &&
+			!ae_silent_host_checks_machine(1, 1) && !ae_silent_host_checks_machine(0, 1));
+		/* (a join the lobby's gates skip: a local game's, or the host's own client's) */
+		CHECK(ae_silent_join_exempt(1, 0) && ae_silent_join_exempt(0, 1) && !ae_silent_join_exempt(0, 0));
 	}
 }
 

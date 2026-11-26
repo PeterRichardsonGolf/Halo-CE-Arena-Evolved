@@ -108,7 +108,7 @@ void ae_tag_import_spike_tags_loaded(
 	/* (the firing range's request dropped when this is not the range's game: ae_glue_campaign.c) */
 	ae_range_gate(NULL);
 	/* (the campaign randomizer's copies, when game.randomizer is on: randomizer.c; then the tag injector's) */
-	randomizer_tags_loaded(map_name);
+	ae_randomizer_tags_loaded(map_name);
 	ae_tag_inject_tags_loaded(map_name);
 	/* (the level's skulls, and the sound they add to the tags: skulls.c) */
 	/* (NONE: the campaign level's carried skull is not wired here yet) */
@@ -156,7 +156,7 @@ void ae_tag_import_spike_tags_unloaded(void)
 {
 	skulls_level_unloaded();
 	ae_tag_inject_tags_unloaded();
-	randomizer_tags_unloaded();
+	ae_randomizer_tags_unloaded();
 	if (!spike_imported)
 		return;
 	spike_imported = FALSE;

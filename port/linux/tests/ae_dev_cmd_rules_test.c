@@ -121,7 +121,12 @@ static void argument_tests(void)
 		CHECK(ok("powerup frag_grenade now", 1) && !ae_dev_cmd_runs_in_campaign(&cmd));
 		CHECK(ok("powerup overshield enemy", 1) && !ae_dev_cmd_runs_in_campaign(&cmd));
 		CHECK(ok("spawn ghost", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
+		CHECK(ok("god me", 1) && ae_dev_cmd_runs_in_campaign(&cmd) && ok("player route 1 2 3", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
 		CHECK(ok("give rocket_launcher", 1) && !ae_dev_cmd_runs_in_campaign(&cmd));
+		CHECK(ok("god", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
+		CHECK(ok("god off", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
+		CHECK(ok("unseen", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
+		CHECK(ok("unseen off", 1) && ae_dev_cmd_runs_in_campaign(&cmd));
 	}
 	CHECK(ok("respawn", 1) && ok("respawn all", 1) && refused("respawn bots"));
 	CHECK(ok("kill", 1) && ok("kill bots", 1) && refused("kill red"));
@@ -199,6 +204,9 @@ static void rest_tests(void)
 		refused("viewmodel place 1 2 3") && refused("viewmodel place 1 2 3 4 5 6 x") && refused("viewmodel probe now"));
 	CHECK(ok("viewmodel save", 1) && ok("viewmodel CLEAR", 1) && refused("viewmodel 1 2 3") &&
 		refused("viewmodel 1 2 3 x") && refused("viewmodel keep") && refused("viewmodel save now"));
+	/* (door: power, power on, power off; nothing else) */
+	CHECK(ok("door power", 1) && cmd.id == AE_DEV_CMD_DOOR && cmd.words == 1 && ok("door power off", 1) &&
+		!strcmp(cmd.word[1], "off") && refused("door") && refused("door open") && refused("door power maybe"));
 	/* (ttk: on, off, or alone) */
 	CHECK(ok("ttk", 1) && cmd.id == AE_DEV_CMD_TTK && cmd.words == 0 && ok("ttk on", 1) && !strcmp(cmd.word[0], "on") &&
 		ok("TTK Off", 1) && refused("ttk maybe") && refused("ttk on off"));
@@ -348,6 +356,8 @@ static void rest_tests(void)
 	CHECK(ok("companion wait", 1) && !strcmp(cmd.word[0], "wait"));
 	CHECK(ok("companion near 3", 1) && !strcmp(cmd.word[0], "near") && cmd.number == 3);
 	CHECK(!ok("companion near 0", 1) && !ok("companion near 21", 1) && !ok("companion near", 1));
+	CHECK(ok("intro play", 1) && cmd.id == AE_DEV_CMD_INTRO && !strcmp(cmd.word[0], "play"));
+	CHECK(refused("intro") && refused("intro skip") && refused("intro play now"));
 	CHECK(ok("roundcard LOST bomb", 1) && cmd.id == AE_DEV_CMD_ROUNDCARD && cmd.words == 2 && !strcmp(cmd.word[1], "bomb"));
 	CHECK(ok("dev roundcard tied", 0) && cmd.id == AE_DEV_CMD_ROUNDCARD);
 	CHECK(refused("roundcard") && refused("roundcard maybe") && refused("roundcard won a b"));
@@ -583,6 +593,10 @@ static void rest_tests(void)
 		refused("pad battery charging 101") && refused("pad battery low") && refused("pad mode usb") && refused("pad open") && refused("pad open bags") &&
 		refused("pad hold") && refused("pad hold maybe") && refused("pad status now") && refused("pad world b player 5") && refused("pad world b player 0") &&
 		refused("pad nothing"));
+	/* pad pulse <event>: every named pulse, with a player */
+	CHECK(ok("pad pulse br", 1) && cmd.number == 0 && ok("pad pulse plasma-grenade player 2", 1) && cmd.number == 1 && ok("pad pulse charge-full", 1) &&
+		ok("pad pulse mag-in", 1) && ok("pad pulse PISTOL", 1));
+	CHECK(refused("pad pulse") && refused("pad pulse nothing") && refused("pad pulse br now") && refused("pad pulse br player 9"));
 	/* skip_training status|on|off */
 	CHECK(ok("skip_training status", 1) && cmd.id == AE_DEV_CMD_SKIP_TRAINING && cmd.words == 1 && ok("skip_training on", 1) && ok("skip_training off", 1));
 	CHECK(refused("skip_training") && refused("skip_training now") && refused("skip_training on off"));
@@ -642,7 +656,7 @@ static void rest_tests(void)
 	CHECK(!ae_dev_cmd_parse("maps list", 0, &cmd));
 	/* replay list|status|info <n>|play <n>|eyes <player>|free|pause|speed <25-400>|seek <s>|skip ahead|back|stop */
 	CHECK(ok("replay list", 1) && cmd.id == AE_DEV_CMD_REPLAY && cmd.words == 1 && ok("replay status", 1));
-	CHECK(ok("replay free", 1) && ok("replay pause", 1) && ok("replay stop", 1) && ok("replay Stop", 1));
+	CHECK(ok("replay free", 1) && ok("replay behind", 1) && ok("replay cinematic", 1) && refused("replay behind 2") && ok("replay pause", 1) && ok("replay stop", 1) && ok("replay Stop", 1));
 	CHECK(ok("replay info 1", 1) && cmd.number == 1 && ok("replay play 500", 1) && cmd.number == 500);
 	CHECK(refused("replay play 0") && refused("replay play 501") && refused("replay play") && refused("replay play x"));
 	CHECK(refused("replay info") && refused("replay play 1 2") && refused("replay list now") && refused("replay"));
@@ -650,6 +664,10 @@ static void rest_tests(void)
 	CHECK(ok("replay speed 25", 1) && cmd.number == 25 && ok("replay speed 400", 1) && refused("replay speed 24"));
 	CHECK(refused("replay speed 401") && ok("replay seek 0", 1) && cmd.number == 0 && ok("replay seek 86400", 1));
 	CHECK(refused("replay seek 86401") && refused("replay seek -1") && ok("replay skip ahead", 1) && ok("replay skip back", 1));
+	CHECK(ok("replay stage 0", 1) && cmd.number == 0 && ok("replay stage 8", 1) && cmd.number == 8 && refused("replay stage 9") && refused("replay stage") && refused("replay stage x"));
+	CHECK(ok("replay play newest", 1) && cmd.number == 0 && ok("replay keep", 1) && refused("replay play newest 1") && refused("replay keep now"));
+	CHECK(ok("menu theater", 1) && ok("menu theater delete", 1) && ok("menu theater empty", 1) && ok("menu theater empty delete", 1) &&
+		refused("menu theater x") && refused("menu theater delete now"));
 	CHECK(refused("replay skip") && refused("replay skip up") && refused("replay rewind") && !ae_dev_cmd_parse("replay list", 0, &cmd));
 	/* range [<profile>] */
 	CHECK(ok("range", 1) && cmd.id == AE_DEV_CMD_RANGE && cmd.words == 0 && ok("range ae_dev", 1) && cmd.words == 1 &&
@@ -767,6 +785,57 @@ static void seat_tests(void)
 	CHECK(!ae_dev_cmd_seat_wanted("passenger", 1, 1));
 }
 
+/* the test player: a route's points appended, a step's aim and throttle, a point reached */
+static void puppet_tests(void)
+{
+	struct ae_dev_puppet_route route;
+	float yaw = 0.0f, tx = 0.0f, ty = 0.0f;
+
+	CHECK(ok("player route -46.8 3.0 0.1 -47.3 0.0 0.1 jump -50.1 -0.2 0.1 crouch walk 0.5", 1) && cmd.id == AE_DEV_CMD_PLAYER &&
+		!strcmp(cmd.word[0], "route") && cmd.rest[0] == '-');
+	CHECK(ok("player look 90", 1) && ok("player stop", 1) && ok("player go", 1));
+	CHECK(refused("player") && refused("player route") && refused("player look") && refused("player fly"));
+	memset(&route, 0, sizeof route);
+	CHECK(ae_dev_puppet_parse("-46.8 3.0 0.1 -47.3 0.0 0.1 jump -50.1 -0.2 0.1 crouch walk 0.5", &route) == 3 && route.count == 3);
+	CHECK(route.point[0].walk == 1.0f && !route.point[0].jump && route.point[1].jump && !route.point[1].crouch &&
+		route.point[2].crouch && route.point[2].walk == 0.5f && route.point[2].y < -0.19f && route.point[2].y > -0.21f);
+	/* (a teleport point: the player is put there at once, not walked) */
+	{
+		struct ae_dev_puppet_route jump;
+
+		memset(&jump, 0, sizeof jump);
+		CHECK(ae_dev_puppet_parse("1 2 3 20 2 3 teleport", &jump) == 2 && !jump.point[0].teleport && jump.point[1].teleport);
+		/* (a point may save the level's state as it is reached, or revert to the last save) */
+		CHECK(ae_dev_puppet_parse("4 5 6 save 7 8 9 revert", &jump) == 2 && jump.point[2].save && !jump.point[2].revert &&
+			jump.point[3].revert && !jump.point[3].save);
+	}
+	/* (appends; a bad text leaves the route as it was) */
+	CHECK(ae_dev_puppet_parse("1 2 3", &route) == 1 && route.count == 4);
+	CHECK(ae_dev_puppet_parse("1 2", &route) == -1 && route.count == 4);
+	CHECK(ae_dev_puppet_parse("1 2 3 fly", &route) == -1 && route.count == 4);
+	CHECK(ae_dev_puppet_parse("1 2 3 walk 2", &route) == -1 && route.count == 4);
+	route.count = AE_DEV_PUPPET_POINTS;
+	CHECK(ae_dev_puppet_parse("1 2 3", &route) == -1 && route.count == AE_DEV_PUPPET_POINTS);
+	/* (a step: reached within 0.3 across and 1.0 up or down; else aimed at it, full ahead times the walk) */
+	CHECK(ae_dev_puppet_step(0.0f, 0.0f, 0.0f, 0.2f, 0.1f, 0.5f, 1.0f, &yaw, &tx, &ty) == 1);
+	CHECK(ae_dev_puppet_step(0.0f, 0.0f, 0.0f, 0.2f, 0.1f, 1.5f, 1.0f, &yaw, &tx, &ty) == 0);
+	CHECK(ae_dev_puppet_step(0.0f, 0.0f, 0.0f, 0.0f, 2.0f, 0.0f, 1.0f, &yaw, &tx, &ty) == 0 && yaw > 1.56f && yaw < 1.58f &&
+		tx == 1.0f && ty == 0.0f);
+	CHECK(ae_dev_puppet_step(0.0f, 0.0f, 0.0f, -2.0f, 0.0f, 0.0f, 0.5f, &yaw, &tx, &ty) == 0 && (yaw > 3.13f || yaw < -3.13f) &&
+		tx == 0.5f);
+}
+
+/* a saved point of a level: its name letters, digits and '-', 1 to 24 */
+static void point_tests(void)
+{
+	CHECK(ok("point save keyes", 1) && cmd.id == AE_DEV_CMD_POINT && !strcmp(cmd.word[0], "save") && !strcmp(cmd.word[1], "keyes"));
+	CHECK(ok("point load keyes-2", 1) && refused("point") && refused("point save") && refused("point keep keyes"));
+	CHECK(ae_dev_point_name_ok("keyes") && ae_dev_point_name_ok("a10-bridge-2") && ae_dev_point_name_ok("abcdefghijklmnopqrstuvwx"));
+	CHECK(!ae_dev_point_name_ok("") && !ae_dev_point_name_ok("../core") && !ae_dev_point_name_ok("a b") &&
+		!ae_dev_point_name_ok("abcdefghijklmnopqrstuvwxy") && !ae_dev_point_name_ok("key.bin"));
+	CHECK(refused("point save ../core"));
+}
+
 int main(void)
 {
 	seat_tests();
@@ -775,6 +844,8 @@ int main(void)
 	argument_tests();
 	rest_tests();
 	table_tests();
+	puppet_tests();
+	point_tests();
 	if (failures)
 		printf("%d failures\n", failures);
 	else

@@ -1,7 +1,7 @@
 /*
 AE_MAPS_HUB_RULES.H
 
-What MAPS & MODS decides without drawing (ae_maps_hub_rules.c; ae_screen_maps_hub.c draws it): the five pages and how
+What MAPS & MODS decides without drawing (ae_maps_hub_rules.c; ae_screen_maps_hub.c draws it): the six pages and how
 LB / RB step through them, the sources a map comes from and what may be done to each, the options list of an
 installed map, the footer's prompts of each page and state, how many list rows fit, the sizes and counts as written,
 and the pages and states DEV MODE's `menu maps` can stage. Plain C, no engine headers, so the unit tests build it alone.
@@ -10,7 +10,8 @@ and the pages and states DEV MODE's `menu maps` can stage. Plain C, no engine he
 #ifndef AE_MAPS_HUB_RULES_H
 #define AE_MAPS_HUB_RULES_H
 
-enum { AE_HUB_TAB_INSTALLED, AE_HUB_TAB_REQUIRED, AE_HUB_TAB_BROWSE, AE_HUB_TAB_WORKSHOP, AE_HUB_TAB_MODS, AE_HUB_TABS };
+enum { AE_HUB_TAB_INSTALLED, AE_HUB_TAB_REQUIRED, AE_HUB_TAB_BROWSE, AE_HUB_TAB_WORKSHOP, AE_HUB_TAB_MODS, AE_HUB_TAB_ITEM_SETS,
+	AE_HUB_TABS };
 
 /* what a page shows besides its plain list */
 enum
@@ -120,10 +121,14 @@ struct ae_hub_option
 };
 
 const char *ae_hub_tab_name(int tab);
-/* the page named (installed, required, browse, workshop, mods; any case), or -1 */
+/* whether a page is in the strip now */
+int ae_hub_tab_visible(int tab, int dev_mode);
+/* the requested page, or INSTALLED when it is invalid or hidden */
+int ae_hub_tab_resolve(int tab, int dev_mode);
+/* the page named (installed, required, browse, workshop, mods, sets; any case), or -1 */
 int ae_hub_tab_find(const char *word);
-/* the page LB (-1) or RB (+1) goes to: wraps */
-int ae_hub_tab_step(int tab, int direction);
+/* the visible page LB (-1) or RB (+1) goes to: wraps */
+int ae_hub_tab_step(int tab, int direction, int dev_mode);
 /* the state named for that page (list, loading, ...), 1 when the page has it: DEV MODE's staging */
 int ae_hub_stage_find(int tab, const char *word, int *state);
 const char *ae_hub_stage_names(int tab);

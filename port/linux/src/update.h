@@ -43,6 +43,10 @@ else 0 and why in error. Any thread may make one */
 int update_https_request(const char *method, const char *url, const char *headers, const void *body,
 	unsigned long body_size, unsigned long maximum, struct update_response *response, char *error, int error_size);
 
+/* a total time, in milliseconds, for this thread's next update_https_request (connect, handshake and the whole answer; the name's lookup
+is the system's); 0 for none, as before. Set it before the request and clear it (0) after */
+void update_https_deadline(unsigned long milliseconds);
+
 /* the full path of this executable; 1 on success */
 int update_executable_path(char *path, int size);
 

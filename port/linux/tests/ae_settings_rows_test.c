@@ -94,6 +94,8 @@ int main(void)
 	rest */
 	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_CONTROLS)->name, "CONTROLS"));
 	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_SYSTEM)->name, "SYSTEM"));
+	CHECK(!strcmp(ae_settings_group(AE_SETTINGS_CAMPAIGN)->name, "CAMPAIGN") && ae_settings_group(AE_SETTINGS_CAMPAIGN)->whose == AE_SETTINGS_PC &&
+		AE_SETTINGS_CAMPAIGN + 1 == AE_SETTINGS_SYSTEM);
 	CHECK(ae_settings_group(AE_SETTINGS_CROSSHAIR) && ae_settings_group(AE_SETTINGS_CROSSHAIR_WEAPONS) && !ae_settings_group(AE_SETTINGS_PAGES) &&
 		!ae_settings_group(-1));
 	CHECK(ae_settings_group(AE_SETTINGS_CONTROLS)->built && ae_settings_group(AE_SETTINGS_VIEW)->built &&
@@ -178,8 +180,11 @@ int main(void)
 			!strcmp(ae_settings_value_text(mcc, 1), "ON"));
 		CHECK(ae_settings_value_count(health) == 4 && !strcmp(ae_settings_value_of(health, 2), "halo2") &&
 			!strcmp(ae_settings_value_text(health, 3), "HALO 3"));
-		CHECK(!strcmp(ae_settings_row(ae_settings_row_of("game.health"))->section, "CAMPAIGN") &&
-			!strcmp(ae_settings_row(ae_settings_row_of("game.fall_damage"))->section, "CAMPAIGN"));
+		/* (rc8: the campaign's rules have a group of their own, FALL DAMAGE and HEALTH in its MISSIONS) */
+		CHECK(!strcmp(ae_settings_row(ae_settings_row_of("game.health"))->section, "MISSIONS") &&
+			!strcmp(ae_settings_row(ae_settings_row_of("game.fall_damage"))->section, "MISSIONS") &&
+			ae_settings_row(ae_settings_row_of("game.health"))->group == AE_SETTINGS_CAMPAIGN &&
+			ae_settings_row(ae_settings_row_of("game.fall_damage"))->group == AE_SETTINGS_CAMPAIGN);
 	}
 	CHECK(ae_settings_group(AE_SETTINGS_VIDEO)->whose == AE_SETTINGS_PC);
 
@@ -302,9 +307,9 @@ int main(void)
 		set("display.ping", "");
 	}
 	/* (0.4.0: WEAPON COSMETICS, PISTOL COLOR and PISTOL TRIM; BACKPACK WEAPONS; 0.7.8: VIEWMODEL SWAY) */
-	CHECK(rows_of(AE_SETTINGS_VIEW, &pad) == 17); /* (0.7.8: RAGDOLLS: PLAYERS and AI) */
+	CHECK(rows_of(AE_SETTINGS_VIEW, &pad) == 18); /* (0.7.8: RAGDOLLS: PLAYERS and AI; rc8: SPLIT SCREEN FOV) */
 	/* (0.4.0: ALLY RETICLE, DEAD ALLY MARKERS; MARK PROMPT; MEDALS; MEDAL STYLE; KILL FEED; 0.7.7: CROSSHAIR, EDIT CROSSHAIR, WEAPONS, RETICLE SIZE / SCALING / COLOR; FOV BASE, RETICLE MOTION; 0.7.8: ENEMY COLOR, ALLY COLOR) */
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 44);
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 47); /* (rc8: SPLIT SCREEN HUD) */
 	/* a pad-only player: no MOUSE, no KEYBOARD, no DUALSENSE (no DualSense); ZOOM HOLD TIME only with BOTH */
 	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "MOUSE STYLE") && !has_label(AE_SETTINGS_CONTROLS, &pad, "KEY BINDINGS"));
 	CHECK(!has_label(AE_SETTINGS_CONTROLS, &pad, "ADAPTIVE TRIGGERS"));
@@ -341,7 +346,7 @@ int main(void)
 	CHECK(!has_label(AE_SETTINGS_VIEW, &pad, "GLOW INTENSITY") && !has_label(AE_SETTINGS_HUD, &pad, "CLOCK LABELS"));
 	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "PANEL COLOR") && !has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUT VOICE"));
 	/* (CALLOUTS on AUDIO since 0.3.9) */
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 42 && !has_label(AE_SETTINGS_HUD, &pad, "CALLOUTS") &&
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 45 && !has_label(AE_SETTINGS_HUD, &pad, "CALLOUTS") &&
 		has_label(AE_SETTINGS_AUDIO, &pad, "CALLOUTS"));
 	/* MEDAL STYLE: under MEDALS, spinning MODERN and MCC, and shown only while MEDALS is on */
 	CHECK(has_label(AE_SETTINGS_HUD, &pad, "MEDAL STYLE"));
@@ -355,9 +360,9 @@ int main(void)
 	CHECK(has_label(AE_SETTINGS_HUD, &pad, "BUTTON STYLE"));
 	set("display.hud_style", "ae");
 	CHECK(!has_label(AE_SETTINGS_HUD, &pad, "BUTTON STYLE") && has_label(AE_SETTINGS_HUD, &pad, "HUD STYLE"));
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 41);
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 44);
 	set("display.hud_style", "classic");
-	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 42);
+	CHECK(rows_of(AE_SETTINGS_HUD, &pad) == 45);
 	clock = "down";
 	panel = "true";
 
@@ -601,6 +606,56 @@ int main(void)
 	CHECK(rows_of(AE_SETTINGS_CHAT, &pad) == 3 && !has_label(AE_SETTINGS_CHAT, &pad, "CENSOR SLURS"));
 	CHECK(!strcmp(ae_settings_value_text(ae_settings_row(ae_settings_row_of("streamer.swearing")), 2),
 		"STRONG AND WORSE"));
+	/* (rc8) CAMPAIGN: GO CRAZY's four rows show with it on, the scoring rows grey without SCORING, the keys are the lobby doors' */
+	{
+		struct ae_settings_grey grey;
+
+		set("game.randomizer_crazy", "false");
+		set("game.campaign_score", "false");
+		CHECK(rows_of(AE_SETTINGS_CAMPAIGN, &pad) == 18 && !has_label(AE_SETTINGS_CAMPAIGN, &pad, "ANY NPC, ANY WEAPON") &&
+			has_label(AE_SETTINGS_CAMPAIGN, &pad, "GO CRAZY") && has_label(AE_SETTINGS_CAMPAIGN, &pad, "MEDAL POPUPS"));
+		CHECK(ae_settings_row_greyed(ae_settings_row(ae_settings_row_of("game.campaign_medals")), &pad, &grey) &&
+			!strcmp(grey.reason, "Needs SCORING: ON") && !strcmp(grey.needs, "game.campaign_score"));
+		CHECK(!ae_settings_row_greyed(ae_settings_row(ae_settings_row_of("game.campaign_score")), &pad, NULL));
+		set("game.randomizer_crazy", "true");
+		set("game.campaign_score", "true");
+		CHECK(rows_of(AE_SETTINGS_CAMPAIGN, &pad) == 22 && has_label(AE_SETTINGS_CAMPAIGN, &pad, "FLOOD PODS SWAPPED"));
+		CHECK(!ae_settings_row_greyed(ae_settings_row(ae_settings_row_of("game.campaign_medals")), &pad, NULL));
+		CHECK(ae_settings_row_of("game.randomizer") >= 0 && ae_settings_row_of("game.skulls_drop_chance") >= 0);
+	}
+	/* (rc8) DAILY CHALLENGE: the online rows grey until COMMUNITY SERVICES is yes, the share until the online day is on */
+	{
+		struct ae_settings_grey grey;
+		struct ae_settings_row const *online = ae_settings_row(ae_settings_row_of("community.enabled")),
+			*share = ae_settings_row(ae_settings_row_of("community.upload_scores"));
+
+		CHECK(online->group == AE_SETTINGS_CAMPAIGN && share->group == AE_SETTINGS_CAMPAIGN &&
+			ae_settings_row(ae_settings_row_of("game.daily_challenge"))->group == AE_SETTINGS_CAMPAIGN);
+		set("network.community_services", "ask");
+		set("community.enabled", "true");
+		CHECK(ae_settings_row_greyed(online, &pad, &grey) && !strcmp(grey.reason, "Needs COMMUNITY SERVICES: ON") &&
+			!strcmp(grey.needs, "network.community_services"));
+		CHECK(ae_settings_row_greyed(share, &pad, &grey) && !strcmp(grey.needs, "community.enabled"));
+		set("network.community_services", "yes");
+		CHECK(!ae_settings_row_greyed(online, &pad, NULL) && !ae_settings_row_greyed(share, &pad, NULL));
+		set("community.enabled", "false");
+		CHECK(!ae_settings_row_greyed(online, &pad, NULL) && ae_settings_row_greyed(share, &pad, NULL));
+		CHECK(!ae_settings_row_greyed(ae_settings_row(ae_settings_row_of("game.daily_challenge")), &pad, NULL));
+		/* (SERVER and SERVER ADDRESS wait for the online day, as the share does) */
+		{
+			struct ae_settings_row const *server = ae_settings_row(ae_settings_row_of("community.server_mode")),
+				*address = ae_settings_row(ae_settings_row_of("action.daily_server"));
+
+			CHECK(server->group == AE_SETTINGS_CAMPAIGN && address->group == AE_SETTINGS_CAMPAIGN && address->kind == AE_SETTINGS_SUBSCREEN);
+			CHECK(ae_settings_row_greyed(server, &pad, &grey) && !strcmp(grey.needs, "community.enabled") &&
+				ae_settings_row_greyed(address, &pad, NULL));
+			set("community.enabled", "true");
+			CHECK(!ae_settings_row_greyed(server, &pad, NULL) && !ae_settings_row_greyed(address, &pad, NULL));
+			set("community.enabled", "false");
+		}
+		/* (what the row says is sent) */
+		CHECK(strstr(online->help, "install key") && strstr(online->help, "nothing leaves"));
+	}
 	/* every group built (phase B) */
 	for (index = 0; index < AE_SETTINGS_GROUPS; index++)
 		CHECK(ae_settings_group(index)->built);
@@ -739,6 +794,16 @@ int main(void)
 
 		CHECK(fps && ae_settings_row_whole(fps, &range) && range.minimum == 30 && range.maximum == 1000);
 		CHECK(!ae_settings_row_whole(ae_settings_row(ae_settings_row_of("display.vsync")), NULL));
+		/* TARGET FRAMERATE: a value its list lacks as itself, a list word as the list's own */
+		{
+			struct ae_settings_row const *target = ae_settings_row(ae_settings_row_of("display.target_framerate"));
+
+			CHECK(target && ae_settings_exact_shown(target, "75", out, sizeof(out)) && !strcmp(out, "75"));
+			CHECK(ae_settings_exact_shown(target, "xyz", out, sizeof(out)) && !strcmp(out, "XYZ"));
+			CHECK(!ae_settings_exact_shown(target, "90", out, sizeof(out)));
+			CHECK(!ae_settings_exact_shown(target, "display", out, sizeof(out)));
+			CHECK(!ae_settings_exact_shown(fps, "237", out, sizeof(out)));
+		}
 		/* shown: a list value's text, a typed value as itself */
 		ae_settings_whole_shown(fps, "60", out, sizeof(out));
 		CHECK(!strcmp(out, "60"));
@@ -807,6 +872,28 @@ int main(void)
 			!strcmp(range.suffix, " %"));
 		CHECK(ae_settings_row_whole(ae_settings_row(ae_settings_row_of("display.viewmodel_fov")), NULL));
 		(void)link;
+		/* (rc8) SPLIT SCREEN FOV: under FOV, SAME AS FOV (-1) first, then the FOV row's list; SPLIT SCREEN HUD: under COMPACT HUD,
+		COMPACT first; both per player */
+		{
+			short fov_at = ae_settings_row_of("display.fov"), split_fov_at = ae_settings_row_of("display.split_fov");
+			short compact_at = ae_settings_row_of("display.compact_hud"), split_hud_at = ae_settings_row_of("display.split_hud");
+			struct ae_settings_row const *split_fov = ae_settings_row(split_fov_at);
+			struct ae_settings_row const *split_hud = ae_settings_row(split_hud_at);
+
+			CHECK(fov_at >= 0 && split_fov_at >= 0 && split_hud_at >= 0 && compact_at >= 0);
+			CHECK(split_fov && ae_settings_value_count(split_fov) == ae_settings_value_count(fov) + 1);
+			CHECK(!strcmp(ae_settings_value_text(split_fov, 0), "SAME AS FOV (DEFAULT)") &&
+				!strcmp(ae_settings_value_of(split_fov, 0), "-1"));
+			CHECK(!strcmp(ae_settings_value_text(split_fov, 1), "STOCK") && !strcmp(ae_settings_value_of(split_fov, 1), "0"));
+			CHECK(!strcmp(ae_settings_value_of(split_fov, 2), "80") &&
+				!strcmp(ae_settings_value_of(split_fov, ae_settings_value_count(split_fov) - 1), "145"));
+			CHECK(ae_settings_row_whole(split_fov, &range) && range.minimum == 60 && range.maximum == 150);
+			CHECK(split_hud && ae_settings_value_count(split_hud) == 2 &&
+				!strcmp(ae_settings_value_text(split_hud, 0), "COMPACT (DEFAULT)") &&
+				!strcmp(ae_settings_value_of(split_hud, 0), "compact") &&
+				!strcmp(ae_settings_value_text(split_hud, 1), "SAME AS ONE PLAYER") &&
+				!strcmp(ae_settings_value_of(split_hud, 1), "one_player"));
+		}
 		ae_settings_whole_shown(fov, "97.0", out, sizeof(out));
 		CHECK(!strcmp(out, "97"));
 		ae_settings_whole_shown(fov, "0.0", out, sizeof(out));

@@ -735,6 +735,25 @@ int ae_bots_combat_grenade_near_teammate(float landing_x, float landing_y, float
 	return dx * dx + dy * dy + dz * dz <= 12.25f;
 }
 
+int ae_bots_combat_grenade_path_near(float thrower_x, float thrower_y, float thrower_z, float teammate_x, float teammate_y,
+	float teammate_z, float landing_x, float landing_y, float landing_z)
+{
+	float lx = landing_x - thrower_x, ly = landing_y - thrower_y, lz = landing_z - thrower_z;
+	float mx = teammate_x - thrower_x, my = teammate_y - thrower_y, mz = teammate_z - thrower_z;
+	float length_squared = lx * lx + ly * ly + lz * lz;
+	float along, dx, dy, dz;
+
+	if (length_squared < 0.01f)
+		return 0;
+	along = (mx * lx + my * ly + mz * lz) / length_squared;
+	if (along <= 0.0f || along >= 1.0f)
+		return 0;
+	dx = mx - lx * along;
+	dy = my - ly * along;
+	dz = mz - lz * along;
+	return dx * dx + dy * dy + dz * dz <= AE_BOTS_GRENADE_PATH_NEAR * AE_BOTS_GRENADE_PATH_NEAR;
+}
+
 int ae_bots_combat_crouch_jump(int airborne, long ticks_since_jump, float vertical_velocity)
 {
 	return airborne && ticks_since_jump >= 3 && ticks_since_jump <= 60 && vertical_velocity <= 0.004f;

@@ -9,7 +9,7 @@ int main(void)
 {
 	static const char *const main_labels[AE_MAIN_ROWS] = {
 		"CAMPAIGN", "AE TOURNAMENT", "MULTIPLAYER", "MAPS & MODS", "SETTINGS", "MESSAGE OF THE DAY", "WHAT'S NEW",
-		"FIREFIGHT", "FORGE", "THEATER", "FRIENDS"
+		"FIREFIGHT", "THEATER", "FORGE", "FRIENDS"
 	};
 	static const char *const mp_labels[AE_MP_ROWS] = {
 		"SERVER BROWSER", "MATCHMAKING", "JOIN BY ADDRESS", "JOIN LAN GAMES", "JOIN WITH INVITE", "HOST GAME", "HOST A SERVER"
@@ -37,9 +37,10 @@ int main(void)
 	CHECK(ae_main_first_focus(AE_MAIN_CAMPAIGN) == AE_MAIN_CAMPAIGN);
 	CHECK(ae_main_first_focus(AE_MAIN_FORGE) == AE_MAIN_FORGE);
 
-	/* COMING SOON: exactly the last four main rows */
+	/* COMING SOON: exactly the last two main rows (FIREFIGHT and THEATER are doors now) */
 	for (row = 0; row < AE_MAIN_ROWS; row++)
-		CHECK(ae_main_row_coming_soon(row) == (row >= AE_MAIN_FIREFIGHT));
+		CHECK(ae_main_row_coming_soon(row) == (row >= AE_MAIN_FORGE));
+	CHECK(!ae_main_row_coming_soon(AE_MAIN_THEATER) && ae_main_row_coming_soon(AE_MAIN_FORGE) && ae_main_row_coming_soon(AE_MAIN_FRIENDS));
 	CHECK(!ae_main_row_coming_soon(-1));
 	CHECK(!ae_main_row_coming_soon(AE_MAIN_ROWS));
 

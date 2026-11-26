@@ -30,6 +30,14 @@ Numbers are plain digits (leading zeros are fine). Pure: stdio and string only, 
 	                 when the test is up, in order; up to 10 with its group's
 	expect <n> <rule>  what the event stream must show for check n (1 to 3, a check already given): judged by
 	                 tools/ae_test/expect.py, not the game. A check without one is the owner's to look at
+	requires mcc | workshop <id> | map <name>  what the list needs on the machine that plays it (anywhere in the list):
+	                 the game reads nothing of it; the preflight refuses to start without it and the gate names it
+	press <n> <button>...  what a person presses to see check n (a b x y up down left right start select lb rb delete),
+	                 sent to the screen one every 600 ms once the scene is set up, by preflight runs only
+	                 (debug.test_run_auto); a run by hand leaves the pressing to the person. Check n's expect judges
+	                 what the presses did
+	retired <n> <why> | <rule>  an expect line of check n taken out of judging (it measured the wrong thing): kept,
+	                 with the reason, and counted in the reports; never judged. An expect line is retired, not deleted
 
 	group <id>       starts a GROUP ([a-z0-9-]): its map, screen, gametype, set, players and setup lines, before the
 	                 next test line, are every following test's (a test's own lines change or add to them) until the
@@ -57,6 +65,7 @@ exists; the runner does when it applies the set, and the linter before shipping.
 #define AE_TEST_RUN_SETUPS 10
 #define AE_TEST_RUN_SETUP_TEXT 120
 #define AE_TEST_RUN_EXPECT_TEXT 96
+#define AE_TEST_RUN_PRESS_TEXT 48
 
 struct ae_test_run_set { char key[64]; char value[128]; };
 
@@ -72,6 +81,7 @@ struct ae_test_run_test
 	short setups;    /* its group's setup lines, then its own */
 	char setup[AE_TEST_RUN_SETUPS][AE_TEST_RUN_SETUP_TEXT];
 	char expect[AE_TEST_RUN_CHECKS][AE_TEST_RUN_EXPECT_TEXT]; /* "" or check n's rule */
+	char press[AE_TEST_RUN_CHECKS][AE_TEST_RUN_PRESS_TEXT];   /* "" or check n's presses (preflight runs only) */
 	char error[96]; /* "" or why this test cannot run (shown as LIST ERROR) */
 };
 

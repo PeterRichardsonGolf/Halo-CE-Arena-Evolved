@@ -36,6 +36,10 @@ screen is open.
 #include "ae_screen_main_menu.h"
 #include "ae_screen_pause.h"
 #include "ae_split_join_card.h"
+#include "ae_screen_theater.h"
+#include "ae_theater_strip.h"
+#include "network_replay.h"
+#include "ae_screen_end_card.h"
 #include "ae_screen_postgame.h"
 #include "ae_glue_ce_maps.h"
 #include "ae_glue_setup_options.h"
@@ -508,6 +512,8 @@ static boolean ae_ui_process_body(
 	/* (each local player's own settings, their profile's: AE's menus on or off) */
 	ae_player_settings_update();
 	ae_ce_map_update();
+	/* (a replay playing: its pad and keyboard controls, once a frame, with AE's menus on or off) */
+	network_replay_playback_frame();
 	if (!ae_menus_active())
 	{
 		/* (a timed revert left open as AE's menus went off still reverts at 10 s) */
@@ -613,7 +619,12 @@ static boolean ae_ui_process_body(
 			/* (the post-game's CONTINUE of a social game opens MATCHMAKING in the main menu's place: the main menu waits
 			for it, or it would take the empty stack first and MATCHMAKING would never come back) */
 			else if (!ae_social_game_reopen_pending())
+			{
 				ae_screen_main_menu_open();
+				/* (a replay that stopped: the Theater it was started from opens again over the main menu) */
+				if (network_replay_theater_wanted())
+					ae_screen_theater_open();
+			}
 		}
 	}
 	/* (and never outside it: CAMPAIGN's level loads a frame or more after its screens closed, and the main menu can
@@ -655,6 +666,8 @@ static boolean ae_ui_process_body(
 	randomizer_frame();
 	/* (0.4.0: AE's post-game in place of the game's carnage report: opens as it is due, closes after it) */
 	ae_screen_postgame_tick();
+	/* (rc8: the campaign mission's end card, AE's, over the held level) */
+	ae_screen_end_card_tick();
 	/* (closed since: by the pointer, which comes before this) */
 	if (was_up && !ae_ui_depth())
 		ae_input_hold_begin();
@@ -730,7 +743,11 @@ static void ae_ui_render_body(
 	(void)window_bounds;
 	/* (1.0 the join card of a pad with no player: no screen of AE's stack, so drawn with none up as well) */
 	if (local_player_index == NONE || local_player_index == 0)
+	{
 		ae_split_join_card_draw();
+		/* (a replay playing: the lines over it, over player 1's view) */
+		ae_theater_strip_draw();
+	}
 	if (!ae_ui_up())
 		return;
 	/* the virtual keyboard is drawn by the game, under AE's drawing (which

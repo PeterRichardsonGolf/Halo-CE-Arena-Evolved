@@ -17,8 +17,11 @@ results file, the evidence and the clock. */
 #include "ae_dev_events.h"
 #include "ae_dev_mode.h"
 #include "ae_hooks.h"
+#include "ae_input.h"
+#include "ae_pack_format.h"
 #include "ae_test_run.h"
 #include "ae_test_run_agent.h"
+#include "ae_test_run_card.h"
 #include "ae_test_run_clip.h"
 #include "ae_test_run_input.h"
 #include "ae_test_run_lines.h"
@@ -47,6 +50,10 @@ const char *platform_data_root(void);
 void main_goto_main_menu(void);
 boolean main_menu_is_active(void);
 int posix_make_directory(const char *path);
+int update_executable_path(char *path, int size);
+/* ae_draw.h's: the next frame's boxes as JSON (the frame lint's), and the card's box as an overlay in them */
+void ae_draw_boxes_next_frame(const char *path);
+void ae_draw_boxes_overlay(const float box[4]);
 
 /* a test that is not ready this long after its setup was applied did not load */
 #define LOAD_TIMEOUT_MS 120000
@@ -88,6 +95,18 @@ static int save_failed;    /* a record could not be written: the card says so fo
 /* debug.test_run_auto */
 static struct { enum ae_test_run_key key; int seconds; } automatic[AUTO_MAXIMUM];
 static int automatics, automatic_next, automatic_signature;
+/* The run-by-hand mode presses verdicts as a tester does (ae_test_run_input_press), and the run takes the path
+of a run by hand: the NOTE box and its choice open, nothing is typed or picked for them */
+static int owner_way;
+
+/* whether the run takes the automatic run's own path (no NOTE box, nothing waits for a person). Every place where an
+automatic run goes another way than a run by hand asks this, never `automatics`: this mode uses the run-by-hand path
+with scripted verdict presses, and a preflight is useful only when it exercises that path (tools/test_ae_test_run.py
+reads this file for a bare `automatics` outside the verdict script's own functions) */
+static int automatic_path(void)
+{
+	return automatics && !owner_way;
+}
 static unsigned long automatic_since;
 
 /* ---------- names and paths */
@@ -180,6 +199,112 @@ static void clip_service(void)
 
 /* ---------- records */
 
+/* a list's `press` lines (preflight runs only: a run by hand leaves them to the person): the test whose presses are
+going, the next check and the next button in its line, and when the next is sent */
+#define PRESS_FIRST_MS 1000
+#define PRESS_EVERY_MS 600
+static struct { short test; short check; short at; unsigned long next; } pressing = { -1, 0, 0, 0 };
+
+/* whether a verdict script runs (debug.test_run_auto), by hand or not: what every scripted run does and a run by hand
+does not, the scene's picture and a list's presses, asks this (a person presses for themselves) */
+static int scripted_run(void)
+{
+	return automatics != 0;
+}
+
+static void presses_begin(short index)
+{
+	pressing.test = scripted_run() ? index : -1;
+	pressing.check = pressing.at = 0;
+	pressing.next = system_milliseconds() + PRESS_FIRST_MS;
+}
+
+/* whether the test's presses are still to go: its verdict waits for them */
+static int presses_pending(void)
+{
+	return pressing.test != -1 && pressing.test == ae_test_run_machine_test(&machine) &&
+		machine.phase == AE_TEST_RUN_PHASE_READY;
+}
+
+/* one button a call when its time has come; the line's words: a b x y up down left right start select lb rb delete */
+static void press_service(void)
+{
+	static const struct { const char *name; int action; } buttons[] =
+	{
+		{ "a", AE_ACTION_ACCEPT }, { "b", AE_ACTION_BACK }, { "x", AE_ACTION_X }, { "y", AE_ACTION_Y },
+		{ "up", AE_ACTION_UP }, { "down", AE_ACTION_DOWN }, { "left", AE_ACTION_LEFT }, { "right", AE_ACTION_RIGHT },
+		{ "start", AE_ACTION_START }, { "select", AE_ACTION_SELECT }, { "lb", AE_ACTION_TAB_PREVIOUS },
+		{ "rb", AE_ACTION_TAB_NEXT }, { "delete", AE_ACTION_DELETE },
+	};
+	struct ae_test_run_test const *test;
+
+	if (!presses_pending() || (long)(system_milliseconds() - pressing.next) < 0)
+		return;
+	test = &list.test[pressing.test];
+	while (pressing.check < AE_TEST_RUN_CHECKS)
+	{
+		const char *line = test->press[pressing.check];
+		char word[16];
+		int skip = pressing.at, length, index;
+
+		while (skip-- > 0 && *line)
+		{
+			line += strspn(line, " \t");
+			line += strcspn(line, " \t");
+		}
+		line += strspn(line, " \t");
+		length = (int)strcspn(line, " \t");
+		if (!length)
+		{
+			pressing.check++;
+			pressing.at = 0;
+			continue;
+		}
+		snprintf(word, sizeof(word), "%.*s", length < 15 ? length : 15, line);
+		for (index = 0; index < (int)(sizeof(buttons) / sizeof(buttons[0])); index++)
+		{
+			if (!strcmp(word, buttons[index].name))
+				break;
+		}
+		platform_log("test run: %s %s press %d %s%s", list.id, test->id, pressing.check + 1, word,
+			index < (int)(sizeof(buttons) / sizeof(buttons[0])) && ae_input_press(buttons[index].action) ? "" :
+			": not pressed (no such button, or the queue is full)");
+		pressing.at++;
+		pressing.next = system_milliseconds() + PRESS_EVERY_MS;
+		return;
+	}
+	pressing.test = -1;
+}
+
+/* the SHA-256 of the program file (hex), read once a process at the first run's start: each record names the very program
+that played it, as the commit alone cannot (a build with changes, a binary copied by hand); "" when it cannot be read */
+static char program_digest[72];
+
+static void program_digest_read(void)
+{
+	static int read_once;
+	static unsigned char block[1 << 16];
+	char path[PATH_BYTES];
+	struct ae_pack_sha256 context;
+	unsigned char digest[32];
+	FILE *file;
+	size_t got;
+	int index;
+
+	if (read_once)
+		return;
+	read_once = 1;
+	if (!update_executable_path(path, (int)sizeof(path)) || (file = fopen(path, "rb")) == NULL)
+		return;
+	ae_pack_sha256_begin(&context);
+	while ((got = fread(block, 1, sizeof(block), file)) > 0)
+		ae_pack_sha256_add(&context, block, (unsigned int)got);
+	fclose(file);
+	ae_pack_sha256_end(&context, digest);
+	for (index = 0; index < 32; index++)
+		snprintf(program_digest + index * 2, 3, "%02x", digest[index]);
+}
+
 static void write_record(short test_index, enum ae_test_run_verdict verdict, enum ae_test_run_note_kind note_kind)
 {
 	static struct ae_test_run_record record;
@@ -202,7 +327,8 @@ static void write_record(short test_index, enum ae_test_run_verdict verdict, enu
 				evidence.no_clip ? "no clip (recorder busy)" : evidence.current);
 	}
 	snprintf(record.build, sizeof(record.build), "%s", build_identity_commit());
-	/* (the live agent's verdicts beside the owner's, when an agent spoke; the stream it judged, for its evidence) */
+	snprintf(record.program, sizeof(record.program), "%s", program_digest);
+	/* (the live judge's verdicts beside the tester's, when it spoke; the stream it judged, for its evidence) */
 	{
 		struct ae_test_run_agent const *agent = ae_test_run_agent_get();
 		short check;
@@ -313,7 +439,30 @@ static void preflight_shot_service(void)
 	clean_name(test_id, sizeof(test_id), list.test[preflight_shot.test].id);
 	snprintf(relative, sizeof(relative), "test-runs/preflight/%s-%s.png", list_id, test_id);
 	capture_request_screenshot_as(relative);
-	platform_log("test run: %s %s scene picture %s", list.id, list.test[preflight_shot.test].id, relative);
+	/* (and the AE menus' boxes of that frame beside it, <list>-<test>.boxes.json: tools/ae_test/frame_lint.py) */
+	{
+		char boxes[PATH_BYTES], boxes_relative[180];
+
+		snprintf(boxes_relative, sizeof(boxes_relative), "test-runs/preflight/%s-%s.boxes.json", list_id, test_id);
+		float card[4];
+
+		in_config(boxes, sizeof(boxes), boxes_relative);
+		ae_draw_boxes_next_frame(boxes);
+		if (ae_test_run_card_box(card))
+			ae_draw_boxes_overlay(card);
+	}
+	{
+		int placed, in_view;
+
+		/* (the AI the setup placed, and how many are ahead of the player: a picture with none of them in it is a
+		scene the tester cannot judge; tools/ae_test/preflight.py fails it) */
+		float below, ahead;
+
+		ae_dev_cmd_actors_in_view(&placed, &in_view);
+		ae_dev_cmd_drops(&below, &ahead);
+		platform_log("test run: %s %s scene picture %s, actors placed %d, in view %d, drop below %.1f, ahead %.1f",
+			list.id, list.test[preflight_shot.test].id, relative, placed, in_view, (double)below, (double)ahead);
+	}
 }
 
 /* (each frame of a ready test) its group's and its own setup lines: on a map test after the reset (when it goes on in
@@ -449,8 +598,12 @@ static void setup_service(void)
 			/* (a campaign test: the AI squad's bodies go to where its lines left the player, a goto's spot) */
 			if (!strcmp(test->gametype, "coop"))
 				ae_companion_reset();
+			/* (a test player's route set by the setup sets off now, after the squad's reset) */
+			ae_dev_cmd_puppet_go();
 			test_event(index, "setup", "");
-			if (automatics)
+			presses_begin(index);
+			/* (the scene's picture: taken on any run with a verdict script, the run-by-hand path too; a picture, not a path) */
+			if (scripted_run())
 			{
 				preflight_shot.at = system_milliseconds() + PREFLIGHT_SHOT_MS;
 				preflight_shot.at += !preflight_shot.at;
@@ -510,13 +663,20 @@ static void apply_current(void)
 		ae_test_run_setup_keep(test))
 	{
 		loaded_test = index;
-		/* (it goes on in the game the test before it left: that game's state goes back first) */
+		/* (it goes on in the game the test before it left: that game's state goes back first, and what the dev commands
+		bots and config changed in the tests before: a test's config lines are its own) */
+		ae_dev_cmd_settings_back();
 		setup.reset = 1;
 	}
 	else
 	{
 		/* (a load of its own: what the dev commands bots and config changed in the tests before goes back first) */
 		ae_dev_cmd_settings_back();
+		/* (a menus test: its staged scene starts without the screens and dialogs of the tests before it, run by hand or
+		automatic; a dialog left under the next scene's screens would hold its player's dialog slot and refuse every
+		dialog that scene opens) */
+		if (test->menus)
+			ae_ui_test_screen_rearm();
 		if (!ae_test_run_setup_apply(test))
 		{
 			snprintf(error, sizeof(error), "%s", ae_test_run_setup_error());
@@ -574,7 +734,7 @@ static void run_effects(void)
 				break;
 			case AE_TEST_RUN_EFFECT_NOTE_OPEN:
 				note[0] = 0;
-				if (!automatics)
+				if (!automatic_path())
 					ae_test_run_note_open();
 				break;
 			case AE_TEST_RUN_EFFECT_RECORD:
@@ -613,9 +773,11 @@ static void parse_automatic(const char *text)
 	};
 	int index;
 
-	automatics = automatic_next = 0;
+	automatics = automatic_next = owner_way = 0;
 	while (*text && automatics < AUTO_MAXIMUM)
 	{
+		if (!strncmp(text, "OWNER", 5) && (text[5] == ',' || !text[5]))
+			owner_way = 1;
 		for (index = 0; index < 4; index++)
 		{
 			size_t length = strlen(keys[index].name);
@@ -632,6 +794,22 @@ static void parse_automatic(const char *text)
 		if (!text)
 			break;
 		text++;
+	}
+	/* (the run-by-hand path gives PASS and SKIP only: a FAIL or NOTE opens the NOTE box, which waits for typing) */
+	if (owner_way)
+	{
+		for (index = 0; index < automatics; index++)
+		{
+			if (automatic[index].key != AE_TEST_RUN_KEY_PASS && automatic[index].key != AE_TEST_RUN_KEY_SKIP)
+				automatic[index].key = AE_TEST_RUN_KEY_PASS;
+		}
+		if (!automatics)
+		{
+			automatic[0].key = AE_TEST_RUN_KEY_PASS;
+			automatic[0].seconds = 6;
+			automatics = 1;
+		}
+		platform_log("test run: verdicts pressed as in a run by hand, on the first pad, after %d s", automatic[0].seconds);
 	}
 }
 
@@ -806,8 +984,9 @@ static int start_list(const char *list_id, int all)
 	note[0] = error[0] = 0;
 	automatic_signature = -1;
 	parse_automatic(config_string("debug.test_run_auto"));
-	platform_log("test run: %s started%s, run %s, %d of %d tests, build %s", list.id, all ? " (all)" : "", run_time,
-		(int)machine.count, (int)list.tests, build_identity_commit());
+	program_digest_read();
+	platform_log("test run: %s started%s, run %s, %d of %d tests, build %s, program %.12s", list.id, all ? " (all)" : "",
+		run_time, (int)machine.count, (int)list.tests, build_identity_commit(), program_digest[0] ? program_digest : "unknown");
 	ae_test_run_input_enable(1);
 	run_effects();
 	return 1;
@@ -866,24 +1045,26 @@ void ae_test_run_update(void)
 	/* (once a frame: the input layer's pad staleness has no slack) */
 	key = ae_test_run_input_pressed();
 	/* (a test's setup under way: no verdict yet, and the automatic one counts from when it is done) */
-	if (setup.pending && machine.phase == AE_TEST_RUN_PHASE_READY && !machine.blocked)
+	if ((setup.pending || presses_pending()) && machine.phase == AE_TEST_RUN_PHASE_READY && !machine.blocked)
 	{
 		key = AE_TEST_RUN_KEY_NONE;
 		automatic_signature = -1;
 	}
+	else if (key == AE_TEST_RUN_KEY_NONE && owner_way)
+		ae_test_run_input_press(automatic_key());
 	else if (key == AE_TEST_RUN_KEY_NONE)
 		key = automatic_key();
 	if (machine.phase == AE_TEST_RUN_PHASE_NOTE)
 	{
-		int result = automatics ? 1 : ae_test_run_note_poll(note, sizeof(note));
+		int result = automatic_path() ? 1 : ae_test_run_note_poll(note, sizeof(note));
 
-		if (automatics)
+		if (automatic_path())
 			snprintf(note, sizeof(note), "auto");
 		if (result)
 		{
 			ae_test_run_machine_note_done(&machine, result);
 			/* (a saved NOTE: the box stays up as the chooser; the automatic run picks CONTINUE next frame) */
-			if (machine.phase == AE_TEST_RUN_PHASE_VERDICT && !automatics)
+			if (machine.phase == AE_TEST_RUN_PHASE_VERDICT && !automatic_path())
 				ae_test_run_note_choose_open();
 			else
 				ae_test_run_note_close();
@@ -893,7 +1074,7 @@ void ae_test_run_update(void)
 	}
 	if (machine.phase == AE_TEST_RUN_PHASE_VERDICT)
 	{
-		int pick = automatics ? AE_TEST_RUN_CHOICE_CONTINUE : ae_test_run_note_choose_poll();
+		int pick = automatic_path() ? AE_TEST_RUN_CHOICE_CONTINUE : ae_test_run_note_choose_poll();
 
 		if (pick)
 		{
@@ -929,6 +1110,7 @@ void ae_test_run_update(void)
 	}
 	setup_service();
 	preflight_shot_service();
+	press_service();
 }
 
 void ae_test_run_view(struct ae_test_run_view *out)

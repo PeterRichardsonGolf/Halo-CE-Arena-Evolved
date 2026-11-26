@@ -68,6 +68,7 @@ host_touch_scene
 host_touch_bindings
 host_touch_devices
 host_https_get
+host_https_post
 
 host_errno
 # an MCC package's fingerprint on the host's threads (port/android/host/host_mcc_hash.c)

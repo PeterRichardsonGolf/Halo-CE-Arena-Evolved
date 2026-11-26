@@ -7,8 +7,13 @@
 # level's AI: they aim by the bots' level, strafe, throw grenades, strike close up, stay 3.5-6 wu from you (a step further
 # for each next one), come back to you when a fight takes them past 15 wu, come back after a death, ride in the free seats
 # of a vehicle you sit in and get out when you do, and hold fire while you or another of them is in the line.
+#
+# The tests open at the level's start point: the level at first control after its intro, taken by the first load that plays
+# the intro and read by the later ones (a few seconds, not the ride), with no squad in it: the squad joins in the level, as each
+# test's `companion` line sends it. The b30-intro test starts the level from the CAMPAIGN screen and plays the real ride; a map
+# test that wants the ride has the setup line `intro play`.
 list companions-campaign
-revision 7
+revision 8
 title CAMPAIGN AI SQUAD
 
 group b30

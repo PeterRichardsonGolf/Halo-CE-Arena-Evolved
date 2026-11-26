@@ -64,6 +64,21 @@ struct ae_split_rect
 /* the setting's value from its text ("auto", "top_and_bottom", "side_by_side"; anything else AUTO) */
 int ae_split_two_players_value(char const *text);
 
+/* the field of view (degrees; 0 the stock view) a view takes: display.fov, or with two to four players the player's
+display.split_fov when it is 0 or more (-1 is SAME AS FOV: display.fov's) */
+double ae_split_fov_pick(double fov, double split_fov, int players);
+
+/* display.split_hud's value: 1 for "one_player" (SAME AS ONE PLAYER), 0 for anything else (COMPACT) */
+int ae_split_hud_value(char const *text);
+
+/* whether a view draws the one-player HUD instead of split screen's smaller one: only two players side by side, and
+only when this player chose SAME AS ONE PLAYER (top and bottom, three or four players, and COMPACT keep the small HUD) */
+int ae_split_hud_one_player(int players, int side_by_side, int one_player_chosen);
+
+/* the factor a view's share of the screen is multiplied by for the HUD's size when the one-player HUD is drawn: large
+enough that the share reaches the whole screen (the size factor is pinned at one player's) */
+#define AE_SPLIT_HUD_ONE_PLAYER_SHARE 4.0f
+
 /* whether two players sit side by side for this value on a screen of this size (any units, the same both ways) */
 int ae_split_side_by_side(int value, int screen_width, int screen_height);
 

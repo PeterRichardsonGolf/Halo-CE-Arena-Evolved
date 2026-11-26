@@ -33,3 +33,22 @@ int host_https_get(const char *url, int *status, char *headers, int headers_size
 	free(response.body);
 	return 1;
 }
+
+int host_https_post(const char *url, const char *json, int *status, char *body, int body_capacity, int *body_size, char *error,
+	int error_size)
+{
+	struct update_response response;
+
+	*status = 0;
+	*body_size = 0;
+	if (!update_https_request("POST", url, "Content-Type: application/json\r\n", json, (unsigned long)strlen(json),
+		(unsigned long)body_capacity, &response, error, error_size))
+		return 0;
+	*status = response.status;
+	if (response.body_size > (unsigned long)body_capacity)
+		response.body_size = (unsigned long)body_capacity;
+	memcpy(body, response.body, response.body_size);
+	*body_size = (int)response.body_size;
+	free(response.body);
+	return 1;
+}

@@ -43,6 +43,7 @@ is past the marks' ellipse. Its height is the object's bounding sphere's. The na
 #include "ae_pause.h"
 #include "ae_score_strip.h"
 #include "ae_wheel.h"
+#include "ae_split_layout.h"
 
 void platform_video_drawable_size(int *width, int *height);
 long hud_item_timers_ae_font_index(void);
@@ -52,6 +53,7 @@ boolean game_engine_scoreboard_held(short local_player_index);
 real game_engine_scoreboard_shown(short local_player_index);
 /* port/linux/src/ae_config_players.c: each player's own (split screen) */
 int ae_config_player_boolean(int player, char const *name);
+int ae_config_player_text(int player, char const *name, char *text, size_t size);
 
 /* the ellipse a mark stays inside, of the view's size, and a marker's glyph: ae_marks.c's */
 #define PROMPT_ELLIPSE_X 0.4375f
@@ -269,7 +271,7 @@ static boolean view_get(struct view *view)
 		return FALSE;
 	view->width = (real)(render.camera.viewport_bounds.x1 - render.camera.viewport_bounds.x0) * view->ppu;
 	view->height = (real)(render.camera.viewport_bounds.y1 - render.camera.viewport_bounds.y0) * view->ppu;
-	view->split = (boolean)(local_player_count() > 1);
+	view->split = ae_split_layout_hud_small();
 	view->scale = ae_score_strip_view_scale();
 	return view->width > 0.0f && view->height > 0.0f && view->scale > 0.0f;
 }
@@ -402,11 +404,12 @@ static int tags_over(short local_player_index, struct view const *view, struct a
 /* ---------- the draw */
 
 /* the capitals' middle of a text at y, on whole pixels, as the wheel's */
-static void text_left(short view, wchar_t const *text, real x, real middle, real px, real const rgb[3], enum ae_hud_text_edge edge)
+static void text_left(short view, wchar_t const *text, real x, real middle, real px, real const rgb[3], real alpha,
+	enum ae_hud_text_edge edge)
 {
 	real_argb_color color;
 
-	color.alpha = 1.0f;
+	color.alpha = alpha;
 	color.red = rgb[0];
 	color.green = rgb[1];
 	color.blue = rgb[2];
@@ -431,6 +434,9 @@ void ae_mark_prompt_draw(short local_player_index)
 	int drawable_width = 0, drawable_height = 0;
 	short count, index;
 	boolean taken;
+	char setting[16];
+	real alpha = 1.0f;
+	boolean below = FALSE;
 
 	if (local_player_index < 0 || local_player_index >= PROMPT_PLAYERS)
 		return;
@@ -447,6 +453,13 @@ void ae_mark_prompt_draw(short local_player_index)
 	if (!ae_key_prompts_chip_width(local_player_index, AE_CHIP_MARK, metrics.chip_height, &chip_width) || chip_width <= 0.0f)
 		return;
 	word_width = ae_hud_text_measure(word, metrics.word_px) + 2.0f;
+	/* (display.mark_prompt_look fades the row; display.mark_prompt_place may put it under the reticle) */
+	setting[0] = 0;
+	ae_config_player_text(local_player_index, "display.mark_prompt_look", setting, sizeof(setting));
+	alpha = ae_prompt_look_alpha(ae_prompt_look_from_text(setting));
+	setting[0] = 0;
+	ae_config_player_text(local_player_index, "display.mark_prompt_place", setting, sizeof(setting));
+	below = (boolean)(ae_prompt_place_from_text(setting) == AE_PROMPT_PLACE_BELOW);
 
 	memset(&in, 0, sizeof(in));
 	in.view_width = view.width;
@@ -506,20 +519,24 @@ void ae_mark_prompt_draw(short local_player_index)
 		}
 		if (ground)
 			pinned = 1;
-		if ((pinned ? ae_prompt_place_pinned(&in, &x, &y) : ae_prompt_place(&in, &x, &y)) == AE_PROMPT_NONE)
+		if (below && ae_prompt_place_low(&in, &x, &y) != AE_PROMPT_NONE)
+		{
+			/* (placed under the reticle) */
+		}
+		else if ((pinned ? ae_prompt_place_pinned(&in, &x, &y) : ae_prompt_place(&in, &x, &y)) == AE_PROMPT_NONE)
 			return;
 	}
 	middle = (real)floor(y + in.height / 2.0f + 0.5f);
 	{
 		real drawn = 0.0f;
 
-		if (!ae_key_prompts_draw_chip(local_player_index, AE_CHIP_MARK, x + metrics.halo, middle, metrics.chip_height, 1.0f,
+		if (!ae_key_prompts_draw_chip(local_player_index, AE_CHIP_MARK, x + metrics.halo, middle, metrics.chip_height, alpha,
 			&drawn))
 		{
 			return;
 		}
 		ae_panel_tone_rgb(ae_prompt_word_is_enemy(aim->tier, aim->verb) ? _ae_tone_red : _ae_tone_white, rgb);
-		text_left(local_player_index, word, x + metrics.halo + drawn + metrics.chip_gap, middle, metrics.word_px, rgb,
+		text_left(local_player_index, word, x + metrics.halo + drawn + metrics.chip_gap, middle, metrics.word_px, rgb, alpha,
 			_ae_text_outline);
 	}
 }

@@ -51,8 +51,8 @@ struct ae_pause_facts
 	int invite;            /* (0.7.6) the game has an invite link to copy (a host's, or the one a joiner joined through):
 	                          INVITE A FRIEND, under PEOPLE for the host, after SCOREBOARD for a joiner */
 	int social;            /* (0.9.3) a social career game (ae_glue_social_game.h): no CHANGE TEAMS and none of the host's rows; QUIT
-	                          asks what it costs (EXP) */
-	char social_quit_help[96]; /* its QUIT row's help ("Leave the game: -1 EXP in TEAM SLAYER.") */
+	                          asks what it costs (a skill step) */
+	char social_quit_help[96]; /* its QUIT row's help ("Leave the game: your Team Slayer skill moves back one win.") */
 	int unsaved;           /* a campaign game whose QUIT saves nothing (a level that keeps no saved game file,
 	                          ae_saved_game_file.h): QUIT, not SAVE AND QUIT */
 	int add_player;        /* (1.0) ADD PLAYER: 0 no row (no free controller of this PC has a pad), 1 a row, 2 a row that says

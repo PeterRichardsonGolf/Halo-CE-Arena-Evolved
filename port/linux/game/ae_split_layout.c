@@ -19,8 +19,11 @@ SPLIT SCREEN's layout in the engine (ae_split_layout.h): the settings read, the 
 
 const char *config_string(const char *name);
 int config_boolean(const char *name);
+double config_real(const char *name);
 unsigned long config_changes(void);
 void platform_log(const char *format, ...);
+unsigned long ae_config_player_changes(void);
+int ae_config_player_now(void);
 
 /* the settings, read again when Settings or config.toml changes */
 static struct
@@ -350,6 +353,44 @@ real_matrix4x3 *ae_split_layout_viewmodel_node(short local_player_index, short n
 	return moved;
 }
 
+double ae_split_layout_fov_degrees(void)
+{
+	return ae_split_fov_pick(config_real("display.fov"), config_real("display.split_fov"), (int)local_player_count());
+}
+
+/* the view's player's SPLIT SCREEN HUD (display.split_hud, per player): read again when a setting or the player the
+game works for changes; the log's line when a player's choice changes */
+boolean ae_split_layout_hud_one_player(void)
+{
+	static unsigned long read_at = (unsigned long)-1;
+	static boolean chosen;
+	static signed char logged[4] = { -1, -1, -1, -1 };
+	long players = local_player_count();
+	boolean one_player;
+	int player;
+
+	if (players < 2)
+		return FALSE;
+	if (read_at != ae_config_player_changes())
+	{
+		read_at = ae_config_player_changes();
+		chosen = ae_split_hud_value(config_string("display.split_hud")) != 0;
+	}
+	one_player = ae_split_hud_one_player((int)players, ae_split_layout_side_by_side_now(), chosen) != 0;
+	player = ae_config_player_now();
+	if (player >= 0 && player < 4 && logged[player] != (signed char)one_player)
+	{
+		logged[player] = (signed char)one_player;
+		platform_log("split screen HUD: player %d %s", player + 1, one_player ? "one player's" : "compact");
+	}
+	return one_player;
+}
+
+boolean ae_split_layout_hud_small(void)
+{
+	return local_player_count() > 1 && !ae_split_layout_hud_one_player();
+}
+
 real ae_split_layout_hud_share(void)
 {
 	rectangle2d const *screen = &rasterizer_globals.reserved04.screen_bounds;
@@ -362,6 +403,8 @@ real ae_split_layout_hud_share(void)
 	bars = two_side_bars();
 	if (!side_by_side && !bars)
 		return 1.0f;
+	if (side_by_side && ae_split_layout_hud_one_player())
+		return AE_SPLIT_HUD_ONE_PLAYER_SHARE;
 	compute_window_bounds(0, 2, &pixel_bounds, &safe_frame_bounds);
 	return ae_split_hud_share_factor(side_by_side, bars, (float)(screen->x1 - screen->x0),
 		(float)(pixel_bounds.x1 - pixel_bounds.x0));

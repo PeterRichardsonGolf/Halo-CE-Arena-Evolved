@@ -219,6 +219,24 @@ static void groups(void)
 	/* (an expect for a check not given, or with no rule, is the test's error) */
 	t = &list.test[5];
 	CHECK(t->error[0] && strstr(t->error, "expect names no check"));
+	/* (a retired expect line is read and kept out of judging; one naming no check given is the test's error) */
+	{
+		static struct ae_test_run_list retired;
+
+		CHECK(ae_test_run_list_parse("list r\ntest a\ncheck x\nmap bloodgulch\nretired 1 checked the command | cmd unseen ok\n"
+			"expect 1 log unseen\ntest b\ncheck y\nmap bloodgulch\nretired 2 no such check | log z\n", &retired) == 1);
+		CHECK(retired.tests == 2 && !retired.test[0].error[0] && !strcmp(retired.test[0].expect[0], "log unseen"));
+		CHECK(retired.test[1].error[0] && strstr(retired.test[1].error, "retired names no check"));
+	}
+	/* (a press line is check n's buttons; one naming no check, or with none, is the test's error) */
+	{
+		static struct ae_test_run_list pressed;
+
+		CHECK(ae_test_run_list_parse("list p\ntest a\ncheck x\ncheck y\nmap bloodgulch\npress 2 x  a\n"
+			"test b\ncheck y\nmap bloodgulch\npress 1\ntest c\ncheck z\nmap bloodgulch\npress 3 a\n", &pressed) == 1);
+		CHECK(!pressed.test[0].error[0] && !pressed.test[0].press[0][0] && !strcmp(pressed.test[0].press[1], "x  a"));
+		CHECK(strstr(pressed.test[1].error, "press has no button") && strstr(pressed.test[2].error, "press names no check"));
+	}
 	/* (limits: setups with the group's, a long setup, a bad group id, expect outside a test) */
 	{
 		char big[4096];

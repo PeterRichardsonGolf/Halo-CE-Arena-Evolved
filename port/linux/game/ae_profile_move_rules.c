@@ -909,7 +909,7 @@ static void career_row(struct ae_pm_summary *summary, struct rec const *rec, lon
 		field(rec, 1, id, sizeof(id));
 	else
 		field(rec, 0, id, sizeof(id));
-	snprintf(name, sizeof(name), "%s %.30s", is_kind(rec, "social") ? "EXP" : is_kind(rec, "online") ? "ONLINE" : "CAREER", id);
+	snprintf(name, sizeof(name), "%s %.30s", is_kind(rec, "social") ? "SKILL" : is_kind(rec, "online") ? "ONLINE" : "CAREER", id);
 	row_add(summary, name, mine, theirs, from_file);
 }
 
@@ -1022,6 +1022,17 @@ int ae_pm_merge_career(int mode, struct ae_pm_file const *file, char const *to_k
 				career_row(summary, &rec, mine_games, games, 1);
 			}
 		}
+	}
+	/* (the career XP and challenge lines of this PC stay as they are: a profile import does not carry them) */
+	{
+		size_t at = 0;
+		char const *line;
+		size_t count_;
+		struct rec rec;
+
+		while (next_line(mine.text, mine.length, &at, &line, &count_))
+			if (split(line, count_, &rec) && (is_kind(&rec, "xp") || is_kind(&rec, "challenges")))
+				put_line(&sink, line, count_);
 	}
 	return finish(&sink, 1, length);
 }

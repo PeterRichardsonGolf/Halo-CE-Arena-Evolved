@@ -94,6 +94,16 @@ boolean custom_edition_map_tag_names_walk(
 	char const *map_name,
 	int (*visit)(void *context, unsigned long group_tag, char const *name),
 	void *context);
+/* Whether a level name is custom_maps\<name> of a map Forge saved (an Xbox
+cache with Forge's FLG1 trailer), which custom_edition_level_name leaves out
+(it loads as the game's own maps do); and whether a level name is either:
+a map of custom_maps a network game shares (map_share.c), its version its
+hash's, asked of the host when a joiner lacks it */
+boolean custom_forge_map_level(
+	char const *level_name);
+boolean custom_edition_shared_level_name(
+	char const *level_name);
+
 /* Whether a level name is custom_maps\<name> of an Xbox multiplayer map (an
 Xbox cache, version 5): the game's own format, unpacked into the map cache
 as the game's maps are (cache_files_windows.c) rather than read by the Custom

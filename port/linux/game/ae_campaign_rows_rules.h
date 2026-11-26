@@ -34,6 +34,12 @@ char const *ae_campaign_rows_down_value(int respawn);
 char const *ae_campaign_rows_down_next(int respawn);
 char const *ae_campaign_rows_down_help(int respawn, int squad_on);
 char const *ae_campaign_rows_down_reason(void);
+/* DOOR STACK (game.companions_door_stack): "every" stacks the squad at every closed door the player waits at, anything else
+only at a door the player marks; the row's value, the setting's text after one step, its help (squad_on: an AI squad asked for) */
+int ae_campaign_rows_door_is_every(char const *setting);
+char const *ae_campaign_rows_door_value(int every);
+char const *ae_campaign_rows_door_next(int every);
+char const *ae_campaign_rows_door_help(int every, int squad_on);
 
 /* the case of CONTINUE with this screen's seats and squad */
 enum
@@ -59,7 +65,8 @@ int ae_campaign_rows_continue_asks(int continue_case);
 void ae_campaign_rows_continue_help_dialog(int squad_count, char *text, int size);
 
 /* the starts that bring no AI squad: a Workshop campaign (a plain local game) and split screen (the pads' local co-op game); the
-squad joins only a hosted game of the stock campaign started with one player. AI SQUAD, SQUAD GEAR and PLAYER DOWN are dimmed there */
+squad joins only a hosted game of the stock campaign started with one player. AI SQUAD, SQUAD GEAR, PLAYER DOWN and DOOR STACK
+are dimmed there */
 enum { AE_CAMPAIGN_ROWS_SQUAD_OK = 0, AE_CAMPAIGN_ROWS_SQUAD_WORKSHOP, AE_CAMPAIGN_ROWS_SQUAD_SPLIT };
 int ae_campaign_rows_squad_cause(int workshop, int players);
 char const *ae_campaign_rows_squad_reason(int cause);

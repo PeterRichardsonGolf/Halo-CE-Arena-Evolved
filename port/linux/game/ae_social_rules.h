@@ -38,6 +38,10 @@ int ae_social_outcome_team(int first_alone, int first_shared);
 int ae_social_outcome_ffa(int place, int players);
 /* the EXP an outcome moves: +1 win or tie, 0 loss, -1 quit */
 int ae_social_exp_change(int outcome);
+/* whether a local player's saved profile is put back after a game: the game's teardown clears every local player's profile
+(saved: its index before the game, -1 for none; now: its index after; guest: the player is a guest, who has no profile to
+put back); only a profile the player had and lost is */
+int ae_social_profile_put_back(long saved, long now, int guest);
 /* the EXP after an outcome: never below 0, never past AE_SOCIAL_EXP_MAX */
 long ae_social_exp_after(long exp, int outcome);
 

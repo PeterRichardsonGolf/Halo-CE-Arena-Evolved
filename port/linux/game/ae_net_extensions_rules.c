@@ -151,6 +151,79 @@ malformed:
 	return AE_NETEXT_PARSE_MALFORMED;
 }
 
+long ae_netext_firefight_build(unsigned long const *values, unsigned char const *widths, int count, unsigned char *out,
+	long capacity)
+{
+	long size = 0, need = AE_NETEXT_MAGIC_LENGTH + 4 + 1;
+	int index;
+
+	if (!values || !widths || !out || count < 1 || count > AE_NETEXT_FIREFIGHT_MAXIMUM_RULES)
+		return -1;
+	for (index = 0; index < count; index++)
+	{
+		if (widths[index] != 1 && widths[index] != 2 && widths[index] != 4)
+			return -1;
+		need += widths[index];
+	}
+	if (need > capacity || need - 1 > AE_NETEXT_MAXIMUM_BYTES)
+		return -1;
+	memcpy(out, AE_NETEXT_MAGIC, AE_NETEXT_MAGIC_LENGTH);
+	size = AE_NETEXT_MAGIC_LENGTH;
+	out[size++] = AE_NETEXT_FORMAT;
+	out[size++] = AE_NETEXT_KIND_FIREFIGHT;
+	out[size++] = AE_NETEXT_FIREFIGHT_VERSION;
+	out[size++] = (unsigned char)count;
+	for (index = 0; index < count; index++)
+	{
+		int byte;
+
+		for (byte = 0; byte < widths[index]; byte++)
+			out[size++] = (unsigned char)((values[index] >> (8 * byte)) & 0xFF);
+	}
+	out[size++] = AE_NETEXT_PACKET_TYPE;
+
+	return size;
+}
+
+int ae_netext_firefight_parse(void const *data, long size, unsigned char const *widths, int count, unsigned long *values)
+{
+	unsigned char const *bytes = data;
+	long at, need = AE_NETEXT_MAGIC_LENGTH + 4;
+	int index;
+
+	if (!data || !widths || !values || count < 1 || count > AE_NETEXT_FIREFIGHT_MAXIMUM_RULES)
+		return AE_NETEXT_PARSE_MALFORMED;
+	/* (the type byte that ends the packet is not the message's) */
+	size--;
+	if (size < AE_NETEXT_MAGIC_LENGTH + 2 || memcmp(bytes, AE_NETEXT_MAGIC, AE_NETEXT_MAGIC_LENGTH) ||
+		bytes[AE_NETEXT_MAGIC_LENGTH] != AE_NETEXT_FORMAT || bytes[AE_NETEXT_MAGIC_LENGTH + 1] != AE_NETEXT_KIND_FIREFIGHT)
+		return AE_NETEXT_PARSE_OTHER;
+	if (size > AE_NETEXT_MAXIMUM_BYTES || size < need || bytes[AE_NETEXT_MAGIC_LENGTH + 2] != AE_NETEXT_FIREFIGHT_VERSION ||
+		bytes[AE_NETEXT_MAGIC_LENGTH + 3] != count)
+		return AE_NETEXT_PARSE_MALFORMED;
+	for (index = 0; index < count; index++)
+		need += widths[index];
+	if (size != need)
+		return AE_NETEXT_PARSE_MALFORMED;
+	at = AE_NETEXT_MAGIC_LENGTH + 4;
+	for (index = 0; index < count; index++)
+	{
+		unsigned long value = 0;
+		int byte;
+
+		for (byte = 0; byte < widths[index]; byte++)
+			value |= (unsigned long)bytes[at++] << (8 * byte);
+		values[index] = value;
+	}
+
+	return AE_NETEXT_PARSE_OK;
+}
+
+int ae_netext_firefight_send(int firefight_game, int machine_has_ae, int changed)
+{
+	return firefight_game && machine_has_ae && changed;
+}
+
 unsigned short ae_netext_peer_version(struct ae_netext_peer const *peer, char const *key)
 {
 	int index;

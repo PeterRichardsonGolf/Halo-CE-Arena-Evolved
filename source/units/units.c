@@ -8587,6 +8587,8 @@ static boolean unit_set_or_test_seat_and_weapon_label(
 		}
 	}
 
+	if (!result && weapon_label && strcmp(weapon_label, "unarmed")) { extern char const *randomizer_borrowed_weapon_label(long, char const *, int); static boolean borrowing; int nth; if (!borrowing) { borrowing = TRUE; for (nth = 0; !result; nth++) { char const *borrowed = randomizer_borrowed_weapon_label(object_index, weapon_label, nth); if (!borrowed) break; result = unit_set_or_test_seat_and_weapon_label(object_index, seat_label, borrowed, change_flag); } borrowing = FALSE; } } /* AE hook */
+
 	return result;
 }
 

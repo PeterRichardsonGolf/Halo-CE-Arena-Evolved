@@ -134,7 +134,7 @@ static void test_old_and_newer(void)
 		length = ae_career_write(&career, text, sizeof(text));
 		CHECK(length > 0);
 		/* a newer file: not checksum-compatible with an edit of the version line, so build the text by hand with its sum */
-		EQ(ae_career_read(&again, "version = 3\nseason = 3\n"), AE_CAREER_READ_OK);
+		EQ(ae_career_read(&again, "version = 4\nseason = 3\n"), AE_CAREER_READ_OK);
 		CHECK(again.newer);
 		EQ(again.count[0], 0);
 	}
@@ -324,7 +324,7 @@ static void test_social(void)
 		CHECK(length > 0);
 		EQ(ae_career_read(&again, built), AE_CAREER_READ_OK);
 		EQ(again.match_count, 1);
-		EQ(ae_career_read(&again, summed("# AE career\nversion = 3\nsocial = a | b | 5 1 1 0 0 3 77 88\nsocial = broken\nsocial = a | | 1 1 1 1 1 1\nmatch = a | b | x\n")),
+		EQ(ae_career_read(&again, summed("# AE career\nversion = 4\nsocial = a | b | 5 1 1 0 0 3 77 88\nsocial = broken\nsocial = a | | 1 1 1 1 1 1\nmatch = a | b | x\n")),
 			AE_CAREER_READ_OK);
 		CHECK(again.newer);
 		EQ(again.social_count, 1);

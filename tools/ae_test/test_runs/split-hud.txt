@@ -1,0 +1,82 @@
+# rc8 SPLIT SCREEN HUD and SPLIT SCREEN FOV (each player's own, in their ae.toml): two players side by side on a screen
+# shape of any width (display.split_two_players side_by_side puts each view at the screen's full height). A setup line
+# sets player 1's value for the run (the left view, yours); player 2's view keeps the default, so the right view is the
+# comparison. HUD STYLE AE and CLASSIC each.
+list split-hud
+revision 1
+title SPLIT SCREEN HUD, SPLIT SCREEN FOV
+
+test hud-ae-one-player
+title HUD STYLE AE: SAME AS ONE PLAYER (left view)
+setup config display.split_hud one_player
+check Left view: ammo, shield and sensor at one player's size
+check Right view keeps the small HUD, for comparison
+check Medals and marks on the left are one player's size
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+
+test hud-classic-one-player
+title HUD STYLE CLASSIC: SAME AS ONE PLAYER (left view)
+setup config display.hud_style classic
+setup config display.split_hud one_player
+check Left view: the one-player meters, sensor and weapon HUD
+check Right view keeps the small HUD, for comparison
+check Pick up a weapon: the message is in the larger font
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+
+test hud-compact-default
+title SPLIT SCREEN HUD at COMPACT (the default), AE
+check Both views draw the small HUD, as before this setting
+check The reticle and the weapon HUD are as they were
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+
+test hud-top-bottom
+title SAME AS ONE PLAYER, top and bottom stays compact
+setup config display.split_hud one_player
+check Two views one above the other: both draw the small HUD
+check The HUD is whole in each 240 tall view
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players top_and_bottom
+players 2
+
+test fov-split-own
+title SPLIT SCREEN FOV 120 (left view), FOV 90
+setup config display.fov 90
+setup config display.split_fov 120
+check Left view shows more of the world than the right view
+check The weapon is drawn whole on the foot of the view
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+set display.split_two_players side_by_side
+players 2
+
+test fov-split-one-player
+title SPLIT SCREEN FOV is not used with one player
+setup config display.fov 90
+setup config display.split_fov 120
+check The view is FOV 90: not wider than the FOV 90 test
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 0
+players 1
+
+test hud-fov-rows
+title The two rows in SETTINGS
+check VIEW: SPLIT SCREEN FOV is right under FOV
+check HUD: SPLIT SCREEN HUD is right under COMPACT HUD
+check SAME AS FOV and COMPACT are the first values
+menus

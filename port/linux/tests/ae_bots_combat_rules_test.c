@@ -618,6 +618,13 @@ static void test_friendly_fire(void)
 		10.0f, 0.0f, 0.0f));
 	CHECK(ae_bots_combat_grenade_near_teammate(10.0f, 3.0f, 0.0f, 12.0f, 4.0f, 0.0f));
 	CHECK(!ae_bots_combat_grenade_near_teammate(10.0f, 3.0f, 0.0f, 14.0f, 4.0f, 0.0f));
+	/* (a teammate within AE_BOTS_GRENADE_PATH_NEAR of a throw's line, between the thrower and the landing, is in its path: the
+	thrower behind a player who stands between it and the enemy; one beside the thrower, behind it or past the landing is not) */
+	CHECK(ae_bots_combat_grenade_path_near(0.0f, 0.0f, 0.0f, 3.0f, 0.5f, 0.0f, 12.0f, 0.0f, 0.0f));
+	CHECK(ae_bots_combat_grenade_path_near(0.0f, 0.0f, 0.6f, 6.0f, -0.9f, 0.0f, 12.0f, 0.0f, 0.0f));
+	CHECK(!ae_bots_combat_grenade_path_near(0.0f, 0.0f, 0.0f, 3.0f, 2.0f, 0.0f, 12.0f, 0.0f, 0.0f));
+	CHECK(!ae_bots_combat_grenade_path_near(0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 0.0f, 12.0f, 0.0f, 0.0f));
+	CHECK(!ae_bots_combat_grenade_path_near(0.0f, 0.0f, 0.0f, 13.0f, 0.0f, 0.0f, 12.0f, 0.0f, 0.0f));
 }
 
 static void test_crouch_jump(void)

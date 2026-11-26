@@ -1,121 +1,144 @@
-"""AE's COMMUNITY SERVICES page (debug.ae_test_screen 37; the page the first start asks, ae_screen_community.c) in
-real games, headless, through the ae_test harness, in tools/test_ae_game_options.py's pattern:
-
-- the first look (DECLINE focused) at 1080p 100 % and 130 %, 4:3; ACCEPT focused; the row turned ON;
-- DECLINE, ACCEPT, B and START answer once each, the answer written (the log's "community services:" line) and the
-  page closed; the row's value goes with ACCEPT only; a press in the first half second takes nothing;
-- the page keeps its words on the screen (no cut text) and has no focus of its own in the right column.
-
-Runs only when asked ($AE_MENUS_BUILD and the harness's config); each game is about 30 s:
-
-    AE_MENUS_BUILD=$PWD/build/linux64 python3 -m pytest -q tools/test_ae_community.py
-    AE_MENUS_BUILD=$PWD/build/linux64 python3 tools/test_ae_community.py      (the frames alone)
-"""
-import importlib.util
-import shutil
-import sys
+"""The daily challenge's community code (port/linux/game/community.c, port/linux/src/community_net.c) sends nothing unless
+the player turned it on. Content Evolved defaults community.enabled to true; Arena Evolved's defaults are false, and a
+request needs both the setting and the community services' consent. These checks read the sources, since the game's units
+need the engine."""
+import re
 from pathlib import Path
 
-import pytest
-
-HERE = Path(__file__).resolve().parent
-_spec = importlib.util.spec_from_file_location("ae_community_menus", HERE / "test_ae_menus.py")
-menus = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(menus)
-
-EXIT_AFTER = 24
-SCREEN = 37
-# name, window, UI SCALE, the presses (after the lead-in: one a second)
-CASES = (
-    ("first", "1920x1080", 100, ("wait",)),
-    ("first-130", "1920x1080", 130, ("wait",)),
-    ("first-4x3", "1440x1080", 100, ("wait",)),
-    ("accept-focused", "1920x1080", 100, ("pad:right",)),
-    # (up to the row, A: ON)
-    ("list-on", "1920x1080", 100, ("pad:up", "pad:a")),
-    ("list-on-accept", "1920x1080", 100, ("pad:up", "pad:a", "pad:down", "pad:right")),
-    ("decline", "1920x1080", 100, ("pad:a", "wait")),
-    ("accept", "1920x1080", 100, ("pad:right", "pad:a", "wait")),
-    # (the row ON, then DECLINE: nothing listed)
-    ("decline-list-on", "1920x1080", 100, ("pad:up", "pad:a", "pad:down", "pad:a", "wait")),
-    ("accept-list-on", "1920x1080", 100, ("pad:up", "pad:a", "pad:down", "pad:right", "pad:a", "wait")),
-    ("back", "1920x1080", 100, ("pad:b", "wait")),
-    ("start", "1920x1080", 100, ("pad:start", "wait")),
-)
+ROOT = Path(__file__).resolve().parent.parent
+CONFIG = (ROOT / "port/linux/src/port_config.c").read_text()
+NET = (ROOT / "port/linux/src/community_net.c").read_text()
+NET_H = (ROOT / "port/linux/src/community_net.h").read_text()
+GAME = (ROOT / "port/linux/game/community.c").read_text()
+MAIN = (ROOT / "source/main/main.c").read_text()
 
 
-def play(cfg, out, name, window, scale, presses):
-    return menus.play(cfg, out, name, views=SCREEN, window=window, env={"HALO_ARENA_MENUS_SCALE": str(scale)}, shots=8,
-                      exit_after=EXIT_AFTER, test_input=menus.menu_input(*presses))
+def row(name):
+    match = re.search(r'\{ "%s", (_config_\w+), ("(?:[^"\\]|\\.)*"), ' % re.escape(name), CONFIG)
+    assert match, name
+    return match.group(1), match.group(2)
 
 
-def run_cases(cfg, out, only=()):
-    runs = {}
-    for name, window, scale, presses in CASES:
-        if only and name not in only:
-            continue
-        result, text, pngs = play(cfg, out, name, window, scale, presses)
-        frame = None
-        if pngs:
-            frame = out / f"{name}.png"
-            frame.write_bytes(pngs[-1].read_bytes())
-        shutil.rmtree(out / name / "shots", ignore_errors=True)
-        runs[name] = (result, text, frame)
-    return runs
+def test_community_defaults_are_off():
+    assert row("community.enabled") == ("_config_boolean", '"false"')
+    assert row("community.upload_scores") == ("_config_boolean", '"false"')
+    assert row("community.key") == ("_config_string", '"\\"\\""')
+    assert row("community.custom_server") == ("_config_string", '"\\"\\""')
+    assert row("game.daily_challenge") == ("_config_boolean", '"false"')
 
 
-@pytest.fixture(scope="module")
-def cfg():
-    c = menus.config()
-    if not c:
-        pytest.skip("needs the ae_test harness config (data_dir with maps) and a built game ($AE_MENUS_BUILD)")
-    return c
+def test_a_request_needs_the_setting_and_the_consent():
+    enabled = re.search(r"int community_net_enabled\(void\)\s*\{(.*?)\n\}", NET, re.S).group(1)
+    assert 'config_boolean("community.enabled")' in enabled and "ae_community_services_on()" in enabled
+    send = re.search(r"int community_net_send\(.*?\n\}", NET, re.S).group(0)
+    assert send.index("community_net_enabled()") < send.index("community_net_key_for(")
+    assert send.index("community_net_enabled()") < send.index("community_net_start(")
+    # the install's key is made only inside a request that passed the check above
+    assert NET.count("community_net_key(") == 2
 
 
-@pytest.fixture(scope="module")
-def runs(cfg):
-    return run_cases(cfg, menus.out_dir(cfg, "community"))
+def test_only_the_community_server_is_asked():
+    assert "community_net_get" not in NET and "community_net_get" not in GAME
+    assert "api.github.com" not in GAME and "NEWS_URL" not in GAME
+    assert set(re.findall(r"https://[a-z.]+", NET + NET_H)) <= {"https://", "https://oceapi.watanoge.com", "https://example.com"}
 
 
-def answers(text):
-    return [line.split("community services: ", 1)[1] for line in text.splitlines()
-            if "community services: USE COMMUNITY" in line or "community services: NOT NOW" in line]
+def test_no_personal_data_in_a_url():
+    paths = re.findall(r'snprintf\(path, sizeof\(path\), ("[^"]*")(.*?)\);', GAME)
+    assert paths
+    for text, arguments in paths:
+        assert "name" not in arguments and "player" not in arguments, text
 
 
-@pytest.mark.parametrize("name", ["first", "first-130", "first-4x3", "accept-focused", "list-on", "list-on-accept"])
-def test_the_page_opens_and_asks_nothing_by_itself(runs, name):
-    result, text, frame = runs[name]
-    assert "ae community: open" in text
-    assert frame is not None
-    assert not answers(text)
+def test_a_challenge_never_goes_on_into_multiplayer():
+    update = re.search(r"void community_update\(boolean main_menu\)(.*)", GAME, re.S).group(1)
+    assert "_scenario_type_solo" in update and "config_overrides_clear()" in update
 
 
-@pytest.mark.parametrize("name, line", [
-    ("decline", "NOT NOW (list hosted games off"),
-    ("accept", "USE COMMUNITY SERVICES (list hosted games off"),
-    ("decline-list-on", "NOT NOW (list hosted games off"),
-    ("accept-list-on", "USE COMMUNITY SERVICES (list hosted games on"),
-    ("back", "NOT NOW (list hosted games off"),
-    ("start", "NOT NOW (list hosted games off"),
-])
-def test_answers_are_written_once_and_the_page_closes(runs, name, line):
-    result, text, frame = runs[name]
-    found = answers(text)
-    assert len(found) == 1, found
-    assert found[0].startswith(line), found
-    assert "ae community: closed" in text
+def test_main_hooks_are_inert_without_a_challenge():
+    assert "community_challenge_running()" in MAIN and "community_update(main_globals.main_menu_scenario_loaded)" in MAIN
 
 
-def test_the_log_names_the_answer(runs):
-    assert "ae community: answered decline (list games I host: on)" in runs["decline-list-on"][1]
-    assert "ae community: answered accept (list games I host: on)" in runs["accept-list-on"][1]
+SKULLS = (ROOT / "port/linux/game/skulls.c").read_text()
 
 
-if __name__ == "__main__":
-    c = menus.config()
-    if not c:
-        sys.exit("needs $AE_MENUS_BUILD and the harness config")
-    only = tuple(sys.argv[1:])
-    folder = menus.out_dir(c, "community")
-    for name, (result, text, frame) in run_cases(c, folder, only).items():
-        print(name, frame, answers(text))
+def test_a_challenge_sets_only_its_own_keys_and_the_progress_locally():
+    reader = re.search(r"static void challenge_read\(.*?\n\}\n", GAME, re.S)
+    body = reader.group(0) if reader else GAME
+    assert "ae_daily_challenge_key_allowed(name)" in body
+    assert 'strncmp(name, "game.skulls"' not in body and 'strncmp(name, "game.randomizer"' not in body
+    for key, value in (("unlock_mode", "play"), ("all_unlocked", "true"), ("instant_unlock", "false")):
+        assert 'local_setting("game.skulls_%s", "%s");' % (key, value) in body
+
+
+def test_an_overridden_setting_is_never_written():
+    write = re.search(r"int config_write\(const char \*name, const char \*value\)\n\{.*?\n\}\n", CONFIG, re.S).group(0)
+    assert "config_write_overridden(index, name)" in write
+    helper = re.search(r"static int config_write_overridden\(.*?\n", CONFIG).group(0)
+    assert "config_overridden[index]" in helper and "return 1" in helper and "told[index]" in helper
+    # the refusal comes before anything is written
+    assert write.index("config_write_overridden") < write.index("config_write_file")
+
+
+def test_no_skull_progress_is_written_during_a_challenge():
+    keep = re.search(r"static void skulls_keep\(.*?\n\}\n", SKULLS, re.S).group(0)
+    assert keep.index("community_challenge_running()") < keep.index("config_write")
+    mode = re.search(r"int skulls_unlock_mode\(void\)\n\{.*?\n\}\n", SKULLS, re.S).group(0)
+    assert "!community_challenge_running() && config_write" in mode
+    # these are the only writes of skull progress in skulls.c
+    writes = re.findall(r'config_write\("([a-z_.]+)"', SKULLS)
+    assert sorted(set(writes)) == ["game.skulls_all_unlocked", "game.skulls_unlock_mode", "game.skulls_unlocked"]
+
+
+def test_a_custom_server_never_gets_the_default_servers_key():
+    send = re.search(r"int community_net_send\(.*?\n\}\n", NET, re.S).group(0)
+    assert "community_net_key_for(server, key, sizeof(key))" in send and "community_net_key(key" not in send
+    derive = re.search(r"static int community_net_key_for\(.*?\n\}\n", NET, re.S).group(0)
+    # the install's key goes only where the server is the default one; the rest get an HMAC of the key and the address
+    assert derive.index("COMMUNITY_NET_DEFAULT_SERVER") < derive.index("p2p_hmac_sha256")
+    assert "snprintf(key, size, \"%s\", install)" in derive.split("p2p_hmac_sha256")[0]
+    assert "server" in derive.split("p2p_hmac_sha256")[0].split("message")[-1]
+    # the headers hold the longest key, the profile's part and the content type
+    assert len(re.findall(r"char headers\[256\];", NET)) == 2
+
+
+def test_a_request_has_a_total_deadline_and_takes_the_tls_lock_once():
+    make = re.search(r"static int community_net_make\(.*?\n\}\n", NET, re.S).group(0)
+    assert "#define COMMUNITY_NET_DEADLINE_MILLISECONDS 15000" in NET
+    # update_https_request takes the Mbed TLS lock itself (ae_https_guard.c, not re-entrant): the request never holds it too
+    assert "posix_browser_lock()" not in make and "posix_browser_unlock()" not in make
+    guard = (ROOT / "port/linux/src/ae_https_guard.c").read_text()
+    assert "posix_browser_lock();" in guard
+    assert make.index("update_https_deadline(COMMUNITY_NET_DEADLINE_MILLISECONDS)") < make.index("update_https_request(") < \
+        make.index("update_https_deadline(0)")
+    posix = (ROOT / "port/linux/src/posix_update.c").read_text()
+    fill = re.search(r"static int connection_fill\(.*?\n\}\n", posix, re.S).group(0)
+    assert "wait_milliseconds()" in fill and "return -1" in fill.split("wait_milliseconds()")[1][:200]
+    assert "net_connect(&connection->net, host, port)" in posix and "request_deadline ? connect_within_deadline" in posix
+
+
+def test_a_challenge_ends_at_the_first_map_that_is_not_its_own():
+    game = (ROOT / "source/game/game.c").read_text()
+    load = re.search(r"boolean game_load\(.*?\n\}\n", game, re.S).group(0)
+    assert "community_map_loading(options->map_name); } /* AE hook */" in load
+    loading = re.search(r"void community_map_loading\(.*?\n\}\n", GAME, re.S).group(0)
+    assert "ae_daily_map_keeps_settings(key, community.running_challenge.level)" in loading
+    assert "config_overrides_clear();" in loading and "community.running = FALSE;" in loading
+    # a hosted lobby keeps them past the menus only once the level was played
+    update = re.search(r"void community_update\(boolean main_menu\)\n\{.*?\n\}\n", GAME, re.S).group(0)
+    assert "global_network_game_server_get() && community.running_loaded" in update
+
+
+def test_a_servers_text_is_checked_before_it_goes_back_into_a_request():
+    read = re.search(r"static void challenge_read\(.*?\n\}\n", GAME, re.S).group(0)
+    assert "ae_daily_day_valid(challenge->day)" in read
+    assert "skull_of_key(challenge->skulls[challenge->skull_count]) != NONE" in read
+    history = re.search(r"static void history_read\(.*?\n\}\n", GAME, re.S).group(0)
+    assert "ae_daily_day_valid(day->day)" in history
+    # \u takes exactly four hex digits, no strlen of the rest of the answer for each
+    assert "strlen(value) >= 5" not in GAME and "isxdigit((unsigned char)value[4])" in GAME
+    # dates from a server are clamped before the arithmetic
+    civil = re.search(r"static long days_from_civil\(.*?\n\}\n", GAME, re.S).group(0)
+    assert "PIN(year, 2000, 2100)" in civil
+    iso = re.search(r"static long long iso_seconds\(.*?\n\}\n", GAME, re.S).group(0)
+    assert "hour > 23" in iso

@@ -3199,6 +3199,9 @@ void p2p_hosting_invite_announced(const char *invite)
 	pthread_mutex_unlock(&p2p_lock);
 }
 
+/* (the party leader's: a member left, so the invite the party was told is replaced; the game's players stay, only the token is new) */
+void p2p_hosting_rotate_invite(void) { pthread_mutex_lock(&p2p_lock); p2p_new_invite(); pthread_mutex_unlock(&p2p_lock); } /* AE hook */
+
 #endif
 /* (p2p.h) */
 const char *p2p_invite_log_text(const char *invite, char *text, int size)

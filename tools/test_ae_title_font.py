@@ -41,9 +41,12 @@ def tables(path):
     return {tag: bytes(reader[tag]) for tag in reader.keys()}
 
 
-def blanked(tag, data):
+HEAD_CREATED = ((20, 28),)
+
+
+def blanked(tag, data, more=()):
     data = bytearray(data)
-    for start, end in BLANK.get(tag, ()):
+    for start, end in (*BLANK.get(tag, ()), *more):
         data[start:end] = bytes(end - start)
     return bytes(data)
 
@@ -77,6 +80,7 @@ def test_build_is_current(tmp_path):
     committed = tables(FONT)
     assert sorted(built) == sorted(committed)
     for tag in committed:
-        expected = blanked(tag, committed[tag]) if tag == "head" else committed[tag]
-        got = blanked(tag, built[tag]) if tag == "head" else built[tag]
+        # (head's created stamp too: fontTools reads a stamp this low as a Unix time in newer releases, so the rebuilt font's differs)
+        expected = blanked(tag, committed[tag], HEAD_CREATED) if tag == "head" else committed[tag]
+        got = blanked(tag, built[tag], HEAD_CREATED) if tag == "head" else built[tag]
         assert got == expected, f"{tag} differs: run python3 tools/title_font.py"

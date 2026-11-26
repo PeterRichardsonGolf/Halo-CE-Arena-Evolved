@@ -32,6 +32,17 @@ Its log: the glue's ("ae campaign: ..."), "ae campaign: open (<profile>)".
 #include "ae_input.h"
 #include "ae_screen_campaign.h"
 #include "ae_screen_coop_lobby.h"
+#include "ae_screen_coop_options.h"
+#include "ae_screen_leaderboard.h"
+#include "ae_screen_saved_games.h"
+#include "ae_screen_scoring.h"
+#include "ae_screen_randomizer.h"
+#include "ae_screen_skulls.h"
+#include "ae_glue_pve_menus.h"
+#include "ae_pve_menus_rules.h"
+#include "ae_pve_menus_ui.h"
+#include "ae_pve_score_menus.h"
+#include "halo_skulls.h"
 #include "ae_screen_lobby_profile.h"
 #include "ae_screen_main_menu.h"
 #include "ae_setup_flow.h"
@@ -49,7 +60,8 @@ enum
 	CAMPAIGN_HIT = 0x7A00,
 	HIT_ROWS = CAMPAIGN_HIT + 1, HIT_PROMPTS, HIT_SIDE, HIT_CARDS, HIT_PARTY
 };
-enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_CONTINUE = AE_FLOW_ROW_OWN, ROW_COOP, ROW_LEVEL, ROW_PICK, ROW_MISSION, ROW_NOTE, ROW_COMPANIONS, ROW_SQUAD_GEAR, ROW_AE_WEAPONS, ROW_SKIP_TRAINING, ROW_PLAYER_DOWN };
+enum { ROW_HEADER = AE_FLOW_ROW_HEADER, ROW_CONTINUE = AE_FLOW_ROW_OWN, ROW_COOP, ROW_LEVEL, ROW_PICK, ROW_MISSION, ROW_NOTE, ROW_COMPANIONS, ROW_SQUAD_GEAR, ROW_AE_WEAPONS, ROW_SKIP_TRAINING, ROW_PLAYER_DOWN, ROW_DOOR_STACK,
+	ROW_SKULLS, ROW_SCORING, ROW_COOP_OPTIONS, ROW_SAVED_GAMES, ROW_RANDOMIZER };
 
 /* the campaign CAMPAIGN's picker shows first: the stock one, the one with a saved game */
 #define STOCK_TITLE "HALO: COMBAT EVOLVED"
@@ -65,8 +77,11 @@ static struct
 	short level_of_row[AE_FLOW_ROWS];
 	char continue_text[48];
 	/* the SKIP TRAINING row's value and help, CONTINUE's help and case (ae_campaign_rows_rules.h), the dialog's body */
-	char skip_text[8], down_text[12], skip_help[160], continue_help[160], dialog_body[320];
+	char skip_text[8], down_text[12], door_text[12], skip_help[160], continue_help[160], dialog_body[320];
 	int continue_case;
+	/* how many profiles of this PC have a saved game (the SAVED GAMES row is there with one), the RULES rows' values */
+	int saves_count;
+	char skulls_text[16], randomizer_text[40], scoring_text[8], coop_text[12], saves_text[16];
 	/* a staged open: the SOLO ONLY dialog opens at the next frame, when the screen has its layout */
 	int dialog_pending;
 	struct ae_coop_seats seats;
@@ -262,6 +277,26 @@ static void down_step(void)
 	platform_log("ae campaign: player down %s", ae_campaign_rows_down_value(down_respawn()));
 }
 
+/* DOOR STACK: ON ORDER or EVERY DOOR (game.companions_door_stack), only while an AI SQUAD is asked for */
+static int door_every(void)
+{
+	char value[24];
+
+	return config_text("game.companions_door_stack", value, sizeof(value)) && ae_campaign_rows_door_is_every(value);
+}
+
+static void door_step(void)
+{
+	if (!squad_shown() || squad_blocked())
+	{
+		ae_sound_request(AE_SOUND_FAILURE, 0);
+		return;
+	}
+	config_write("game.companions_door_stack", ae_campaign_rows_door_next(door_every()));
+	ae_sound_request(AE_SOUND_CURSOR, 0);
+	platform_log("ae campaign: door stack %s", ae_campaign_rows_door_value(door_every()));
+}
+
 /* why SKIP TRAINING is dimmed (ae_campaign_rows_rules.h), AE_CAMPAIGN_ROWS_SKIP_LIVE when it is not */
 static int skip_cause(void)
 {
@@ -309,6 +344,11 @@ static void squad_rows_add(struct ae_flow_screen *flow, short *count, int stock)
 	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_PLAYER_DOWN, -1, "PLAYER DOWN", screen.down_text,
 		squad_cause ? ae_campaign_rows_squad_help(squad_cause) : ae_campaign_rows_down_help(down_respawn(), companions_count() > 0),
 		squad_cause ? ae_campaign_rows_squad_reason(squad_cause) : companions_count() ? NULL : ae_campaign_rows_down_reason() };
+	snprintf(screen.door_text, sizeof(screen.door_text), "%s", ae_campaign_rows_door_value(door_every()));
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_DOOR_STACK, -1, "DOOR STACK", screen.door_text,
+		squad_cause ? ae_campaign_rows_squad_help(squad_cause) : ae_campaign_rows_door_help(door_every(), companions_count() > 0),
+		squad_cause ? ae_campaign_rows_squad_reason(squad_cause) : companions_count() ? NULL : ae_campaign_rows_down_reason() };
 	if (stock)
 	{
 		screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
@@ -337,6 +377,39 @@ static void continue_text_make(char const *word, int number, short difficulty)
 static char const *continue_reason(void)
 {
 	return ae_coop_continue_allowed(&screen.seats) ? NULL : "SOLO ONLY";
+}
+
+/* the RULES group: SKULLS, SCORING and CO-OP OPTIONS, each a door to its own screen with its state as the value, and SAVED GAMES
+when this PC has one (every profile's saved game) */
+static void rules_rows_add(struct ae_flow_screen *flow, short *count)
+{
+	int skulls = config_boolean("game.skulls") ? ae_pve_menus_ui_skulls_on_count() : 0;
+
+	ae_pve_menus_skulls_value(skulls, screen.skulls_text, sizeof(screen.skulls_text));
+	snprintf(screen.scoring_text, sizeof(screen.scoring_text), "%s", config_boolean("game.campaign_score") ? "ON" : "OFF");
+	snprintf(screen.coop_text, sizeof(screen.coop_text), "%s", ae_screen_coop_options_standard() ? "STANDARD" : "CHANGED");
+	snprintf(screen.saves_text, sizeof(screen.saves_text), "%d", screen.saves_count);
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_HEADER, -1, "RULES", NULL, NULL, NULL };
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_SKULLS, -1, "SKULLS", screen.skulls_text,
+		"Skulls change the campaign's rules: harder enemies, fewer hints, and more. {A} opens the list.", NULL, 0, 0, 0, 1 };
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	ae_screen_randomizer_lobby_value(screen.randomizer_text, sizeof(screen.randomizer_text));
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_RANDOMIZER, -1, "RANDOMIZER", screen.randomizer_text,
+		"The randomizer swaps the mission's enemies, the weapons they carry and the weapons lying in it. {A} opens its setup.", NULL, 0, 0, 0, 1 };
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_SCORING, -1, "SCORING", screen.scoring_text,
+		"Score, time and medals for each mission. With others: each player's own score, or the team's. {A} opens it.", NULL, 0, 0, 0, 1 };
+	screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+	flow->rows[(*count)++] = (struct ae_flow_row){ ROW_COOP_OPTIONS, -1, "CO-OP OPTIONS", screen.coop_text,
+		"For games you host online: friendly fire, extra enemies and pickups, what happens when the whole team falls.", NULL, 0, 0, 0, 1 };
+	if (screen.saves_count > 0)
+	{
+		screen.level_of_row[*count] = screen.mission_of_row[*count] = -1;
+		flow->rows[(*count)++] = (struct ae_flow_row){ ROW_SAVED_GAMES, -1, "SAVED GAMES", screen.saves_text,
+			"Every profile's saved game on this PC. {A} opens the list; a pick makes it the one CONTINUE goes on from.", NULL, 0, 0, 0, 1 };
+	}
 }
 
 static void rows_make(void)
@@ -378,6 +451,7 @@ static void rows_make(void)
 			ae_coop_second(&screen.seats) >= 0 ? "A sends the last player away; a player's own pad B does too." :
 			"A adds a player on a pad (its START joins too, up to four); a pad's B leaves.", NULL, 0, 1 };
 		squad_rows_add(flow, &count, 0);
+		rules_rows_add(flow, &count);
 		screen.level_of_row[count] = screen.mission_of_row[count] = -1;
 		flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "MISSIONS", NULL, NULL, NULL };
 		for (mission = 0; mission < custom->count && count < AE_FLOW_ROWS - 1; mission++)
@@ -403,6 +477,7 @@ static void rows_make(void)
 		ae_coop_second(&screen.seats) >= 0 ? "A sends the last player away; a player's own pad B does too." :
 		"A adds a player on a pad (its START joins too, up to four); a pad's B leaves.", NULL, 0, 1 };
 	squad_rows_add(flow, &count, 1);
+	rules_rows_add(flow, &count);
 	screen.level_of_row[count] = screen.mission_of_row[count] = -1;
 	flow->rows[count++] = (struct ae_flow_row){ ROW_HEADER, -1, "LEVELS", NULL, NULL, NULL };
 	for (level = 0; level < AE_CAMPAIGN_LEVELS && count < AE_FLOW_ROWS; level++)
@@ -591,6 +666,53 @@ static int finished_count(struct ae_ws_campaign const *custom)
 	return count;
 }
 
+/* the facts under DIFFICULTY: the level's best run on this PC and its par time (a stock level), and the RULES in force; the y after */
+static float rules_side_draw(float x, float y, float width, short level)
+{
+	struct ae_flow_screen *flow = &screen.flow;
+	float minor = ae_size_minor(&flow->density), text = ae_size_text(&flow->density), line = ae_flow_u(flow, 34.0f);
+	char value[96], fact[96], number[24], time[24];
+	int skulls = config_boolean("game.skulls") ? ae_pve_menus_ui_skulls_on_count() : 0;
+
+	if (level >= 0)
+	{
+		struct ae_pve_run runs[AE_PVE_PROFILES];
+		int count = ae_pve_level_runs(level, runs, AE_PVE_PROFILES), each, mine = -1;
+		long par = ae_pve_score_par_seconds(ae_pve_level_short(level), screen.difficulty);
+
+		for (each = 0; each < count; each++)
+			if (runs[each].profile_index == ae_pve_player_profile())
+				mine = each;
+		if (mine >= 0)
+		{
+			ae_pve_menus_number_text(runs[mine].score, number, sizeof(number));
+			ae_pve_menus_time_text(runs[mine].seconds, time, sizeof(time));
+			snprintf(value, sizeof(value), "%s \xE2\x80\xA2 %s", number, time);
+		}
+		else
+			snprintf(value, sizeof(value), "NONE YET");
+		ae_draw_text(AE_FONT_BODY, minor, x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED, "BEST RUN");
+		ae_draw_text(AE_FONT_ROW, text, x + width, y - ae_flow_u(flow, 2.0f), AE_ALIGN_RIGHT, mine >= 0 ? AE_COLOR_TITLE : AE_COLOR_MUTED, value);
+		y += line;
+		ae_pve_menus_time_text(par, time, sizeof(time));
+		ae_draw_text(AE_FONT_BODY, minor, x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED, "PAR TIME");
+		ae_draw_text(AE_FONT_ROW, text, x + width, y - ae_flow_u(flow, 2.0f), AE_ALIGN_RIGHT, AE_COLOR_TITLE, time);
+		y += line;
+	}
+	ae_pve_menus_rules_fact(skulls, config_boolean("game.campaign_score"), fact, sizeof(fact));
+	/* (the randomizer, when on, heads the fact) */
+	if (config_boolean("game.randomizer"))
+	{
+		char joined[96];
+
+		snprintf(joined, sizeof(joined), "RANDOMIZER%s%s", strcmp(fact, "NONE") ? " \xE2\x80\xA2 " : "", strcmp(fact, "NONE") ? fact : "");
+		snprintf(fact, sizeof(fact), "%s", joined);
+	}
+	ae_draw_text(AE_FONT_BODY, minor, x, y, AE_ALIGN_LEFT, AE_COLOR_MUTED, "RULES");
+	ae_draw_text(AE_FONT_ROW, text, x + width, y - ae_flow_u(flow, 2.0f), AE_ALIGN_RIGHT, AE_COLOR_TITLE, fact);
+	return y + line + ae_flow_u(flow, 8.0f);
+}
+
 static void draw_side(void)
 {
 	struct ae_flow_screen *flow = &screen.flow;
@@ -674,6 +796,7 @@ static void draw_side(void)
 	row.flags = continue_focused() ? AE_ROW_STATUS : AE_ROW_FOCUSED;
 	y += ae_widget_row(d, x, y, width, &row, HIT_SIDE, 0) + gap;
 	y += ae_flow_u(flow, 18.0f);
+	y = rules_side_draw(x, y, width, custom ? -1 : level);
 	players_panel(flow, x, y, width);
 }
 
@@ -698,6 +821,10 @@ static void difficulty_step(short direction)
 {
 	short next = ae_value_step(AE_CAMPAIGN_DIFFICULTIES, screen.difficulty, direction);
 
+	/* (a door to a screen of its own: left / right do nothing) */
+	if (focused_kind() == ROW_SKULLS || focused_kind() == ROW_SCORING || focused_kind() == ROW_COOP_OPTIONS ||
+		focused_kind() == ROW_SAVED_GAMES || focused_kind() == ROW_RANDOMIZER)
+		return;
 	/* (on COMPANIONS, left / right change how many) */
 	if (focused_kind() == ROW_COMPANIONS)
 	{
@@ -722,6 +849,11 @@ static void difficulty_step(short direction)
 	if (focused_kind() == ROW_PLAYER_DOWN)
 	{
 		down_step();
+		return;
+	}
+	if (focused_kind() == ROW_DOOR_STACK)
+	{
+		door_step();
 		return;
 	}
 	/* (on the picker, left / right change the campaign) */
@@ -999,6 +1131,26 @@ static void solo_only_open(void)
 	ae_dialog_open(&spec, AE_OWNER_ANY);
 }
 
+/* the stock level the scoring panel speaks of: the focused one, else the saved game's, else the first; -1 for a Workshop campaign */
+static short panel_level(void)
+{
+	short level = focused_level();
+
+	if (screen.chosen >= 0)
+		return -1;
+	return level >= 0 ? level : screen.campaign.saved_level >= 0 ? screen.campaign.saved_level : 0;
+}
+
+/* a saved game picked on SAVED GAMES: the campaign is read again for the profile now player 1's */
+static void saved_picked(void)
+{
+	ae_campaign_read(&screen.campaign);
+	screen.difficulty = screen.campaign.difficulty >= 0 && screen.campaign.difficulty < AE_CAMPAIGN_DIFFICULTIES ?
+		screen.campaign.difficulty : screen.difficulty;
+	screen.saves_count = ae_screen_saved_games_count();
+	screen.flow.focus = 0;
+}
+
 static void accept(short row)
 {
 	struct ae_flow_row const *r;
@@ -1010,6 +1162,22 @@ static void accept(short row)
 	if (r->kind == ROW_COOP)
 	{
 		coop_row_accept();
+		return;
+	}
+	if (r->kind == ROW_SKULLS || r->kind == ROW_SCORING || r->kind == ROW_COOP_OPTIONS || r->kind == ROW_SAVED_GAMES ||
+		r->kind == ROW_RANDOMIZER)
+	{
+		ae_sound_request(AE_SOUND_FORWARD, 0);
+		if (r->kind == ROW_RANDOMIZER)
+			ae_screen_randomizer_open();
+		else if (r->kind == ROW_SKULLS)
+			ae_screen_skulls_open();
+		else if (r->kind == ROW_SCORING)
+			ae_screen_scoring_open(panel_level(), screen.difficulty);
+		else if (r->kind == ROW_COOP_OPTIONS)
+			ae_screen_coop_options_open("CAMPAIGN");
+		else
+			ae_screen_saved_games_open(saved_picked);
 		return;
 	}
 	if (r->kind == ROW_COMPANIONS)
@@ -1033,6 +1201,11 @@ static void accept(short row)
 	if (r->kind == ROW_PLAYER_DOWN)
 	{
 		down_step();
+		return;
+	}
+	if (r->kind == ROW_DOOR_STACK)
+	{
+		door_step();
 		return;
 	}
 	if (r->kind == ROW_PICK)
@@ -1136,11 +1309,16 @@ static void campaign_draw(struct ae_screen *instance)
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_A,
 			coop_focused() ? (ae_coop_second(&screen.seats) >= 0 ? "Remove a player" : screen.seats.adding ? "Cancel" :
 			"Add a player") : (focused_kind() == ROW_PICK || focused_kind() == ROW_COMPANIONS || focused_kind() == ROW_SQUAD_GEAR ||
-			focused_kind() == ROW_AE_WEAPONS || focused_kind() == ROW_SKIP_TRAINING || focused_kind() == ROW_PLAYER_DOWN) ? "Change" :
+			focused_kind() == ROW_AE_WEAPONS || focused_kind() == ROW_SKIP_TRAINING || focused_kind() == ROW_PLAYER_DOWN ||
+			focused_kind() == ROW_DOOR_STACK) ? "Change" :
+			(focused_kind() == ROW_SKULLS || focused_kind() == ROW_SCORING || focused_kind() == ROW_COOP_OPTIONS ||
+			focused_kind() == ROW_SAVED_GAMES || focused_kind() == ROW_RANDOMIZER) ? "Open" :
 			(continue_focused() && screen.continue_case == AE_CAMPAIGN_ROWS_CONTINUE_SOLO_ONLY) ? "Continue" : "Play", AE_ACTION_ACCEPT);
 	if (focused_level() >= 0)
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_X, "Host online", AE_ACTION_X);
-	if (!continue_focused())
+	if (focused_level() >= 0 && ae_screen_leaderboard_has_runs(focused_level()))
+		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_Y, "Leaderboard", AE_ACTION_Y);
+	else if (!continue_focused())
 		flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_Y, "Difficulty", AE_ACTION_Y);
 	flow->prompts[flow->prompt_count++] = ae_flow_prompt(AE_BUTTON_B, ae_string(AE_STR_BACK), AE_ACTION_BACK);
 	ae_flow_draw_prompts(flow);
@@ -1167,6 +1345,13 @@ static int campaign_handle(struct ae_screen *instance, struct ae_event const *ev
 		host_online();
 		return 1;
 	case AE_ACTION_Y:
+		/* (a level with a record on this PC: its leaderboard; difficulty goes with left / right) */
+		if (focused_level() >= 0 && ae_screen_leaderboard_has_runs(focused_level()))
+		{
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+			ae_screen_leaderboard_open(focused_level());
+			return 1;
+		}
 		if (continue_focused())
 		{
 			ae_sound_request(AE_SOUND_FAILURE, 0);
@@ -1264,6 +1449,7 @@ int ae_screen_campaign_open(void)
 	screen.flow.hit_rows = HIT_ROWS;
 	screen.flow.hit_prompts = HIT_PROMPTS;
 	ae_campaign_read(&screen.campaign);
+	screen.saves_count = ae_screen_saved_games_count();
 	screen.chosen = -1;
 	screen.workshop_count = ae_campaign_workshop_list(screen.workshop, AE_WS_CAMPAIGNS, screen.fault, sizeof(screen.fault),
 		&screen.fault_count);
@@ -1278,7 +1464,8 @@ int ae_screen_campaign_open(void)
 		screen.flow.rows[screen.flow.focus].kind == ROW_PICK ||
 		screen.flow.rows[screen.flow.focus].kind == ROW_COMPANIONS ||
 		screen.flow.rows[screen.flow.focus].kind == ROW_SQUAD_GEAR || screen.flow.rows[screen.flow.focus].kind == ROW_AE_WEAPONS ||
-		screen.flow.rows[screen.flow.focus].kind == ROW_SKIP_TRAINING || screen.flow.rows[screen.flow.focus].kind == ROW_PLAYER_DOWN);
+		screen.flow.rows[screen.flow.focus].kind == ROW_SKIP_TRAINING || screen.flow.rows[screen.flow.focus].kind == ROW_PLAYER_DOWN ||
+		screen.flow.rows[screen.flow.focus].kind == ROW_DOOR_STACK);
 		screen.flow.focus++)
 		;
 	platform_log("ae campaign: open (%s)", screen.campaign.have_profile ? screen.campaign.profile : "no profile");
@@ -1353,6 +1540,8 @@ void ae_screen_campaign_stage_more(int save_level, int save_difficulty, char con
 		focus_kind(ROW_COMPANIONS);
 	else if (!strcmp(focus, "down"))
 		focus_kind(ROW_PLAYER_DOWN);
+	else if (!strcmp(focus, "door"))
+		focus_kind(ROW_DOOR_STACK);
 	else if (!strcmp(focus, "dialog"))
 	{
 		focus_kind(ROW_CONTINUE);

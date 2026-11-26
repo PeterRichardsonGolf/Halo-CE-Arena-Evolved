@@ -388,8 +388,46 @@ static void pin_test(void)
 	CHECK(ae_prompt_place_pinned(&in, &x, &y) == AE_PROMPT_NONE);
 }
 
+static void look_place_test(void)
+{
+	struct ae_prompt_in in;
+	float x, y;
+
+	/* the look: unknown text is FULL; each look fades more */
+	CHECK(ae_prompt_look_from_text(NULL) == AE_PROMPT_LOOK_FULL);
+	CHECK(ae_prompt_look_from_text("full") == AE_PROMPT_LOOK_FULL);
+	CHECK(ae_prompt_look_from_text("junk") == AE_PROMPT_LOOK_FULL);
+	CHECK(ae_prompt_look_from_text("soft") == AE_PROMPT_LOOK_SOFT);
+	CHECK(ae_prompt_look_from_text("faint") == AE_PROMPT_LOOK_FAINT);
+	NEAR(ae_prompt_look_alpha(AE_PROMPT_LOOK_FULL), 1.0, 0.0001);
+	CHECK(ae_prompt_look_alpha(AE_PROMPT_LOOK_SOFT) < 1.0f);
+	CHECK(ae_prompt_look_alpha(AE_PROMPT_LOOK_FAINT) < ae_prompt_look_alpha(AE_PROMPT_LOOK_SOFT));
+	CHECK(ae_prompt_look_alpha(AE_PROMPT_LOOK_FAINT) > 0.0f);
+	/* the place: BESIDE unless "below" */
+	CHECK(ae_prompt_place_from_text(NULL) == AE_PROMPT_PLACE_BESIDE);
+	CHECK(ae_prompt_place_from_text("beside") == AE_PROMPT_PLACE_BESIDE);
+	CHECK(ae_prompt_place_from_text("below") == AE_PROMPT_PLACE_BELOW);
+	/* below: centred on the middle, its top at the zone's foot, whatever the target does */
+	base(&in, 1.0f);
+	box(&in.target, 940.0f, 520.0f, 980.0f, 560.0f);
+	CHECK(ae_prompt_place_low(&in, &x, &y) == AE_PROMPT_BELOW);
+	NEAR(x + in.width / 2.0f, 960.0, 1.0);
+	NEAR(y, 540.0 + 66.0, 1.0);
+	box(&in.target, 100.0f, 100.0f, 140.0f, 140.0f);
+	CHECK(ae_prompt_place_low(&in, &x, &y) == AE_PROMPT_BELOW && y >= 540.0f + 66.0f);
+	/* a text row there, or no room: none (the caller falls back) */
+	in.row_count = 1;
+	box(&in.rows[0], 0.0f, 600.0f, 1920.0f, 700.0f);
+	CHECK(ae_prompt_place_low(&in, &x, &y) == AE_PROMPT_NONE);
+	in.row_count = 0;
+	in.view_height = 150.0f;
+	CHECK(ae_prompt_place_low(&in, &x, &y) == AE_PROMPT_NONE);
+	CHECK(ae_prompt_place_low(NULL, &x, &y) == AE_PROMPT_NONE);
+}
+
 int main(void)
 {
+	look_place_test();
 	pin_test();
 	side_keep_test();
 	words_test();

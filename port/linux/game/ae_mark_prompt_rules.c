@@ -8,6 +8,7 @@ Pure rules for the AIM PROMPT (ae_mark_prompt_rules.h). No engine includes.
 #include "ae_mark_rules.h"
 
 #include <math.h>
+#include <string.h>
 #include <wchar.h>
 
 /* ---------- the words */
@@ -313,4 +314,50 @@ int ae_prompt_place(struct ae_prompt_in const *in, float *x, float *y)
 	*x = ox;
 	*y = oy;
 	return kind;
+}
+
+int ae_prompt_look_from_text(char const *text)
+{
+	if (text && !strcmp(text, "soft"))
+		return AE_PROMPT_LOOK_SOFT;
+	if (text && !strcmp(text, "faint"))
+		return AE_PROMPT_LOOK_FAINT;
+	return AE_PROMPT_LOOK_FULL;
+}
+
+float ae_prompt_look_alpha(int look)
+{
+	return look == AE_PROMPT_LOOK_FAINT ? 0.4f : look == AE_PROMPT_LOOK_SOFT ? 0.65f : 1.0f;
+}
+
+int ae_prompt_place_from_text(char const *text)
+{
+	return text && !strcmp(text, "below") ? AE_PROMPT_PLACE_BELOW : AE_PROMPT_PLACE_BESIDE;
+}
+
+int ae_prompt_place_low(struct ae_prompt_in const *in, float *x, float *y)
+{
+	float px, py, ox, oy;
+	int rows;
+
+	if (!in || !(in->scale > 0.0f) || !(in->width > 0.0f) || !(in->height > 0.0f) || !(in->view_width > 0.0f) ||
+		!(in->view_height > 0.0f))
+	{
+		return AE_PROMPT_NONE;
+	}
+	rows = in->row_count < 0 ? 0 : in->row_count > AE_PROMPT_ROWS_MOST ? AE_PROMPT_ROWS_MOST : in->row_count;
+	px = floorf(in->view_width / 2.0f - in->width / 2.0f + 0.5f);
+	py = ceilf(in->view_height / 2.0f + AE_PROMPT_ZONE * in->scale);
+	/* (the target's box is not tested: the row stands under the reticle whatever the target does) */
+	{
+		struct ae_prompt_in free_of_target = *in;
+
+		free_of_target.target.x0 = free_of_target.target.x1 = -1.0e6f;
+		free_of_target.target.y0 = free_of_target.target.y1 = -1.0e6f;
+		if (fit(&free_of_target, rows, px, py, &ox, &oy) != FIT_OK)
+			return AE_PROMPT_NONE;
+	}
+	*x = ox;
+	*y = oy;
+	return AE_PROMPT_BELOW;
 }
