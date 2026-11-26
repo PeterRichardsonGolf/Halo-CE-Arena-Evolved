@@ -4,6 +4,14 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## 1.0.0-rc8.1 - 2026-11-26
+
+### Fixed
+
+- A dedicated server behind a firewall that drops connections to Steam, instead of refusing them, did not show in the
+  server list: a request to Steam made at start waited minutes to connect and held up the server's listing. Every
+  connection now gives up after 8 seconds when nothing else limits it.
+
 ## 1.0.0-rc8 - 2026-11-25
 
 ### Added

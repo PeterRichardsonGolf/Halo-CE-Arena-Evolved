@@ -228,7 +228,7 @@ def make(serial: int, issued: int = None, previous: dict = None, rows: dict = No
 
 
 def openssl() -> str:
-    """an openssl command that does Ed25519 (OpenSSL 3; macOS's LibreSSL does not)"""
+    """an openssl command that does Ed25519 (OpenSSL 3 or later; macOS's LibreSSL does not)"""
     candidates = [os.environ["OPENSSL"]] if os.environ.get("OPENSSL") else \
         ["openssl", "/opt/homebrew/opt/openssl@3/bin/openssl", "/usr/local/opt/openssl@3/bin/openssl"]
     for candidate in candidates:
@@ -236,9 +236,11 @@ def openssl() -> str:
         if not path:
             continue
         version = subprocess.run([path, "version"], capture_output=True, text=True).stdout
-        if version.startswith("OpenSSL 3"):
+        words = version.split()
+        if len(words) > 1 and words[0] == "OpenSSL" and words[1].split(".")[0].isdigit() and \
+                int(words[1].split(".")[0]) >= 3:
             return path
-    raise SystemExit("needs OpenSSL 3's openssl command (or $OPENSSL naming one)")
+    raise SystemExit("needs OpenSSL 3 or later's openssl command (or $OPENSSL naming one)")
 
 
 def run(arguments, **kwargs) -> bytes:

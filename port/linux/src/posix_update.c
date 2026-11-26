@@ -132,11 +132,30 @@ static int connect_within_deadline(mbedtls_net_context *net, const char *host, c
 	return connected ? 0 : MBEDTLS_ERR_NET_CONNECT_FAILED;
 }
 
-/* mbedtls_net_connect, within the deadline when there is one */
+/* the longest a connect takes when the caller set no deadline: a host whose packets are dropped (a firewall that drops
+instead of refusing) would otherwise keep the connect waiting for the system's own minutes, and with it the TLS lock
+update_https_request holds (ae_https_guard.c), so every other request (a server's listing on the master servers) waits */
+#define CONNECT_MILLISECONDS 8000
+
+/* the connection made within the caller's deadline, or within CONNECT_MILLISECONDS when there is none (the rest of that
+request then has no total limit, as before: only each read's TIMEOUT_MILLISECONDS) */
 static int net_connect(mbedtls_net_context *net, const char *host, const char *port)
 {
-	return request_deadline ? connect_within_deadline(net, host, port) :
-		mbedtls_net_connect(net, host, port, MBEDTLS_NET_PROTO_TCP);
+	int result;
+
+	if (request_deadline)
+		return connect_within_deadline(net, host, port);
+	request_deadline = clock_milliseconds() + CONNECT_MILLISECONDS;
+	result = connect_within_deadline(net, host, port);
+	request_deadline = 0;
+	if (result == 0)
+	{
+		/* (no send limit after the connect: connect_within_deadline set it to what was left of the connect's time) */
+		struct timeval none = { 0, 0 };
+
+		setsockopt(net->fd, SOL_SOCKET, SO_SNDTIMEO, &none, sizeof(none));
+	}
+	return result;
 }
 
 /* where distributions keep their certificate authorities */

@@ -36,6 +36,7 @@ import http.server
 import json
 import os
 import shutil
+import socket
 import ssl
 import stat
 import subprocess
@@ -544,3 +545,52 @@ def test_ae_link_refused(keys, builds, server, tmp_path):
     assert sorted(path.name for path in elsewhere.iterdir()) == ["ae_battle_rifle.aepack"]
     # (the download unpacked in update.partial/ stays until the next start's clean-up)
     assert {name: value for name, value in tree(folder).items() if not name.startswith("update.partial/")} == before
+
+
+def test_a_dropped_connect_ends(keys, builds, server, tmp_path):
+    """(AE) a server whose packets are dropped, not refused (a firewall that drops): the update check's connect still ends
+    in seconds, not the system's minutes. A request holds the TLS lock every other request waits on (ae_https_guard.c), so a
+    connect left waiting kept a dedicated server off the master servers' list. Here a listener whose queue is full stands
+    in for the firewall: the kernel drops the next connection's SYN."""
+    if not sys.platform.startswith("linux"):
+        pytest.skip("the full accept queue drops SYNs on Linux")
+    listener = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    listener.bind(("127.0.0.1", 0))
+    listener.listen(0)
+    port = listener.getsockname()[1]
+    fillers = []
+    for _ in range(4):
+        filler = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        filler.setblocking(False)
+        filler.connect_ex(("127.0.0.1", port))
+        fillers.append(filler)
+    time.sleep(0.5)
+    # (the queue is full: one more connect from here stays waiting, as behind a dropping firewall)
+    probe = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    probe.settimeout(2)
+    try:
+        probe.connect(("127.0.0.1", port))
+        pytest.skip("this kernel answered past a full accept queue: no dropped SYN to test with")
+    except (socket.timeout, TimeoutError):
+        pass
+    finally:
+        probe.close()
+    folder = install_ae(tmp_path, builds)
+    home = tmp_path / "home"
+    (home / "saves").mkdir(parents=True, exist_ok=True)
+    environment = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(home),
+                   "HALO_SAVE_ROOT": str(home / "saves"), "HALO_UPDATE_TEST_SERVER": f"https://127.0.0.1:{port}",
+                   "HALO_UPDATE_TEST_CA": str(server.authority), "HALO_UPDATE_TEST_LOG": str(tmp_path / "update.log")}
+    started = time.time()
+    try:
+        subprocess.run([str(folder / "halo")], cwd=folder, env=environment, timeout=60, capture_output=True)
+    finally:
+        for filler in fillers:
+            filler.close()
+        listener.close()
+    elapsed = time.time() - started
+    log = (tmp_path / "update.log").read_text()
+    # (the check reached the connect and gave up there, not before it)
+    assert "could not check for a new version" in log and "certificate authorities" not in log, log
+    # (the connect's own limit is CONNECT_MILLISECONDS, 8 s; the system's own wait is two minutes and more)
+    assert 5 < elapsed < 30, (elapsed, log)

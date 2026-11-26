@@ -114,7 +114,14 @@ def test_a_request_has_a_total_deadline_and_takes_the_tls_lock_once():
     posix = (ROOT / "port/linux/src/posix_update.c").read_text()
     fill = re.search(r"static int connection_fill\(.*?\n\}\n", posix, re.S).group(0)
     assert "wait_milliseconds()" in fill and "return -1" in fill.split("wait_milliseconds()")[1][:200]
-    assert "net_connect(&connection->net, host, port)" in posix and "request_deadline ? connect_within_deadline" in posix
+    assert "net_connect(&connection->net, host, port)" in posix
+    # every connect ends: within the caller's deadline, else within CONNECT_MILLISECONDS (a dropped connect must not keep
+    # the TLS lock for the system's minutes: a server's master listing waits on that lock)
+    connect = re.search(r"static int net_connect\(.*?\n\}\n", posix, re.S).group(0)
+    assert "mbedtls_net_connect" not in connect
+    assert connect.count("connect_within_deadline(net, host, port)") == 2
+    assert "request_deadline = clock_milliseconds() + CONNECT_MILLISECONDS;" in connect
+    assert re.search(r"#define CONNECT_MILLISECONDS (\d+)", posix) and int(re.search(r"#define CONNECT_MILLISECONDS (\d+)", posix).group(1)) <= 10000
 
 
 def test_a_challenge_ends_at_the_first_map_that_is_not_its_own():
