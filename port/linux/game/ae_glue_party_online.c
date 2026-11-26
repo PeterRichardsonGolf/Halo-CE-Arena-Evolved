@@ -14,6 +14,19 @@ See ae_glue_party_online.h.
 #include "ae_glue_steam_friends.h"
 #include "../src/ae_party_client.h"
 
+/* a decimal number (unsigned, 64-bit) and where it ends; the game's files build as C89 on macOS, where <stdlib.h> declares
+no strtoull */
+static unsigned long long read_decimal(const char *at, const char **end)
+{
+	unsigned long long value = 0;
+
+	while (*at >= '0' && *at <= '9')
+		value = value * 10 + (unsigned long long)(*at++ - '0');
+	if (end)
+		*end = at;
+	return value;
+}
+
 static int is(const char *word, const char *name)
 {
 	for (; *word && *name; word++, name++)
@@ -121,8 +134,8 @@ int ae_party_online_dev(struct ae_dev_cmd const *cmd, char *text, int size)
 
 			while (*at && count < AE_STEAM_FRIENDS_MAX)
 			{
-				char *end;
-				unsigned long long id = strtoull(at, &end, 10);
+				const char *end;
+				unsigned long long id = read_decimal(at, &end);
 
 				if (end == at)
 					break;
@@ -131,7 +144,7 @@ int ae_party_online_dev(struct ae_dev_cmd const *cmd, char *text, int size)
 				count++;
 				at = *end == ',' ? end + 1 : end;
 			}
-			ae_steam_friends_provide(strtoull(cmd->word[3], NULL, 10), friends, count);
+			ae_steam_friends_provide(read_decimal(cmd->word[3], NULL), friends, count);
 			snprintf(text, (size_t)size, "made-up Steam list: account %s, %d friends", cmd->word[3], count);
 			return 1;
 		}

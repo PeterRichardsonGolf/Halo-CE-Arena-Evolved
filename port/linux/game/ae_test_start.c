@@ -14,7 +14,17 @@ A campaign level's start point for TEST RUN tests. See ae_test_start.h.
 
 void platform_log(char const *format, ...);
 unsigned long system_milliseconds(void);
+#if defined(HALO_WEB) || defined(HALO_ANDROID)
+/* (the web build and the Android app have no program file of their own to read) */
+static int update_executable_path(char *path, int size)
+{
+	if (size > 0)
+		path[0] = 0;
+	return 0;
+}
+#else
 int update_executable_path(char *path, int size);
+#endif
 unsigned char player_ui_get_path_to_local_player_profile_directory(short local_player_index, char *path);
 /* game_state.h's */
 unsigned char game_state_port_write_live_to_persistent_storage(void);

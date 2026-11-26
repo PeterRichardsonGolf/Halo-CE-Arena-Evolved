@@ -50,7 +50,17 @@ const char *platform_data_root(void);
 void main_goto_main_menu(void);
 boolean main_menu_is_active(void);
 int posix_make_directory(const char *path);
+#if defined(HALO_WEB) || defined(HALO_ANDROID)
+/* (the web build and the Android app have no program file of their own to read) */
+static int update_executable_path(char *path, int size)
+{
+	if (size > 0)
+		path[0] = 0;
+	return 0;
+}
+#else
 int update_executable_path(char *path, int size);
+#endif
 /* ae_draw.h's: the next frame's boxes as JSON (the frame lint's), and the card's box as an overlay in them */
 void ae_draw_boxes_next_frame(const char *path);
 void ae_draw_boxes_overlay(const float box[4]);

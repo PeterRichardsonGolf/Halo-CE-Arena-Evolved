@@ -195,6 +195,11 @@ static void community_net_lock_take(void)
 /* one request made, the answer's body kept in the slot (status 0 and why in error when none came) */
 static int community_net_make(struct community_net_slot *slot)
 {
+#if defined(HALO_WEB) || defined(HALO_ANDROID)
+	/* (the web build and the Android app make no request of their own here yet: the challenge plays offline) */
+	snprintf(slot->error, sizeof(slot->error), "online boards are not in this build");
+	return 0;
+#else
 	struct update_response response;
 	int status;
 
@@ -212,6 +217,7 @@ static int community_net_make(struct community_net_slot *slot)
 		snprintf(slot->answer, (size_t)slot->answer_size, "%s", response.body);
 	free(response.body);
 	return response.status > 0 ? response.status : 0;
+#endif
 }
 
 static void *community_net_thread(void *context)

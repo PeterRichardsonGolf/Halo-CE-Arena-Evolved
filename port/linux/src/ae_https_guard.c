@@ -26,8 +26,9 @@ update_download and the player key's making, none of which call it).
 int ae_update_https_request_unlocked(const char *method, const char *url, const char *headers, const void *body,
 	unsigned long body_size, unsigned long maximum, struct update_response *response, char *error, int error_size);
 
-/* (the Windows and web builds have their own update_https_request: only posix_update.c's is renamed) */
-#if !defined(_WIN32) && !defined(__EMSCRIPTEN__)
+/* (the Windows build has its own update_https_request, and the web build and the Android app's guest have none: posix_update.c
+is not in them, and their callers ask their own platform. Only posix_update.c's is renamed) */
+#if !defined(_WIN32) && !defined(__EMSCRIPTEN__) && !defined(HALO_ARM64_GUEST)
 int update_https_request(const char *method, const char *url, const char *headers, const void *body, unsigned long body_size,
 	unsigned long maximum, struct update_response *response, char *error, int error_size)
 {
