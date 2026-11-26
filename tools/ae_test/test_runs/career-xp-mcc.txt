@@ -1,0 +1,64 @@
+# The career rank (30 ranks, 11 tours, from XP that never goes down), the skill rank per playlist and the daily / weekly challenges.
+# Every test opens on its exact scene from its setup lines (social career rank / xp / games / challenge / last / art, social exp,
+# menu career / challenges, social postgame / start). Plain look: no MCC pictures. The same scenes with MCC's pictures: list
+# career-xp-mcc, on a PC that has MCC.
+list career-xp-mcc
+revision 3
+requires mcc
+title CAREER RANK, SKILL RANK AND CHALLENGES WITH MCC
+
+test mcc-career
+title CAREER with MCC: insignia, tour badge, skill pictures
+check The insignia with the tour badge beside it, no tiles
+check The list shows MCC skill pictures on dark discs
+check Unplayed playlists show a dash
+menus
+setup social exp team-slayer 17
+setup social exp free-for-all 3
+setup social exp doubles 7
+setup social career games team-slayer 30 16 1
+setup social career games free-for-all 8 3
+setup social career games doubles 12 6 1
+setup social career art auto
+setup social career xp 10350
+setup menu career
+expect 1 log mcc career: insignia of 30 ranks and 11 tours
+expect 2 log mcc rank: pictures of rank 1 .. 50
+retired 1 proxy | log ae career: open
+
+test mcc-challenges
+title CHALLENGES with MCC
+check The career block shows the insignia and tour badge
+check The light part of the bar reads as the reward
+menus
+setup social career art auto
+setup social career xp 10350
+setup social career challenge done 2
+setup menu challenges
+expect 1 log ae challenges: open
+
+test mcc-postgame
+title Post-game with MCC: rank up
+check SKILL RANK row: the picture in the value slot
+check CAREER RANK row: the insignia at the right
+menus
+setup social career art auto
+setup social exp team-slayer 40
+setup social career xp 10350
+setup social career last 136 rankup challenge
+setup social postgame win team-slayer exp 39
+expect 1 log ae postgame: open (made up
+
+test mcc-lobby
+title TOURNAMENT LOBBY with MCC: skill leads
+check The word SKILL before MCC's picture
+check The career name with its insignia before it
+menus
+setup social career art auto
+setup social exp team-slayer 17
+setup social career games team-slayer 30 16 1
+setup social career xp 10350
+setup social maps hide none
+setup social match team-slayer tier 7
+setup social start team-slayer map warren@smp seed 7
+expect 1 log ae social lobby: stage FOUND

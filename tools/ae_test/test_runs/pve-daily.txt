@@ -1,0 +1,116 @@
+# rc8 DAILY CHALLENGE: the main menu's row (SETTINGS > CAMPAIGN > DAILY CHALLENGE), the day's screen and PAST DAYS. Every test opens on its
+# scene from `menu daily ...`: the day, its skulls and its board are made up and nothing is asked of any server or played; the
+# settings a test sets are this run's own copy of the config. The online scenes are made up too: no request leaves the PC.
+list pve-daily
+revision 4
+title DAILY CHALLENGE
+
+test daily-main-row
+title MAIN MENU: the DAILY CHALLENGE row
+check DAILY CHALLENGE sits right under CAMPAIGN
+check A opens it; B returns to the main menu
+menus
+setup config game.daily_challenge true
+
+test daily-today
+title DAILY CHALLENGE: this PC's day
+check Crumb THIS PC OFFLINE; six rows, PLAY TODAY'S CHALLENGE last
+check Right side: HALO, the countdown, three skulls, the board
+check The offline line sits under the board
+menus
+setup menu daily today
+expect 1 log ae daily challenge: open
+
+test daily-not-played
+title DAILY CHALLENGE: a day not played yet
+check YOUR BEST TODAY reads NOT PLAYED
+check The board says nobody on this PC has played this day
+menus
+setup menu daily empty
+expect 1 log ae daily challenge: open
+
+test daily-closed-day
+title DAILY CHALLENGE: a day before
+check DAY reads YESTERDAY; the primary row says YESTERDAY'S
+check Left and right change the day; the board follows
+menus
+setup menu daily closed
+expect 1 log ae daily challenge: open
+
+test daily-past-days
+title PAST DAYS: the last thirty days
+check Rows: day, mission; PLAYED marks on two days
+check The focused day's board is at the right
+check A opens that day on the DAILY CHALLENGE screen
+menus
+setup menu daily past
+expect 1 log ae daily past days: open
+
+test daily-online
+title DAILY CHALLENGE: an online day
+check Crumb THIS PC ONLINE; the board is headed ONLINE
+check No offline line under the board
+menus
+setup menu daily online
+expect 1 log ae daily challenge: open
+
+test daily-asking
+title DAILY CHALLENGE: waiting for the server
+check Values read ASKING...; PLAY says NO DAY
+check The right side says the day is asked of the server
+menus
+setup menu daily loading
+expect 1 log ae daily challenge: open
+
+test daily-unreached
+title DAILY CHALLENGE: the server is not reached
+check A window SERVER NOT REACHED opens over the screen
+check Choices: CHANGE THE ADDRESS, PLAY OFFLINE, TRY AGAIN, BACK
+check BACK closes it; the PLAY row then reads RETRY
+menus
+setup menu daily unreached
+expect 1 log ae daily challenge: open
+
+test daily-unreached-custom
+title DAILY CHALLENGE: a custom server is not reached
+check TRY THE DEFAULT SERVER comes first, TRY AGAIN near last
+check The server and why it was not reached are in the body
+check B picks BACK; nothing is sent or changed
+menus
+setup menu daily unreached-custom
+expect 1 log ae daily challenge: open
+
+test daily-settings-off
+title SETTINGS: online rows wait for COMMUNITY SERVICES
+check ONLINE DAY AND BOARDS says NEEDS COMMUNITY SERVICES: ON
+check SHARE MY SCORES waits too; its help says what is sent
+menus
+setup config network.community_services ask
+setup menu settings find ONLINE DAY
+
+test daily-settings-on
+title SETTINGS: online rows with the consent given
+check ONLINE DAY AND BOARDS is live, OFF as it starts
+check SHARE MY SCORES waits for ONLINE DAY AND BOARDS
+menus
+setup config network.community_services yes
+setup menu settings find ONLINE DAY
+
+test daily-server-waits
+title SETTINGS: SERVER rows wait for the online day
+check SERVER and SERVER ADDRESS: NEEDS ONLINE DAY AND BOARDS
+check A on SERVER ADDRESS goes to ONLINE DAY AND BOARDS
+menus
+setup config network.community_services yes
+setup config community.enabled false
+setup menu settings find SERVER ADDRESS
+
+test daily-server-live
+title SETTINGS: SERVER with the online day on
+check SERVER reads DEFAULT; SERVER ADDRESS reads USES DEFAULT
+check A on SERVER ADDRESS opens its field; B backs out
+menus
+setup config network.community_services yes
+setup config community.enabled true
+setup config community.server_mode default
+setup menu settings find SERVER ADDRESS

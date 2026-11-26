@@ -1,0 +1,71 @@
+# BOTS: an arcing projectile and a jumping target. A bot aims above the target by its projectile's fall over the
+# flight, from the projectile's own speeds, slowing range and air gravity (the fuel rod gun: about 0.7 units higher at
+# 10 units, 4.8 at 25, 13.9 at 40), at every level; its aim error stays its level's. While the target is in the air a
+# bot keeps a share of its lead by level: RECRUIT and EASY none, NORMAL half along the ground and none up, HEROIC three
+# quarters, ELITE and up all. HEROIC and up lead a moving target by the shot's whole flight; the lower levels
+# by at most 1 s of it. One enemy bot holds the fuel rod gun (give plasma_cannon to bot); you cannot die (god).
+# The bots' shots log with their distance (debug.bot_events: "ev=shot ... dist="). testbox (a map with the fuel rod gun),
+# so that each test opens on its distance: the bot in one corner, you in the far one 21 units off or 9 units off, facing
+# it. The bot keeps the
+# fuel rod gun (an energy weapon: no rounds to run out of), and switches weapons 3 s apart at most, each switch logged
+# with its reason ("ev=weapon_switch why=").
+list bots-rc6
+revision 4
+title BOTS: FUEL ROD ARC, JUMPING TARGETS
+
+group testbox
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+set debug.bot_events true
+
+test rod-heroic
+title HEROIC: the fuel rod reaches you at range
+setup bots 1 against heroic
+setup god me
+setup give plasma_cannon to bot
+setup goto bot -7.5 -6.8 0.5
+setup goto 6.0 9.3 0.5 facing 230
+check At 21 units, stand still: its rods land on you
+check Strafe along the wall: the rods still reach you
+check It keeps the fuel rod, no flicking to another
+expect 1 log gave weapons\plasma_cannon\plasma_cannon to player
+expect 3 no log why=empty
+
+test rod-close
+title HEROIC: the fuel rod at 10 units
+fresh
+setup bots 1 against heroic
+setup god me
+setup give plasma_cannon to bot
+setup goto bot -7.5 -6.8 0.5
+setup goto -1.5 -0.5 0.5 facing 227
+check At 9-10 units: it still hits, none fly high
+check It keeps the fuel rod, no flicking to another
+expect 1 log gave weapons\plasma_cannon\plasma_cannon to player
+expect 2 no log why=empty
+
+test jump-normal
+title NORMAL: a side jump dodges the rod
+fresh
+setup bots 1 against normal
+setup god me
+setup give plasma_cannon to bot
+setup goto bot -7.5 -6.8 0.5
+setup goto 6.0 9.3 0.5 facing 230
+check Side-jump as it fires: rods miss behind
+check Stand still: its rods still land on you
+expect 1 log gave weapons\plasma_cannon\plasma_cannon to player
+
+test jump-elite
+title ELITE: it catches you mid-jump
+fresh
+setup bots 1 against elite
+setup god me
+setup give plasma_cannon to bot
+setup goto bot -7.5 -6.8 0.5
+setup goto 6.0 9.3 0.5 facing 230
+check Side-jump as it fires: it catches you
+check Jump in place: it still hits you
+check Run across its line: its rods meet you
+expect 1 log gave weapons\plasma_cannon\plasma_cannon to player

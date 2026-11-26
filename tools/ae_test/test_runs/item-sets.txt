@@ -1,0 +1,161 @@
+# ITEM SETS (rc8): MAPS & MODS' sixth page, the sets of items taken out of maps on this PC, and PLAYER LOADOUT's picker with AE's weapons and the
+# playing set's. Each test opens on its scene from made-up data (DEV MODE's `menu maps sets <scene>`): nothing is read from this PC and nothing
+# is written, but the picker's tests, which set the randomizer's loadout keys. A set plays through the randomizer in campaign levels played
+# alone, never in a multiplayer game.
+list item-sets
+revision 1
+title ITEM SETS AND THE LOADOUT PICKER
+
+test sets-list
+title The sets list
+check Six tabs; ITEM SETS lit; four sets, one PLAYING
+check The card counts the set's kinds and says where it plays
+check Footer: Options, Stop playing, New set, Pages, Back
+menus
+setup menu maps sets list
+
+test sets-switched
+title Y plays another set
+check Covenant Armory says PLAYING; Spirit Kit says OFF
+check Its card says it plays from the next level
+menus
+setup menu maps sets switched
+
+test sets-empty
+title No set yet
+check The three steps show on the card
+check NEW SET... is the one row and has the focus
+menus
+setup menu maps sets empty
+
+test set-options
+title A set's options
+check OPEN, STOP PLAYING IT, RENAME, MAKE A COPY, DELETE
+check DELETE is framed red; OPEN has the focus
+menus
+setup menu maps sets options
+
+test set-delete
+title Delete a set
+check The question names the set and its size
+check CANCEL has the focus; DELETE is framed red
+menus
+setup menu maps sets delete
+
+test set-new
+title New set: the name asked
+check The name field is open with the caret in it
+check A names the set and opens it; B cancels
+menus
+setup menu maps sets new
+
+test pick-map
+title Pick a map
+check Place line, SEARCH, SHOW, count line, then the maps
+check A map with items in the set says N IN THE SET
+check The card names its source and its size
+menus
+setup menu maps sets pick
+
+test pick-map-blocked
+title A Custom Edition map is being played
+check Custom Edition rows say CAN'T NOW; the card says why
+check The help line is blue and tells what still opens
+menus
+setup menu maps sets cant-open
+
+test map-kinds
+title An open map's kinds
+check Nine kinds with their counts; a kind with none is muted
+check The card counts the kind and says what B does
+menus
+setup menu maps sets kinds
+
+test kind-items
+title A kind's items
+check Rows are item names with their folders under them
+check The card shows the whole path and the map's name
+check No word "tag" anywhere on the screen
+menus
+setup menu maps sets items
+
+test item-adding
+title Adding an item
+check ADDING... on the row and a moving bar on the card
+check The footer is empty while it works
+menus
+setup menu maps sets adding
+
+test item-added
+title An item added
+check The row says IN THE SET; the card says KEPT IN THE SET
+check Carried items are named; Footer has Remove from set
+menus
+setup menu maps sets added
+
+test item-refused
+title An item that can't be added
+check The row says CAN'T ADD in blue; the card says why
+check WHAT TO DO names the vehicle
+menus
+setup menu maps sets refused
+
+test set-contents
+title A set's items
+check Section labels by kind; each item has a check box
+check ON items are filled, OFF items are outlined
+check Footer: On / off, Remove, Add items, Pages, Back
+menus
+setup menu maps sets contents
+
+test set-remove
+title Remove an item
+check The question names the item and what it frees
+check CANCEL has the focus; REMOVE is framed red
+menus
+setup menu maps sets remove
+
+test item-failed
+title An item the last level turned off
+check The row says FAILED in blue with an empty box
+check The card says why and what to do
+menus
+setup menu maps sets failed
+
+test loadout-ae
+title PLAYER LOADOUT: AE's weapons
+check PRIMARY says COMBAT AR, SECONDARY says SIDEARM
+check Left and right go on from CE's nine to AE's seven
+menus
+setup menu randomizer loadout-ae
+
+test loadout-set
+title PLAYER LOADOUT: the playing set's weapons
+check PRIMARY says SPIRIT PISTOL
+check Right from AE's last choice reaches the set's weapons
+menus
+setup menu randomizer loadout-set
+
+test real-kinds
+title REAL: a map on this PC, its kinds
+check The map opened; the engine's log says its counts
+check Nine kinds with the counts the log gave
+menus
+setup menu maps sets real-kinds
+expect 1 log item sets: real scene:
+
+test real-items
+title REAL: a kind's items
+check The rows are the map's own items, names and folders
+check The log says how many items were listed
+menus
+setup menu maps sets real-items
+expect 2 log items listed
+
+test real-add
+title REAL: an item added to a new set
+check The log says the item was added to the new set
+check The card says IN Preflight and what is kept
+menus
+setup menu maps sets real-add
+expect 1 log added to Preflight

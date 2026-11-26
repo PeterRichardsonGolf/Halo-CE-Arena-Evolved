@@ -1,0 +1,55 @@
+# EXPORT PROGRESS and IMPORT PROGRESS (PROFILES > a profile): a profile's tournament progress goes to a file in the exports
+# folder and comes back on this or another PC, merged (the record with more games wins) or replaced, with a backup first and
+# UNDO IMPORT. Every test opens on its scene, on its own profile DEVMOVE (made when it is not there; delete it in PROFILES
+# afterwards): `profile_move sample` writes a made-up profile's file to the exports folder, `profile_move import` puts progress
+# on DEVMOVE, and `menu profiles progress` opens the question. Only DEVMOVE's own lines change; the player key is not in a file.
+list profile-move-rc5
+revision 1
+title PROFILE PROGRESS: EXPORT AND IMPORT
+
+test export
+title EXPORT PROGRESS: the question and the file
+check The question names DEVMOVE; it says the player key stays
+check A on EXPORT: a message names the file; OPEN FOLDER opens it
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup menu profiles progress export
+expect 1 cmd profile_move ok
+expect 1 log ae profiles screen: edit 'DEVMOVE'
+
+test import-same-name
+title IMPORT PROGRESS: a file of the same name, merged
+check The question reads IMPORT DEVMOVE INTO DEVMOVE, MERGE on
+check Its text: the file's 80 games over this PC's 30 for the EXP
+check A on IMPORT: Imported, with UNDO IMPORT; UNDO puts 30 back
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup profile_move sample devmove 80
+setup menu profiles progress import
+expect 1 log ae profiles screen: import progress into 'DEVMOVE'
+
+test import-other-name
+title IMPORT PROGRESS: a file of another profile (the other PC's name)
+check The question reads IMPORT KIT INTO DEVMOVE
+check A on IMPORT: DEVMOVE has KIT's progress, its name stays
+check B, then IMPORT PROGRESS: both files, the newest first
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup profile_move sample kit 50
+setup menu profiles progress import
+expect 1 log ae profiles screen: import progress into 'DEVMOVE'
+
+test import-replace
+title IMPORT PROGRESS: REPLACE takes the file's
+check RIGHT on the chips picks REPLACE; the button reads so
+check A: DEVMOVE has the file's 10 games, not this PC's 30
+check UNDO IMPORT puts the 30 games back
+menus
+setup profile_move sample devmove 30
+setup profile_move import devmove-sample.aeprofile devmove replace
+setup profile_move sample devmove 10
+setup menu profiles progress import
+expect 1 log ae profiles screen: import progress into 'DEVMOVE'

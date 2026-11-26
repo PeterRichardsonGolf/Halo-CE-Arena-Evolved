@@ -1,0 +1,106 @@
+# MAPS & MODS > WORKSHOP > SHOW: COLLECTIONS. Every test opens on its scene from DEV MODE's `menu maps workshop <scene>`, from
+# made-up collections: nothing is read from Steam, no map is fetched or deleted. A press that would ask Steam writes its log line
+# and changes the made-up list instead. An expect line is the log line the scene or the press writes. Run the list at 16:9 and 4:3.
+list ws-collections-10x
+revision 1
+title WORKSHOP: COLLECTIONS
+
+test show-row
+title SHOW has a fourth value, COLLECTIONS
+menus
+card bottom
+setup menu maps workshop collections-show
+check SHOW says COLLECTIONS and has the focus
+check The card explains the page and counts the 29 maps
+check Left and right step SHOW through its four values
+expect 1 log ae steam: collections scene show
+
+test list
+title The list: the playlists' two, then the others
+menus
+card bottom
+setup menu maps workshop collections
+check FOR THE OFFLINE PLAYLISTS holds two collections
+check YOUR WORKSHOP MAPS ARE ALSO IN holds two
+check The card shows the tile, the name and ON THIS PC
+expect 1 log ae steam: collections scene list
+
+test opened
+title A collection opened: GET is the first row
+menus
+card bottom
+setup menu maps workshop collection
+check The crumb names WORKSHOP, COLLECTIONS, the pack
+check GET THE 16 MAPS NOT ON THIS PC has the focus
+check REMOVE says 2 MAPS (one is Steam's); 19 maps listed
+expect 1 log ae steam: collection opened: Social Map Pack
+
+test map-row
+title A map of the collection has its own card
+menus
+card bottom
+setup menu maps workshop collection-map
+check The focus is on one map; its card names it
+check The card says NOT ON THIS PC and the size
+check The footer says A Install and B Collections
+expect 1 log ae steam: collections scene map
+
+test getting
+title A collection being got
+menus
+card bottom
+setup menu maps workshop collection-getting
+check The first row says STOP GETTING THEM, 7 OF 19
+check One map shows a percent, the rest WAITING
+check The card shows the two bars and GETTING IT
+expect 1 log ae steam: collections scene getting
+
+test installed
+title A collection all on this PC, two updates
+menus
+card bottom
+setup menu maps workshop collection-installed
+check The first row says GET 2 UPDATES
+check REMOVE FROM THIS PC says 17 MAPS
+check The card names the 2 maps Steam keeps
+expect 1 log ae steam: collections scene installed
+
+test no-room
+title Not enough room: nothing starts
+menus
+card bottom
+setup menu maps workshop collection-no-room
+check The first row's value says NO ROOM in blue
+check The card has the blue stripe, NOT ENOUGH ROOM
+check The help line says nothing was started
+expect 1 log ae steam: collections scene no room
+
+test get-question
+title GET asks first: a pack of 500 MB or more
+menus
+card bottom
+setup menu maps workshop collection-get-confirm
+check Get Social Map Pack? GET 16 MAPS has the focus
+check The text says the size and the free space
+check A starts it: the first row turns to STOP
+expect 1 log ae steam: collection get asked: 16 maps (staged)
+
+test remove-question
+title REMOVE asks first and keeps Steam's maps
+menus
+card bottom
+setup menu maps workshop collection-remove-confirm
+check Remove Social Map Pack? CANCEL has the focus
+check The text names the two maps that stay
+check A on REMOVE 17 MAPS takes them off the list
+expect 1 log ae steam: collection remove asked: 17 maps (staged)
+
+test signed-out
+title Signed out: the playlists' collections count
+menus
+card bottom
+setup menu maps workshop signed-out
+check Two collection rows say 0 OF 19 and 0 OF 10, SIGN IN
+check A on one opens STEAM ACCOUNT
+check The footer says A Select, Pages, B Back
+expect 1 log ae maps hub: staged: WORKSHOP

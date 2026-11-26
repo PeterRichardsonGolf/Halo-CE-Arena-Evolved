@@ -1,0 +1,126 @@
+# The career rank (30 ranks, 11 tours, from XP that never goes down), the skill rank per playlist and the daily / weekly challenges.
+# Every test opens on its exact scene from its setup lines (social career rank / xp / games / challenge / last / art, social exp,
+# menu career / challenges, social postgame / start). Plain look: no MCC pictures. The same scenes with MCC's pictures: list
+# career-xp-mcc, on a PC that has MCC.
+list career-xp
+revision 6
+title CAREER RANK, SKILL RANK AND CHALLENGES
+
+test career-plain
+title CAREER: the career rank and the skill rank
+check Every number has a label beside it
+check OVERALL is a row; the bar says what it waits for
+check MY HALO EXPERIENCE has its X mark
+menus
+setup social exp team-slayer 17
+setup social exp free-for-all 3
+setup social exp doubles 7
+setup social career games team-slayer 30 16 1
+setup social career games free-for-all 8 3
+setup social career games doubles 12 6 1
+setup social career art off
+setup social career xp 10350
+setup menu career
+expect 1 log ae career: open
+
+test challenges-page
+title CHALLENGES: today and this week
+check The light part of the bar reads as the reward
+check One row is DONE (accent chip); the rest count
+check Reset times sit at the headers' right
+menus
+setup social career art off
+setup social career xp 10350
+setup social career challenge done 2
+setup menu challenges
+expect 1 log ae challenges: open
+
+test postgame-tournament
+title Post-game: a tournament game with a rank up
+check Rows: SKILL RANK, CAREER XP, CHALLENGE, CAREER RANK
+check RANK UP reads on both rank rows
+check Nothing touches the Continue prompt
+menus
+setup social career art off
+setup social exp team-slayer 40
+setup social career xp 10350
+setup social career last 136 rankup challenge
+setup social postgame win team-slayer exp 39
+expect 1 log ae postgame: open (made up
+
+test lobby-skill
+title TOURNAMENT LOBBY: skill leads
+check Your row: SKILL 10 larger, the career name quieter
+check SERGEANT MAJOR has no tile before it
+menus
+setup social career art off
+setup social exp team-slayer 17
+setup social career games team-slayer 30 16 1
+setup social career xp 10350
+setup social maps hide none
+setup social match team-slayer tier 7
+setup social start team-slayer map warren@smp seed 7
+expect 1 log ae social lobby: stage FOUND
+
+test lobby-last-win
+title TOURNAMENT LOBBY after a win: the LAST GAME card
+check LAST GAME: SKILL UP ONE and NOW RANK 10 do not touch
+check The map name shows on the RED TEAM WINS card
+menus
+setup social career art off
+setup social exp team-slayer 17
+setup social start team-slayer postgame result win
+expect 1 log ae social lobby: stage
+
+test lobby-last-loss
+title TOURNAMENT LOBBY after a loss
+check SKILL NO CHANGE and NOW RANK 10 do not touch
+menus
+setup social career art off
+setup social exp team-slayer 17
+setup social start team-slayer postgame result loss
+expect 1 log ae social lobby: stage
+
+test lobby-last-quit
+title TOURNAMENT LOBBY after leaving a game early
+check SKILL BACK ONE and NOW RANK 10 do not touch
+menus
+setup social career art off
+setup social exp team-slayer 17
+setup social start team-slayer postgame result quit
+expect 1 log ae social lobby: stage
+
+test matchmaking-card
+title MATCHMAKING: the playlist card's foot
+check SKILL RANK 10 and its wins-or-ties caption read clear
+check Unplayed playlists show no RANK badge
+menus
+setup social career art off
+setup social calibration me some
+setup social exp team-slayer 17
+setup social exp free-for-all 3
+setup social exp doubles 7
+setup social career games team-slayer 30 16 1
+setup social career games free-for-all 8 3
+setup social career games doubles 12 6 1
+setup menu tournament focus team-slayer
+expect 1 log ae tournament: filter
+
+test matchmaking-unplayed
+title MATCHMAKING: an unplayed playlist focused
+check The card's foot reads NO GAMES YET, with no bar
+menus
+setup social career art off
+setup social calibration me some
+setup social exp team-slayer 17
+setup social career games team-slayer 30 16 1
+setup menu tournament focus team-objective
+expect 1 log ae tournament: filter
+
+test career-no-games
+title CAREER for a pad that has played nothing (pad 2)
+check NO GAMES YET shows; no number is invented
+menus
+setup social career art off
+setup menu career player 2
+expect 1 log ae career: open

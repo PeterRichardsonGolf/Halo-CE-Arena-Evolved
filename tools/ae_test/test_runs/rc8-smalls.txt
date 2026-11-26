@@ -1,0 +1,70 @@
+# rc8 SMALLS: the mark prompt's new LOOK and PLACE rows (SETTINGS > HUD > RETICLE, under MARK PROMPT), TARGET FRAMERATE
+# showing a value its list does not have as itself, and DEV MODE's `god` and `unseen` in a campaign level (`unseen` there
+# hides every player from the level's AI). Each test opens on its scene; the settings are the group's own.
+list rc8-smalls
+revision 3
+title rc8 SMALLS: MARK PROMPT, TARGET FRAMERATE, GOD AND UNSEEN
+
+group prompt-faint-below
+map octagon_b
+gametype slayer
+set game.steam_first_start_asked true
+
+test prompt-faint-below
+title MARK PROMPT: FAINT and BELOW
+setup config display.mark_prompt_look faint
+setup config display.mark_prompt_place below
+setup dummy
+check The button and word over the dummy are faint
+check They sit under the crosshair, not beside it
+check Nothing else on the HUD moved
+
+group prompt-default
+map octagon_b
+gametype slayer
+set game.steam_first_start_asked true
+
+test prompt-default
+title MARK PROMPT: the defaults look as before
+setup config display.mark_prompt_look full
+setup config display.mark_prompt_place beside
+setup dummy
+check The button and word beside the crosshair, full strength
+check The same place as in rc7
+
+group framerate
+menus
+set display.target_framerate 75
+set game.steam_first_start_asked true
+
+test target-framerate
+title TARGET FRAMERATE: a value not in its list
+setup menu settings find TARGET FRAMERATE
+check The TARGET FRAMERATE row reads 75
+check Not a nearby entry (60, 90 ...)
+
+group b30-dev
+map b30
+gametype coop
+set game.steam_first_start_asked true
+
+test god-campaign
+title DEV god in a campaign level
+setup goto -61.4 38.9 0.8 facing 305
+setup god me
+setup actor commander 8
+check The sword Elite ahead charges and swings at you
+check Your shield and health stay full
+expect 1 hurt player 0 blocked min 1 taken max 0
+retired 1 proxy | cmd god me ok
+
+test unseen-campaign
+title DEV unseen in a campaign level
+fresh
+setup goto -45.46 -5.37 16.8 facing 155
+setup unseen me
+setup actor commander 4
+check Hold fire: the sword Elite below does not charge you
+check Walk down to it: it still does not see you
+expect 1 hurt player 0 taken max 0
+retired 1 proxy | cmd unseen me ok

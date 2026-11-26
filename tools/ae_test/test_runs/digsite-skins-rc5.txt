@@ -1,0 +1,70 @@
+# rc5 DIGSITE LOOKS: on the maps of the "CE Digsite Multiplayer" Steam Workshop pack (item 3477809506), the maps' own
+# battle rifles are the SINGLESHOT BR: one round a pull, four to kill (3 pop the shield, the 4th to the head), in the
+# Digsite battle rifle's look, with AE's BR HUD, bullet, reticle and sounds. DIGSITE BIG TEAM starts with it. AE's battle rifle keeps its own look everywhere. The EVO rifle
+# wears a Digsite finish there (olive paint, amber displays). The PROTOMAG fires with the Digsite pistol's own shot on
+# every map. Weapon cache serial 11: this list runs only on a build whose weapon cache is serial 11, on the PC that has
+# the Workshop pack. ssbr-look runs on octagon_b (room for the dummy). The map-load lines (a
+# weapon's setup, its look) are not in a test's event stream: no expect lines for them. big-team-ssbr
+# expects player 1's start weapon to be the SINGLESHOT BR.
+list digsite-skins-rc5
+revision 6
+title DIGSITE LOOKS: SINGLESHOT BR, EVO, PROTOMAG
+
+group looks
+
+test br-own-look
+title AE's BR keeps its own look on a Digsite map
+setup goto start 1
+setup give battle_rifle
+setup camera first
+check In hand: AE's own BR body (not the Digsite rifle's)
+check Fire: AE's 3-round burst
+map 5@ws3477809506
+gametype AE TEAM SLY
+set bots.count 0
+
+test evo-look
+title The EVO in its Digsite finish
+setup goto start 1
+setup give evo_rifle
+setup camera first
+check In hand: olive paint, red stripe, amber ammo display
+check Fire and reload: the EVO's own sounds, unchanged
+check Zoom: AE's EVO scope, unchanged
+map 5@ws3477809506
+gametype AE TEAM SLY
+set bots.count 0
+
+test ssbr-look
+title The SINGLESHOT BR: in hand, a four-shot kill
+setup give singleshot_br
+setup dummy 1 6
+setup camera first
+check In hand: Digsite rifle body, AE's BR counter + reticle
+check Dummy: 3 rounds pop its shield, the 4th to the head kills
+check 3 to the shield, then the body: 3 more to kill
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+
+test protomag-shot
+title PROTOMAG: the Digsite pistol's shot, on a stock map
+setup dummy 1 6
+check Fire: the Digsite pistol's own shot, not the AR's
+check Its look is unchanged: the Digsite pistol
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 25
+
+group tournament
+
+test big-team-ssbr
+title DIGSITE BIG TEAM: the SINGLESHOT BR start
+menus
+setup social start digsite-big-team map 5@ws3477809506 now
+check Start weapon: SINGLESHOT BR, Digsite body, AE's BR HUD
+check Fire it: one round a pull
+check A BR lying on the map: pick it up, the same SINGLESHOT BR
+expect 1 log ae social: start digsite-big-team
+expect 1 weapon singleshot_br player 0

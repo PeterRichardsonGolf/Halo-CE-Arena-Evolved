@@ -1,0 +1,2 @@
+projectiles_per_shot (15)   int16
+error_angle (0.100000)   float32

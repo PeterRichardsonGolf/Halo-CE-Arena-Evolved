@@ -1,0 +1,200 @@
+# rc8 FIREFIGHT MENUS: the main menu's FIREFIGHT row, the FIREFIGHT lobby (alone, on the LAN), its five rule groups, STARTING SKULLS, MAP CONTENT
+# (with its lists and PLAYER LOADOUT), OBJECTIVES, and the multiplayer lobby that must stay as it was. Every test opens on its scene from
+# `menu firefight ...`: the data's state is set by the first setup line, and a map with content of its own is made up (nothing real is read or
+# written). The settings the screens write are this run's own copy of the config. No game starts from any of them.
+list pve-firefight
+revision 1
+title FIREFIGHT MENUS
+
+test main-row
+title FIREFIGHT: a row of the main menu
+check FIREFIGHT sits after WHAT'S NEW, above COMING SOON
+check COMING SOON holds FORGE and FRIENDS only
+check A opens the FIREFIGHT lobby
+menus
+setup menu firefight data ready
+expect 1 log dev: menu firefight data
+
+test main-row-needs-maps
+title FIREFIGHT: no Xbox maps on this PC
+check FIREFIGHT shows NEEDS THE XBOX MAPS in blue
+check A plays the refusal; the help says why
+check The other main rows still open
+menus
+setup menu firefight data needsmaps
+expect 1 log dev: menu firefight data
+
+test lobby-offline
+title FIREFIGHT lobby: alone
+check Title FIREFIGHT, crumb OFFLINE
+check Rows: MAP, VARIANT, NETWORK, RULES, then QUICK OPTIONS
+check MY PARTY says Firefight, offline; no BOTS rows
+menus
+setup menu firefight data ready
+setup menu firefight lobby
+expect 1 log dev: menu firefight lobby opened
+expect 1 log ae create game: firefight: open on variant 0
+
+test lobby-lan
+title FIREFIGHT lobby: on the LAN
+check Crumb LAN; NETWORK says LAN; GAME NAME shows
+check MY PARTY says Firefight, LAN
+menus
+setup menu firefight data ready
+setup menu firefight lobby lan
+expect 1 log dev: menu firefight lobby opened
+
+test lobby-quick-options
+title FIREFIGHT lobby: the quick options
+check SET LIMIT, STARTING LIVES, AI DIFFICULTY step in place
+check SCALE WITH PLAYERS 0 to 50%; SCORING ON or OFF
+check STARTING SKULLS opens the skulls grid
+menus
+setup menu firefight data ready
+setup menu firefight lobby
+expect 1 log ae create game: firefight: open on variant 0
+
+test lobby-variant
+title FIREFIGHT lobby: Gruntpocalypse
+check VARIANT reads Gruntpocalypse; left and right step the list
+check STARTING SKULLS says 3 ON
+check RULES says AS SAVED
+menus
+setup menu firefight data ready
+setup menu firefight lobby variant 3
+expect 1 log ae create game: firefight: open on variant 2
+
+test lobby-map-rows
+title FIREFIGHT lobby: a map with content of its own
+check MAP CONTENT, OBJECTIVES and VEHICLES show under MAP
+check MAP CONTENT says INCLUDE MAP and what it takes
+check A on MAP CONTENT opens it
+menus
+setup menu firefight data ready
+setup menu firefight lobby content
+expect 1 log dev: menu firefight lobby opened
+
+test lobby-data-preparing
+title FIREFIGHT lobby: the data is preparing
+check START GAME shows PREPARING and waits
+check A on START GAME is refused, the help says why
+menus
+setup menu firefight data preparing
+setup menu firefight lobby
+expect 1 log dev: menu firefight lobby opened
+
+test lobby-data-needs-maps
+title FIREFIGHT lobby: no Xbox maps
+check START GAME shows NEEDS THE XBOX MAPS
+check The rest of the lobby still works
+menus
+setup menu firefight data needsmaps
+setup menu firefight lobby
+expect 1 log dev: menu firefight lobby opened
+
+test rules-groups
+title RULES: five groups, 45 rows
+check Rail: WAVES & LIVES to SKULLS & PLAYERS (9 9 10 7 10)
+check Chips ALL and CHANGED only; LT / RT jump a group
+check STARTING SKULLS and ITEM SET open from their rows
+menus
+setup menu firefight data ready
+setup menu firefight rules
+expect 1 log ae game options: open
+
+test rules-changed
+title RULES: two changes
+check AI DIFFICULTY and ENEMY SHIELD SCALE carry CHANGED
+check The crumb says FIREFIGHT, 2 CHANGED
+check X puts a row back; Y asks for a name to save as
+menus
+setup menu firefight data ready
+setup menu firefight rules change aidifficulty=legendary change enemyshieldscale=150%
+expect 1 log ae game options: set AI DIFFICULTY LEGENDARY
+
+test rules-units
+title RULES: the enemy units
+check ENEMY UNITS lists ENEMY LOADOUT and nine unit rows ON or OFF
+check Turning the last enemy type off is refused
+menus
+setup menu firefight data ready
+setup menu firefight rules variant 1
+expect 1 log ae game options: open
+
+test skulls-grid
+title STARTING SKULLS: the grid
+check 40 tiles; no SKULL RULES row; no questions
+check The three skulls of Gruntpocalypse show ON and refuse B
+check X turns the rest on or off; Y is not offered
+menus
+setup menu firefight data ready
+setup menu firefight skulls
+expect 1 log ae skulls: open (firefight)
+
+test content-include
+title MAP CONTENT: include the map
+check USE CONTENT, the three MAP rows, PLAYER LOADOUT
+check HEALTH RULES: SHIELDS, SHIELD REGEN, HEALTH REGEN
+check The right side counts 3 kinds, 6 weapons, 2 vehicles
+menus
+setup menu firefight data ready
+setup menu firefight content
+expect 1 log ae firefight content: open
+
+test content-vanilla
+title MAP CONTENT: vanilla only
+check The kind rows say NEEDS USE CONTENT and refuse A
+check HEALTH RULES still change
+menus
+setup menu firefight data ready
+setup menu firefight content mode vanilla
+expect 1 log ae firefight content: open
+
+test content-custom
+title MAP CONTENT: custom weapons
+check MAP WEAPONS says CUSTOM; CHOOSE WEAPONS shows 5 OF 6 ON
+check A on CHOOSE WEAPONS opens the list
+menus
+setup menu firefight data ready
+setup menu firefight content custom
+expect 1 log ae firefight content: open
+
+test content-tags
+title CHOOSE WEAPONS: the list
+check Six weapons, ON or OFF; A turns one; X all on or off
+check The right side says N OF 6 ON, kept for this map
+menus
+setup menu firefight data ready
+setup menu firefight tags
+expect 1 log ae firefight content: open
+
+test content-loadout
+title PLAYER LOADOUT: the map's weapons
+check PRIMARY and SECONDARY start at THE GAME'S
+check Left and right step through the map's six weapons
+menus
+setup menu firefight data ready
+setup menu firefight loadout
+expect 1 log ae firefight content: open
+
+test objectives
+title OBJECTIVES: wave and round
+check WAVE OBJECTIVES: a switch, CHANCE, eight kinds
+check ROUND OBJECTIVES: a switch, CHANCE, nine kinds
+check Kinds say NEEDS ... OBJECTIVES while their switch is OFF
+menus
+setup config game.firefight_objectives_round false
+setup config game.firefight_objectives_set true
+setup menu firefight objectives
+expect 1 log ae firefight objectives: open
+
+test multiplayer-untouched
+title Multiplayer: CREATE GAME is still a multiplayer lobby
+check The lobby has GAMETYPE and GAME OPTIONS, no VARIANT row
+check Its gametype is a multiplayer one (Slayer or the last used)
+menus
+setup menu firefight data ready
+setup menu firefight lobby variant 1
+expect 1 log ae create game: firefight: open on variant 0
+setup menu firefight multiplayer
+expect 1 log dev: menu firefight multiplayer: CREATE GAME opened

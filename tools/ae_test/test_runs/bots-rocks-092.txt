@@ -1,0 +1,53 @@
+# 0.9.2 BOTS AND SCENERY: bot drivers know the map's rocks, trees and bushes. Routes keep off them, the driver steers round one
+# early (bot event "drive_dodge"), and a low ray set sees low rocks. bots.drive_obstacles (on) turns it all off; the
+# setup line switches it mid-game. The spots are Blood Gulch's, where drivers rammed them. Stand at each spot (the test puts you
+# there) and watch the drivers go by for two minutes. Bots drive the maps' own vehicles (debug.bot_vehicles 2).
+list bots-rocks-092
+revision 1
+title BOTS: DRIVERS AND SCENERY
+
+group gulch
+map bloodgulch
+gametype AE BR TS
+set bots.count 7
+set bots.teams even
+set bots.skill elite
+set debug.bot_vehicles 2
+set debug.bot_events true
+set bots.drive_obstacles true
+
+test boulder
+title BLOOD GULCH: the boulder at the south side
+setup goto 85.17 -158.78 2.5
+check Bot drivers steer round the boulder early, not into it
+check No warthog or ghost stuck on or against it
+
+test low-boulder-tree
+title BLOOD GULCH: the low boulder and the dead tree
+setup goto 83.0 -149.8 2.5
+check Drivers steer round the low boulder and tree, not into them
+check No vehicle stuck on or against either
+
+test big-rock
+title BLOOD GULCH: the big rock
+setup goto 84.87 -126.91 4.0
+check Bot drivers go round the big rock, not up on it
+check No warthog stuck on top of it
+
+test boulder-east
+title BLOOD GULCH: the boulder to the east
+setup goto 97.27 -139.51 2.5
+check Bot drivers steer round the boulder early, not into it
+check No vehicle stuck on or against it
+
+test bushes
+title BLOOD GULCH: the bush cluster
+setup goto 70.0 -126.7 2.5
+check Bot drivers steer round the bushes, not through them
+check No vehicle stuck on or against them
+
+test off-switch
+title BLOOD GULCH: the switch off, at the big rock
+setup goto 84.87 -126.91 4.0
+setup config bots.drive_obstacles off
+check With the setting off they hit the rock again

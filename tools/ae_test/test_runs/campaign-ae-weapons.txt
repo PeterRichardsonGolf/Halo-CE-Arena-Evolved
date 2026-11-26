@@ -1,0 +1,76 @@
+# AE WEAPONS IN LEVELS (game.campaign_ae_weapons, off by default; DEV MODE `campaign_weapons status|on|off|share <0-100>|
+# squad standard|ae|goto [<n>]`) and the AI SQUAD'S GEAR (game.companions_loadout standard|ae). A share of a campaign level's
+# weapons (game.campaign_ae_weapons_share, a percent) is swapped for AE's by kind as the level loads: assault rifles for the
+# COMBAT AR, SUPPRESSED AR or TACTICAL SMG, pistols for the SIDEARM or HEAVY REVOLVER, snipers for the BOLT SNIPER, needlers
+# for AE's NEEDLER, rocket launchers for the BRUTE SHOT; the weapons the AI carry too. The same each time the level loads.
+# The settings are the test's own (set lines, applied before the level loads); `campaign_weapons goto` stands you two steps
+# from the first swapped weapon on the ground, facing it. The CAMPAIGN screen's SQUAD GEAR and AE WEAPONS rows set the same
+# settings. With AE WEAPONS on (or an AE squad asked for), a guest joining a co-op campaign game needs the weapon cache, as in a
+# multiplayer game that uses it: that join needs a second machine and is not in this list.
+#
+# The tests open at the level's start point (the level at first control after its intro, one file for each set of `set` values:
+# the swapped weapons are in it), so a load takes seconds, not the ride; a test that wants the ride has the setup line `intro play`.
+list campaign-ae-weapons
+revision 3
+title CAMPAIGN AE WEAPONS
+
+group b30-ground
+map b30
+gametype coop
+set game.campaign_ae_weapons true
+set game.campaign_ae_weapons_share 100
+
+test b30-ground
+title Silent Cartographer: a swapped weapon on the ground
+setup campaign_weapons goto 1
+check The weapon on the ground ahead is an AE weapon
+check Its pickup name says so (COMBAT AR, SIDEARM ...)
+check Pick it up: it fires and reloads as an AE weapon
+expect 1 log campaign weapons:
+
+group b30-off
+map b30
+gametype coop
+set game.campaign_ae_weapons false
+
+test b30-off
+title The setting off: the level's own weapons
+setup campaign_weapons status
+check The level plays with its own weapons, as before
+expect 1 cmd campaign_weapons status ok
+
+group b30-squad
+map b30
+gametype coop
+set game.companions_loadout ae
+set game.campaign_ae_weapons false
+
+test b30-squad-gear
+title The AI squad carries AE weapons
+setup companion 3
+setup goto -62.4 20.7 1.6
+check Three Spartans stand round you, each with its own weapon
+check AE weapons: COMBAT AR, BATTLE RIFLE, TACTICAL SMG
+check They fire and fight as before
+expect 1 log campaign weapons: squad member 1 carries
+
+group b30-standard
+map b30
+gametype coop
+set game.companions_loadout standard
+
+test b30-squad-standard
+title The AI squad with the standard gear
+setup companion 2
+setup goto -62.4 20.7 1.6
+check Both carry the level's co-op start weapons, as before
+
+group menu
+
+test menu-rows
+title CAMPAIGN screen: SQUAD GEAR and AE WEAPONS rows
+check Both rows sit under AI SQUAD; SQUAD GEAR is dim at OFF
+check AI SQUAD 1-3: SQUAD GEAR steps STANDARD / AE
+check AE WEAPONS steps OFF, SOME 30%, MOST 60%, ALL 100%
+menus
+setup menu campaign

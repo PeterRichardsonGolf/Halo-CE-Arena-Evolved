@@ -1,0 +1,8 @@
+# Arena Evolved's MATCHMAKING playlists (MULTIPLAYER > MATCHMAKING), a file beside the game.
+# One playlist a line: id|LABEL|description|address [address ...]
+# A playlist's servers are tried in order; a full or unreachable one is skipped. '#' starts a comment.
+casual|CASUAL|Relaxed matches. Jump in, no setup.|play.arenaevolved.com:10660
+btb|BTB|Big team battles with vehicles.|btb.arenaevolved.com:10672
+comp|COMP|Competitive rules, small teams.|comp.arenaevolved.com:10683
+classic|CLASSIC COMP|The modded discs' 2v2 classic competitive.|nhe.arenaevolved.com:26671
+community|MODDED & COMMUNITY|Modded and community maps; MCC Workshop maps need your MCC install.|mcc.haloae.com:18191

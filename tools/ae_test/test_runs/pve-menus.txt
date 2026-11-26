@@ -1,0 +1,231 @@
+# rc8 CAMPAIGN RULE SCREENS (and the RANDOMIZER's screens, SETTINGS > CAMPAIGN): SKULLS (the tile grid, Content Evolved's two first-time questions), SKULL RULES, SCORING, CO-OP
+# OPTIONS, SAVED GAMES, the LEADERBOARD and the end-of-mission card. Every test opens on its scene from `menu ...`:
+# the saved games, the leaderboard's runs and the end card's players are made up (nothing real is read, picked or deleted),
+# and the settings the screens write are this run's own copy of the config.
+list pve-menus
+revision 2
+title CAMPAIGN RULE SCREENS
+
+test skulls-questions
+title SKULLS: the two questions come first
+check The grid is not shown: HOW SHOULD THE SKULLS BE UNLOCKED?
+check Three choices: ALL UNLOCKED, FOUND IN LEVELS, PICKUP
+check FOUND IN LEVELS asks if dying loses them; B backs
+menus
+setup menu skulls questions
+expect 1 log ae skulls: open
+
+test skulls-grid
+title SKULLS: the tile grid
+check 40 tiles, 8 across; the focused tile has a white frame
+check A turns a skull ON (accent frame, ON chip); X, Y work
+check Pictures are the blue Content Evolved skulls
+menus
+setup config game.skulls_unlock_mode play
+setup config game.skulls_all_unlocked true
+setup menu skulls
+expect 1 log ae skulls: open
+
+test skull-rules
+title SKULL RULES: the rows and the found count
+check Rows: HOW SKULLS ARE FOUND to RESET SKULL PROGRESS
+check Left / right changes a row; FEWEST never above MOST
+check The right side says N OF 40 FOUND
+menus
+setup config game.skulls_unlock_mode play
+setup config game.skulls_all_unlocked false
+setup menu skullrules
+expect 1 log ae skull rules: open
+
+test skull-forget
+title SKULL RULES: the forget dialog
+check FORGET EVERY SKULL FOUND? with CANCEL focused first
+check FORGET THEM has the red frame; B cancels
+menus
+setup config game.skulls_unlock_mode play
+setup config game.skulls_all_unlocked false
+setup config game.skulls_unlocked anger,boom
+setup menu skullrules reset
+expect 1 log ae skull rules: open
+expect 1 log ae skull rules: forget dialog opened
+
+test scoring-off
+title SCORING: off, the other rows wait
+check SCORING OFF; the three rows show NEEDS SCORING
+check The right side: multipliers, par time, YOUR BEST
+menus
+setup menu scoring off
+expect 1 log ae scoring: open
+
+test scoring-on
+title SCORING: on
+check The rows are live; MEDALS YOU CAN WIN at the right
+check CO-OP SCORING reads TEAM; left / right: EACH PLAYER
+menus
+setup menu scoring on
+expect 1 log ae scoring: open
+
+test coop-options
+title CO-OP OPTIONS: changed from standard
+check FOR GAMES YOU HOST; nine rows in two groups
+check PER PLAYER GROWTH is live; FIXED SIZE says NEEDS FIXED
+check X puts every row back to the standard values
+menus
+setup menu coopoptions changed
+expect 1 log ae coop options: open
+
+test saved-games
+title SAVED GAMES: three made-up profiles
+check A row for each profile; YOUR PROFILE on Rook
+check The right side: mission, PLAYS AS, SAVED, AI SQUAD
+check X asks DELETE ROOK'S SAVED GAME? with CANCEL first
+menus
+setup menu saved
+expect 1 log ae saved games: open
+
+test saved-empty
+title SAVED GAMES: none left
+check NO SAVED GAMES YET and the line about checkpoints
+check Only B is offered
+menus
+setup menu saved empty
+expect 1 log ae saved games: open
+
+test leaderboard
+title LEADERBOARD: four made-up runs
+check Best score first; the table has seven columns
+check Y flips to best time first; LB / RB change mission
+menus
+setup menu leaderboard 1
+expect 1 log ae leaderboard: open
+
+test leaderboard-empty
+title LEADERBOARD: no runs
+check No runs on record: finish this mission with SCORING on.
+menus
+setup menu leaderboard 3 empty
+expect 1 log ae leaderboard: open
+
+test end-card-solo
+title END CARD: one player
+check MISSION COMPLETE; TIME with BEST TIME, KILLS, DEATHS
+check The SCORE panel ends in FINAL SCORE and NEW BEST SCORE
+check A reads Next mission; the last card has B Campaign
+menus
+setup menu endcard best
+expect 1 log ae end card: staged
+
+test end-card-coop
+title END CARD: two players, the last mission
+check Player 1's card first: A reads Next player
+check The team table on the right; the last A reads Finish
+menus
+setup menu endcard players 2 last
+expect 1 log ae end card: staged
+
+test randomizer-hub
+title RANDOMIZER: the hub
+check Rows: AI REPLACEMENT to PLAYER LOADOUT, SETUPS below
+check The right side lists the mission's facts and the pack
+check A on the switch turns it off: rows say NEEDS RANDOMIZER
+menus
+setup menu randomizer hub
+expect 1 log ae randomizer: open
+
+test randomizer-off
+title RANDOMIZER: off, the rows wait
+check Every row under the switch says NEEDS RANDOMIZER
+check LOAD A SETUP waits too
+menus
+setup menu randomizer hub-off
+expect 1 log ae randomizer: open
+
+test randomizer-ai
+title AI REPLACEMENT: one type, an elite zealot
+check ENEMY POOL ONE TYPE shows ENEMY TYPE and RANK
+check ALLY POOL AS ENEMIES shows no ally type row
+check Turning ENEMIES off hides its pool, type and rank rows
+menus
+setup menu randomizer ai
+expect 1 log ae randomizer page: open
+
+test randomizer-weapons
+title AI WEAPONS: the precision pool
+check WEAPON POOL PRECISION; no WEAPON TYPE row
+check Setting the pool to ONE TYPE shows WEAPON TYPE
+menus
+setup menu randomizer weapons
+expect 1 log ae randomizer page: open
+
+test randomizer-pickups
+title WEAPON PICKUPS: one type, shotgun
+check PICKUP POOL ONE TYPE with PICKUP TYPE SHOTGUN
+check FLAMETHROWER is not offered without GO CRAZY
+menus
+setup menu randomizer pickups
+expect 1 log ae randomizer page: open
+
+test randomizer-loadout
+title PLAYER LOADOUT: set
+check WEAPONS SET shows PRIMARY and SECONDARY
+check The right side lists what you start with
+menus
+setup menu randomizer loadout
+expect 1 log ae randomizer page: open
+
+test randomizer-setups
+title LOAD A SETUP: three saved
+check SAVED ON THIS PC (3 OF 8); each row says what it swaps
+check The right side shows the focused setup's four pages
+check X opens the delete question
+menus
+setup menu randomizer setups
+expect 1 log ae randomizer setups: open
+
+test randomizer-delete
+title LOAD A SETUP: delete asks first
+check DELETE <NAME>? with CANCEL focused first
+check DELETE has the red frame; B cancels
+menus
+setup menu randomizer delete
+expect 1 log ae randomizer: delete dialog opened
+
+test randomizer-name
+title SAVE THIS SETUP: the name
+check NAME THIS SETUP; the field holds a name, selected
+check A saves; an empty name is refused with a line
+menus
+setup menu randomizer name
+expect 1 log ae randomizer name: open
+
+test randomizer-itemset
+title ITEM SET: the list
+check NONE first, then each set with how many items are on
+check A picks and goes back to the hub
+menus
+setup menu randomizer itemset
+expect 1 log ae randomizer item set: open
+
+test settings-campaign
+title SETTINGS: GO CRAZY in the CAMPAIGN group
+check GO CRAZY found by search, under CAMPAIGN
+check Its four rows show only with it on
+menus
+setup menu settings find GO CRAZY
+expect 1 log ae settings: find 'GO CRAZY'
+
+test settings-campaign-scoring
+title SETTINGS: scoring rows with SCORING off
+check The three scoring rows say NEEDS SCORING: ON
+menus
+setup config game.campaign_score false
+setup menu settings find SCORING
+expect 1 log ae settings: find 'SCORING'
+
+test settings-campaign-missions
+title SETTINGS: FALL DAMAGE and HEALTH moved
+check FALL DAMAGE is under CAMPAIGN > MISSIONS
+check HEALTH is under CAMPAIGN > MISSIONS too
+menus
+setup menu settings find FALL DAMAGE
+expect 1 log ae settings: find 'FALL DAMAGE'

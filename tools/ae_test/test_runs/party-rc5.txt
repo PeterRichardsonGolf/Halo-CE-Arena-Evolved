@@ -1,0 +1,67 @@
+# PARTY AND POST-GAME LOBBY (rc5): ONE MY PARTY. AE TOURNAMENT's MY PARTY keeps this PC's players as ever (PLAYER 1 on this PC, the open card), and
+# when bots or friends are in the party their rows and the SEARCHING AS A PARTY line follow under them; the PARTY manager (X) holds the same: this PC's
+# players, the party's bots (Y removes), RECENT PLAYERS (A parties up), THIS PC (ADD A PLAYER, PROFILES), the search line, and one footer line that
+# fits the focused row. After a game the lobby keeps the roster (the REMATCH): NEXT GAME IN n, LAST GAME, K / D, the vote with SAME AGAIN first, the
+# news lines, "Still there?" after two games nobody touched; X on a bot there adds it to your party, X on a party bot takes it out. The online states are made up
+# (DEV `social party online`, `social start <id> postgame online`): no network is used. Each test opens on its scene.
+list party-rc5
+revision 2
+title PARTY AND POST-GAME LOBBY
+
+test party-offline
+title MY PARTY: this PC's players, then two bots
+check One panel: PLAYER 1, the open card, then the two bots
+check The head reads 3/4; A reads Find a game (party of 3)
+check SEARCHING AS A PARTY ends it; nothing overlaps
+menus
+setup social party offline
+setup menu tournament focus team-slayer
+
+test party-manager
+title The PARTY manager (X) holds the bots and recent players
+check PLAYERS, PARTY BOTS, RECENT PLAYERS, THIS PC in order
+check A bot's footer says Y removes; a recent's says A parties up
+check One focus order, one footer line, no panel behind it
+menus
+setup social party offline
+setup menu tournament focus team-slayer party
+
+test party-online
+title MY PARTY online (made up)
+check Kestrel44 READY 38 ms, Hollow_Fox PENDING 4:52
+check TheRhino BOT tagged OFFLINE ONLY and FAVOURITE
+check The panel ends with SEARCH FOR: PEOPLE, BOTS FILL
+menus
+setup social party online
+setup menu tournament focus team-slayer
+
+test party-too-big
+title A party too big for DOUBLES
+check The head reads 6/2; the last joined show SITS OUT
+check The line reads A PARTY OF 2 AT MOST; A is refused
+menus
+setup social party toobig
+setup menu tournament focus doubles
+
+test rematch-offline
+title REMATCH: the roster kept, a bot to party up
+check NEXT GAME IN 15, your party of 2 stays, LAST GAME card
+check Tags YOU, LEADER, PARTY, NEW; PARTY UP chip on the focus
+check Vote: A is SAME AGAIN; X on the focus reads Party up
+menus
+setup social start team-slayer postgame bots 2 hold 0
+
+test rematch-online
+title REMATCH online (made up)
+check PING column, STAYING tag, an open seat row
+check Invite sent to Dawnbreaker. over the news
+check The sub line reads 5 of 8 staying
+menus
+setup social start team-slayer postgame online bots 2 hold 0
+
+test still-there
+title STILL THERE? after two idle games
+check The head reads STILL THERE? and the clock has stopped
+check The A prompt reads I'm here
+menus
+setup social start team-slayer postgame still bots 1 hold 0

@@ -1,0 +1,50 @@
+# PLAYER TRAITS: the gametype's JUMP HEIGHT, GRAVITY and PLAYER SPEED rows (GAME OPTIONS > SPARTAN), each a percent
+# of the map's own jump, gravity and speed (100% the map's own). JUMP HEIGHT's byte is the old JUMP row's, the jump's
+# speed: 200% height is 141% speed. Each test opens on Prisoner on the open floor under the west tower's top floor
+# ledge (the FALL STUN list's landing spot, floor -0.41), facing east across the floor. FALL DAMAGE is OFF so a fall
+# never hurts; only the trait differs. Log: "jump: 141% speed, 199% height" for the jump, "traits: GRAVITY 50%"
+# and "traits: PLAYER SPEED 150%" for the others.
+list traits-rc5
+revision 1
+title PLAYER TRAITS: JUMP, GRAVITY, SPEED
+
+test jump-high
+title JUMP HEIGHT 200%: you jump twice as high
+setup option fall_damage off
+setup option jump_height 200%
+setup goto -5.5 -4.7 -0.4 facing 0
+check Jump in place: you rise about twice as high
+check Crouch-jump: higher still, you land on your feet
+check Walk and run about: speed is as normal
+expect 1 log 141% speed, 199% height
+map prisoner
+gametype AE COMP TS
+set bots.count 0
+
+test gravity-low
+title GRAVITY 50%: you float, grenades do not
+fresh
+setup option fall_damage off
+setup option gravity 50%
+setup goto -5.5 -4.7 -0.4 facing 0
+check Jump: you rise higher and come down slowly
+check Throw a grenade: it arcs and falls as normal
+check Run into the tower and jump down: soft landing
+expect 1 log traits: GRAVITY 50%
+map prisoner
+gametype AE COMP TS
+set bots.count 0
+
+test speed-fast
+title PLAYER SPEED 150%: you run half again as fast
+fresh
+setup option fall_damage off
+setup option player_speed 150%
+setup goto -5.5 -4.7 -0.4 facing 0
+check Run across the floor: much faster than normal
+check Strafe and back up: all as fast, no stutter
+check Jump while running: you carry farther
+expect 1 log traits: PLAYER SPEED 150%
+map prisoner
+gametype AE COMP TS
+set bots.count 0
