@@ -42,6 +42,12 @@ int ae_join_helper_taken(void);
 address then fails with it, not with the tunnel's fallback */
 int ae_join_helper_refusal_recent(void);
 
+/* (each frame) THE GAME IS CHANGING MAPS' waiting dialog: its try made when it is due (ae_join_helper_rules.h's retry) */
+void ae_join_helper_tick(void);
+/* (DEV MODE's join_closed) a join refused as closed staged in the menus: the host refuses that many tries, then lets the
+join in (nothing is joined); 0 when no dialog opened */
+int ae_join_helper_stage_closed(int refusals, struct ae_density const *density);
+
 /* UPDATE: asks for a newer version as the game does at its start (an install, or on a Mac its download page) */
 void ae_join_helper_update(void);
 

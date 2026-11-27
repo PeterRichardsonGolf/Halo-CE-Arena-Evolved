@@ -111,6 +111,24 @@ int main(void)
 	CHECK(!strcmp(AE_JH_MCC_STORE_LINK, "steam://store/976730"));
 	ae_join_helper_workshop_item("a@ws123456789012345678901234567890", item, 6);
 	CHECK(strlen(item) == 5);
+	/* THE GAME IS CHANGING MAPS: code 5 is tried again by itself 3 times, 4 s apart; then the closed words */
+	CHECK(AE_JH_RETRY_TRIES == 3 && AE_JH_RETRY_WAIT_MS == 4000UL);
+	CHECK(ae_join_helper_retry_due(ae_join_helper_cause_of_rejection(5), 0, 1));
+	CHECK(ae_join_helper_retry_due(AE_JH_CLOSED, 2, 1) && !ae_join_helper_retry_due(AE_JH_CLOSED, 3, 1));
+	CHECK(!ae_join_helper_retry_due(AE_JH_CLOSED, 0, 0));
+	CHECK(!ae_join_helper_retry_due(AE_JH_FULL, 0, 1) && !ae_join_helper_retry_due(AE_JH_HOST_CLOSED, 0, 1) &&
+		!ae_join_helper_retry_due(AE_JH_GENERIC, 0, 1) && !ae_join_helper_retry_due(AE_JH_CLOSED, -1, 1));
+	/* (a run's tries count while each refusal comes within 30 s of the last; later, a new run) */
+	CHECK(ae_join_helper_retry_tries_before(2, 5000UL) == 2 && ae_join_helper_retry_tries_before(2, AE_JH_RETRY_RUN_MS) == 2);
+	CHECK(ae_join_helper_retry_tries_before(2, AE_JH_RETRY_RUN_MS + 1) == 0 && ae_join_helper_retry_tries_before(0, 10UL) == 0);
+	ae_join_helper_retry_words(2, &words);
+	CHECK(!strcmp(words.title, "THE GAME IS CHANGING MAPS"));
+	CHECK(!strcmp(words.reason, "The host is changing maps. Trying again in a few seconds."));
+	CHECK(!strcmp(words.note, "Try 2 of 3.") && !strcmp(words.action, "CANCEL") && !words.second[0]);
+	ae_join_helper_retry_words(9, &words);
+	CHECK(!strcmp(words.note, "Try 3 of 3."));
+	ae_join_helper_words(AE_JH_CLOSED, NULL, NULL, &words);
+	CHECK(!strcmp(words.title, "THE GAME IS CLOSED") && words.action_kind == AE_JH_ACTION_AGAIN);
 	if (failures)
 		return 1;
 	printf("ae_join_helper_rules ok\n");

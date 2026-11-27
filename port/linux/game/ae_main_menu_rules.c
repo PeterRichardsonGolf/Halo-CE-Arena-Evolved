@@ -22,6 +22,16 @@ int ae_main_row_coming_soon(int row)
 	return row >= AE_MAIN_FORGE && row < AE_MAIN_ROWS;
 }
 
+int ae_main_soon_first(int forge_open)
+{
+	return forge_open ? AE_MAIN_FRIENDS : AE_MAIN_FORGE;
+}
+
+int ae_main_row_coming_soon_when(int row, int forge_open)
+{
+	return row >= ae_main_soon_first(forge_open) && row < AE_MAIN_ROWS;
+}
+
 int ae_main_first_focus(int last_used_row)
 {
 	return last_used_row >= 0 && last_used_row < AE_MAIN_ROWS ? last_used_row : AE_MAIN_MULTIPLAYER;

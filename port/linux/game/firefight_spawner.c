@@ -6679,13 +6679,9 @@ static boolean pod_unit_touches(short pod, long unit_index, real reach)
 		fabs(unit->object.position.z - spot->z) < FF_POD_TOUCH_HEIGHT;
 }
 
-/* the weapon in the unit's hands' reserve full (one of charge charged);
-whether it wanted it */
-static boolean pod_unit_weapon_refill(long unit_index)
+/* a weapon's reserve full (one of charge charged); whether it wanted it */
+static boolean weapon_refill(long weapon_index)
 {
-	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(unit_index, _object_mask_unit);
-	short slot = unit ? unit->unit.current_weapon_index : NONE;
-	long weapon_index = slot >= 0 && slot < MAXIMUM_WEAPONS_PER_UNIT ? unit->unit.weapon_object_indices[slot] : NONE;
 	struct weapon_datum *weapon = weapon_index != NONE ?
 		(struct weapon_datum *)object_try_and_get_and_verify_type(weapon_index, _object_mask_weapon) : NULL;
 	struct weapon_definition *definition = weapon ? weapon_definition_get(weapon->definition_index) : NULL;
@@ -6711,6 +6707,27 @@ static boolean pod_unit_weapon_refill(long unit_index)
 			filled = TRUE;
 		}
 	}
+	return filled;
+}
+
+/* the weapon in the unit's hands' reserve full; whether it wanted it */
+static boolean pod_unit_weapon_refill(long unit_index)
+{
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(unit_index, _object_mask_unit);
+	short slot = unit ? unit->unit.current_weapon_index : NONE;
+
+	return weapon_refill(slot >= 0 && slot < MAXIMUM_WEAPONS_PER_UNIT ? unit->unit.weapon_object_indices[slot] : NONE);
+}
+
+/* every weapon the unit holds given its reserve full (weapon_racks.c's resupply); whether one wanted it */
+boolean firefight_unit_weapons_refill(long unit_index)
+{
+	struct unit_datum *unit = (struct unit_datum *)object_try_and_get_and_verify_type(unit_index, _object_mask_unit);
+	boolean filled = FALSE;
+	short slot;
+
+	for (slot = 0; unit && slot < MAXIMUM_WEAPONS_PER_UNIT; slot++)
+		filled |= weapon_refill(unit->unit.weapon_object_indices[slot]);
 	return filled;
 }
 

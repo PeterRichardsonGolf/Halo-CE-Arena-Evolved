@@ -12,10 +12,13 @@ The join helper (ae_join_helper.h).
 #include "ae_hooks.h"
 #include "../src/ae_mcc.h"
 #include "ae_join_helper.h"
+#include "game/game.h"
+#include "networking/network_game_globals.h"
 #include "ae_silent_rules.h"
 #include "ae_screen_server_lobby.h"
 #include "ae_screen_attention.h"
 #include "ae_sound.h"
+#include "ae_strings.h"
 
 void platform_log(char const *format, ...);
 unsigned long system_milliseconds(void);
@@ -42,6 +45,55 @@ static struct
 } shown;
 
 static void show_words(void);
+
+/* THE GAME IS CHANGING MAPS (ae_join_helper_rules.h's retry): the run's tries, the waiting dialog and the join it makes again */
+static struct
+{
+	int tries;                     /* the tries this run made */
+	unsigned long last_at;         /* when the last try was made or set up */
+	int waiting;                   /* the waiting dialog is up; the next try at due_at */
+	unsigned long due_at;
+	void (*again)(void *context);
+	void *context;
+} retry;
+
+/* (DEV MODE's join_closed) the staged host's refusals left: each try of the staged join is refused as closed until none
+are left; then the staged join is let in (logged, nothing joined) */
+static int staged_refusals;
+static struct ae_density staged_density;
+
+static void retry_picked(short button, void *context)
+{
+	(void)button;
+	(void)context;
+	if (!retry.waiting)
+		return;
+	retry.waiting = 0;
+	retry.tries = 0;
+	platform_log("join helper: trying again cancelled");
+}
+
+/* the waiting dialog for the run's next try (a refusal of code 5 with tries left) */
+static int retry_show(struct ae_density const *density)
+{
+	struct ae_join_helper_words words;
+	struct ae_attention_spec spec;
+
+	ae_join_helper_retry_words(retry.tries, &words);
+	memset(&spec, 0, sizeof(spec));
+	spec.title = words.title;
+	spec.body = words.reason;
+	spec.note = words.note;
+	spec.buttons[0] = words.action;
+	spec.button_count = 1;
+	spec.danger = -1;
+	spec.back = 0;
+	spec.back_label = "Cancel";
+	spec.density = *density;
+	spec.picked = retry_picked;
+	spec.context = &retry;
+	return ae_attention_open(&spec);
+}
 
 static void again_pick(void)
 {
@@ -213,6 +265,30 @@ int ae_join_helper_failed(int reason, char const *detail, struct ae_density cons
 		cause = AE_JH_MCC_OFF;
 	note.code = -1;
 	note.taken = 0;
+	/* (the host is changing maps: the same join made again by itself, a few times, while the waiting dialog is up) */
+	{
+		unsigned long now = system_milliseconds();
+		/* (another join than the one the run of tries was for: a run of its own) */
+		int tries = retry.again != again || retry.context != context ? 0 :
+			ae_join_helper_retry_tries_before(retry.tries, now - retry.last_at);
+
+		if (ae_join_helper_retry_due(cause, tries, again != NULL))
+		{
+			retry.tries = tries + 1;
+			retry.last_at = now;
+			retry.due_at = now + AE_JH_RETRY_WAIT_MS;
+			retry.again = again;
+			retry.context = context;
+			retry.waiting = 1;
+			platform_log("join helper: the game is closed (changing maps): try %d of %d in %lu ms", retry.tries,
+				AE_JH_RETRY_TRIES, AE_JH_RETRY_WAIT_MS);
+			if (retry_show(density))
+				return 1;
+			retry.waiting = 0;
+			platform_log("join helper: the waiting dialog could not open");
+		}
+		retry.tries = 0;
+	}
 	memset(&request, 0, sizeof(request));
 	request.cause = cause;
 	request.detail = detail;
@@ -220,6 +296,64 @@ int ae_join_helper_failed(int reason, char const *detail, struct ae_density cons
 	request.again = again;
 	request.context = context;
 	return ae_join_helper_show(&request);
+}
+
+void ae_join_helper_tick(void)
+{
+	unsigned long now;
+	void (*again)(void *);
+
+	/* (a join that got in ends the run of tries: the next game's refusal starts a run of its own) */
+	if (!retry.waiting && retry.tries && network_game_distributed_client() && game_in_progress())
+		retry.tries = 0;
+	if (!retry.waiting)
+		return;
+	/* (the dialog closed or replaced by something else: no try is made behind it) */
+	if (ae_attention_context() != &retry)
+	{
+		retry.waiting = 0;
+		retry.tries = 0;
+		platform_log("join helper: the waiting dialog went: no more tries");
+		return;
+	}
+	now = system_milliseconds();
+	if ((long)(now - retry.due_at) < 0)
+		return;
+	retry.waiting = 0;
+	retry.last_at = now;
+	again = retry.again;
+	ae_attention_close(&retry);
+	platform_log("join helper: trying the join again (%d of %d)", retry.tries, AE_JH_RETRY_TRIES);
+	if (again)
+		again(retry.context);
+}
+
+/* (DEV MODE's join_closed) a try of the staged join: refused as closed while refusals are left */
+static void staged_try(void *context)
+{
+	(void)context;
+	if (staged_refusals <= 0)
+	{
+		platform_log("join helper: staged join let in (nothing joined)");
+		return;
+	}
+	staged_refusals--;
+	ae_join_helper_rejected(5);
+	if (!ae_join_helper_failed(AE_STR_ERR_REFUSED, NULL, &staged_density, staged_try, NULL))
+		platform_log("join helper: staged refusal shown nothing");
+}
+
+int ae_join_helper_stage_closed(int refusals, struct ae_density const *density)
+{
+	if (refusals < 1 || !density)
+		return 0;
+	retry.tries = 0;
+	retry.waiting = 0;
+	staged_refusals = refusals;
+	staged_density = *density;
+	platform_log("join helper: staged: the host refuses %d tr%s as closed", refusals, refusals == 1 ? "y" : "ies");
+	staged_try(NULL);
+	return ae_attention_is_open();
 }
 
 void ae_join_helper_rejected(unsigned short code)

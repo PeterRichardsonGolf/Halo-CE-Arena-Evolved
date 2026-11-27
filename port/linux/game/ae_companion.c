@@ -170,6 +170,9 @@ static struct
 	/* each crumb's cues (ae_companion_track_push), and whether the human was in the air since the last crumb */
 	unsigned char track_flags[AE_COMPANION_TRACK_MOST];
 	boolean track_air;
+	/* where the human last stood on the ground (ae_companion_track_takeoff), when track_ground_valid */
+	real_point3d track_ground;
+	boolean track_ground_valid;
 	/* the crumbs pushed since the level's start (the first crumb held is serial - count), and each member's oldest crumb it may
 	walk to again (a track that doubles back) */
 	long track_serial;
@@ -761,7 +764,7 @@ int ae_companion_on_deck(long unit_index)
 
 /* THE PLAYER'S TRACK: a crumb each time the first human player on foot and on the ground is AE_COMPANION_TRACK_STEP from the
 last (ae_companion_track_push); a jump or a fall in between (more than AE_COMPANION_TRACK_RISE up or down) starts it again, a
-jump over a barrier marks the crumb before it, a crouch its own crumb */
+jump over a barrier marks the spot it was made from (ae_companion_track_takeoff), a crouch its own crumb */
 static void track_service(void)
 {
 	long human = first_human_unit();
@@ -772,12 +775,19 @@ static void track_service(void)
 		return;
 	if (biped->biped.support_surface_index == NONE && biped->biped.elevator_object_index == NONE)
 	{
-		/* (going up in the air: a jump, not a step down or a fall) */
-		if (object_get(human)->object.translational_velocity.k > 0.02f)
+		/* (going up in the air: a jump, not a step down or a fall; the spot it left the ground from a crumb of its own) */
+		if (object_get(human)->object.translational_velocity.k > 0.02f && !companion.track_air)
+		{
 			companion.track_air = TRUE;
+			if (companion.track_ground_valid && ae_companion_track_takeoff(companion.track, companion.track_flags,
+					&companion.track_count, companion.track_ground.x, companion.track_ground.y, companion.track_ground.z))
+				companion.track_serial++;
+		}
 		return;
 	}
 	object_get_origin(human, &at);
+	companion.track_ground = at;
+	companion.track_ground_valid = TRUE;
 	if (ae_companion_track_push(companion.track, companion.track_flags, &companion.track_count, at.x, at.y, at.z, companion.track_air,
 		biped->biped.crouch > 0.5f))
 		companion.track_serial++;
@@ -825,6 +835,23 @@ int ae_companion_track_goal_cue_for(long slot, real_point3d const *from, real_po
 	if (slot >= 0 && slot < AE_COMPANION_MOST && base + index - 1 > companion.track_least[slot])
 		companion.track_least[slot] = base + index - 1;
 	return 1;
+}
+
+/* a member's walk passes over the crumb at crumb (one it cannot reach): its oldest crumb moves past it */
+void ae_companion_track_skip(long slot, real_point3d const *crumb)
+{
+	long base = companion.track_serial - companion.track_count;
+	int index;
+
+	if (slot < 0 || slot >= AE_COMPANION_MOST)
+		return;
+	for (index = 0; index < companion.track_count; index++)
+	{
+		real dx = companion.track[index][0] - crumb->x, dy = companion.track[index][1] - crumb->y;
+
+		if (dx * dx + dy * dy < 0.0025f && base + index + 1 > companion.track_least[slot])
+			companion.track_least[slot] = base + index + 1;
+	}
 }
 
 /* a member's oldest crumb forgotten (a warp, a new body) */
@@ -1188,10 +1215,13 @@ static void log_service(long now)
 		if (human != NONE)
 		{
 			char ground[180];
+			struct unit_datum const *aiming = (struct unit_datum const *)object_try_and_get_and_verify_type(human, _object_mask_unit);
 
 			object_get_origin(human, &at);
 			ground_text(human, ground, sizeof ground);
-			used = snprintf(line, sizeof line, "human %.1f %.1f %.1f (%s)", at.x, at.y, at.z, ground);
+			/* (and his aim, degrees in the world, for a test player's route made from the log) */
+			used = snprintf(line, sizeof line, "human %.1f %.1f %.1f (%s) aim %.0f", at.x, at.y, at.z, ground,
+				aiming ? atan2(aiming->unit.aiming_vector.j, aiming->unit.aiming_vector.i) * 57.29578 : 0.0);
 		}
 		else
 			used = snprintf(line, sizeof line, "human none");
@@ -1425,6 +1455,13 @@ static void catch_up_service(long now)
 			continue;
 		object_get_origin(player->unit_index, &at);
 		distance = (real)sqrt(distance_squared3d(&at, &human_at));
+		/* (off the player's leash, under an order's point or sent to a vehicle, it is not brought to them) */
+		if (!bots_squad_member_on_leash(slot))
+		{
+			companion.best_distance[slot] = distance;
+			companion.gain_tick[slot] = now > 0 ? now : 1;
+			continue;
+		}
 		if (stuck_indoors(now, slot, iterator.datum_index, player->unit_index, human, &human_at, &at, distance))
 			continue;
 		if (!companion.gain_tick[slot] || distance < companion.best_distance[slot] - AE_COMPANION_CATCH_UP_GAIN ||
@@ -1590,7 +1627,58 @@ int ae_companion_mount(long slot, long vehicle)
 		return 0;
 	companion.mount_vehicle[slot] = vehicle;
 	companion.mount_tick[slot] = game_time_get();
+	/* (sent to a vehicle: it may board again) */
+	if (vehicle != NONE)
+		companion.board_after[slot] = 0;
 	return 1;
+}
+
+/* (board_after) no boarding until it is let again */
+#define BOARD_NEVER 0x7fffffff
+
+/* the squad gets out: every member seated leaves its seat and boards nothing until ae_companion_board_again (FALL IN) or a
+vehicle it is sent to; how many got out */
+int ae_companion_dismount(void)
+{
+	struct data_iterator iterator;
+	struct player_datum *player;
+	int out = 0;
+
+	if (!companion.active)
+		return 0;
+	data_iterator_new(&iterator, player_data);
+	while ((player = (struct player_datum *)data_iterator_next(&iterator)) != NULL)
+	{
+		long slot;
+
+		if (player->local_player_index != NONE || !bots_machine_is_bot(player->network_player_data.machine_index) ||
+			player->unit_index == NONE)
+			continue;
+		slot = player->network_player_data.machine_index - BOTS_FIRST_MACHINE;
+		if (slot < 0 || slot >= AE_COMPANION_MOST || !companion.wanted[slot])
+			continue;
+		companion.mount_vehicle[slot] = NONE;
+		companion.board_after[slot] = BOARD_NEVER;
+		if (vehicle_of(player->unit_index) != NONE)
+		{
+			unit_exit_seat_end(player->unit_index);
+			companion.has_goal[slot] = FALSE;
+			companion.boarded_vehicle[slot] = NONE;
+			companion.boarded_tick[slot] = 0;
+			platform_log("companion: %ld gets out, as ordered", slot + 1);
+			out++;
+		}
+	}
+	return out;
+}
+
+void ae_companion_board_again(void)
+{
+	long slot;
+
+	for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+		if (companion.board_after[slot] == BOARD_NEVER)
+			companion.board_after[slot] = 0;
 }
 
 long ae_companion_mount_of(long slot)
@@ -2109,7 +2197,9 @@ static void vehicles_follow(void)
 		/* (MOUNT: the vehicle it was sent to, reached: in, the gunner's seat first; one it is in is kept) */
 		if (companion.mount_vehicle[slot] != NONE && !object_try_and_get_and_verify_type(companion.mount_vehicle[slot], _object_mask_vehicle))
 			companion.mount_vehicle[slot] = NONE;
+		/* (an upturned one has no seat to take: the member rights it first, ae_squad_go_mount) */
 		if (vehicle == NONE && companion.mount_vehicle[slot] != NONE &&
+			object_get(companion.mount_vehicle[slot])->object.up.k > AE_SQUAD_MOUNT_UPRIGHT &&
 			distance_squared3d(&at, &object_get(companion.mount_vehicle[slot])->object.position) <
 				AE_SQUAD_MOUNT_BOARD * AE_SQUAD_MOUNT_BOARD)
 		{
@@ -2140,8 +2230,9 @@ static void vehicles_follow(void)
 			companion.boarded_tick[slot] = 0;
 			platform_log("companion: %ld gets out", slot + 1);
 		}
+		/* (the player's own vehicle is boarded only on their leash: a member holding an order's point stays at it) */
 		else if (vehicle == NONE && human_vehicle != NONE && game_time_get() >= companion.board_after[slot] &&
-			distance_squared3d(&at, &player_at) < BOARD_DISTANCE * BOARD_DISTANCE)
+			bots_squad_member_on_leash(slot) && distance_squared3d(&at, &player_at) < BOARD_DISTANCE * BOARD_DISTANCE)
 		{
 			short seat = free_seat(human_vehicle);
 
@@ -2437,6 +2528,7 @@ void ae_companion_tick(void)
 	{
 		companion.track_count = 0;
 		companion.track_air = FALSE;
+		companion.track_ground_valid = FALSE;
 		memset(companion.stuck_tick, 0, sizeof companion.stuck_tick);
 		memset(companion.track_least, 0, sizeof companion.track_least);
 	}

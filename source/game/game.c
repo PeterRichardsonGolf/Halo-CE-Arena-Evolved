@@ -428,6 +428,7 @@ void game_tick(
 	scenario_tick_update();
 	{ extern void tag_injector_tick(void); tag_injector_tick(); } /* AE hook */
 	{ extern void firing_range_tick(void); firing_range_tick(); } /* AE hook */
+	{ extern void weapon_racks_tick(void); weapon_racks_tick(); } /* AE hook */
 	/* port: and at its end, before the frame draws the lights */
 	game_state_check_data_arrays();
 	lights_port_recover();
@@ -724,6 +725,7 @@ void game_initialize_for_new_map(
 	network_distributed_new_game();
 	render_interpolation_reset();
 	biped_ragdoll_reset(); /* AE hook */
+	{ extern void weapon_racks_reset(void); weapon_racks_reset(); } /* AE hook */
 	render_initialize_for_new_map();
 	structures_initialize_for_new_map();
 	breakable_surfaces_initialize_for_new_map();

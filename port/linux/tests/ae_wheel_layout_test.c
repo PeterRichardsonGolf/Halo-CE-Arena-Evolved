@@ -590,6 +590,12 @@ static void words_test(void)
 	CHECK(!wcscmp(ae_wheel_word(AE_WHEEL_SMART, 1), L"HELP ME"));
 	CHECK(!wcscmp(ae_wheel_word(AE_WHEEL_ENEMY, 1), L"ENEMY SPOTTED"));
 	CHECK(!wcscmp(ae_wheel_word(AE_WHEEL_GOING, 1), L"GO HERE"));
+	/* the campaign squad's wheel: three slices read as orders, none longer than REGROUP; the rest and a dead caller's as ever */
+	CHECK(!wcscmp(ae_wheel_caption_squad(AE_WHEEL_GOING, 0), L"MOVE") && !wcscmp(ae_wheel_caption_squad(AE_WHEEL_RIDE, 0), L"MOUNT"));
+	CHECK(!wcscmp(ae_wheel_caption_squad(AE_WHEEL_REGROUP, 0), L"FALL IN") && wcslen(L"FALL IN") <= wcslen(L"REGROUP"));
+	CHECK(!wcscmp(ae_wheel_caption_squad(AE_WHEEL_ATTACK, 0), L"ATTACK") && !wcscmp(ae_wheel_caption_squad(AE_WHEEL_GOING, 1), L"GO"));
+	CHECK(!wcscmp(ae_wheel_word_squad(AE_WHEEL_GOING, 0), L"MOVE HERE") && !wcscmp(ae_wheel_word_squad(AE_WHEEL_RIDE, 0), L"MOUNT UP"));
+	CHECK(!wcscmp(ae_wheel_word_squad(AE_WHEEL_REGROUP, 0), L"FALL IN") && !wcscmp(ae_wheel_word_squad(AE_WHEEL_WATCH, 0), L"WATCHING HERE"));
 	CHECK(ae_wheel_caption(99, 0)[0] == 0);
 	CHECK(ae_wheel_word(-1, 0)[0] == 0);
 }

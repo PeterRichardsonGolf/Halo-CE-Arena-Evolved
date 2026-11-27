@@ -92,9 +92,24 @@ void social_emblem_changed(void)
 {
 }
 
-/* ---------- Forge (not in this build: no Forge session is ever on) */
+/* ---------- Forge (port/forge, where the build has it; else no Forge session is ever on) */
 
+#include "opence_features.h"
+
+#if !OPENCE_ENABLE_FORGE
 int g_forge_session_enabled = 0;
+
+int forge_level_is_session(void)
+{
+	return 0;
+}
+
+/* whether a Forge menu is open (the game's chat leaves the keys to it) */
+int forge_menu_open(void)
+{
+	return 0;
+}
+#endif
 
 void social_level_won(short player_index, struct community_run const *run, char const *level_name,
 	wchar_t const *name)

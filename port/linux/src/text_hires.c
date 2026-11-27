@@ -311,6 +311,7 @@ static void player_fonts_check(void)
 	}
 	if (!changed)
 		return;
+	ae_text_fonts_forget(); /* AE hook */
 	for (role = 0; role < 2; role++)
 	{
 		free(player_fonts[role].data);

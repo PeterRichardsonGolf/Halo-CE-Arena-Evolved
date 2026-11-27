@@ -752,6 +752,11 @@ int ae_fireteam_brain_arrived(struct ae_fireteam_table const *table, short brain
 	return brain >= 0 && brain < AE_FIRETEAM_BRAINS && table->brain_arrived[brain];
 }
 
+int ae_fireteam_order_lets_go(int campaign_squad, int rule_lets_go)
+{
+	return !campaign_squad && rule_lets_go;
+}
+
 int ae_fireteam_gave_up(short kind, int able_members, float stalled_seconds)
 {
 	if (kind != _ae_order_regroup && kind != _ae_order_go)

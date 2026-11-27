@@ -444,6 +444,24 @@ static const struct config_setting config_settings[] =
 		"CAMPAIGN, 1 AE TOURNAMENT, 2 MULTIPLAYER, 3 MAPS & MODS .. 10 FRIENDS); -1 (the first\n"
 		"launch) opens on MULTIPLAYER. The menu writes it. (0.9.3 moved the rows:\n"
 		"it replaces menus.last_main_row, whose old numbers meant other rows.)" },
+	{ "forge.last_map", _config_string, "\"\"", NULL, _environment_value, /* AE hook */
+		_platform_all,
+		"The FORGE hub's CONTINUE: the level Forge was started on last (a level's path or a Custom Edition map's\n"
+		"name). The menu writes it." },
+	{ "forge.seconds", _config_integer, "0", NULL, _environment_value, /* AE hook */
+		_platform_all,
+		"The CAREER screen's FORGE TIME: the seconds spent flying as the Monitor in Forge. The game writes it." },
+	{ "forge.maps_made", _config_integer, "0", NULL, _environment_value, /* AE hook */
+		_platform_all,
+		"The CAREER screen's FORGE MAPS MADE: the maps saved under a new name in Forge. The game writes it." },
+	{ "forge.host_only_edit", _config_boolean, "false", "HALO_FORGE_HOST_ONLY_EDIT", _environment_value, /* AE hook */
+		_platform_all,
+		"A hosted Forge game: only the host edits (a joined machine places, moves and deletes nothing). Off: any joined\n"
+		"machine may edit, within its budgets, as Content Evolved's Forge lets them." },
+	{ "forge.clients_edit_map", _config_boolean, "true", "HALO_FORGE_CLIENTS_EDIT_MAP", _environment_value, /* AE hook */
+		_platform_all,
+		"A hosted Forge game: a joined machine may move, scale and delete the map's own objects (the reference's rule). Off: it\n"
+		"edits only what was placed in Forge." },
 	{ "menus.last_playlist", _config_string, "\"casual\"", "HALO_MENUS_LAST_PLAYLIST", _environment_value, /* AE hook */
 		_platform_all,
 		"Arena Evolved's MATCHMAKING: the playlist it opens on, the one picked\n"
@@ -1667,6 +1685,11 @@ static const struct config_setting config_settings[] =
 		"game.tag_injection on and a profile. A level played alone (not a network game, nor a challenge)\n"
 		"is given its tags on, which join the pools their settings name, and the\n"
 		"TAG INJECTOR pools and types." },
+	{ "game.campaign_tag_profile", _config_string, "\"\"", "HALO_CAMPAIGN_TAG_PROFILE", _environment_value, /* AE hook */
+		_platform_all,
+		"The Tag Injector's campaign swap played: its file's name in tag_injector/campaign (without .toml), or \"\" for\n"
+		"none. Chosen in the campaign lobby's RULES > ITEM SETS, with game.tag_injection on. A level played alone is\n"
+		"given the swap's item set and swaps its weapons and enemies as the swap says, in the randomizer's place." },
 	{ "game.randomizer_profile_1", _config_string, "\"\"", "HALO_RANDOMIZER_PROFILE_1", _environment_value, /* AE hook */
 		_platform_all,
 		"A saved setup of the randomizer's pages (SETUPS on its screen): a name, then each page's settings, separated\n"
@@ -1789,6 +1812,17 @@ static const struct config_setting config_settings[] =
 		"Campaign AI squad at doors. order: the squad lines up beside a door the player marks (DEFEND or SMART)\n"
 		"and goes in on ATTACK. every: it also lines up beside any closed door the player waits at, and goes in\n"
 		"when the player walks through or calls ATTACK." },
+	{ "network.leave_on_tag_mismatch", _config_boolean, "false", "HALO_LEAVE_ON_TAG_MISMATCH", _environment_value, /* AE hook */
+		_platform_all,
+		"A host that says its level's shared tags (a randomizer's, the skulls') are not this game's: true leaves\n"
+		"the game with a message; false (the default) plays on with the warning lines, enemies and items\n"
+		"possibly out of step with the host's." },
+	{ "game.companions_formations", _config_boolean, "true", "HALO_SQUAD_FORMATIONS", _environment_value, /* AE hook */
+		_platform_all,
+		"Campaign AI squad: automatic formations. true: the squad forms up by itself as it follows (a file in\n"
+		"tight halls, a stagger, a wedge outdoors, a halt), stacks at any closed door the player waits at with\n"
+		"game.companions_door_stack every, and moves as one on an order. false: no formation of its own; each\n"
+		"member goes to its own place, and the squad stacks only at a door the player marks." },
 	{ "game.companions_loadout", _config_string, "\"standard\"", "HALO_COMPANIONS_LOADOUT", _environment_value, /* AE hook */
 		_platform_all,
 		"Campaign AI squad, bot brain: what each squad member carries. standard: the level's co-op start\n"

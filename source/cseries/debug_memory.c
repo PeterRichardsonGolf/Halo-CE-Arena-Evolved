@@ -523,6 +523,7 @@ void debug_free(
 	struct debug_memory_header *header =
 		(struct debug_memory_header *)pointer - 1;
 
+	if (!pointer) return; /* AE hook */
 	debug_check_memory_globals(file, line);
 	debug_check_pointer_header(header, file, line);
 	debug_check_pointer_overrun(pointer, file, line);

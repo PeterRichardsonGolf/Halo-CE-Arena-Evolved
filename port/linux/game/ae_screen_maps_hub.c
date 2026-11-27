@@ -2130,9 +2130,10 @@ static void hub_draw(struct ae_screen *instance)
 	/* the tab strip: the change dot on REQUIRED FILES while a file is missing, on BROWSE CE MAPS while a map installs */
 	H.tab_defs[AE_HUB_TAB_REQUIRED].changed = H.files.missing > 0;
 	H.tab_defs[AE_HUB_TAB_BROWSE].changed = browse_downloading();
-	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
+	H.tabs.count = (short)ae_hub_tabs_shown(ae_dev_mode_on());
 	H.tabs.active = (short)H.tab;
-	ae_widget_tabs(d, &H.tabs, x, Y(182.0f), U(1030.0f), HIT_TABS);
+	/* (the whole width of the page: six tabs fit at 1920 x 1080 and in a 4:3 frame, the strip scrolls only where they still do not) */
+	ae_widget_tabs(d, &H.tabs, x, Y(182.0f), ae_flow_right_x(flow) - x, HIT_TABS);
 	/* (a search that changed starts the list over) */
 	{
 		static char previous[64];
@@ -3290,7 +3291,7 @@ static void hub_pointer(struct ae_screen *instance, struct ae_pointer const *poi
 static void hub_update(struct ae_screen *instance)
 {
 	(void)instance;
-	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
+	H.tabs.count = (short)ae_hub_tabs_shown(ae_dev_mode_on());
 	if (!ae_hub_tab_visible(H.tab, ae_dev_mode_on()))
 		page_enter(AE_HUB_TAB_INSTALLED, AE_HUB_STATE_LIST);
 	if (H.removing_name[0])
@@ -3372,7 +3373,7 @@ static void hub_init(int staged)
 	for (each = 0; each < AE_HUB_TABS; each++)
 		H.tab_defs[each].label = ae_hub_tab_name(each);
 	H.tabs.tabs = H.tab_defs;
-	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
+	H.tabs.count = (short)ae_hub_tabs_shown(ae_dev_mode_on());
 	H.tabs.hover = -1;
 	ae_text_init(&H.search, "", 48, 0);
 	H.ctl = -1;
@@ -3436,10 +3437,10 @@ void ae_screen_maps_hub_strip(struct ae_flow_screen *flow, int tab)
 {
 	float x = ae_flow_left_x(flow);
 
-	H.tabs.count = (short)(AE_HUB_TABS - (ae_dev_mode_on() ? 0 : 1));
+	H.tabs.count = (short)ae_hub_tabs_shown(ae_dev_mode_on());
 	H.tabs.active = (short)tab;
 	ae_widget_tabs(&flow->density, &H.tabs, x, ae_frame_y(&flow->frame, 182.0f / 1080.0f),
-		ae_flow_u(flow, 1030.0f), HIT_TABS);
+		ae_flow_right_x(flow) - x, HIT_TABS);
 }
 
 int ae_screen_maps_hub_strip_pointer(struct ae_pointer const *pointer)

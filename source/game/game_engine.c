@@ -4203,11 +4203,12 @@ static boolean game_engine_item_log_on(void);
 static void game_engine_update_purge(
 	void)
 {
+	extern int g_forge_session_enabled; /* AE hook */
 	long cutoff_time = game_time_get() - 900;
 
 	/* (a client of the distributed netcode removes items when the host does,
 	port/linux/game/network_distributed.c) */
-	if (!network_game_distributed_client())
+	if (!network_game_distributed_client() && !g_forge_session_enabled) /* AE hook */
 	{
 		struct object_iterator item_iterator;
 
@@ -5546,11 +5547,12 @@ static long game_engine_vehicle_home_current(
 static void game_engine_update_vehicle_respawn(
 	void)
 {
+	extern int g_forge_session_enabled; /* AE hook */
 	long respawn_ticks = ae_vehicle_death_respawn_ticks(game_variant_options_get()->vehicle_respawn_time * TICKS_PER_SECOND); /* AE hook */
 	long now = game_time_get();
 	short index;
 
-	if (respawn_ticks <= 0 || network_game_distributed_client() || now % TICKS_PER_SECOND)
+	if (respawn_ticks <= 0 || network_game_distributed_client() || g_forge_session_enabled || now % TICKS_PER_SECOND) /* AE hook */
 		return;
 	if (firefight_active() && global_scenario_get()->type == _scenario_type_multiplayer)
 		return;
@@ -7147,7 +7149,11 @@ static boolean game_engine_any_player_in_game(
 boolean game_engine_should_end_game(
 	void)
 {
+	extern int g_forge_session_enabled; /* AE hook */
 	boolean should_end_game = FALSE;
+
+	if (g_forge_session_enabled) /* AE hook */
+		return FALSE;
 
 	/* port: firefight */
 	if (firefight_active())
@@ -8873,9 +8879,10 @@ long game_engine_did_player_win(
 boolean multiple_teams_alive(
 	void)
 {
+	extern int g_forge_session_enabled; /* AE hook */
 	boolean result = FALSE;
 
-	if (players_in_game() <= 1)
+	if (g_forge_session_enabled || players_in_game() <= 1) /* AE hook */
 		return TRUE;
 	else
 	{

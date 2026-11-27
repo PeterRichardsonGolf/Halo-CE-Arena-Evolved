@@ -280,6 +280,32 @@ int ae_companion_track_push(float track[][3], unsigned char flags[], int *count,
 	return 1;
 }
 
+int ae_companion_track_takeoff(float track[][3], unsigned char flags[], int *count, float x, float y, float z)
+{
+	if (*count > 0)
+	{
+		float const *last = track[*count - 1];
+		float dx = x - last[0], dy = y - last[1], dz = z - last[2];
+
+		if (dx * dx + dy * dy <= AE_COMPANION_TRACK_TAKEOFF_NEAR * AE_COMPANION_TRACK_TAKEOFF_NEAR && fabsf(dz) < AE_COMPANION_TRACK_RISE)
+			return 0;
+		if (dx * dx + dy * dy >= AE_COMPANION_TRACK_STEP * AE_COMPANION_TRACK_STEP || fabsf(dz) >= AE_COMPANION_TRACK_RISE)
+			return ae_companion_track_push(track, flags, count, x, y, z, 0, 0);
+	}
+	if (*count == AE_COMPANION_TRACK_MOST)
+	{
+		memmove(track[0], track[1], sizeof track[0] * (AE_COMPANION_TRACK_MOST - 1));
+		memmove(&flags[0], &flags[1], sizeof flags[0] * (AE_COMPANION_TRACK_MOST - 1));
+		(*count)--;
+	}
+	track[*count][0] = x;
+	track[*count][1] = y;
+	track[*count][2] = z;
+	flags[*count] = 0;
+	(*count)++;
+	return 1;
+}
+
 int ae_companion_track_cue(float const track[][3], unsigned char const flags[], int count, int goal, float x, float y)
 {
 	int cue = 0;

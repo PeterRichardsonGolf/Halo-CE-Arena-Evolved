@@ -44,6 +44,7 @@ STAGING = Path(os.environ.get("TMPDIR", "/tmp")) / "arena-evolved-deploy-staging
 # (installed name, path in the source tree)
 BUILD_FILES = [(testenv.PROGRAM, "build/linux64/halo"), ("social.txt", "build/linux64/social.txt"),
                ("matchmaking.txt", "build/linux64/matchmaking.txt"), ("credits.txt", "build/linux64/credits.txt"),
+               ("forge_markers.bin", "build/linux64/forge_markers.bin"), ("tag_props.bin", "build/linux64/tag_props.bin"),
                ("CHANGELOG.md", "CHANGELOG.md")]
 NETWORK_FILES = [("brokers.txt", "build/linux64/brokers.txt"), ("masters.txt", "build/linux64/masters.txt")]
 CACHE = "packs/ae_content.aecache"

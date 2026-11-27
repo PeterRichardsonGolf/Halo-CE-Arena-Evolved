@@ -311,6 +311,28 @@ wchar_t const *ae_wheel_caption(int entry, int dead)
 	return captions[entry];
 }
 
+wchar_t const *ae_wheel_caption_squad(int entry, int dead)
+{
+	if (!dead && entry == AE_WHEEL_GOING)
+		return L"MOVE";
+	if (!dead && entry == AE_WHEEL_RIDE)
+		return L"MOUNT";
+	if (!dead && entry == AE_WHEEL_REGROUP)
+		return L"FALL IN";
+	return ae_wheel_caption(entry, dead);
+}
+
+wchar_t const *ae_wheel_word_squad(int entry, int dead)
+{
+	if (!dead && entry == AE_WHEEL_GOING)
+		return L"MOVE HERE";
+	if (!dead && entry == AE_WHEEL_RIDE)
+		return L"MOUNT UP";
+	if (!dead && entry == AE_WHEEL_REGROUP)
+		return L"FALL IN";
+	return ae_wheel_word(entry, dead);
+}
+
 wchar_t const *ae_wheel_word(int entry, int dead)
 {
 	static wchar_t const *const words[AE_WHEEL_COUNT] =

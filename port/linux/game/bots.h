@@ -68,6 +68,8 @@ void bots_squad_reset(long slot);
 the player by a barrier, a member fighting */
 int bots_squad_indoors(void);
 int bots_squad_member_cut_off(long slot);
+/* 1 while the member is on the player's leash (no point order, no vehicle it was sent to): only then is it brought to them */
+int bots_squad_member_on_leash(long slot);
 int bots_squad_member_fighting(long slot);
 
 /* a map's start and end (players.c) */

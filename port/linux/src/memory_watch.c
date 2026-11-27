@@ -33,6 +33,7 @@ port/android/native64/android64_main.c) */
 int backtrace(void **frames, int count);
 void backtrace_symbols_fd(void *const *frames, int count, int descriptor);
 #endif
+#include "ae_crash_deadline.h" /* AE hook */
 #include <signal.h>
 #include <stdio.h>
 #include <string.h>
@@ -168,6 +169,7 @@ static void segv_handler(int signal_number, siginfo_t *information, void *contex
 	frame = ucontext->uc_mcontext.gregs[REG_RBP];
 	stack = ucontext->uc_mcontext.gregs[REG_RSP];
 #endif
+	ae_crash_deadline(10); /* AE hook */
 	length = snprintf(line, sizeof(line), PLATFORM_LOG_PREFIX "fault at %p, pc %llx fp %llx sp %llx\n",
 		information->si_addr, pc, frame, stack);
 	write(STDERR_FILENO, line, (size_t)length);
@@ -240,6 +242,7 @@ static void fault_handler(int signal_number, siginfo_t *information, void *conte
 		void *frames[48];
 		int count, length;
 
+		ae_crash_deadline(10); /* AE hook */
 		length = snprintf(line, sizeof(line),
 			PLATFORM_LOG_PREFIX "segmentation fault at %p, eip %08x ebp %08x esp %08x\n",
 			information->si_addr, (unsigned)ucontext->uc_mcontext.gregs[REG_EIP],
@@ -287,6 +290,7 @@ void memory_watch_initialize(void)
 
 	if (watch_active)
 		return;
+	ae_crash_backtrace_ready(); /* AE hook */
 #ifdef HALO_64BIT
 	watch_page_size = platform_host_page_size;
 	watch_page_count = PLATFORM_CONTIGUOUS_SIZE / watch_page_size;

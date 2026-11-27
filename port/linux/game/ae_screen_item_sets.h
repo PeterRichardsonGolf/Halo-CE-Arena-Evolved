@@ -15,5 +15,8 @@ page. The rules are ae_item_sets_rules.h's, what it reads and does ae_item_sets_
 int ae_screen_item_sets_open(int staged, int scene);
 /* closes the page when it is the top screen (the hub staging another page) */
 void ae_screen_item_sets_close(void);
+/* the real page opened from the campaign lobby's picker on a campaign swap (kind 0: its file) or a set (kind 1: its folder); B comes back to
+the picker. 0 when it did not open */
+int ae_screen_item_sets_open_from(int kind, char const *id);
 
 #endif

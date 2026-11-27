@@ -85,8 +85,10 @@ static void build(struct ae_pvem_rows *r)
 	r->x_hidden = listed == 0;
 	if (listed == 0)
 	{
+		/* (how a recording comes: RECORD's state, and Y to turn it on) */
 		flow->rows[n++] = (struct ae_flow_row){ AE_FLOW_ROW_OWN, -1, "NO RECORDINGS YET", NULL,
-			"Turn on RECORD with {Y}, then play a network game: it is recorded from its first tick, and shows here afterwards.", NULL, 0, 0, 1 };
+			recording_on() ? "RECORD is ON. Play a network game: it shows here afterwards." :
+			"RECORD is OFF. Press {Y} to turn it on, then play a network game: it shows here afterwards.", NULL, 0, 0, 1 };
 		flow->count = n;
 		return;
 	}
@@ -315,7 +317,8 @@ static int open_over(void)
 	memset(&theater_screen, 0, sizeof(theater_screen));
 	theater_screen.name = "theater";
 	theater_screen.title = "THEATER";
-	snprintf(theater_screen.crumb, sizeof(theater_screen.crumb), "WATCH A RECORDED GAME");
+	/* (a testing feature: the crumb starts with the mark) */
+	snprintf(theater_screen.crumb, sizeof(theater_screen.crumb), AE_TESTING_CRUMB "WATCH A RECORDED GAME");
 	theater_screen.build = build;
 	theater_screen.step = step;
 	theater_screen.a_word = a_word;

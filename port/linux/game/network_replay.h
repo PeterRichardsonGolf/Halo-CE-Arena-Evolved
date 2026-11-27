@@ -95,6 +95,10 @@ void network_replay_view_behind(void);
 void network_replay_view_cinematic(void);
 void network_replay_view_next(void);
 char const *network_replay_view_name(boolean next, boolean capitals);
+/* the view being watched as the camera bar words it: 0 behind, 1 eyes, 2 free camera, 3 cinematic (-1 when none plays); and
+whether the free camera tracks the player now (the stick click toggles it) */
+int network_replay_camera_view(void);
+boolean network_replay_camera_tracking(void);
 long network_replay_position_seconds(void);
 long network_replay_length_seconds(void);
 /* to a second of the game: FALSE when not playing */

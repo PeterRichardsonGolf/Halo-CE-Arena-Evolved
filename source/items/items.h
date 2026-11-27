@@ -23,6 +23,9 @@ enum
 	_item_on_object_bit,
 	_item_does_not_accelerate_bit,
 	_item_part_of_respawn_system_bit,
+	/* port: some unit has carried it, so lying loose it was dropped (Forge
+	clears those, and not the map's own) */
+	_item_has_been_held_bit,
 	NUMBER_OF_ITEM_DATUM_FLAGS,
 };
 

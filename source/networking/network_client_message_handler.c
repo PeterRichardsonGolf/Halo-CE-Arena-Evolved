@@ -205,6 +205,8 @@ symbols in this file:
 #endif
 #include "networking/network_messages.h"
 #include "ae_chupa_link.h" /* AE hook */
+#include "ae_ce_host.h" /* AE hook */
+#include "networking/network_game_protocol.h" /* AE hook */
 #include "ae_net_extensions.h" /* AE hook */
 #include "ae_net_extensions_rules.h" /* AE hook */
 
@@ -1088,6 +1090,7 @@ static boolean network_game_client_receive_game_settings_piece(
 {
 	boolean result = TRUE;
 
+	{ int ce_piece = ae_ce_host_piece(piece->total_size, piece->offset, piece->length, piece->data, &network_game_client_settings_staging, sizeof(network_game_client_settings_staging)); if (ce_piece == AE_CE_HOST_PIECE_MORE) return TRUE; if (ce_piece == AE_CE_HOST_PIECE_REFUSED) { network_game_client_rejected_by_game(client, source_address, _rejection_code_game_is_closed); return TRUE; } if (ce_piece == AE_CE_HOST_PIECE_DONE) { network_game_client_settings_staging_size = 0; result = network_game_client_game_settings_updated(client, &network_game_client_settings_staging); ae_ce_host_record_result(result); if (!result) network_event("network_game_client_game_settings_updated() failed"); return result; } } /* AE hook */
 	if (!ae_chupa_link_record_size_taken(piece->total_size) || /* AE hook */
 		piece->length > sizeof(piece->data) ||
 		piece->offset + piece->length > sizeof(network_game_client_settings_staging))

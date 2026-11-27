@@ -523,6 +523,25 @@ static void test_rc2_size(void)
 	CHECK(ae_sr_read(&again, big) == 1 && again.player_count == AE_SR_PLAYERS && again.player[255].map_count == AE_SR_MAPS);
 }
 
+/* a custom map's names (its map and its weapons' tag paths) with a newline or a "|": the last game's line still reads
+back */
+static void test_last_game_names(void)
+{
+	struct ae_sr_player const *goat;
+
+	ae_sr_init(&record);
+	fresh(1);
+	snprintf(game.map, sizeof(game.map), "Blood\nGulch");
+	add("Goat", 0, 1, 1, 10, 4, 2);
+	extras(1, 1, 0, 10, 4, 2, 600, 1);
+	weapon("battle\nrifle | x", 6);
+	ae_sr_record_game(&record, &game);
+	CHECK(ae_sr_write(&record, text, sizeof(text)) > 0);
+	CHECK(ae_sr_read(&again, text) == 1);
+	goat = ae_sr_find(&again, "goat");
+	CHECK(goat && goat->last.has && !strcmp(goat->last.map, "Blood?Gulch") && !strcmp(goat->last.weapon, "battle?rifle ? x"));
+}
+
 int main(void)
 {
 
@@ -537,6 +556,7 @@ int main(void)
 	test_rc2_file();
 	test_rc2_old_files();
 	test_rc2_size();
+	test_last_game_names();
 	if (failures)
 		return 1;
 	printf("ok\n");

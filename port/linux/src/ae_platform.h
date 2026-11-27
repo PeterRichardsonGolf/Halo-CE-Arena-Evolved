@@ -159,6 +159,9 @@ append "<date> <time> <debug.test_name> PASS|FAIL" to that file, once a run, and
 the key down was F7 or F8 and taken (the event goes no further), else 0. The pump's hook, each frame: with
 debug.test_verdict_auto "PASS:<seconds>" or "FAIL:<seconds>", that verdict by itself that many seconds after the
 first frame (the batch runner's own checks, no key to press). Nothing on the dedicated server */
+/* whether a function key (an SDL scancode) is one Forge binds in a Forge session: TEST RUN's and the menus' readings leave it
+to Forge (ae_forge_rules.h) */
+int ae_platform_forge_key_taken(int scancode);
 int ae_platform_test_verdict_key(int scancode);
 void ae_platform_test_verdict_auto(void);
 /* the headless tests' virtual pad attached (debug.test_input "pad:" tokens): its input counts with the hidden window

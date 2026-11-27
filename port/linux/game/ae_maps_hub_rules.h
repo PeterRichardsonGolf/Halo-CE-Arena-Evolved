@@ -121,8 +121,10 @@ struct ae_hub_option
 };
 
 const char *ae_hub_tab_name(int tab);
-/* whether a page is in the strip now */
+/* whether a page is in the strip now (every page, DEV MODE or not) */
 int ae_hub_tab_visible(int tab, int dev_mode);
+/* how many pages the strip shows (the visible ones are its first) */
+int ae_hub_tabs_shown(int dev_mode);
 /* the requested page, or INSTALLED when it is invalid or hidden */
 int ae_hub_tab_resolve(int tab, int dev_mode);
 /* the page named (installed, required, browse, workshop, mods, sets; any case), or -1 */

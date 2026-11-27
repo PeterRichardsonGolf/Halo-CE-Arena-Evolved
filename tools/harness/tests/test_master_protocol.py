@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from harness import CHECK_FAILED, ROOT, build, constant, enum_with, function, mutated, read, run, structure  # noqa: E402
+from harness import CHECK_FAILED, ROOT, build, ce_host_listing, constant, enum_with, function, mutated, read, run, structure  # noqa: E402
 
 HERE = Path(__file__).resolve().parent
 CHECKOUT_VECTORS = ROOT.parent / "opence-master-server" / "testdata" / "vectors.json"
@@ -114,7 +114,7 @@ NEGATIVE_CONTROLS = {
                            "listing-read"),
     "listing-signs-less": (("bytes, (size_t)listing->signed_size);", "bytes, (size_t)listing->signed_size - 1);"),
                            "listing_signed", "listing-read"),
-    "listing-any-format": (("bytes[2] != LISTING_FORMAT)", "0)"), "listing_read", "listing-bounds"),
+    "listing-any-format": (("(bytes[2] != LISTING_FORMAT && bytes[2] != AE_CE_HOST_LISTING_FORMAT))", "0)"), "listing_read", "listing-bounds"),
     "listing-names-long": (("if (length > maximum || *offset + length > size)", "if (*offset + length > size)"),
                            "get_text", "listing-bounds"),
     "listing-trailing-taken": (("if (offset + P2P_SIGNATURE_SIZE != size)", "if (offset + P2P_SIGNATURE_SIZE > size)"),
@@ -271,6 +271,7 @@ def generated(fault=None, faulty_function=None):
         config += f"#define {name} {constant(publisher, name)}\n"
     config += structure(read("port/linux/src/update.h"), "update_response") + "\n"
     config += structure(publisher, "master") + "\n" + state.group(0) + "\n"
+    config += ce_host_listing()
     config += enum_with(lobby, "LISTING_FORMAT = 1") + "\n" + label.group(0) + "\n" + structure(lobby, "listing") + "\n"
     # (the AE master's pinned entry and listing hooks: the test sees the OpenCE masters alone, so the AE entry reads as an
     # unusable placeholder (the stub keeps every other default) and the AE publish and list fields add nothing)

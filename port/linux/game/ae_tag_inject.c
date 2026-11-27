@@ -16,6 +16,8 @@ is played: the tag injector says why. A tag is taken by its number in its catego
 #include "cev_glue.h"
 #include "mcc_maps.h"
 #include "ae_tag_inject.h"
+#include "ae_set_body.h"
+#include "ae_item_sets_rules.h"
 #include "randomizer.h"
 #include "firing_range.h"
 
@@ -31,6 +33,11 @@ long port_tag_profiles_find(const char *folder);
 long port_tag_profiles_create(const char *name);
 long port_tag_profiles_tag_count(long profile);
 int port_tag_profiles_delete(long profile);
+long port_tag_profiles_tag_find(long profile, unsigned long group, const char *name);
+const char *port_tag_profiles_tag_map(long profile, long tag);
+unsigned long port_tag_profiles_tag_group(long profile, long tag);
+const char *port_tag_profiles_tag_name(long profile, long tag);
+int port_tag_profiles_set_option(long profile, const char *key, const char *value);
 
 #define INJECT_PROFILE "ae_dev"
 
@@ -50,7 +57,9 @@ static struct
 	boolean loaded;
 	/* the biped last taken ("" none) */
 	char biped[MAXIMUM_INJECT_PATH];
-} inject = { FALSE, FALSE, "" };
+	/* the hands last taken, as a set keeps them ("path#map"; "" none) */
+	char hands[MAXIMUM_INJECT_PATH];
+} inject = { FALSE, FALSE, "", "" };
 
 static long inject_profile(
 	boolean make)
@@ -179,7 +188,8 @@ boolean ae_tag_inject_read(
 	long size,
 	void *buffer)
 {
-	return inject.loaded && tag_injector_read(tag_index, offset, size, buffer) != 0;
+	/* (whoever added the tags: this command's profile, or a level's props, a Forge session's or a game's shared ones, none of which set inject.loaded) */
+	return tag_injector_tags_loaded() && tag_injector_read(tag_index, offset, size, buffer) != 0;
 }
 
 long ae_tag_inject_player_biped(
@@ -188,7 +198,7 @@ long ae_tag_inject_player_biped(
 	long tag_index;
 
 	if (!inject.loaded || !inject.biped[0])
-		return unit_definition_index;
+		return ae_set_body_biped(unit_definition_index);
 	tag_index = tag_loaded('bipd', inject.biped);
 
 	return tag_index != NONE ? tag_index : unit_definition_index;
@@ -236,6 +246,7 @@ boolean ae_tag_inject_command(
 			return FALSE;
 		}
 		inject.biped[0] = 0;
+		inject.hands[0] = 0;
 		if (profile != NONE && !port_tag_profiles_delete(profile))
 		{
 			snprintf(answer, answer_size, "the profile could not be deleted");
@@ -312,6 +323,8 @@ boolean ae_tag_inject_command(
 			long carried = 0;
 			long profile = inject_profile(TRUE);
 			char const *path;
+			/* (the path copied before the tag is taken: taking it opens the map again, and the menu's own name is gone after) */
+			char taken[256];
 
 			if (index == NONE)
 			{
@@ -325,6 +338,8 @@ boolean ae_tag_inject_command(
 				return FALSE;
 			}
 			path = tag_injector_category_tag(category, index);
+			snprintf(taken, sizeof(taken), "%s", path ? path : "");
+			path = taken;
 			if (!tag_injector_tag_add(profile, category, index, &carried, reason, sizeof(reason)) &&
 				tag_injector_tag_in_profile(profile, category, index) == NONE)
 			{
@@ -333,12 +348,55 @@ boolean ae_tag_inject_command(
 			}
 			if (tag_injector_category_group(category) == 'bipd' && path)
 				snprintf(inject.biped, sizeof(inject.biped), "%s", path);
+			if (tag_injector_category_group(category) == 'mod2' && path)
+			{
+				long entry = port_tag_profiles_tag_find(profile, 'mod2', path);
+				long count = port_tag_profiles_tag_count(profile), each;
+				size_t length = strlen(path);
+
+				ae_is_hands_key(path, entry == NONE ? "" : port_tag_profiles_tag_map(profile, entry), inject.hands, sizeof(inject.hands));
+				/* (a map's hands are kept by "path#map", tag_injector.c's menu_hands_entry_name: that entry's whole name is the key) */
+				for (each = 0; entry == NONE && each < count; each++)
+				{
+					char const *name = port_tag_profiles_tag_name(profile, each);
+
+					if (port_tag_profiles_tag_group(profile, each) == 'mod2' && name && !strncmp(name, path, length) && name[length] == '#')
+					{
+						snprintf(inject.hands, sizeof(inject.hands), "%s", name);
+						break;
+					}
+				}
+			}
 			snprintf(answer, answer_size, "'%s' is in the profile (%ld tags, %ld carried); inject on, then load a level",
 				path ? path : "?", port_tag_profiles_tag_count(profile), carried);
 			return TRUE;
 		}
 	}
-	snprintf(answer, answer_size, "inject status|maps|open <level>|list <category>|take <category> <index>|close|on|off|clear");
+	if (!strcmp(verb, "body") && words >= 3)
+	{
+		long profile = inject_profile(FALSE);
+		char const *hands = !strcmp(first, "taken") ? inject.hands : !strcmp(first, "campaign") ? "campaign" : "";
+
+		/* (the profile is a set: its YOUR BODY is the biped last taken, the hands (own: its own, campaign: the campaign's, taken: the
+		last hands taken) and the movement (spartan or own) the set's file keeps) */
+		if (profile == NONE || !inject.biped[0] || (!strcmp(first, "taken") && !inject.hands[0]) ||
+			(strcmp(second, "spartan") && strcmp(second, "own")))
+		{
+			snprintf(answer, answer_size, "inject body <own|campaign|taken> <spartan|own>: needs a biped taken (and hands for taken)");
+			return FALSE;
+		}
+		if (!port_tag_profiles_set_option(profile, "player_biped", inject.biped) ||
+			!port_tag_profiles_set_option(profile, "player_hands", hands) ||
+			!port_tag_profiles_set_option(profile, "player_movement", !strcmp(second, "own") ? "own" : ""))
+		{
+			snprintf(answer, answer_size, "the profile's file cannot be written");
+			return FALSE;
+		}
+		snprintf(answer, answer_size, "the set %s plays as %s, hands %s, movement %s", INJECT_PROFILE, inject.biped,
+			hands[0] ? hands : "its own", second);
+		return TRUE;
+	}
+	snprintf(answer, answer_size, "inject status|maps|open <level>|list <category>|take <category> <index>|body <own|campaign|taken> <spartan|own>|close|on|off|clear");
 
 	return FALSE;
 }

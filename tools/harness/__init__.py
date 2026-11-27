@@ -16,6 +16,14 @@ def read(relative):
     return (ROOT / relative).read_text(encoding="latin-1")
 
 
+def ce_host_listing():
+    """What p2p_lobby.c's listing hooks take from ae_ce_host_rules (the real constants and the real taken-test, as the build has them)"""
+    header = read('port/linux/game/ae_ce_host_rules.h')
+    code = ''.join(re.search(r"^#define " + name + r" \d+$", header, re.M).group(0) + '\n'
+                   for name in ('AE_CE_HOST_MOD_VERSION', 'AE_CE_HOST_LISTING_FORMAT'))
+    return code + function(read('port/linux/game/ae_ce_host_rules.c'), 'ae_ce_host_listing_taken') + '\n'
+
+
 def function(source, name):
     """A function's definition (static, inline or not), taken by matching braces; LookupError if not found."""
     match = re.search(r"^(?:static |__inline )?[\w *]+?\(?\b" + re.escape(name) + r"\)?\(\s*[^;{]*\)\s*\{", source, re.M)

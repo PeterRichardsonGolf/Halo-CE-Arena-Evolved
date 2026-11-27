@@ -268,7 +268,10 @@ void ae_career_pending_settle(struct ae_career *career, int crashed, unsigned lo
 	{
 		struct ae_career_pending game = career->pending[0];
 
-		ae_career_pending_clear(career, game.profile);
+		/* (taken out by its place, not looked up by its profile: a profile a find cleans to another, one read with a
+		control character in it, is never found, and the loop never ended) */
+		memmove(&career->pending[0], &career->pending[1], sizeof(career->pending[0]) * (size_t)(career->pending_count - 1));
+		career->pending_count--;
 		if (!crashed)
 		{
 			struct ae_career_match const *match = ae_career_match_find(career, game.profile, game.playlist);

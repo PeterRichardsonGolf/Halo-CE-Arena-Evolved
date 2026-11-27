@@ -10,8 +10,6 @@ enemy in the room was seen or heard. Included by ae_bots_squad.inc.
 
 int config_text(char const *name, char *text, size_t size);
 
-/* a machine definition's kind for a door (device_machines.c) */
-#define AE_SQUAD_DOOR_MACHINE_KIND 0
 /* a door the squad has just done is not stacked at on its own again for this long (EVERY DOOR) */
 #define AE_SQUAD_DOOR_AGAIN_TICKS 600
 
@@ -79,13 +77,14 @@ static real ae_squad_door_position(long door)
 	return machine ? machine->device.position : 0.0f;
 }
 
-/* whether a machine is a door, and whether the level keeps it from opening by itself (locked) */
+/* whether a machine is a door (ae_bots_squad_machine_is_door), and whether the level keeps it from opening by itself (locked) */
 static boolean ae_squad_door_is(long object_index, boolean *locked)
 {
 	struct machine_datum const *machine = (struct machine_datum const *)object_try_and_get_and_verify_type(object_index,
 		_object_mask_machine);
 
-	if (!machine || machine_definition_get(machine->definition_index)->machine.type != AE_SQUAD_DOOR_MACHINE_KIND)
+	if (!machine || !ae_bots_squad_machine_is_door(machine_definition_get(machine->definition_index)->machine.type,
+			tag_get_name(machine->definition_index)))
 		return FALSE;
 	if (locked)
 		*locked = (boolean)ae_bots_squad_door_shut_for_good(TEST_FLAG(machine->machine.flags, _machine_does_not_operate_automatically_bit),
@@ -638,7 +637,9 @@ static void ae_squad_door_tick(long now)
 	}
 	object_get_origin(leader_unit, &player_at);
 	kind = ae_fireteam_order_of(fireteam);
-	every = (boolean)(config_text("game.companions_door_stack", value, sizeof(value)) && ae_campaign_rows_door_is_every(value));
+	/* (FORMATIONS off: EVERY DOOR is taken as ON ORDER, no stack the player did not mark) */
+	every = (boolean)ae_bots_squad_door_every(config_boolean("game.companions_formations"),
+		config_text("game.companions_door_stack", value, sizeof(value)) && ae_campaign_rows_door_is_every(value));
 	/* (the player's stillness, for EVERY DOOR) */
 	if (bots_distance3d(&player_at, &ae_squad_door.player_was) > 0.3f || now < ae_squad_door.player_still_since)
 	{
@@ -660,8 +661,7 @@ static void ae_squad_door_tick(long now)
 			if (near != NONE && ae_squad_door_is(near, &locked) &&
 				(near != ae_squad_door.last_door || now - ae_squad_door.ended > AE_SQUAD_DOOR_AGAIN_TICKS || now < ae_squad_door.ended) &&
 				ae_bots_squad_door_auto(every, now - ae_squad_door.player_still_since,
-					(float)bots_distance3d(&object_get(near)->object.bounding_sphere_center, &player_at),
-					TRUE, locked))
+					(float)bots_distance3d(&object_get(near)->object.bounding_sphere_center, &player_at), locked))
 				door = near;
 		}
 		/* (bot events on: what EVERY DOOR saw, every 2 s: the doors within 10 units, open or not, locked or not) */
@@ -681,6 +681,17 @@ static void ae_squad_door_tick(long now)
 					platform_log("ae squad: door check: a door %.1f away at %.1f %.1f %.1f (open %.2f%s)", away, object->object.position.x,
 						object->object.position.y, object->object.position.z, ae_squad_door_position(iterator.index),
 						any_locked ? ", locked" : "");
+				/* (a machine of another kind there, its kind: a door the level made of another machine is seen) */
+				else if (away <= 10.0f)
+				{
+					struct machine_datum const *machine = (struct machine_datum const *)object_try_and_get_and_verify_type(iterator.index,
+						_object_mask_machine);
+
+					if (machine)
+						platform_log("ae squad: door check: a machine of kind %d %.1f away at %.1f %.1f %.1f (open %.2f)",
+							(int)machine_definition_get(machine->definition_index)->machine.type, away, object->object.position.x,
+							object->object.position.y, object->object.position.z, ae_squad_door_position(iterator.index));
+				}
 			}
 		}
 		if (door != NONE)

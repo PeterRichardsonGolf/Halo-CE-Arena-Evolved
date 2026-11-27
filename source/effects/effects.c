@@ -173,6 +173,10 @@ symbols in this file:
 #include "units/bipeds.h"
 #include "units/units.h"
 #include "ae_silent.h" /* AE hook */
+#include "opence_features.h" /* AE hook */
+#if OPENCE_ENABLE_FORGE
+int forge_volumes_effect_damage_blocked(long object_index); /* AE hook */
+#endif
 #undef real_local_random
 
 /* ---------- constants */

@@ -11,6 +11,8 @@ The high-res text's fonts as AE lays its text out by them (ae_text_hires.h).
 
 #include "ae_text_hires.h"
 
+#include <string.h>
+
 /* the GSUB table: its bytes and their count; every read is held inside them */
 struct table
 {
@@ -138,14 +140,21 @@ static unsigned long font_table(unsigned char const *data, unsigned long fontsta
 	return 0;
 }
 
+/* (the GSUB tables of the fonts seen, by their data: two Overpass weights draw the game's text) */
+static struct
+{
+	unsigned char const *data;
+	unsigned long gsub, length;
+} known[8];
+
+void ae_text_fonts_forget(void)
+{
+	/* (a font's data is freed and another read: it may be at the same address) */
+	memset(known, 0, sizeof(known));
+}
+
 int ae_text_tabular_glyph(struct stbtt_fontinfo const *info, unsigned long code)
 {
-	/* (the GSUB tables of the fonts seen: two Overpass weights draw the game's text) */
-	static struct
-	{
-		unsigned char const *data;
-		unsigned long gsub, length;
-	} known[8];
 	unsigned int slot;
 	int glyph;
 

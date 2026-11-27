@@ -37,6 +37,7 @@ Its log: "ae main menu: open", "ae main menu: <item>", "ae main menu: quit", "ae
 #include "ae_hooks.h"
 #include "ae_screen_browser.h"
 #include "ae_screen_campaign.h"
+#include "ae_screen_forge.h"
 #include "ae_screen_create_game.h"
 #include "ae_screen_join_address.h"
 #include "ae_screen_join_invite.h"
@@ -83,7 +84,7 @@ enum
 };
 enum { ROW_MULTIPLAYER = AE_FLOW_ROW_OWN, ROW_CAMPAIGN, ROW_SETTINGS, ROW_PROFILES, ROW_QUIT, ROW_CREATE, ROW_JOIN,
 	ROW_BROWSER, ROW_LAN, ROW_HOST_SERVER, ROW_MOTD, ROW_WHATS_NEW, ROW_COMING_SOON, ROW_MATCHMAKING, ROW_ADDRESS, ROW_TOURNAMENT, ROW_MAPS,
-	ROW_FIREFIGHT, ROW_DAILY, ROW_THEATER };
+	ROW_FIREFIGHT, ROW_DAILY, ROW_THEATER, ROW_FORGE };
 
 /* (menus phase 1) the main menu's rows by ae_main_menu_rules.h's order: their kinds and descriptions (spec §5; copy in
 one place for the owner to edit). COMING SOON's rows say only "Coming soon." */
@@ -107,7 +108,8 @@ static struct { short kind; const char *help; } const main_rows[AE_MAIN_ROWS] =
 static short main_flow_index(int row)
 {
 	/* (COMING SOON's label before FORGE; DAILY CHALLENGE's row after CAMPAIGN's, with its setting on) */
-	return (short)((row >= AE_MAIN_FORGE ? row + 1 : row) + (ae_screen_daily_row_shown() && row > AE_MAIN_CAMPAIGN ? 1 : 0));
+	return (short)((row >= ae_main_soon_first(ae_screen_forge_available()) ? row + 1 : row) +
+		(ae_screen_daily_row_shown() && row > AE_MAIN_CAMPAIGN ? 1 : 0));
 }
 
 static int main_row_of(short flow_index)
@@ -119,7 +121,11 @@ static int main_row_of(short flow_index)
 		if (flow_index > AE_MAIN_CAMPAIGN + 1)
 			flow_index--;
 	}
-	return flow_index > AE_MAIN_FORGE ? flow_index - 1 : flow_index == AE_MAIN_FORGE ? -1 : flow_index;
+	{
+		int soon = ae_main_soon_first(ae_screen_forge_available());
+
+		return flow_index > soon ? flow_index - 1 : flow_index == soon ? -1 : flow_index;
+	}
 }
 
 static struct
@@ -151,11 +157,19 @@ static void rows_main(void)
 
 	for (row = 0; row < AE_MAIN_ROWS; row++)
 	{
-		if (row == AE_MAIN_FORGE)
+		if (row == ae_main_soon_first(ae_screen_forge_available()))
 			flow->rows[count++] = (struct ae_flow_row){ AE_FLOW_ROW_HEADER, -1, COMING_SOON_LABEL, NULL, NULL, NULL };
 		flow->rows[count] = (struct ae_flow_row){ main_rows[row].kind, -1, ae_main_row_label(row), NULL,
 			main_rows[row].help, NULL };
-		flow->rows[count].muted = (short)ae_main_row_coming_soon(row);
+		flow->rows[count].muted = (short)ae_main_row_coming_soon_when(row, ae_screen_forge_available());
+		/* (rc9: FORGE is a door where this build has Forge) */
+		if (row == AE_MAIN_FORGE && ae_screen_forge_available())
+		{
+			flow->rows[count].kind = ROW_FORGE;
+			flow->rows[count].help = "Fly over a map as the Monitor and build on it: pick objects up, turn them, copy them.";
+			/* (a testing feature: the mark, where its own badge has nothing to say) */
+			flow->rows[count].value = ae_screen_forge_badge() ? ae_screen_forge_badge() : AE_TESTING_MARK;
+		}
 		/* (FIREFIGHT waits on its data: a PC with none of the campaign maps it is built from says so; any other opens, the lobby builds it) */
 		if (row == AE_MAIN_FIREFIGHT && ae_firefight_doors_data() == AE_FFD_DATA_NEEDS_MAPS)
 		{
@@ -169,6 +183,9 @@ static void rows_main(void)
 			flow->rows[count].value = ae_screen_whats_new_badge();
 		else if (row == AE_MAIN_MAPS)
 			flow->rows[count].value = ae_screen_maps_hub_badge();
+		/* (a testing feature: its row's status value says so, in the slot the badges use) */
+		else if (row == AE_MAIN_THEATER)
+			flow->rows[count].value = AE_TESTING_MARK;
 		flow->rows[count].status = flow->rows[count].value != NULL;
 		count++;
 		if (row == AE_MAIN_CAMPAIGN && ae_screen_daily_row_shown())
@@ -843,6 +860,12 @@ static void accept(int multiplayer, short row)
 			ae_sound_request(AE_SOUND_FORWARD, 0);
 		else
 			ae_flow_error(flow, "Firefight did not open", "Firefight's lobby could not be opened.");
+		break;
+	case ROW_FORGE:
+		if (ae_screen_forge_open())
+			ae_sound_request(AE_SOUND_FORWARD, 0);
+		else
+			ae_flow_error(flow, "FORGE did not open", "FORGE could not be opened.");
 		break;
 	case ROW_THEATER:
 		if (ae_screen_theater_open())

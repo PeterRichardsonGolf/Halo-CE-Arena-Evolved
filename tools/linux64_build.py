@@ -24,6 +24,7 @@ from .lp64_build import (
     lp64_excluded,
     lp64_game_flags,
 )
+from .forge_build import FORGE_DATA_FILES, FORGE_DIR
 from .ninja_syntax import Writer
 from .voice_assets import announcers_build, voices_build
 
@@ -59,7 +60,8 @@ def linux64_configure_inputs() -> List[Path]:
     """Files whose change must re-run configure.py."""
     if not LINUX_PORT_CONFIG.is_file():
         return [Path(__file__)]
-    return [Path(__file__), *lp64_configure_inputs(), *hud_configure_inputs()]
+    return [Path(__file__), Path(__file__).with_name("forge_build.py"), FORGE_DIR / "src", FORGE_DIR / "include",
+            *lp64_configure_inputs(), *hud_configure_inputs()]
 
 
 def generate_linux64_build(n: Writer, sln: Any) -> None:
@@ -72,7 +74,7 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
     cc = sln.linux_cc or "clang"
 
     n.comment("Native 64-bit Linux build (ninja linux64)")
-    lp64 = Lp64Build(n, sln, "linux64", cc)
+    lp64 = Lp64Build(n, sln, "linux64", cc, extra_roots=[FORGE_DIR])
     # the movies' FFmpeg, for this target (configure.py --without-ffmpeg: the
     # stubs, and the game skips the movies). (AE) Built against the build
     # machine's system: Arena Evolved's portable 64-bit build is
@@ -110,6 +112,8 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
         ffmpeg_cflags=ffmpeg_cflags,
         # the Steam sign-in's client (tools/steam_client_build.py)
         steam_client=True,
+        # Content Evolved's Forge (tools/forge_build.py)
+        forge=True,
     )
     # Link-time optimisation of the units with the Xbox's ABI, as in the
     # 32-bit build (the host-ABI units have a 32-bit wchar_t and stay native
@@ -158,6 +162,12 @@ def generate_linux64_build(n: Writer, sln: Any) -> None:
     # (0.9.4) the CREDITS page's text (the TAB menu's), beside the game too
     credits = build_dir / "credits.txt"
     n.build(outputs=credits, rule="linux64_copy", inputs=Path("port/assets/credits.txt"))
+    # Content Evolved's Forge's data files (tools/forge_build.py), beside the game: its marker meshes, and the props
+    # Forge and Firefight place (port/linux/src/port_tag_profiles.c)
+    forge_data = []
+    for data_file in FORGE_DATA_FILES:
+        forge_data.append(build_dir / data_file.name)
+        n.build(outputs=forge_data[-1], rule="linux64_copy", inputs=data_file)
     voices = [*voices_build(n, "linux64_copy", build_dir), *announcers_build(n, "linux64_copy", build_dir)]
-    n.build(outputs="linux64", rule="phony", inputs=[output, brokers, masters, matchmaking, social, changelog, credits, *voices])
+    n.build(outputs="linux64", rule="phony", inputs=[output, brokers, masters, matchmaking, social, changelog, credits, *forge_data, *voices])
     n.newline()

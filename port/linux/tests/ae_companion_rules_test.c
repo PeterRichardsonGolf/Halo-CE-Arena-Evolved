@@ -105,6 +105,14 @@ int main(void)
 			(flags[0] & AE_COMPANION_TRACK_DROPPED) && !(flags[1] & AE_COMPANION_TRACK_DROPPED));
 		CHECK(ae_companion_track_push(track, flags, &count, 2.0f, 0.0f, -3.5f, 1, 0) == 1 && count == 1);
 		CHECK(ae_companion_track_push(track, flags, &count, 3.0f, 0.0f, -1.9f, 0, 0) == 1 && count == 1);
+		/* (the spot the human left the ground from is a crumb, however near the last (0.5 here), unless 0.25 or nearer: the
+		jump landing on 2.5 marks that spot, not the crumb before it) */
+		count = 0;
+		CHECK(ae_companion_track_push(track, flags, &count, 0.0f, 0.0f, 0.0f, 0, 0) == 1);
+		CHECK(ae_companion_track_takeoff(track, flags, &count, 0.5f, 0.0f, 0.0f) == 1 && count == 2 && flags[1] == 0);
+		CHECK(ae_companion_track_takeoff(track, flags, &count, 0.7f, 0.0f, 0.0f) == 0 && count == 2);
+		CHECK(ae_companion_track_push(track, flags, &count, 2.5f, 0.0f, 0.0f, 1, 0) == 1 && count == 3 && flags[0] == 0 &&
+			flags[1] == AE_COMPANION_TRACK_JUMPED && fabsf(track[1][0] - 0.5f) < 0.01f);
 	}
 	{
 		float track[4][3] = { { 0.0f, 0.0f, 0.0f }, { 0.75f, 0.0f, 0.0f }, { 1.5f, 0.0f, 0.0f }, { 2.25f, 0.0f, 0.0f } };

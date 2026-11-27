@@ -97,6 +97,7 @@ countdown N", "ae lobby: countdown held at 0 (machines loading the map)", "ae lo
 #include "ae_header_lines.h"
 #include "ae_invite_share.h"
 #include "ae_join_helper.h"
+#include "ae_map_share.h"
 #include "ae_screen_pgcr.h"
 #include "ae_test_hooks.h"
 #include "ae_screen_attention.h"
@@ -146,6 +147,7 @@ countdown N", "ae lobby: countdown held at 0 (machines loading the map)", "ae lo
 void platform_log(char const *format, ...);
 /* ui_widget_event_handler_functions.c (declared as menu_functions.c does) */
 short ui_widget_port_multiplayer_maps(char const *const **names, short *last_used);
+void ui_widget_port_multiplayer_maps_refresh(void);
 boolean ui_widget_port_multiplayer_map_choose(short level_index);
 /* ui_widget.c (its header needs the game's math types first: as ae_hooks.c declares them) */
 boolean main_menu_is_active(void);
@@ -7327,17 +7329,31 @@ static void create_reset(void)
 	{
 		char const *wanted = test_map[0] ? test_map : getenv("HALO_AE_TEST_MAP");
 		short index;
+		int look, found = 0;
 
-		for (index = 0; wanted && *wanted && index < count; index++)
+		/* (a map not in the lists, one written a moment ago: the lists are made again, once) */
+		for (look = 0; wanted && *wanted && look < 2 && !found; look++)
 		{
-			char const *tail = strrchr(names[index], '\\');
-
-			if (!csstrcasecmp(tail ? tail + 1 : names[index], wanted) || !csstrcasecmp(names[index], wanted))
+			if (look)
 			{
-				create.map_index = index;
-				break;
+				custom_edition_maps_look_again();
+				ui_widget_port_multiplayer_maps_refresh();
+				count = ui_widget_port_multiplayer_maps(&names, &last);
+			}
+			for (index = 0; index < count; index++)
+			{
+				char const *tail = strrchr(names[index], '\\');
+
+				if (!csstrcasecmp(tail ? tail + 1 : names[index], wanted) || !csstrcasecmp(names[index], wanted))
+				{
+					create.map_index = index;
+					found = 1;
+					break;
+				}
 			}
 		}
+		if (wanted && *wanted && !found)
+			platform_log("ae create game: test launch: no map named '%s' among the %d listed: another map is hosted", wanted, (int)count);
 	}
 	map_name_of(create.map_index);
 }

@@ -60,6 +60,9 @@ static int randomizer_actor_left_out(void){return 0;}
 enum { _skull_thunderstorm };
 static int skull_active(int skull){(void)skull;return 0;}
 static int skulls_team_is_enemy(short team_index){(void)team_index;return 0;}
+/* (Arena Evolved) the Forge AI hooks (ae_forge_engine.h): a level with no Forge AI places what the game does */
+static struct actor_starting_location *ae_forge_ai_location(struct actor_starting_location *location,boolean spawning,struct actor_starting_location *place){(void)spawning;(void)place;return location;}
+static short ae_forge_ai_palette(void const *squad,short palette_index){(void)squad;return palette_index;}
 #include "under_test.inc"
 static short squad_get_actor_type(struct squad_definition *s){return definitions[variants[palette[s->actor_palette_index].index].actor_reference.index].type;}
 

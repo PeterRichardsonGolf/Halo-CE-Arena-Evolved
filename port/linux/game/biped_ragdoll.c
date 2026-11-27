@@ -77,6 +77,7 @@ The weapons it drops are the host's, as before.
 #include "units/units.h"
 #include "biped_ragdoll.h"
 #include "ae_ragdoll_rules.h"
+#include "ae_forge_engine.h" /* AE hook */
 void platform_log(const char *format, ...);
 #include <stdlib.h>
 
@@ -2381,6 +2382,7 @@ static void ragdoll_substep(
 
 		ragdoll->touched[index] = FALSE;
 		velocity->k -= gravity;
+		ae_forge_gravity_correct_at(velocity, &ragdoll->positions[index], gravity); /* AE hook */
 		scale_vector3d(velocity, mode->damping, velocity);
 		ragdoll_clamp_speed(velocity);
 		incoming[index] = *velocity;

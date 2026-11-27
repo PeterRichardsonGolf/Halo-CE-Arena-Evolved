@@ -76,6 +76,7 @@ symbols in this file:
 #include "scenario/scenario.h"
 #include "sound/game_sound.h"
 #include "units/units.h"
+#include "ae_forge_engine.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -195,7 +196,7 @@ void item_in_unit_inventory(
 	{
 		struct unit_datum *unit = unit_get(owner_unit_index);
 
-		item->item.flags |= FLAG(_item_attached_to_unit_bit);
+		item->item.flags |= FLAG(_item_attached_to_unit_bit) | FLAG(_item_has_been_held_bit); /* AE hook */
 		if (unit->unit.player_index != NONE)
 		{
 			item->item.flags |= FLAG(_item_belongs_to_player_bit);
@@ -634,6 +635,7 @@ boolean item_update(
 					_item_definition_antigravity_bit))
 			{
 				new_velocity.k -= global_gravity;
+				ae_forge_gravity_correct_at(&new_velocity, &item->object.position, global_gravity); /* AE hook */
 			}
 
 			new_position.x = item->object.position.x + new_velocity.i;

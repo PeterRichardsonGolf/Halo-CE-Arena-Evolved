@@ -54,6 +54,8 @@ static void display_error(int code,int controller,int a,int b) {}
 static unsigned long system_milliseconds(void) {return 0;}
 /* (ae_platform.c's: keyboard_gamepad notes the keyboard and mouse's use for the HUD's key prompts) */
 static void ae_platform_note_keyboard_input(const unsigned char *keys,const unsigned char *mouse_buttons,int mouse_live) {}
+/* (ae_platform.c's: a key Forge binds in a Forge session is not the keyboard's; none is taken out of a Forge session) */
+static int ae_platform_forge_key_taken(int scancode) { (void)scancode; return 0; }
 static int saved_game_file_name_unique(const wchar_t *name) {return unique_name;}
 static int player_name_clean(wchar_t *name,long count) {return valid_name;}
 static size_t ustrlen(const wchar_t *s) {size_t n=0;while(s[n])n++;return n;}

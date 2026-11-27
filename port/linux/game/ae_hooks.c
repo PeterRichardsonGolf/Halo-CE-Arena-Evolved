@@ -77,6 +77,7 @@ the same way) */
 boolean browser_screen_active(void);
 #endif
 #include "ae_map_repo.h"
+#include "ae_join_helper.h"
 
 /* (0.7.4) the invite banner's line in AE's main menus, where nothing pauses: the clipboard's invite is answered on
 JOIN WITH INVITE (invite_prompt.c); NULL elsewhere (a game: pausing asks) */
@@ -642,6 +643,8 @@ static boolean ae_ui_process_body(
 	ae_dialog_tick();
 	/* (0.7.8) the community map repository's offer, as AE's dialogs */
 	ae_map_repo_tick();
+	/* (a join the host refused while changing maps, made again by itself) */
+	ae_join_helper_tick();
 	/* (the lobby glue's join going on, its session's owner checked; the lobby drives: in the menus and in the game) */
 	ae_lobby_update(now);
 	ae_screen_lobby_test_tick(now);

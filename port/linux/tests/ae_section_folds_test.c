@@ -29,6 +29,9 @@ int main(void)
 	/* bad lines, CRLF, comments, a key too long */
 	CHECK(ae_section_folds_read(&again, "# x\r\nmaps\tA/B\r\nnonsense\n\tonly key\nmaps\t\n") && again.count == 1 &&
 		ae_section_folds_get(&again, "maps", "A/B"));
+	/* a last line ending in a carriage return and no newline (a hand-edited file): read whole, not stuck on it */
+	CHECK(ae_section_folds_read(&again, "maps\tA/B\r\nmaps\tC/D\r") && again.count == 2 &&
+		ae_section_folds_get(&again, "maps", "C/D"));
 	memset(text, 'x', 200);
 	text[200] = 0;
 	CHECK(!ae_section_folds_set(&folds, "maps", text, 1) && !ae_section_folds_read(NULL, "") && !ae_section_folds_read(&again, NULL));

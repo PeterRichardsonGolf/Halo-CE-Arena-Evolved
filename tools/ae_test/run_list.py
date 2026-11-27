@@ -46,7 +46,7 @@ import spots  # noqa: E402 (`setup spot <name>` becomes `setup goto`)
 
 # the shipped files of a build folder that a headless run reads beside its copy of the program (nothing that names a
 # server on the internet)
-SHIPPED = ("social.txt", "credits.txt", "announcers", "voices")
+SHIPPED = ("social.txt", "credits.txt", "announcers", "voices", "forge_markers.bin", "tag_props.bin", "matchmaking.txt")
 # the exit code of a run whose scenes were all staged and that has a failed expect line
 EXIT_EXPECT = 3
 

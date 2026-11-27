@@ -71,6 +71,10 @@ its map has it). set_ keeps the value's letters, digits, spaces, - and _
 (lower case but for custom_type's, name's and pickup_text's), and writes the profile: 0 if it cannot */
 const char *port_tag_profiles_tag_option(long profile, long tag, const char *key);
 int port_tag_profiles_tag_set_option(long profile, long tag, const char *key, const char *value);
+/* a profile's own settings, by their keys in profile.toml: "player_biped" (the path of the biped a level plays you as), "player_hands"
+("path#map") and "player_movement" ("own"); "" when not set. set_ writes the profile: 0 if it cannot */
+const char *port_tag_profiles_option(long profile, const char *key);
+int port_tag_profiles_set_option(long profile, const char *key, const char *value);
 /* A tag's edits (the Tag Editor's: port/linux/game/tag_editor.c): values
 of its tags changed from its map's, each a number by its key
 ("trigger1.rate_of_fire"), which a level gives its tags as it adds them

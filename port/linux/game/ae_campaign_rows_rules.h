@@ -40,6 +40,10 @@ int ae_campaign_rows_door_is_every(char const *setting);
 char const *ae_campaign_rows_door_value(int every);
 char const *ae_campaign_rows_door_next(int every);
 char const *ae_campaign_rows_door_help(int every, int squad_on);
+/* FORMATIONS (game.companions_formations): the squad forms up by itself (ON) or makes no formation of its own (OFF); the row's
+value and its help (squad_on: an AI squad asked for) */
+char const *ae_campaign_rows_formations_value(int on);
+char const *ae_campaign_rows_formations_help(int on, int squad_on);
 
 /* the case of CONTINUE with this screen's seats and squad */
 enum

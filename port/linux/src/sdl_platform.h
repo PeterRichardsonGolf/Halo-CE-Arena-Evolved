@@ -158,6 +158,7 @@ void platform_video_window_size(int *width, int *height);
 /* the open scoreboard's pointer, offered (a network game's) or not: TRUE
 while a right click has freed it, with what it did since the last call */
 BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *pointer);
+BOOL platform_forge_pointer(BOOL wanted, struct platform_ui_pointer *pointer); /* AE hook */
 #endif
 /* a menu's text field typed into or not (a password's or not), or on
 Android also the game's own keyboard: the system's on-screen keyboard up

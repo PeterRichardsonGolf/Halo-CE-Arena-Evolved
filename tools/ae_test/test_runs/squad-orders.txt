@@ -1,0 +1,84 @@
+# CAMPAIGN AI SQUAD, THE WHEEL'S ORDERS: in a campaign game the squad is off your leash under every order but the one
+# that calls it back. MOVE, ATTACK, DEFEND and WATCH give each member a place at the order's point: it walks there and
+# stays until your next order, however far you go; in a fight it fights about its place and walks back to it after.
+# MOUNT sends the squad to a vehicle's seats (the gunner's first) and, with a member seated, gets it out. The squad's
+# log says each member's place, who is in position, and every 5 seconds who is at their places and how far you are.
+list squad-orders
+revision 2
+title CAMPAIGN AI SQUAD: THE WHEEL'S ORDERS
+
+group b30
+map b30
+gametype coop
+set debug.bot_events true
+
+test move
+retest 2
+title MOVE: they walk to the spot and stay
+fresh
+setup companion 2
+setup fireteam go ahead 12
+check Both walk to the spot 12 steps ahead and stop there
+check Walk far away from them: neither comes after you
+check Call them back on the wheel: they come and follow
+expect 1 log in position (2 of 2)
+expect 2 no log let go of its going order
+expect 2 no log the squad follows again
+
+test attack
+retest 2
+title ATTACK: they push to the spot and stay
+fresh
+setup companion 2
+setup fireteam attack ahead 15
+check Both push to the spot 15 steps ahead
+check They stay about it after, not back to you
+expect 1 log squad order: attack: 
+expect 2 log attack stands: 2 of 2
+
+test defend
+retest 2
+title DEFEND: they hold the spot
+fresh
+setup companion 2
+setup fireteam defend ahead 10
+check Both go to the spot 10 steps ahead and hold it
+check Out of a fight they stand still, apart
+expect 1 log in position (2 of 2)
+expect 2 log defend stands: 2 of 2
+expect 1 log stands at its place
+
+test watch
+retest 2
+title WATCH: they cover where you point, from where they are
+fresh
+setup companion 2
+setup fireteam watch ahead 20
+check Neither walks off: they turn to the place you gave
+check Walk far away from them: they stay
+expect 1 log squad order: watch: 
+expect 2 log watch stands: 2 of 2
+
+test mount
+retest 2
+title MOUNT: into the Warthog, and out again
+fresh
+setup companion 2
+setup spawn warthog ahead
+setup fireteam mount
+check Both get into the Warthog, one on the gun
+check MOUNT on the wheel again: both get out
+expect 1 log is sent to the vehicle
+expect 1 log mans seat
+
+test flip
+title MOUNT: a Warthog on its roof is turned over first
+fresh
+setup companion 2
+setup spawn warthog flipped
+setup fireteam mount
+check A member walks to the upturned Warthog and turns it over
+check Then both get in, one on the gun
+expect 1 log flips the vehicle over
+expect 2 log mans seat
+

@@ -674,7 +674,7 @@ static void keyboard_gamepad(const struct platform_input_state *input, XINPUT_GA
 	if (k[SDL_SCANCODE_DOWN]) pad->wButtons |= XINPUT_GAMEPAD_DPAD_DOWN;
 	if (k[SDL_SCANCODE_LEFT]) pad->wButtons |= XINPUT_GAMEPAD_DPAD_LEFT;
 	if (k[SDL_SCANCODE_RIGHT]) pad->wButtons |= XINPUT_GAMEPAD_DPAD_RIGHT;
-	if (k[SDL_SCANCODE_F1]) pad->wButtons |= XINPUT_GAMEPAD_BACK;
+	if (k[SDL_SCANCODE_F1] && !ae_platform_forge_key_taken(SDL_SCANCODE_F1)) pad->wButtons |= XINPUT_GAMEPAD_BACK; /* AE hook */
 
 	/* (escape backs out, as backspace does: the pause menu's B resumes the
 	game, the main menu's asks to quit; Start would choose, as A does) */
@@ -966,7 +966,7 @@ static unsigned long long keyboard_bound_actions(const struct platform_input_sta
 	{
 		for (slot = 0; slot < MAXIMUM_BINDINGS; slot++)
 		{
-			if (input_held(input, bindings[action][slot]))
+			if (input_held(input, bindings[action][slot]) && !ae_platform_forge_key_taken(bindings[action][slot])) /* AE hook */
 				held |= 1ULL << action; /* AE hook */
 		}
 	}
@@ -2451,6 +2451,8 @@ static int controller_port(HANDLE device)
 	return -1;
 }
 
+#include "ae_forge_input.inc" /* AE hook */
+
 /* debug camera (director.c): the middle button, R and F, and the wheel's
 notches since the director last asked */
 static BOOL debug_cam_middle = FALSE;
@@ -2561,7 +2563,9 @@ DWORD WINAPI XInputGetState(HANDLE device, PXINPUT_STATE state)
 	/* Keep the opening chat press so even B can open it without immediately closing it. */
 	chat_pad_record((short)port, &physical);
 	chat_physical_pad[port] = chat_pad[port];
+	ae_forge_input_unmapped(port, &physical); /* AE hook */
 	captured = controller_remap_input((short)port, &physical, port_gamepad(gamepads, count, port) != NULL);
+	ae_forge_input_remapped(port, &physical, captured, port_gamepad(gamepads, count, port) != NULL); /* AE hook */
 	if (port == ae_seats_keyboard_port()) /* AE hook */
 	{
 		struct platform_input_state input;

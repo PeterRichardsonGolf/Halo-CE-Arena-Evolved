@@ -18,6 +18,8 @@ void mcc_cache_precache_clear(void);
 unsigned long mcc_cache_checksum(char const *name);
 struct cache_file_tag_header *mcc_cache_tags_load(char const *name, void *header);
 boolean mcc_cache_tags_loaded(void);
+/* the canonical level loaded (mcc_maps\<package>\<name>), or NULL */
+char const *mcc_cache_level_name(void);
 short mcc_cache_scenario_type(void);
 void mcc_cache_tags_unload(void);
 boolean mcc_cache_contains(void const *address, long bytes);

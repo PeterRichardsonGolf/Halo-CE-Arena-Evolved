@@ -1968,6 +1968,10 @@ static void multiplayer_tags_loaded(char const *scenario_name, long profile, int
 	}
 }
 
+/* whether the level loaded is a map Forge saved (its file says so: every machine of a game reads it the same, host and guests alike), for
+the scenery wrecks (objects.c); clear while no level is loaded */
+int ae_level_is_saved_forge_map;
+
 #if OPENCE_ENABLE_FORGE
 /* (forge_runtime_tags.c's) whether the level is a saved Forge map */
 extern int forge_saved_map(char const *scenario_name);
@@ -2145,10 +2149,13 @@ static int forge_level_tags(char const *scenario_name, int firefight, long *forg
 	extern int g_forge_session_enabled;
 	extern long forge_level_baked_open(char const *scenario_name);
 	extern char const *forge_tag_profile_folder(void);
+	extern void forge_3d_saved_markers_forget(void);
 	int saved = is_saved_forge_map(scenario_name);
 	long baked;
 	long props;
 	long profile = NONE;
+
+	ae_level_is_saved_forge_map = saved != 0;
 
 	/* (a client that joined a Forge game is told so a moment later: as
 	menu_tags_loaded tells, for the same tags as its host) */
@@ -2169,6 +2176,7 @@ static int forge_level_tags(char const *scenario_name, int firefight, long *forg
 	{
 		forge_ai_saved_clear();
 		forge_level_local_tags_clear();
+		forge_3d_saved_markers_forget();
 	}
 	if (!g_forge_session_enabled && !saved && !forge_session_import)
 		return 0;
@@ -2196,6 +2204,10 @@ static int forge_level_tags(char const *scenario_name, int firefight, long *forg
 	if (profile != NONE || baked != NONE || props != NONE || forge_session_import ||
 		(saved && forge_ai_saved_actor_count() > 0))
 		forge_vault_tags_loaded(scenario_name, profile);
+	{
+		extern void forge_network_note_level_tags(void); /* AE hook */
+		forge_network_note_level_tags(); /* AE hook */
+	}
 	return 1;
 }
 #endif
@@ -2776,6 +2788,7 @@ void randomizer_tags_loaded(char const *scenario_name)
 		build_protected();
 		loaded = tag_campaign_level_playing();
 	}
+	{ extern void ae_set_body_players(int quiet); ae_set_body_players(FALSE); } /* AE hook */
 	if (randomize)
 	{
 		error(_error_silent, "randomizer: gathering actors already in %s", leaf);
@@ -2864,6 +2877,7 @@ boolean randomizer_firefight_weapon_power(
 
 void randomizer_tags_unloaded(void)
 {
+	ae_level_is_saved_forge_map = 0;
 #if OPENCE_ENABLE_FORGE
 	/* (a saved Forge map's general settings are its level's alone: read
 	again as one loads, forge_level_baked_open) */

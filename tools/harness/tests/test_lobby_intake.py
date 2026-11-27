@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from harness import CHECK_FAILED, build, function, mutated, read, run, structure
+from harness import CHECK_FAILED, build, ce_host_listing, function, mutated, read, run, structure
 
 SIZES = ('P2P_KEY_SIZE', 'P2P_KEY_HASH_SIZE', 'P2P_TOKEN_SIZE', 'P2P_SEALED_TOKEN_SIZE', 'P2P_SIGNATURE_SIZE',
          'P2P_LISTING_NAME_SIZE', 'P2P_LISTING_MAP_SIZE', 'P2P_LISTING_GAMETYPE_SIZE')
@@ -29,7 +29,7 @@ def generated(fault=None):
     # (listing_read's AE hook: the build-stamp stand-in reads no stamp)
     stub = ("unsigned long ae_listing_build_read(const unsigned char *stamp_after_kind)"
             " { (void)stamp_after_kind; return 0; }")
-    code = '\n'.join([structure(source, 'listing'), stub] +
+    code = '\n'.join([ce_host_listing(), structure(source, 'listing'), stub] +
                      [function(source, name) for name in ('sanitize', 'get_long', 'get_text', 'listing_read',
                                                           'listing_current', 'listing_wanted')])
     if fault:
@@ -47,7 +47,7 @@ def test_case(case):
     # every listing of this version let in, however old
     ('return listing_current(&listing, retained);', 'return 1;'),
     # every version let in
-    ('if (listing.version < delta_legacy_minimum() || listing.version > delta_legacy_maximum())', 'if (0)'),  # (AE: the Delta range)
+    ('listing.version < delta_legacy_minimum() || listing.version > delta_legacy_maximum() ||', '0 ||'),  # (AE: the Delta range)
 ])
 def test_negative_control(fault):
     status, output = run(build('lobby_intake', generated(fault)), 'burst')

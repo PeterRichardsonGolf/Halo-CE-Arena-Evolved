@@ -500,13 +500,13 @@ UNITS = {
     # (ITEM SETS: the kinds' words, an item's name and the folders above it cut to fit, the engine's reasons in a player's words, what
     # a set does in which kind of game (a campaign level played alone through the randomizer only: no multiplayer, online, co-op,
     # Firefight or challenge game), the footers, and the made-up table behind the staged scenes; under the sanitizers)
-    "ae_item_sets_rules_test.c": ([UI / "ae_item_sets_rules.c", UI / "ae_item_sets_data.c"], ["-fsanitize=address,undefined",
+    "ae_item_sets_rules_test.c": ([UI / "ae_item_sets_rules.c", UI / "ae_item_swaps_rules.c", UI / "ae_item_sets_data.c", UI / "ae_biped_pack_rules.c"], ["-fsanitize=address,undefined",
                                                                                               "-fno-sanitize-recover=all"], []),
     # (Workshop collections: which maps a get asks for, the words of the rows, the question's size, what a remove takes; under
     # the sanitizers)
     "ae_collections_rules_test.c": ([UI / "ae_collections_rules.c"], ["-fsanitize=address,undefined",
                                                                      "-fno-sanitize-recover=all"], []),
-    "ae_dev_cmd_rules_test.c": ([UI / "ae_dev_cmd_rules.c", UI / "ae_weapon_tune_rules.c", UI / "ae_steam_rules.c", UI / "ae_maps_hub_rules.c",
+    "ae_dev_cmd_rules_test.c": ([UI / "ae_dev_cmd_rules.c", UI / "ae_forge_rules.c", UI / "ae_weapon_tune_rules.c", UI / "ae_steam_rules.c", UI / "ae_maps_hub_rules.c",
                                  SRC / "ae_ds5_rules.c"], ["-fsanitize=address,undefined",
                                                                "-fno-sanitize-recover=all"], ["-lm"]),
     # (1.0 STEAM ACCOUNT: the client's state as the screen's page, its messages, the shared files' rows, the staged
@@ -876,6 +876,10 @@ UNITS = {
     # HELLO check)
     "ae_chupa_link_rules_test.c": ([UI / "ae_chupa_link_rules.c"], ["-fsanitize=address,undefined",
                                                               "-fno-sanitize-recover=all"], []),
+    # (Arena Evolved joining a Content Evolved host: the signature's classes, the long Firefight record made this
+    # game's, the options read out of it, this game's own numbers unchanged)
+    "ae_ce_host_rules_test.c": ([UI / "ae_ce_host_rules.c"], ["-fsanitize=address,undefined",
+                                                              "-fno-sanitize-recover=all"], []),
     # (high-resolution HUD digits drawn at the stock size)
     "ae_hud_hires_test.c": ([UI / "ae_hud_hires.c"], [], []),
     # (the score strip's model: what it says in every mode, its colours and bars; under the sanitizers, as the
@@ -1191,6 +1195,18 @@ UNITS = {
     # (rc8: the campaign score, medals, service rank and Firefight stats do nothing in a multiplayer game)
     "ae_pve_rules_test.c": ([UI / "ae_pve_rules.c"], ["-fsanitize=address,undefined",
                                                      "-fno-sanitize-recover=all"], []),
+    # (rc9: a "!F" chat line is Forge's only inside a Forge session; a normal game keeps its network version)
+    "ae_forge_rules_test.c": ([UI / "ae_forge_rules.c"], ["-fsanitize=address,undefined",
+                                                         "-fno-sanitize-recover=all"], ["-lm"]),
+    # (rc9: Forge's network: every line checked, who may say it, the rates and budgets, the version, the base tags)
+    "ae_forge_net_rules_test.c": ([UI / "ae_forge_net_rules.c"], ["-fsanitize=address,undefined",
+                                                                "-fno-sanitize-recover=all"], ["-lm"]),
+    # (rc9: a saved Forge map's name, text facts, level name, and MY MAPS' SHOW and SORT)
+    "ae_forge_maps_rules_test.c": ([UI / "ae_forge_maps_rules.c"], ["-fsanitize=address,undefined",
+                                                                   "-fno-sanitize-recover=all"], []),
+    # (rc9: the FORGE hub's pack rows, a map's title, FORGE KEYS' key numbers and pad speeds)
+    "ae_forge_doors_rules_test.c": ([UI / "ae_forge_doors_rules.c"], ["-fsanitize=address,undefined",
+                                                                     "-fno-sanitize-recover=all"], []),
     # (0.7.9 join race: a machine downloading the map is kept in the lobby while the transfer moves)
     "ae_pack_versions_rules_test.c": ([UI / "ae_pack_versions_rules.c"], ["-fsanitize=address,undefined",
                                                                       "-fno-sanitize-recover=all"], []),
@@ -1266,6 +1282,41 @@ def run_unit(binary, tmp_path, *args):
 def test_unit(test, tmp_path):
     """Builds one unit with its test, warnings as errors, and runs it."""
     run_unit(build_unit(test, tmp_path), tmp_path)
+
+
+def test_forge_leaves_normal_games_alone():
+    """Forge is in the build, and a game that is not a Forge session still advertises network version 44 with the
+    game record's size unchanged: the limits' header says so, and no source takes Forge's version override yet."""
+    limits = (ROOT / "port" / "linux" / "include" / "halo_port_limits.h").read_text(encoding="utf-8")
+    assert re.search(r"^#define HALO_PORT_NETWORK_VERSION 44\b", limits, re.M)
+    assert re.search(r"^#define HALO_PORT_NETWORK_VERSION_MINIMUM 44\b", limits, re.M)
+    assert re.search(r"^#define HALO_PORT_NETWORK_VERSION_MAXIMUM 44\b", limits, re.M)
+    assert "#define HALO_PORT_NETWORK_GAME_SIZE (HALO_PORT_NETWORK_GAME_PLAYERS_END + 0x3A + 64)" in limits
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from tools.forge_build import FORGE_NET_OVERRIDE_SOURCES, forge_source_flags
+    for source in FORGE_NET_OVERRIDE_SOURCES:
+        assert "-include" not in forge_source_flags(Path(source)), source + " takes Forge's network version"
+
+
+def test_forge_renames_name_functions_their_files_define():
+    """Forge takes a function of the game over by a compile-time rename in its own source (tools/forge_build.py): each
+    file is there and defines each function it is renamed for, and Forge's own source defines the name that takes its
+    place; a merge that moves or drops one fails here, not at the link."""
+    import sys
+    sys.path.insert(0, str(ROOT))
+    from tools.forge_build import FORGE_RENAMES
+    forge = "\n".join(path.read_text(encoding="utf-8") for path in (ROOT / "port" / "forge" / "src").glob("*.c"))
+    for source, names in FORGE_RENAMES.items():
+        text = (ROOT / source).read_text(encoding="utf-8")
+        for old, new in names:
+            if new.startswith("orig_"):
+                # the function is defined in its file, and Forge's source defines the old name in its place
+                assert re.search(r"^[A-Za-z_][\w \*]*\b" + re.escape(old) + r"\(", text, re.M), source + " has no " + old
+                assert re.search(r"^[A-Za-z_][\w \*]*\b" + re.escape(old) + r"\(", forge, re.M), "Forge defines no " + old
+            else:
+                # a call Forge answers (forge_...): the file calls it
+                assert re.search(r"\b" + re.escape(old) + r"\(", text), source + " does not call " + old
 
 
 def test_mcc_convert_pool_under_thread_sanitizer(tmp_path):
@@ -1863,6 +1914,27 @@ def test_firefight_menus_do_nothing_in_a_multiplayer_game():
     assert "ae_firefight_doors_lobby_set(0)" in menu
 
 
+def test_item_sets_auto_words_match_the_randomizers():
+    """(rc9) ITEM SETS shows what AUTO finds ("AUTO: HUMAN") from word lists that are the randomizer's and the tag injector's: they are kept
+    the same, so the page says what the game will do."""
+    def words(text, name):
+        body = text.split(name + "[] = {")[1].split("};")[0]
+        return re.findall(r'"([^"]*)"', body)
+
+    rules = (UI / "ae_item_sets_rules.c").read_text(encoding="utf-8")
+    randomizer = (UI / "randomizer.c").read_text(encoding="utf-8")
+    for name in ("covenant_words", "precision_words", "power_words", "automatic_words"):
+        assert words(rules, "char const *const " + name) == words(randomizer, "char const *const " + name), name
+    injector = (UI / "cev" / "tag_injector.c").read_text(encoding="utf-8")
+    hud = re.findall(r'\{ "([^"]+)", "([a-z_]+)" \}', injector.split("stock_hud_words[] =")[1].split("};")[0])
+    mine = re.findall(r'\{ "([^"]+)", "([a-z_]+)", "[^"]+" \}', rules.split("auto_hud_words[] = {")[1].split("};")[0])
+    assert hud and hud == mine, (hud, mine)
+    # (the campaign's kinds of enemy: classify()'s words in its order)
+    classify = randomizer.split("static int classify(")[1].split("\n}\n")[0]
+    mine = rules.split("static int ai_kind(")[1].split("\n}\n")[0]
+    assert re.findall(r'strstr\(lower, "([a-z_]+)"\)', classify) == re.findall(r'strstr\(lower, "([a-z_]+)"\)', mine)
+
+
 def test_item_sets_never_reach_a_multiplayer_game():
     """(rc8 ITEM SETS) A set that plays adds its items to a campaign level played alone through the randomizer and to no multiplayer, online,
     ranked, tournament, matchmaking or co-op game, Firefight or challenge: the page writes the randomizer's two settings alone, those settings
@@ -1872,7 +1944,7 @@ def test_item_sets_never_reach_a_multiplayer_game():
     screen = (UI / "ae_screen_item_sets.c").read_text(encoding="utf-8")
     # (the page's two writes, nothing else is written: no engine call of the page names another setting)
     keys = re.findall(r"config_write\((\w+),", glue)
-    assert len(keys) == 4 and set(keys) == {"SWITCH_KEY", "PROFILE_KEY"}, keys
+    assert len(keys) == 7 and set(keys) == {"SWITCH_KEY", "PROFILE_KEY"}, keys
     assert 'PROFILE_KEY "game.randomizer_tag_profile"' in glue and 'SWITCH_KEY "game.tag_injection"' in glue
     assert "config_write(" not in screen and "config_set(" not in screen
     # (the sets are off until the player plays one: the defaults are untouched)
@@ -1882,7 +1954,24 @@ def test_item_sets_never_reach_a_multiplayer_game():
     # (the files that read the two settings)
     readers = {path.name for path in UI.rglob("*.c")
                if 'config_string("game.randomizer_tag_profile")' in path.read_text(encoding="utf-8")}
-    assert "tag_injector.c" in readers and readers <= {"tag_injector.c", "ae_glue_pve_menus.c", "ae_glue_item_sets.c"}, readers
+    assert "tag_injector.c" in readers and readers <= {"tag_injector.c", "ae_glue_pve_menus.c", "ae_glue_item_sets.c", "ae_set_body.c"}, readers
+    # (a set's body, read at a player's spawn in every game: the game is derived first and everything but a campaign level played alone
+    # leaves before a setting is read)
+    set_body = (UI / "ae_set_body.c").read_text(encoding="utf-8")
+    body = set_body.split("static int body_choose(")[1].split("\nlong ae_set_body_biped(")[0]
+    # (the spawn's biped and the players layer's hands and movement both go through that one choice)
+    assert "body_choose(&choice) == AE_IS_BODY_NONE" in set_body.split("long ae_set_body_biped(")[1].split("\n}\n")[0]
+    assert "body_choose(&choice);" in set_body.split("void ae_set_body_players(")[1].split("\n}\n")[0]
+    assert body.index("game_engine_running()") < body.index("firefight_active()") < body.index("community_challenge_running()") < \
+        body.index("network_game_get_game()") < body.index("if (game != AE_IS_GAME_CAMPAIGN_ALONE)") < body.index("playing_set()") < \
+        body.index("ae_is_body_source(")
+    # (hands and movement: the players layer is filled by the body's one function, before the spawn asks for the biped and once the level's
+    # tags are in, and only that function writes it)
+    engine = (UI / "ae_forge_engine.c").read_text(encoding="utf-8")
+    spawn = engine.split("long ae_forge_player_biped(long player_index, long unit_definition_index)\n{\n")[1]
+    assert spawn.index("ae_set_body_players(TRUE)") < spawn.index("forge_map_settings_player_biped(")
+    assert "ae_forge_players_body(" not in "".join(p.read_text(encoding="utf-8") for p in UI.rglob("*.c")
+                                                  if p.name not in ("ae_set_body.c", "ae_forge_engine.c"))
     # (the engine: the level's tags loading. A multiplayer engine's game returns for its mode's tags, a client takes the host's setup and a
     # challenge its own, all before the randomizer's setup is read from the config, which is where the playing set is chosen)
     randomizer = (UI / "randomizer.c").read_text(encoding="utf-8")
@@ -1891,6 +1980,8 @@ def test_item_sets_never_reach_a_multiplayer_game():
     config_branch = randomizer.index("else if (config_boolean(\"game.randomizer\"))\n\t{\n\t\tsetup_from_config(&current);")
     play = randomizer.index("(randomize || loadout_imports) && current.custom_tags && !game && !network_game_distributed_client() &&")
     assert leave < client < config_branch < play
+    assert randomizer.index("tag_injector_tags_load(custom_profile, custom_roots") < randomizer.index("ae_set_body_players(FALSE)") < \
+        randomizer.index('error(_error_silent, "randomizer: gathering actors already in %s", leaf)')
     assert "setup->custom_tags = !network_game_distributed_client() && !community_challenge_running() &&" in randomizer
     rules = (UI / "ae_randomizer_rules.c").read_text(encoding="utf-8")
     assert "if (network)" in rules.split("int ae_randomizer_rules_plays")[1].split("}")[0]
@@ -1926,3 +2017,144 @@ def test_loadout_picker_offers_ae_and_set_weapons_and_falls_back():
     screen = (UI / "ae_screen_randomizer.c").read_text(encoding="utf-8")
     assert "loadout_choices_refresh();" in screen.split("static int page_open(int which)\n{")[1].split("\n}")[0]
     assert '"loadout-ae", "loadout-set"' in (UI / "ae_dev_cmd_rules.c").read_text(encoding="utf-8").replace("\n\t\t\t\t", " ")
+
+
+def test_forge_hands_built_are_forgotten_as_a_level_loads():
+    """the arms a local player was built with (ae_forge_engine.c) hold a tag index of one level: the map settings' level
+    change resets them, and the reset sets every one to NONE"""
+    engine = (UI / "ae_forge_engine.c").read_text(encoding="utf-8")
+    body = engine.split("void ae_forge_level_forget(void)\n{\n", 1)[1].split("}\n", 1)[0]
+    assert "hands_built[each] = NONE" in body and "MAXIMUM_NUMBER_OF_LOCAL_PLAYERS" in body
+    settings = (ROOT / "port" / "forge" / "src" / "forge_map_settings.c").read_text(encoding="utf-8")
+    loading = settings.split("void forge_map_settings_level_loading(", 1)[1].split("\n}\n", 1)[0]
+    assert "ae_forge_level_forget();" in loading
+
+
+def test_forge_version_choke_point_changes_nothing_without_a_session():
+    """delta_legacy_announce, _minimum and _maximum (every AE reader of the network version asks them) answer what the table holds, passed through
+    ae_forge_net_rules_announce/minimum/maximum, which the rules unit test pins to the number given with no session: and nothing else is changed
+    in them. A Forge session's flag (the probe the build with Forge sets) is the only thing that changes the answer"""
+    text = (ROOT / "port" / "linux" / "src" / "delta.c").read_text(encoding="utf-8")
+    for name in ("announce", "minimum", "maximum"):
+        body = text.split("int delta_legacy_" + name + "(void)\n{\n", 1)[1].split("\n}\n", 1)[0]
+        lines = [line.strip() for line in body.splitlines() if line.strip()]
+        assert lines == ["int number;", "pthread_once(&delta_once, delta_load);", "pthread_mutex_lock(&delta_lock);",
+                         "number = delta." + name + ";", "pthread_mutex_unlock(&delta_lock);",
+                         "return ae_forge_net_rules_" + name + "(delta_forge_session_on(), number); /* AE hook */"], name
+    header = (UI / "ae_forge_net_rules.h").read_text(encoding="utf-8")
+    for name in ("announce", "minimum", "maximum"):
+        assert ("static inline int ae_forge_net_rules_" + name + "(int session, int normal)\n{\n\treturn session ? AE_FORGE_NET_VERSION : normal;\n}") in header
+    # the version the join request carries and the constants a normal game has are untouched
+    limits = (ROOT / "port" / "linux" / "include" / "halo_port_limits.h").read_text(encoding="utf-8")
+    assert "#define HALO_PORT_NETWORK_VERSION 44" in limits and "#define HALO_PORT_NETWORK_VERSION_MINIMUM 44" in limits
+    assert "#define HALO_PORT_NETWORK_VERSION_MAXIMUM 44" in limits
+    assert "join_game_request.network_version = HALO_PORT_NETWORK_VERSION;" in (ROOT / "source" / "networking" / "network_client_manager.c").read_text(encoding="utf-8")
+    # a Forge host advertises no Delta wire, and a Forge client takes no Delta shortcut: both asked of the one rule
+    server = (ROOT / "source" / "networking" / "network_server_message_handler.c").read_text(encoding="utf-8")
+    assert "if (ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) { /* AE hook */" in server
+    client = (ROOT / "source" / "networking" / "network_client_manager.c").read_text(encoding="utf-8")
+    assert "if (matches > 0 && distributed && ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) /* AE hook */" in client
+    # Forge's version is the reference's, and the number the build with Forge names
+    engine = (ROOT / "port" / "forge" / "include" / "forge_engine.h").read_text(encoding="utf-8")
+    assert "0x4777" in engine and "AE_FORGE_NET_VERSION = 0x4777" in header
+
+
+def test_forge_chat_lines_are_parsed_by_the_rules_alone():
+    """forge_network.c reads no field of a peer's line itself: the intercept copies the 64 bytes with their NUL guard, hands the text to the receive
+    functions, which parse it with ae_forge_net_rules_parse and act on the record only (no sscanf, no second parse of the text, the map's settings
+    through the parser too); every decision of the host about what a client may do is the rules'"""
+    text = (ROOT / "port" / "forge" / "src" / "forge_network.c").read_text(encoding="utf-8")
+    body = text.split("static int forge_net_from_client(", 1)[1].split("static void forge_net_leave_tick(void)\n{", 1)[0]
+    assert "sscanf" not in body and "strncmp(text" not in body
+    assert body.count("ae_forge_net_rules_parse(text, &limits, &record)") == 2
+    assert "ae_forge_net_rules_text(text_in, text)" in body
+    # the decisions are the rules'
+    for call in ("ae_forge_net_rules_machine_accepts(", "ae_forge_net_rules_client_line(", "ae_forge_net_rules_client_touch(", "ae_forge_net_rules_ai_budget_ok(",
+                 "ae_forge_net_rules_relay_ok(", "ae_forge_net_rules_format_fm(", "ae_forge_net_rules_format_ft(", "ae_forge_net_rules_instance_team_ok(",
+                 "ae_forge_net_rules_apply_allowed(", "ae_forge_net_rules_identity_evict(", "ae_forge_net_rules_feed_allowance(", "ae_forge_net_rules_pending_put(",
+                 "ae_forge_net_rules_held_list(", "ae_forge_net_rules_active_senders(", "ae_forge_net_rules_joiner_create(", "ae_forge_net_rules_ring_push(", "ae_forge_net_rules_compare_state(",
+                 "ae_forge_net_rules_printable("):
+        assert call in text, call
+    # a client's line never reaches the map's settings: the host's word alone, after the parser, the compare and the ring
+    client = body.split("static int forge_net_from_host(", 1)[0]
+    assert "forge_map_settings_net_receive" not in client
+    host = body.split("static int forge_net_from_host(", 1)[1]
+    assert host.index("ae_forge_net_rules_parse(") < host.index("forge_map_settings_net_receive(")
+    assert host.index("ae_forge_net_rules_apply_allowed(") < host.index("forge_map_settings_net_receive(")
+    # the applications of an AI spawn, a goal and a volume read the record: no packet functions that parse the text again
+    assert "forge_ai_spawn_packet_apply" not in text and "forge_ai_goal_packet_apply" not in text and "forge_volume_packet_apply" not in text
+
+
+def test_forge_a_host_variant_never_puts_a_joiner_in_a_forge_session():
+    """a joined machine is in a Forge session only as its own menus made it: the variant test that switches the flag on (and forge_level_is_session) is
+    false for a network client, whatever its host's variant is named"""
+    text = (ROOT / "port" / "forge" / "src" / "forge_hooks.c").read_text(encoding="utf-8")
+    body = text.split("static int forge_variant_is_forge(void)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "game_connection() != _game_connection_network_client" in body and "forge_variant_named_forge(game_engine_get_variant())" in body
+    # the flag is turned on in one place only, forge_session_start, which asks the rules; every other assignment turns it off
+    assert "forge_session_start(0, 1); /* AE hook */" in text
+    import re
+    sources = list((ROOT / "port" / "forge").rglob("*.c")) + list((ROOT / "port" / "linux").rglob("*.c"))
+    for path in sources:
+        if "tests" in path.parts:
+            continue
+        for number, line in enumerate(path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+            match = re.search(r"\bg_forge_session_enabled\s*=\s*([^=;]+);", line)
+            if not match or re.search(r"\bg_forge_session_enabled\s*==", line):
+                continue
+            if match.group(1).strip() == "0":
+                continue
+            assert path.name == "forge_runtime_tags.c" and match.group(1).strip() == "1", f"{path.name}:{number}: {line.strip()}"
+    tags = (ROOT / "port" / "forge" / "src" / "forge_runtime_tags.c").read_text(encoding="utf-8")
+    body = tags.split("void forge_session_start(int joined_at_forge_version, int local_request)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "ae_forge_rules_session_may_start(is_client, joined_at_forge_version, local_request)" in body
+    assert "global_network_game_client_get() != NULL" in body and "_game_connection_network_client" in body
+    # the join path alone says a client joined at Forge's version
+    dev = (ROOT / "port" / "linux" / "game" / "ae_forge_dev.c").read_text(encoding="utf-8")
+    assert "forge_session_start(join_address != NULL, 1)" in dev and dev.count("forge_session_start(") == 2
+    assert "g_forge_session_enabled = 1" not in text
+
+
+def test_forge_net_review2_wiring():
+    """the host's use of the network rules: streams coalesced and flushed each tick, the feed by time, a leaver's holds sent at once, identities
+    evicted by the rules, a request for the state kept until the level is ready, the in-level check of a move and a placed spawn or flag, the host's grab and a
+    client's own hold as facts, a placed actor charged to the AI budget"""
+    text = (ROOT / "port" / "forge" / "src" / "forge_network.c").read_text(encoding="utf-8")
+    left = text.split("static void forge_net_machine_left(long machine_index)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "ae_forge_net_rules_held_list(" in left and "forge_network_send_transform_ext(idx, inst->object_index" in left and ", 0, 1);" in left
+    assert "ae_forge_net_rules_client_machine_left(" in left
+    ident = text.split("static int forge_net_identity(long machine_index)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "ae_forge_net_rules_identity_evict(" in ident and "ae_forge_net_rules_identity_key(" in ident and "forge_net_identity_in_use(each)" in ident
+    client = text.split("static int forge_net_from_client(", 1)[1].split("static int forge_net_from_host(", 1)[0]
+    assert "ae_forge_net_rules_identityless_may(tag)" in client
+    assert client.index("ae_forge_net_rules_machine_accepts(") < client.index("ae_forge_net_rules_client_line(")
+    assert client.index("ae_forge_net_rules_client_line(") < client.index("ae_forge_net_rules_machine_synced(")
+    assert "forge_net_relay_stream(" in client and "tag != AE_FORGE_NET_FM" in client and "g_net_fq_pending[machine_index] = 1" in client
+    assert "forge_net_in_level(record.x, record.y, record.z)" in client and "ce->group_tag == 'actv'" in client
+    target = text.split("static int32_t forge_net_client_target(", 1)[1].split("\n}\n", 1)[0]
+    assert "forge_net_in_level(record->x, record->y, record->z)" in target and "count_held(g_net_held_by" in target
+    facts = text.split("static void forge_net_facts(", 1)[1].split("\n}\n", 1)[0]
+    assert "g_forge.grabbed_live_index == idx" in facts and "forge_net_class_masks(" in facts
+    tick = text.split("void forge_network_sync_tick(void)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "ae_forge_net_rules_feed_allowance(" in tick and "ae_forge_net_rules_feed_spent(" in tick and "forge_net_pending_tick(now)" in tick
+    assert "packets_sent < 6" not in tick and "g_net_fq_pending[m] && forge_net_level_ready()" in tick
+    assert "world_bounds.x0" in text and "global_structure_bsp_get()" in text
+    assert "forge_network_slot_made(live_idx); /* AE hook */" in (ROOT / "port" / "forge" / "src" / "forge_3d_mode.c").read_text(encoding="utf-8")
+
+
+def test_forge_the_hosts_own_delete_asks_nothing():
+    """the host may remove every flag of a kind or every spawn of a team on purpose: forge_3d_delete_instance has no refusal, and a client's FD is judged in forge_net_client_target"""
+    text = (ROOT / "port" / "forge" / "src" / "forge_3d_mode.c").read_text(encoding="utf-8")
+    body = text.split("void forge_3d_delete_instance(int32_t live_idx, int broadcast_net)\n{", 1)[1].split("\n}\n", 1)[0]
+    assert "forge_network_delete_ok" not in body
+    assert "forge_network_delete_ok" not in (ROOT / "port" / "forge" / "include" / "forge_engine.h").read_text(encoding="utf-8")
+    net = (ROOT / "port" / "forge" / "src" / "forge_network.c").read_text(encoding="utf-8")
+    assert "forge_network_delete_ok" not in net
+    assert "ae_forge_net_rules_client_touch(" in net.split("static int32_t forge_net_client_target(", 1)[1].split("\n}\n", 1)[0]
+
+
+def test_forge_net_rules_read_reals_without_the_locale():
+    """the parser reads a real by hand: no strtod, scanf or atof, whose reading follows the process locale (a comma locale would refuse every coordinate)"""
+    text = (UI / "ae_forge_net_rules.c").read_text(encoding="utf-8")
+    for name in ("strtod", "sscanf", "atof", "strtof"):
+        assert name + "(" not in text, name

@@ -15,6 +15,7 @@ score. Its stats, score and rank are Content Evolved's own files.
 #include "saved games/player_profile.h"
 
 #include "ae_firefight_glue.h"
+#include "ae_ce_host.h"
 #include "halo_firefight.h"
 
 /* ---------- options */
@@ -24,11 +25,13 @@ static boolean firefight_options_initialized;
 
 static struct firefight_options net_options;
 static boolean net_valid;
+/* the options came from a Content Evolved host: they are used while that host is the one joined */
+static boolean net_from_ce;
 
 struct firefight_options const *firefight_options_get(void)
 {
 	/* (a client playing a game whose host sent its rules: those, for that game) */
-	if (net_valid)
+	if (net_valid && (!net_from_ce || ae_ce_host_joined()))
 		return &net_options;
 	if (!firefight_options_initialized)
 	{
@@ -174,11 +177,20 @@ void ae_firefight_net_apply(unsigned long const *values, int count)
 		received.firefight_unit_toggles = FIREFIGHT_UNIT_MASK_ALL;
 	net_options = received;
 	net_valid = TRUE;
+	net_from_ce = FALSE;
+}
+
+void ae_firefight_net_apply_ce(unsigned long const *values, int count)
+{
+	ae_firefight_net_apply(values, count);
+	if (net_valid)
+		net_from_ce = TRUE;
 }
 
 void ae_firefight_net_clear(void)
 {
 	net_valid = FALSE;
+	net_from_ce = FALSE;
 }
 
 int ae_firefight_net_active(void)

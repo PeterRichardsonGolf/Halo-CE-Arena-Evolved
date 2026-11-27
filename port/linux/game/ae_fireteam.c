@@ -340,7 +340,9 @@ boolean ae_fireteam_go_report(long brain, real distance, real now_seconds)
 {
 	long fireteam = ae_fireteam_of_brain(brain);
 
-	if (fireteam == NONE || !ae_fireteam_go_note(&fireteam_table, (int)fireteam, (short)brain, distance, now_seconds))
+	/* (a campaign squad's GOING stands at its point until the next order) */
+	if (fireteam == NONE || !ae_fireteam_order_lets_go(ae_fireteam_campaign_on(), 1) ||
+		!ae_fireteam_go_note(&fireteam_table, (int)fireteam, (short)brain, distance, now_seconds))
 		return FALSE;
 	error(_error_silent, "ae fireteam: fireteam %d let go of its going order", (int)fireteam);
 	return TRUE;

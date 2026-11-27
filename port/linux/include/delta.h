@@ -335,6 +335,9 @@ void delta_legacy_following(char *text, int size);
 
 /* whether a local, unsigned table (network.legacy_table) is in use */
 int delta_legacy_override(void);
+/* a Forge session answers delta_legacy_announce, _minimum and _maximum with its own version: the build with Forge says when one is on (AE) */
+void delta_forge_probe_set(int (*probe)(void));
+int delta_forge_session_on(void);
 /* whether this machine relays signed tables (Delta Peer: takes them from
 and sends them to other machines): not with a local table in use, nor
 without a key to check one with */

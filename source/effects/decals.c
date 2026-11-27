@@ -1759,6 +1759,25 @@ void decal_new_from_collision(
 				cross_product3d(&collision->plane.n, &tangent, &bitangent);
 			}
 
+			/* port: a decal told which way to point (decal_forced_forward):
+			that way, laid onto its surface */
+			if (decal_forced_forward)
+			{
+				real along = dot_product3d(decal_forced_forward, &collision->plane.n);
+				real_vector3d flat;
+
+				flat.i = decal_forced_forward->i - collision->plane.n.i * along;
+				flat.j = decal_forced_forward->j - collision->plane.n.j * along;
+				flat.k = decal_forced_forward->k - collision->plane.n.k * along;
+				if (normalize3d(&flat) > 0.0f)
+				{
+					bitangent = flat;
+					cross_product3d(&bitangent, &collision->plane.n, &tangent);
+					cosine = 1.0f;
+					sine = 0.0f;
+				}
+			}
+
 			normalize3d(&tangent);
 			normalize3d(&bitangent);
 
@@ -2496,6 +2515,63 @@ static void decal_reinsert(
 	return;
 }
 
+/* port: the decals a call of decal_new made, while decal_capture_begin's
+capture is on (Forge's placed decals keep them, to take them away again:
+decal_delete_made) */
+static long *decal_capture_indices = NULL;
+static short decal_capture_maximum = 0;
+static short decal_capture_count = 0;
+
+void decal_capture_begin(long *indices, short maximum)
+{
+	decal_capture_indices = indices;
+	decal_capture_maximum = maximum;
+	decal_capture_count = 0;
+}
+
+short decal_capture_end(void)
+{
+	short count = decal_capture_count;
+
+	decal_capture_indices = NULL;
+	decal_capture_maximum = 0;
+	decal_capture_count = 0;
+	return count;
+}
+
+/* port: whether a decal of these is still there (a level's change or a
+saved game's revert takes them) */
+boolean decal_exists(long decal_index)
+{
+	return decal_index != NONE && global_decal_data && global_decal_data->valid &&
+		datum_try_and_get(global_decal_data, decal_index) != NULL;
+}
+
+/* port: a decal taken away, a permanent one too, as
+decals_delete_permanent_from_cluster does: its vertices' block let go, whose
+cache deletes the decal itself (rasterizer_decal_vertices_purge_proc; a
+decal_delete after it deleted it twice, which crashed) */
+void decal_delete_made(long decal_index)
+{
+	struct decal_datum *decal;
+
+	if (!decal_exists(decal_index))
+		return;
+	decal = DECAL_GET(decal_index);
+	if (TEST_FLAG(decal->flags, _decal_locked_bit))
+		return;
+	if (TEST_FLAG(decal->flags, _decal_permanent_bit))
+	{
+		SET_FLAG(decal->flags, _decal_permanent_bit, FALSE);
+		decal_globals->permanent_count -= 1;
+	}
+	rasterizer_decal_vertices_delete(decal_index);
+}
+
+/* port: the way the next decals made point along their surface (Forge's
+placed decals, which the player turns), instead of the game's own pick */
+real_vector3d const *decal_forced_forward = NULL;
+
 static long decal_insert(
 	long cache_index,
 	short cluster_index,
@@ -2505,6 +2581,9 @@ static long decal_insert(
 {
 	struct data_iterator iterator;
 	long decal_index = datum_new_at_index(global_decal_data, cache_index);
+
+	if (decal_index != NONE && decal_capture_indices && decal_capture_count < decal_capture_maximum)
+		decal_capture_indices[decal_capture_count++] = decal_index;
 
 	match_assert("c:\\halo\\SOURCE\\effects\\decals.c", 479,
 		cluster_index>=0 && cluster_index<MAXIMUM_CLUSTERS_PER_STRUCTURE);

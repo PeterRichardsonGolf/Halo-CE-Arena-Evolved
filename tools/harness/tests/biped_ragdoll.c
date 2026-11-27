@@ -93,6 +93,9 @@ static real_point3d *point_from_line3d(real_point3d const *p, real_vector3d cons
 static void set_real_vector3d(real_vector3d *v, real i, real j, real k) { v->i = i; v->j = j; v->k = k; }
 static real_vector3d *perpendicular3d(real_vector3d const *v, real_vector3d *r) { set_real_vector3d(r, -v->j, v->i, 0.f); return r; }
 
+/* Forge (port/linux/game/ae_forge_engine.h) answers as the game does out of every volume: no pull */
+static int ae_forge_gravity_correct_at(real_vector3d *vector, real_point3d const *at, real amount) { return 0; }
+
 #define RADIUS_OF_THE_GROUND 0.025f
 static struct collision_feature_list ragdoll_features;
 

@@ -44,11 +44,13 @@ Rules (words; a <tag> matches a tag path that holds it, "_" and " " alike, any c
                                                    ..."): a count's rise from the test's first such line to its last, or
                                                    a distance's (pair, player) or a cost's (rays, ms, p99ms, grid, gridticks,
                                                    p50, p95) most (max) or least (min) over the test's lines
-    member stuck|lip|gap90 max|min N               each squad member's own line ("squad member K: stuck S lip L gap90
-                                                   G"): seconds stuck or at a lip, their rise over the test; the gap's
-                                                   90th percentile, its last; judged on the worst member
+    member stuck|lip|gap90|near max|min N          each squad member's own line ("squad member K: stuck S lip L gap90
+                                                   G near N"): seconds stuck or at a lip, their rise over the test; the
+                                                   gap's 90th percentile and the least gap while the player stood (near),
+                                                   their last; judged on the worst member
     crossed x|y lt|gt V N within S                 the player's first position line past the plane, then at least N
                                                    squad members past it within S seconds (the squad's position lines)
+    ahead x|y lt|gt V max N                        at most N squad members past the plane before the player first is
     no <rule>                                     the rule is never met in the window
 
 Player numbers are slots: 0 is the first local player. A rule that cannot be judged (unknown words, a key with no
@@ -252,6 +254,14 @@ def validate(rule):
         except ValueError:
             return "crossed: its value, count and seconds are numbers"
         return None
+    if kind == "ahead":
+        if len(words) != 6 or words[1] not in ("x", "y") or words[2] not in ("lt", "gt") or words[4] != "max":
+            return "ahead needs x|y, lt|gt, a value, max and a count"
+        try:
+            float(words[3]), int(words[5])
+        except ValueError:
+            return "ahead: its value and count are numbers"
+        return None
     if kind == "cmd":
         rest = words[1:-1] if words[-1] in ("ok", "error") else words[1:]
         return None if rest else "cmd needs text"
@@ -369,6 +379,8 @@ def judge(rule, window):
         return judge_member(words, window)
     if kind == "crossed":
         return judge_crossed(words, window)
+    if kind == "ahead":
+        return judge_ahead(words, window)
     if kind == "option":
         row, value = words[1].replace("_", "").lower(), words[2].replace("_", "").lower()
         for event in window:
@@ -461,7 +473,7 @@ def judge_stat(words, window):
         for index in range(len(parts) - 1):
             if parts[index] == key:
                 try:
-                    seen.append((float(parts[index + 1]), event["_line"]))
+                    seen.append((float(parts[index + 1].rstrip(",")), event["_line"]))
                 except ValueError:
                     pass
                 break
@@ -477,8 +489,9 @@ def judge_stat(words, window):
     return passed, f"{what} (wanted {bound} {limit:g})", [line]
 
 
-MEMBER_KEYS = ("stuck", "lip", "gap90")
-MEMBER_LINE = re.compile(r"^squad member (\d+): stuck ([\d.]+) lip ([\d.]+) gap90 ([\d.]+)")
+MEMBER_KEYS = ("stuck", "lip", "gap90", "near")
+MEMBER_GAUGES = ("gap90", "near")
+MEMBER_LINE = re.compile(r"^squad member (\d+): stuck ([\d.]+) lip ([\d.]+) gap90 ([\d.]+)(?: near ([\d.]+))?")
 POSITIONS_LINE = re.compile(r"^companion: positions t\+(\d+)s human (-?[\d.]+) (-?[\d.]+) -?[\d.]+ \(")
 MEMBER_AT = re.compile(r", (\d+) (-?[\d.]+) (-?[\d.]+) -?[\d.]+ \(")
 
@@ -490,26 +503,61 @@ def log_texts(window):
 
 def judge_member(words, window):
     """member stuck|lip|gap90 max|min N over the window's "squad member K:" lines: seconds stuck or at a lip, their rise over
-    the test; the gap's 90th percentile, its last; the worst member's"""
+    the test (a count that drops was started again from 0: its new value is added); the gap's 90th percentile, its last;
+    the worst member's"""
     key, bound, limit = words[1], words[2], float(words[3])
     column = MEMBER_KEYS.index(key) + 2
-    first, last = {}, {}
+    rose, last = {}, {}
     for text, line in log_texts(window):
         found = MEMBER_LINE.match(text)
         if not found:
             continue
+        if found.group(column) is None:
+            continue
         member, value = int(found.group(1)), float(found.group(column))
-        first.setdefault(member, value)
+        if member in last:
+            before = last[member][0]
+            rose[member] = rose.get(member, 0.0) + (value if value < before else value - before)
+        else:
+            rose[member] = 0.0
         last[member] = (value, line)
     if not last:
-        return False, "no squad member line", []
-    values = {member: (last[member][0] if key == "gap90" else last[member][0] - first[member]) for member in last}
+        return False, f"no squad member line with {key}", []
+    values = {member: (last[member][0] if key in MEMBER_GAUGES else round(rose[member], 2)) for member in last}
     pick = max if bound == "max" else min
     worst = pick(values, key=lambda member: values[member])
     value = values[worst]
     passed = value <= limit if bound == "max" else value >= limit
-    what = "last" if key == "gap90" else "rose"
+    what = "last" if key in MEMBER_GAUGES else "rose"
     return passed, f"worst member {worst} {key} {what} {value:g} (wanted {bound} {limit:g})", [last[worst][1]]
+
+
+def position_rows(window):
+    """[(seconds, (x, y) of the player, {member: (x, y)}, line)] of the window's squad position lines"""
+    rows = []
+    for text, line in log_texts(window):
+        found = POSITIONS_LINE.match(text)
+        if found:
+            members = {int(m.group(1)): (float(m.group(2)), float(m.group(3))) for m in MEMBER_AT.finditer(text)}
+            rows.append((int(found.group(1)), (float(found.group(2)), float(found.group(3))), members, line))
+    return rows
+
+
+def judge_ahead(words, window):
+    """ahead x|y lt|gt V max N: at most N members past the plane before the player's first position line past it"""
+    axis, side, plane, most = words[1], words[2], float(words[3]), int(words[5])
+    index = 0 if axis == "x" else 1
+
+    def past(value):
+        return value < plane if side == "lt" else value > plane
+    rows = position_rows(window)
+    anchor = next((row for row in rows if past(row[1][index])), None)
+    if not anchor:
+        return False, f"the player never crossed {axis} {side} {plane:g}", [rows[-1][3]] if rows else []
+    ahead = sorted({member for row in rows if row[0] < anchor[0] for member, at in row[2].items() if past(at[index])})
+    reason = f"{len(ahead)} member(s) past {axis} {side} {plane:g} before the player (wanted max {most})"
+    reason += ": " + ", ".join(f"member {member}" for member in ahead) if ahead else ""
+    return len(ahead) <= most, reason, [anchor[3]]
 
 
 def judge_crossed(words, window):
@@ -520,12 +568,7 @@ def judge_crossed(words, window):
 
     def past(value):
         return value < plane if side == "lt" else value > plane
-    rows = []
-    for text, line in log_texts(window):
-        found = POSITIONS_LINE.match(text)
-        if found:
-            members = {int(m.group(1)): (float(m.group(2)), float(m.group(3))) for m in MEMBER_AT.finditer(text)}
-            rows.append((int(found.group(1)), (float(found.group(2)), float(found.group(3))), members, line))
+    rows = position_rows(window)
     anchor = next((row for row in rows if past(row[1][index])), None)
     if not anchor:
         return False, f"the player never crossed {axis} {side} {plane:g}", [rows[-1][3]] if rows else []

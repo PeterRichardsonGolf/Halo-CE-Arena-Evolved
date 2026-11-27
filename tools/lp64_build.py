@@ -57,6 +57,7 @@ from .linux_build import (
     musl_math_sources,
     updater_defines,
 )
+from .forge_build import FORGE_DIR, forge_cflags, forge_source_flags, forge_sources
 from .ninja_syntax import Writer
 from .steam_client_build import STEAM_CLIENT_DEFINES, steam_client_flags, steam_client_in_platform_list, steam_client_sources
 from .version import VERSION_SOURCES
@@ -156,6 +157,9 @@ class Lp64Host:
     ffmpeg_cflags: List[str] = field(default_factory=list)
     # the Steam client built in (the Steam sign-in: tools/steam_client_build.py): the desktop game's builds, not the server's
     steam_client: bool = False
+    # Content Evolved's Forge built in (tools/forge_build.py): its sources, and the renames and
+    # OPENCE_ENABLE_FORGE=1 for the sources that take it over
+    forge: bool = False
 
 
 @dataclass
@@ -260,13 +264,20 @@ class Lp64Build:
         lp64 = self.lp64
         linux_config = load_json(LINUX_PORT_CONFIG)
         excluded = host.excluded
-        abi = " ".join([*host.target_flags, *LP64_ABI_FLAGS, *configuration_defines(sln), *game_browser_defines(sln)])
+        abi = " ".join([*host.target_flags, *LP64_ABI_FLAGS, *configuration_defines(sln), *game_browser_defines(sln),
+                        *(["-DOPENCE_ENABLE_FORGE=1"] if host.forge else [])])
         prefix_header = lp64(LINUX_PORT_DIR / "include" / "halo_linux_prefix.h")
         port_include = lp64(LINUX_PORT_DIR / "include")
         xdk = _quote(lp64(XDK_INCLUDE))
         units: List[Lp64Unit] = []
 
         def add(source: Path, cflags: str, native: bool = False) -> None:
+            if host.forge and not native:
+                # (a rewritten copy's renames are its original's)
+                original = source.relative_to(self.lp64_dir) if self.lp64_dir in source.parents else source
+                renames = forge_source_flags(original)
+                if renames:
+                    cflags = f"{cflags} {renames}"
             units.append(Lp64Unit(source, cflags, native))
 
         game = linux_config["game"]
@@ -298,6 +309,19 @@ class Lp64Build:
         if getattr(sln, "game_browser", False):
             for source in sorted(Path("server/src").glob("*.c")):
                 add(lp64(source), game_cflags)
+
+        # Content Evolved's Forge (port/forge): the game's units with its own headers and the port's zlib
+        if host.forge:
+            forge_game_cflags = forge_cflags(game_cflags, ZLIB_DIR)
+            forge_game_cflags = forge_game_cflags.replace(f"-I{FORGE_DIR / 'include'}",
+                                                          f"-I{_quote(lp64(FORGE_DIR / 'include'))}", 1)
+            # (its Custom Edition headers are the cev/ copy's, found before the game's own of those names; and
+            # ae_forge_compat.h comes first)
+            # (after the prefix header and the MSVC semantics, which come first)
+            forge_game_cflags = (f"-iquote {_quote(lp64(LINUX_PORT_DIR / 'game' / 'cev'))} " + forge_game_cflags +
+                                 f" -include {_quote(lp64(LINUX_PORT_DIR / 'game' / 'ae_forge_compat.h'))}")
+            for source in forge_sources():
+                add(lp64(source), forge_game_cflags)
 
         platform_dir = Path(linux_config["platform_sources"])
         platform_cflags = " ".join([

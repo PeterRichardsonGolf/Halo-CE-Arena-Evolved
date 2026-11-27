@@ -251,6 +251,7 @@ symbols in this file:
 #include "halo_map_families.h" /* port: map_family_wire_name */
 #include "game_modes.h" /* port: port/linux/game/game_modes.c */
 #include "delta.h" /* AE hook */
+#include "ae_forge_net_rules.h" /* AE hook */
 #include "network_chat.h" /* port: port/linux/game/network_chat.c */
 #include "bungie_net/common/message_header.h"
 #include "bungie_net/network/transport.h"
@@ -2006,8 +2007,9 @@ static boolean network_game_server_handle_message_client_broadcast_game_search(
 			both; port/linux/src/delta_peer.h) */
 			{ unsigned char delta_peer_advertised_flags(void);
 			  void delta_peer_advertised_wire(unsigned char *reserved, int size);
+			  if (ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) { /* AE hook */
 			  advertisement.reserved[HALO_PORT_ADVERTISED_FLAGS_OFFSET] |= delta_peer_advertised_flags();
-			  delta_peer_advertised_wire(advertisement.reserved, (int)sizeof(advertisement.reserved)); }
+			  delta_peer_advertised_wire(advertisement.reserved, (int)sizeof(advertisement.reserved)); } /* AE hook */ }
 #endif
 			if (network_game_server_get_state(server, NULL) != _network_game_server_state_pregame ||
 				network_game_server_game_is_loading(server))

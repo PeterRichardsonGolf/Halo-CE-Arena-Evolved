@@ -164,5 +164,19 @@ int main(void)
 	CHECK(ae_bot_nav_plan_any(&map, AE_BOT_NAV_WARTHOG, start, goal, plan, 64, 1) == 0);
 
 	printf("ae_bot_nav_rules: %d checks, %d failures\n", checks, failures);
+	/* a route never ended before the next begins: its points are given back, so the next route's are the first, and a file
+	of such routes can never count more points than the table holds */
+	ae_bot_nav_parse(
+		"nav 1 testmap\n"
+		"route a any\n"
+		"point 0 0 0\n"
+		"point 10 0 0\n"
+		"point 20 0 0\n"
+		"route b any\n"
+		"point 0 10 0\n"
+		"point 10 10 0\n"
+		"end\n", &map);
+	CHECK(has_error(6));
+	CHECK(map.route_count >= 1 && map.routes[map.route_count - 1].first == 0 && map.point_count == 2);
 	return failures ? 1 : 0;
 }

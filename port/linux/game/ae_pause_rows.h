@@ -27,6 +27,8 @@ enum
 	AE_PAUSE_SERVER_HEADER, AE_PAUSE_SERVER,
 	/* (1.0) split screen in a game in progress: another controller of this PC joins; this player leaves, the others stay */
 	AE_PAUSE_ADD_PLAYER, AE_PAUSE_REMOVE_PLAYER,
+	/* (rc9) a Forge session: SAVE MAP, after RESUME */
+	AE_PAUSE_SAVE_MAP,
 	AE_PAUSE_ROW_KINDS,
 	AE_PAUSE_ROWS_MAXIMUM = 20
 };
@@ -61,6 +63,11 @@ struct ae_pause_facts
 	int coop_revert;       /* a network co-op game's host with a checkpoint of the players now in the game: REVERT TO SAVED
 	                          (everyone goes back with the host) */
 	int remove_player;     /* (1.0) REMOVE PLAYER: more than one player plays on this PC */
+	int forge;             /* (rc9) a Forge session (Content Evolved's Forge, played alone or hosted): SAVE MAP after RESUME, and QUIT asks
+	                          what leaving costs */
+	int forge_saved;       /* ... its map has been saved in this session */
+	char forge_name[64];   /* ... the saved map's name (upper case), when it has been */
+	char forge_time[16];   /* ... and the time of its last save ("21:14"), when known */
 	int server_role;       /* (0.7.7) a joiner of a dedicated server: the role the server says they have there (1
 	                          moderator, 2 admin, 3 owner; 0 none): PEOPLE (their PLAYERS page: the player card's server
 	                          rows) and SERVER (RUN THE SERVER: its page); others see nothing new */

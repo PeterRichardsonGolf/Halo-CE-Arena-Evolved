@@ -100,6 +100,10 @@ float ae_wheel_legend_place(struct ae_wheel_layout const *layout, int count, flo
 /* the words: a caption (SMART, ATTACK...) and the whole call (SMART CALL, ATTACKING HERE...), alive or dead */
 wchar_t const *ae_wheel_caption(int entry, int dead);
 wchar_t const *ae_wheel_word(int entry, int dead);
+/* the campaign squad's wheel: the three slices that order the squad read as orders (MOVE, MOUNT, FALL IN; MOVE HERE, MOUNT UP,
+FALL IN); every other slice, and a dead caller's wheel, as above */
+wchar_t const *ae_wheel_caption_squad(int entry, int dead);
+wchar_t const *ae_wheel_word_squad(int entry, int dead);
 
 /* the motion: the send flashes the focused sector to white in AE_WHEEL_FLASH_MS, then the ring closes in
 AE_WHEEL_CLOSE_MS (opening is ae_wheel_open_part's). since_ms: from the send. Returns 0 once it is over */

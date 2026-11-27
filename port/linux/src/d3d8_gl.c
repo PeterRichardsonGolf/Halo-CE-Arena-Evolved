@@ -3027,6 +3027,8 @@ int halo_scoreboard_pointer_update(int offered, struct halo_ui_pointer *pointer)
 }
 #endif
 
+#include "ae_forge_pointer_gl.inc" /* AE hook */
+
 int halo_ui_pointer_update(int menus_active, struct halo_ui_pointer *pointer)
 {
 	struct platform_ui_pointer state;
@@ -3216,6 +3218,11 @@ void WINAPI D3DDevice_SetRenderTarget(D3DSurface *render_target, D3DSurface *dep
 		device.viewport.MaxZ = 1.0f;
 	}
 	viewport_update_constants();
+}
+
+void WINAPI D3DDevice_GetViewport(D3DVIEWPORT8 *viewport)
+{
+	*viewport = device.viewport;
 }
 
 void WINAPI D3DDevice_SetViewport(CONST D3DVIEWPORT8 *viewport)

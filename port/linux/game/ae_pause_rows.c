@@ -6,6 +6,7 @@ said the way each row's engine call works (team_change.c's CHANGE TEAMS, menu_fu
 */
 
 #include <stddef.h>
+#include <stdio.h>
 
 #include "ae_pause_rows.h"
 
@@ -19,6 +20,9 @@ short ae_pause_rows(struct ae_pause_facts const *facts, short *rows, short maxim
 	short list[AE_PAUSE_ROWS_MAXIMUM], count = 0, index;
 
 	list[count++] = AE_PAUSE_RESUME;
+	/* (rc9: in Forge the map is saved from here, right after RESUME) */
+	if (facts->forge)
+		list[count++] = AE_PAUSE_SAVE_MAP;
 	list[count++] = AE_PAUSE_SETTINGS;
 	switch (facts->game)
 	{
@@ -90,6 +94,7 @@ const char *ae_pause_row_label(int row, struct ae_pause_facts const *facts)
 	switch (row)
 	{
 	case AE_PAUSE_RESUME: return "RESUME";
+	case AE_PAUSE_SAVE_MAP: return "SAVE MAP";
 	case AE_PAUSE_SETTINGS: return "SETTINGS";
 	case AE_PAUSE_TEAMS: return "CHANGE TEAMS";
 	case AE_PAUSE_SCOREBOARD: return "SCOREBOARD";
@@ -120,6 +125,18 @@ const char *ae_pause_row_help(int row, struct ae_pause_facts const *facts)
 	switch (row)
 	{
 	case AE_PAUSE_RESUME: return "Back to the game.";
+	case AE_PAUSE_SAVE_MAP:
+		if (facts && facts->forge_saved && facts->forge_name[0] && facts->forge_time[0])
+		{
+			static char saved[192];
+
+			snprintf(saved, sizeof(saved), "Saves %s over its last save (%s). Save a copy under another name from Forge's own menu.",
+				facts->forge_name, facts->forge_time);
+			return saved;
+		}
+		if (facts && facts->forge_saved)
+			return "Saves this map over its last save. Save a copy under another name from Forge's own menu.";
+		return "Name your map, then it saves. After that, this row and QUICK SAVE MAP save it at once.";
 	case AE_PAUSE_SETTINGS: return "Your controls, view, HUD and audio. Changes apply live.";
 	case AE_PAUSE_TEAMS: return "Switch to the other team: you respawn on it (round games: at your next death).";
 	case AE_PAUSE_SCOREBOARD: return "The full scoreboard: kills, deaths, assists, objective.";
@@ -145,6 +162,8 @@ const char *ae_pause_row_help(int row, struct ae_pause_facts const *facts)
 	case AE_PAUSE_FRIENDLY_FIRE: return "Whether your shots hurt the other players, on this PC, from now on.";
 	case AE_PAUSE_REVERT: return "Back to the last checkpoint.";
 	case AE_PAUSE_QUIT:
+		if (facts && facts->forge)
+			return "Leave Forge. Anything placed since your last save is lost.";
 		if (facts && facts->social && facts->social_quit_help[0])
 			return facts->social_quit_help;
 		if (facts && facts->game == AE_PAUSE_CAMPAIGN && facts->unsaved)
@@ -216,7 +235,22 @@ int ae_pause_row_confirm(int row, struct ae_pause_facts const *facts, const char
 		*yes = "REVERT";
 		return 1;
 	case AE_PAUSE_QUIT:
-		if (facts && facts->game == AE_PAUSE_CAMPAIGN && facts->unsaved)
+		if (facts && facts->forge)
+		{
+			static char lost[120];
+
+			if (facts->forge_saved && facts->forge_time[0])
+			{
+				snprintf(lost, sizeof(lost), "Anything placed since your last save (%s) is lost.", facts->forge_time);
+				*body = lost;
+			}
+			else
+				*body = facts->forge_saved ? "Anything placed since your last save is lost." :
+					"Your map is not saved: everything placed is lost.";
+			*title = "Leave Forge?";
+			*yes = "LEAVE";
+		}
+		else if (facts && facts->game == AE_PAUSE_CAMPAIGN && facts->unsaved)
 		{
 			*title = "Quit?";
 			*body = "This map keeps no saved game: it starts over next time. The main menu comes back.";

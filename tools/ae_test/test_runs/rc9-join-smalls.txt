@@ -1,0 +1,76 @@
+# Small menu items: the TESTING mark (a testing feature's main-menu row shows TESTING in the badges' slot, its screen's crumb
+# starts with TESTING), THEATER's empty list saying how to turn RECORD on, MAPS & MODS' ITEM SETS page in the strip, the
+# campaign's FORMATIONS row for the AI squad, and a join refused while the host changes maps (code 5) tried again by itself.
+# DEV MODE's `join_closed [<1-4>]` stages that refusal in the menus: the staged host refuses that many tries, then lets the
+# join in (nothing is joined). Every test opens on its screen from its setup lines.
+list rc9-join-smalls
+revision 1
+title SMALL MENU ITEMS: TESTING MARK, FORMATIONS, CHANGING MAPS
+
+group theater
+set network.record_replays false
+
+test theater-mark
+title MAIN MENU: THEATER is marked TESTING
+menus
+check THEATER's row shows TESTING at its right, in grey
+check A on THEATER: top right reads TESTING • WATCH A ...
+check No other main-menu row says TESTING
+expect 1 log ae main menu: rows
+
+test theater-empty
+title THEATER: no recordings, RECORD off
+menus
+setup menu theater empty
+check Help: RECORD is OFF. Press Y to turn it on, ...
+check Y: Record: ON, the help reads RECORD is ON. Play ...
+check Y again: back to OFF; the crumb starts TESTING •
+expect 2 log ae theater: recording on
+expect 3 log ae theater: recording off
+
+group maps
+
+test item-sets-tab
+title MAPS & MODS: ITEM SETS in the strip, marked TESTING
+menus
+setup menu maps installed list
+check Six pages in the strip: ITEM SETS last, after MODS
+check RB to ITEM SETS: top right reads TESTING • MAIN MENU
+check RB from ITEM SETS: INSTALLED; LB: back to ITEM SETS
+expect 2 log ae maps hub: page ITEM SETS
+
+group squad
+
+test formations-row
+title CAMPAIGN: the FORMATIONS row
+menus
+setup config game.companions 2
+setup config game.companions_formations true
+setup menu campaign focus formations
+check FORMATIONS sits under DOOR STACK, focused, ON
+check Right: OFF; the help: no formation of its own
+check Right again: ON; the help names the file and wedge
+expect 2 log ae campaign: formations off
+expect 3 log ae campaign: formations on
+
+group join
+
+test changing-maps-cancel
+title JOIN: the host is changing maps, then CANCEL
+menus
+setup join_closed 1
+check THE GAME IS CHANGING MAPS, Try 1 of 3 under it
+check One button, CANCEL; B picks it, the dialog closes
+check Nothing opens after it
+expect 2 log join helper: trying again cancelled
+expect 3 no log join helper: trying the join again
+
+test changing-maps-tries
+title JOIN: three tries by itself, then THE GAME IS CLOSED
+menus
+setup join_closed 4
+check Try 1, 2, then 3 of 3, about 4 s apart
+check Then THE GAME IS CLOSED with TRY AGAIN
+check TRY AGAIN closes it (the staged join is let in)
+expect 1 log join helper: trying the join again (3 of 3)
+expect 3 log join helper: staged join let in

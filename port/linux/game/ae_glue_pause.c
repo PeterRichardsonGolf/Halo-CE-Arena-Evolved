@@ -41,6 +41,9 @@ own and pauses nothing, game_engine_allow_pause permitting; a campaign's pauses 
 #include "ae_h2_match.h"
 #include "ae_header_lines.h"
 #include "ae_invite_share.h"
+#include "ae_forge_dev.h"
+#include "ae_forge_maps.h"
+#include <time.h>
 #include "ae_hooks.h"
 #include "ae_pause.h"
 #include "ae_mode_guard_rules.h"
@@ -205,6 +208,26 @@ void ae_glue_pause_facts(short local_player, int game, struct ae_pause_facts *fa
 	/* (0.7.7) a dedicated server's role for this PC's player, as its admin message says */
 	if (game == AE_PAUSE_MULTIPLAYER && !facts->host)
 		facts->server_role = ae_server_ingame_role();
+	/* (rc9) a Forge session: SAVE MAP, and what leaving loses (the map's name and the time of its last save) */
+	if (ae_forge_dev_session())
+	{
+		char name[64];
+
+		facts->forge = 1;
+		if (ae_forge_dev_saved(name, (int)sizeof(name)))
+		{
+			unsigned long saved = ae_forge_maps_saved_time(name);
+			time_t when = (time_t)saved;
+			struct tm *local = saved ? localtime(&when) : NULL;
+			int at;
+
+			facts->forge_saved = 1;
+			for (at = 0; name[at] && at < (int)sizeof(facts->forge_name) - 1; at++)
+				facts->forge_name[at] = name[at] >= 'a' && name[at] <= 'z' ? (char)(name[at] - 32) : name[at] == '_' ? ' ' : name[at];
+			if (local)
+				snprintf(facts->forge_time, sizeof(facts->forge_time), "%02d:%02d", local->tm_hour, local->tm_min);
+		}
+	}
 	/* (0.7.6) INVITE A FRIEND: the host's own link, or the one this PC joined through */
 	{
 		char link[200];

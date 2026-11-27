@@ -286,6 +286,7 @@ symbols in this file:
 #include "biped_ragdoll.h" /* AE hook */
 #include "ae_fall_stun.h" /* AE hook */
 #include "ae_traits.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 /* port: port/linux/game/network_objects.c's (a client deletes the host's
 objects on the host's word alone) */
@@ -784,6 +785,7 @@ static void biped_falling_damage(
 	/* port: relative to the deck while riding or falling from it (vehicle_riding.c) */
 	real falling_velocity = biped_riding_falling_velocity(biped);
 
+	if (ae_forge_biped_fall_protected(biped_index, &biped->object.bounding_sphere_center, TEST_FLAG(biped->biped.flags, _biped_airborne_bit))) immune = TRUE; /* AE hook */
 	/* port: MCC clients predict only the effect received from the host. */
 	if (!(cheat.jetpack || mcc_script_effect_enabled(MCC_EFFECT_JETPACK)) || biped->unit.player_index == NONE)
 	{
@@ -2370,6 +2372,8 @@ static void biped_update_physics(
 	real_vector2d facing = { 0.f, 0.f };
 	boolean climbing = TEST_FLAG(physics->in_flags, _biped_physics_in_climb_anything_bit);
 	word in_flags;
+	float pull[3]; /* AE hook */
+	boolean pulled; /* AE hook */
 	real_point3d position;
 	real_vector3d velocity;
 	real_point3d clipped_position;
@@ -2383,6 +2387,9 @@ static void biped_update_physics(
 
 	in_flags = physics->in_flags;
 	physics->out_flags = 0;
+	if (!TEST_FLAG(in_flags, _biped_physics_in_dead_bit) && ae_forge_biped_stop_inertia(physics->biped_index, &physics->position)) physics->velocity = *global_zero_vector3d; /* AE hook */
+	pulled = (boolean)ae_forge_gravity_pull(&physics->position, pull); /* AE hook */
+	if (pulled && !TEST_FLAG(in_flags, _biped_physics_in_flying_bit) && !TEST_FLAG(in_flags, _biped_physics_in_absolute_movement_bit) && !TEST_FLAG(in_flags, _biped_physics_in_airborne_bit) && !climbing && ae_forge_biped_lifted(pull, &physics->ground_plane.n)) SET_FLAG(in_flags, _biped_physics_in_airborne_bit, TRUE); /* AE hook */
 	if (TEST_FLAG(in_flags, _biped_physics_in_flying_bit))
 	{
 		real_vector3d up;
@@ -2456,6 +2463,7 @@ static void biped_update_physics(
 #else
 		physics->new_velocity.k = physics->velocity.k - global_gravity;
 #endif
+		if (pulled) { physics->new_velocity.i += pull[0] * global_gravity; physics->new_velocity.j += pull[1] * global_gravity; physics->new_velocity.k = physics->velocity.k + pull[2] * global_gravity; } /* AE hook */
 		physics->out_flags = TEST_FLAG(in_flags, _biped_physics_in_slipping_bit) ?
 			FLAG(_biped_physics_out_slipping_bit) : 0;
 	}
@@ -2647,6 +2655,7 @@ static void biped_update_physics(
 			16,
 			collisions);
 	}
+	if (!TEST_FLAG(physics->in_flags, _biped_physics_in_no_collision_bit) && !TEST_FLAG(physics->in_flags, _biped_physics_in_flying_bit) && collision_count < 16 && ae_forge_biped_one_way(&position, &clipped_position, &clipped_velocity, physics->width, &collisions[collision_count])) collision_count++; /* AE hook */
 
 	if (debug_biped_physics &&
 		object_get(physics->biped_index)->object.owner_player_index != NONE)

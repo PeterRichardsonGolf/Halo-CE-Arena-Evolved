@@ -11,8 +11,10 @@ Everything is kept in memory: a set made, played, added to or removed from chang
 
 #define MB (1024ull * 1024ull)
 
-struct st_set { char name[48], folder[64]; int used; };
-struct st_entry { int set; struct ae_is_entry e; long next_tag; };
+struct st_set { char name[48], folder[64]; int used; char body[3][256]; };
+/* an item's settings, by the keys of the set's file */
+struct st_options { char name[48], faction[16], klass[16], type[16], group[32], hud[24], replace[8]; };
+struct st_entry { int set; struct ae_is_entry e; long next_tag; struct st_options options; };
 
 static struct st_set sets[AE_IS_SETS_MOST];
 enum { ST_ENTRIES_MOST = 128 };
@@ -39,6 +41,7 @@ static struct seed_item const armory[] =
 	{ 0, "cmt\\weapons\\covenant\\needler\\needler_mp", "covenant_outpost", 1, "", 3ull * MB },
 	{ 0, "cmt\\weapons\\covenant\\carbine\\carbine_mp", "covenant_outpost", 1, "", 3ull * MB },
 	{ 1, "cmt\\characters\\covenant\\elite\\elite_zealot", "covenant_outpost", 1, "", 4ull * MB },
+	{ 4, "cmt\\characters\\covenant\\elite\\elite_mp", "covenant_outpost", 1, "", 5ull * MB },
 	{ 1, "cmt\\characters\\covenant\\grunt\\grunt_heavy", "tsce_multiplayerv1", 1, "", 3ull * MB },
 };
 static struct seed_item const garage[] =
@@ -209,7 +212,11 @@ static int staged_entries(char const *folder, struct ae_is_entry *out, int maxim
 	for (kind = 0; kind < AE_IS_KINDS; kind++)
 		for (each = 0; each < entry_count && kept < maximum; each++)
 			if (entries[each].set == set && entries[each].e.kind == kind)
-				out[kept++] = entries[each].e;
+			{
+				out[kept] = entries[each].e;
+				snprintf(out[kept].name, sizeof(out[kept].name), "%s", entries[each].options.name);
+				kept++;
+			}
 	return kept;
 }
 
@@ -503,11 +510,402 @@ static int staged_randomizer_on(void)
 	return 1;
 }
 
+static struct st_entry *entry_of(char const *folder, long tag)
+{
+	int set = set_of(folder), each;
+
+	for (each = 0; set >= 0 && each < entry_count; each++)
+		if (entries[each].set == set && entries[each].e.tag == tag)
+			return &entries[each];
+	return NULL;
+}
+
+static char *option_field(struct st_options *options, char const *key, int *size)
+{
+	struct { char const *key; char *field; int size; } const table[] = {
+		{ "name", options->name, (int)sizeof(options->name) }, { "faction", options->faction, (int)sizeof(options->faction) },
+		{ "class", options->klass, (int)sizeof(options->klass) }, { "type", options->type, (int)sizeof(options->type) },
+		{ "custom_type", options->group, (int)sizeof(options->group) }, { "hud", options->hud, (int)sizeof(options->hud) },
+		{ "replace", options->replace, (int)sizeof(options->replace) } };
+	int each;
+
+	for (each = 0; each < 7; each++)
+		if (!strcmp(table[each].key, key))
+		{
+			*size = table[each].size;
+			return table[each].field;
+		}
+	return NULL;
+}
+
+static int staged_entry_option(char const *folder, long tag, char const *key, char *value, int size)
+{
+	struct st_entry *entry = entry_of(folder, tag);
+	int field_size;
+	char *field = entry ? option_field(&entry->options, key, &field_size) : NULL;
+
+	if (!field)
+		return 0;
+	snprintf(value, (size_t)size, "%s", field);
+	return 1;
+}
+
+static int staged_entry_set_option(char const *folder, long tag, char const *key, char const *value)
+{
+	struct st_entry *entry = entry_of(folder, tag);
+	int field_size;
+	char *field = entry ? option_field(&entry->options, key, &field_size) : NULL;
+
+	if (!field)
+		return 0;
+	snprintf(field, (size_t)field_size, "%s", value);
+	return 1;
+}
+
+static char *body_field(char const *folder, char const *key)
+{
+	int set = set_of(folder);
+
+	if (set < 0)
+		return NULL;
+	return !strcmp(key, "player_biped") ? sets[set].body[0] : !strcmp(key, "player_hands") ? sets[set].body[1] :
+		!strcmp(key, "player_movement") ? sets[set].body[2] : NULL;
+}
+
+static int staged_body_option(char const *folder, char const *key, char *value, int size)
+{
+	char *field = body_field(folder, key);
+
+	if (!field)
+		return 0;
+	snprintf(value, (size_t)size, "%s", field);
+	return 1;
+}
+
+static int staged_body_set_option(char const *folder, char const *key, char const *value)
+{
+	char *field = body_field(folder, key);
+
+	if (!field)
+		return 0;
+	snprintf(field, 256, "%s", value);
+	return 1;
+}
+
+/* the facts the made-up bipeds are checked by (ae_biped_pack_rules.h's rule, as the engine runs it): the stock player, a biped of
+about its size that holds every weapon and rides every seat, and an elite that is not built for a player's physics and lacks three seats */
+static void staged_entry_fit(char const *folder, long tag, struct ae_is_fit *fit)
+{
+	struct st_entry *entry = entry_of(folder, tag);
+	struct ae_biped_facts stock, biped;
+
+	memset(fit, 0, sizeof(*fit));
+	if (!entry || entry->e.kind != 4)
+		return;
+	memset(&stock, 0, sizeof(stock));
+	stock.radius = 0.70f;
+	stock.standing_height = 0.70f;
+	stock.standing_eye = 0.64f;
+	stock.crouching_eye = 0.40f;
+	stock.has_animation_graph = 1;
+	stock.uses_player_physics = 1;
+	stock.seats_stock = 14;
+	stock.labels_checked = 11;
+	biped = stock;
+	if (strstr(entry->e.path, "elite"))
+	{
+		biped.radius = 0.71f;
+		biped.standing_height = 0.72f;
+		biped.standing_eye = 0.66f;
+		biped.crouching_eye = 0.41f;
+		biped.uses_player_physics = 0;
+		biped.seats_missing = 3;
+		snprintf(biped.seat_first, sizeof(biped.seat_first), "w-driver");
+	}
+	else
+	{
+		biped.standing_height = 0.714f;
+		biped.standing_eye = 0.65f;
+	}
+	ae_is_fit_from_facts(&stock, &biped, fit);
+}
+
+static int staged_replace_known(void)
+{
+	return 1;
+}
+
+/* ---------- the campaign swaps, the lobby's choice and the firing range */
+
+struct st_option { char key[24], value[256]; };
+struct st_swap { char name[48], file[64]; int used; struct st_option option[14]; int option_count; };
+struct st_list { int swap; char section[12], key[40], path[256]; };
+enum { ST_LIST_MOST = 256 };
+static struct st_swap swaps_made[AE_IS_SWAPS_MOST];
+static struct st_list lists_made[ST_LIST_MOST];
+static int swap_count, list_made;
+/* the lobby's choice: AE_IS_PICK_*, and its swap file or set folder */
+static int picked_kind;
+static char picked_id[64];
+
+static int swap_of(char const *file)
+{
+	int each;
+
+	for (each = 0; each < swap_count; each++)
+		if (swaps_made[each].used && !strcmp(swaps_made[each].file, file))
+			return each;
+	return -1;
+}
+
+static char const *swap_value(int swap, char const *key)
+{
+	int each;
+
+	for (each = 0; swap >= 0 && each < swaps_made[swap].option_count; each++)
+		if (!strcmp(swaps_made[swap].option[each].key, key))
+			return swaps_made[swap].option[each].value;
+	return "";
+}
+
+static int swap_write(int swap, char const *key, char const *value)
+{
+	int each;
+
+	if (swap < 0)
+		return 0;
+	for (each = 0; each < swaps_made[swap].option_count; each++)
+		if (!strcmp(swaps_made[swap].option[each].key, key))
+		{
+			snprintf(swaps_made[swap].option[each].value, sizeof(swaps_made[swap].option[0].value), "%s", value);
+			return 1;
+		}
+	if (swaps_made[swap].option_count >= 14)
+		return 0;
+	snprintf(swaps_made[swap].option[each].key, sizeof(swaps_made[swap].option[0].key), "%s", key);
+	snprintf(swaps_made[swap].option[each].value, sizeof(swaps_made[swap].option[0].value), "%s", value);
+	swaps_made[swap].option_count++;
+	return 1;
+}
+
+static int swap_add(char const *name, char const *set_folder)
+{
+	struct st_swap *swap;
+
+	if (swap_count >= AE_IS_SWAPS_MOST)
+		return -1;
+	swap = &swaps_made[swap_count];
+	memset(swap, 0, sizeof(*swap));
+	swap->used = 1;
+	snprintf(swap->name, sizeof(swap->name), "%s", name);
+	snprintf(swap->file, sizeof(swap->file), "%s", name);
+	swap_write(swap_count, "profile", set_folder);
+	swap_write(swap_count, "weapon_rotation", "add");
+	swap_write(swap_count, "weapon_replace", "random");
+	swap_write(swap_count, "enemy_rotation", "add");
+	swap_write(swap_count, "enemy_replace", "random");
+	return swap_count++;
+}
+
+static void list_add(int swap, char const *section, char const *key, char const *path)
+{
+	struct st_list *list;
+
+	if (list_made >= ST_LIST_MOST)
+		return;
+	list = &lists_made[list_made++];
+	list->swap = swap;
+	snprintf(list->section, sizeof(list->section), "%s", section);
+	snprintf(list->key, sizeof(list->key), "%s", key);
+	snprintf(list->path, sizeof(list->path), "%s", path);
+}
+
+static int staged_swaps(struct ae_is_swap *out, int maximum)
+{
+	int each, kept = 0;
+
+	for (each = 0; each < swap_count && kept < maximum; each++)
+	{
+		struct ae_is_swap *swap = &out[kept];
+		int set = set_of(swap_value(each, "profile")), e;
+
+		if (!swaps_made[each].used)
+			continue;
+		memset(swap, 0, sizeof(*swap));
+		snprintf(swap->name, sizeof(swap->name), "%s", swaps_made[each].name);
+		snprintf(swap->file, sizeof(swap->file), "%s", swaps_made[each].file);
+		snprintf(swap->set_folder, sizeof(swap->set_folder), "%s", swap_value(each, "profile"));
+		swap->set_found = set >= 0;
+		if (set >= 0)
+		{
+			snprintf(swap->set_name, sizeof(swap->set_name), "%s", sets[set].name);
+			for (e = 0; e < entry_count; e++)
+				swap->set_items_on += entries[e].set == set && entries[e].e.on;
+		}
+		swap->in_use = picked_kind == AE_IS_PICK_SWAP && !strcmp(picked_id, swap->file);
+		snprintf(swap->weapon_replace, sizeof(swap->weapon_replace), "%s", swap_value(each, "weapon_replace"));
+		snprintf(swap->enemy_replace, sizeof(swap->enemy_replace), "%s", swap_value(each, "enemy_replace"));
+		kept++;
+	}
+	return kept;
+}
+
+static int staged_swap_create(char const *name, char const *set_folder, char *file, int size)
+{
+	int swap = swap_of(name) >= 0 ? -1 : swap_add(name, set_folder);
+
+	if (swap < 0)
+		return 0;
+	snprintf(file, (size_t)size, "%s", swaps_made[swap].file);
+	return 1;
+}
+
+static int staged_swap_remove(char const *file)
+{
+	int swap = swap_of(file), each;
+
+	if (swap < 0)
+		return 0;
+	swaps_made[swap].used = 0;
+	for (each = 0; each < list_made; each++)
+		if (lists_made[each].swap == swap)
+			lists_made[each].swap = -1;
+	if (picked_kind == AE_IS_PICK_SWAP && !strcmp(picked_id, file))
+		picked_kind = AE_IS_PICK_NONE;
+	return 1;
+}
+
+static int staged_swap_rename(char const *file, char const *name)
+{
+	int swap = swap_of(file);
+
+	if (swap < 0)
+		return 0;
+	snprintf(swaps_made[swap].name, sizeof(swaps_made[swap].name), "%s", name);
+	return 1;
+}
+
+static int staged_swap_option(char const *file, char const *key, char *value, int size)
+{
+	int swap = swap_of(file);
+
+	if (swap < 0)
+		return 0;
+	snprintf(value, (size_t)size, "%s", !strcmp(key, "name") ? swaps_made[swap].name : swap_value(swap, key));
+	return 1;
+}
+
+static int staged_swap_set_option(char const *file, char const *key, char const *value)
+{
+	int swap = swap_of(file);
+
+	if (!strcmp(key, "name"))
+		return staged_swap_rename(file, value);
+	return swap_write(swap, key, value);
+}
+
+static int staged_swap_list_count(char const *file, char const *section, char const *key)
+{
+	int swap = swap_of(file), each, count = 0;
+
+	for (each = 0; each < list_made; each++)
+		count += lists_made[each].swap == swap && !strcmp(lists_made[each].section, section) && !strcmp(lists_made[each].key, key);
+	return count;
+}
+
+static int staged_swap_list_get(char const *file, char const *section, char const *key, int entry, char *path, int size)
+{
+	int swap = swap_of(file), each, count = 0;
+
+	for (each = 0; each < list_made; each++)
+		if (lists_made[each].swap == swap && !strcmp(lists_made[each].section, section) && !strcmp(lists_made[each].key, key) && count++ == entry)
+		{
+			snprintf(path, (size_t)size, "%s", lists_made[each].path);
+			return 1;
+		}
+	return 0;
+}
+
+static int staged_swap_list_has(char const *file, char const *section, char const *key, char const *path)
+{
+	int swap = swap_of(file), each;
+
+	for (each = 0; each < list_made; each++)
+		if (lists_made[each].swap == swap && !strcmp(lists_made[each].section, section) && !strcmp(lists_made[each].key, key) &&
+			!strcmp(lists_made[each].path, path))
+			return 1;
+	return 0;
+}
+
+static int staged_swap_list_set(char const *file, char const *section, char const *key, char const *path, int on)
+{
+	int swap = swap_of(file), each;
+
+	if (swap < 0)
+		return 0;
+	for (each = 0; each < list_made; each++)
+		if (lists_made[each].swap == swap && !strcmp(lists_made[each].section, section) && !strcmp(lists_made[each].key, key) &&
+			!strcmp(lists_made[each].path, path))
+		{
+			if (!on)
+				lists_made[each].swap = -1;
+			return 1;
+		}
+	if (on)
+		list_add(swap, section, key, path);
+	return 1;
+}
+
+static int staged_picked(char *id, int size)
+{
+	snprintf(id, (size_t)size, "%s", picked_kind == AE_IS_PICK_NONE ? "" : picked_id);
+	return picked_kind;
+}
+
+static int staged_pick(int pick, char const *id)
+{
+	picked_kind = pick;
+	snprintf(picked_id, sizeof(picked_id), "%s", pick == AE_IS_PICK_NONE || !id ? "" : id);
+	if (pick == AE_IS_PICK_SET)
+		playing = set_of(id);
+	else if (pick == AE_IS_PICK_NONE)
+		playing = -1;
+	return 1;
+}
+
+static int staged_range_ready(void)
+{
+	return !block_ce;
+}
+
+static int staged_range_start(char const *folder, char *why, int size)
+{
+	(void)folder;
+	if (block_ce)
+	{
+		snprintf(why, (size_t)size, "no Xbox-format bloodgulch.map in maps");
+		return 0;
+	}
+	return 1;
+}
+
+static int staged_entry_stock(char const *folder, long tag)
+{
+	struct st_entry *entry = entry_of(folder, tag);
+
+	return entry && (entry->e.kind == 0 || entry->e.kind == 1) && (strstr(entry->e.path, "pistol") || strstr(entry->e.path, "assault_rifle") ||
+		strstr(entry->e.path, "grunt") || strstr(entry->e.path, "elite"));
+}
+
 static struct ae_is_backend const staged =
 {
 	staged_sets, staged_play, staged_create, staged_copy, staged_rename, staged_remove_set, staged_entries, staged_entry_enable,
 	staged_entry_remove, staged_maps, staged_maps_reason, staged_map_open, staged_map_close, staged_kind_count, staged_kind_items,
-	staged_item_look, staged_kind_addable, staged_item_add, staged_item_remove, staged_randomizer_on,
+	staged_item_look, staged_kind_addable, staged_item_add, staged_item_remove, staged_randomizer_on, staged_entry_option,
+	staged_entry_set_option, staged_body_option, staged_body_set_option, staged_entry_fit, staged_replace_known,
+	staged_entry_stock, staged_swaps, staged_swap_create, staged_swap_remove, staged_swap_rename, staged_swap_option, staged_swap_set_option,
+	staged_swap_list_count, staged_swap_list_get, staged_swap_list_has, staged_swap_list_set, staged_picked, staged_pick, staged_range_ready,
+	staged_range_start,
 };
 
 struct ae_is_backend const *ae_is_backend_staged(int empty)
@@ -518,6 +916,10 @@ struct ae_is_backend const *ae_is_backend_staged(int empty)
 	open_map = -1;
 	serial = 0;
 	block_ce = 0;
+	swap_count = 0;
+	list_made = 0;
+	picked_kind = AE_IS_PICK_NONE;
+	picked_id[0] = 0;
 	if (!empty)
 	{
 		add_set("Spirit Kit");
@@ -528,6 +930,25 @@ struct ae_is_backend const *ae_is_backend_staged(int empty)
 		add_seed(1, armory, (int)(sizeof(armory) / sizeof(armory[0])));
 		add_seed(2, garage, (int)(sizeof(garage) / sizeof(garage[0])));
 		playing = 0;
+		/* (three swaps: the one in use, one that picks enemies by enemy, and one whose set is gone) */
+		{
+			int run = swap_add("Spirit Run", "Spirit Kit"), brute = swap_add("Brute Invasion", "Covenant Armory"), old = swap_add("Old Run", "Gone Set");
+
+			swap_write(run, "weapon_replace", "manual");
+			swap_write(run, "enemy_rotation", "only");
+			swap_write(run, "player_biped", "cmt\\characters\\evolved_h1-spirit\\cyborg\\bipeds\\cyborg_mp");
+			list_add(run, "weapons", "pistol", "cmt\\weapons\\evolved_h1-spirit\\pistol\\pistol_spirit_variant_mp");
+			list_add(run, "weapons", "pistol", "cmt\\weapons\\evolved_h1-spirit\\assault_rifle\\assault_rifle_mp");
+			list_add(run, "weapons", "plasma_rifle", "cmt\\weapons\\evolved_h1-spirit\\battle_rifle\\battle_rifle_mp");
+			list_add(run, "weapons", "shotgun", "cmt\\weapons\\evolved_h1-spirit\\assault_rifle\\assault_rifle_mp");
+			swap_write(brute, "enemy_replace", "manual");
+			list_add(brute, "enemies", "elite_major", "cmt\\characters\\covenant\\elite\\elite_zealot");
+			list_add(brute, "enemies", "elite_major", "original");
+			list_add(brute, "loadout", "elite_major", "cmt\\weapons\\covenant\\plasma_rifle\\plasma_rifle_mp");
+			(void)old;
+			picked_kind = AE_IS_PICK_SWAP;
+			snprintf(picked_id, sizeof(picked_id), "%s", swaps_made[run].file);
+		}
 	}
 	return &staged;
 }

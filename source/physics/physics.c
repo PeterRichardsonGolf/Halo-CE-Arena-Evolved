@@ -201,6 +201,7 @@ struct powered_mass_point_definition
 #include "mass_point_datum.h"
 
 #include "units/vehicle_datum.h"
+#include "ae_forge_engine.h" /* AE hook */
 
 /* TU-local copy: no shared header declares the game globals falling-damage
  * block yet; identical complete copies live in objects/damage.c and
@@ -784,6 +785,7 @@ void physics_compute_new(
 	struct object_datum *object = object_get(instance->object_index);
 	struct physics_definition const *physics = instance->physics;
 	real gravity = physics->gravity_scale*global_gravity;
+	real ground_gravity = global_gravity; /* AE hook */
 	short mass_point_index;
 	/* port: no more mass points than the caller's arrays hold, nor a
 	powered one the physics does not have (physics_mass_point_count,
@@ -791,6 +793,7 @@ void physics_compute_new(
 	short mass_point_count = physics_mass_point_count(physics);
 
 	set_real_vector3d(total_force, 0.0f, 0.0f, -physics->mass*gravity);
+	ground_gravity = ae_forge_physics_gravity(&object->object.bounding_sphere_center, physics->mass, gravity, total_force); /* AE hook */
 	set_real_vector3d(total_torque, 0.0f, 0.0f, 0.0f);
 
 	memset(mass_points, 0, sizeof(struct mass_point_datum)*mass_point_count);
@@ -870,7 +873,7 @@ void physics_compute_new(
 
 			normal_velocity = dot_product3d(&mass_point->velocity, &mass_point->ground_plane.n);
 			mass_point->normal_force_magnitude = physics->mass*
-				(global_gravity/ground_depth*mass_point->ground_depth - normal_velocity*ground_damp_fraction);
+				(ground_gravity/ground_depth*mass_point->ground_depth - normal_velocity*ground_damp_fraction); /* AE hook */
 			scale_vector3d(&mass_point->ground_plane.n, mass_point->normal_force_magnitude, &mass_point->normal_force);
 
 			scale_vector3d(&mass_point->ground_plane.n, -normal_velocity, &mass_point->velocity_relative_to_ground);
@@ -1735,6 +1738,7 @@ static void physics_update_old(
 	struct physics_definition const *physics = physics_definition_get(
 		object_definition->object.physics.index);
 	real gravity = physics->gravity_scale*global_gravity;
+	real ground_gravity = global_gravity; /* AE hook */
 	real_matrix4x3 world_matrix;
 	real_vector3d total_force = { 0.0f, 0.0f, -physics->mass*gravity };
 	real_vector3d total_torque = { 0.0f, 0.0f, 0.0f };
@@ -1748,6 +1752,7 @@ static void physics_update_old(
 	/* port: (as in physics_compute_new) */
 	short mass_point_count = physics_mass_point_count(physics);
 
+	ground_gravity = ae_forge_physics_gravity(&object->object.bounding_sphere_center, physics->mass, gravity, &total_force); /* AE hook */
 	matrix4x3_from_point_and_vectors(
 		&world_matrix,
 		&object->object.position,
@@ -1876,7 +1881,7 @@ static void physics_update_old(
 			real ground_scale = -mass_point_definition->mass*physics->ground_friction;
 
 			mass_point->normal_force_magnitude = physics->mass*(
-				global_gravity/physics->ground_depth*mass_point->ground_depth -
+				ground_gravity/physics->ground_depth*mass_point->ground_depth - /* AE hook */
 				normal_velocity*physics->ground_damp_fraction);
 			scale_vector3d(
 				&mass_point->ground_plane.n,

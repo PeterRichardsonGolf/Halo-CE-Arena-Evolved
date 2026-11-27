@@ -317,6 +317,8 @@ static int rows_handle(struct ae_screen *instance, struct ae_event const *event)
 {
 	struct ae_pvem_rows *rows = instance->data;
 
+	if (rows->handle_first && rows->handle_first(rows, event))
+		return 1;
 	switch (event->action)
 	{
 	case AE_ACTION_BACK:

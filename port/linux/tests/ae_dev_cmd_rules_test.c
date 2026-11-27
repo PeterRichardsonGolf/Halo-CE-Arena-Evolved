@@ -405,6 +405,9 @@ static void rest_tests(void)
 	CHECK(ok("hitch 1000", 1) && cmd.seed == 0);
 	CHECK(!ok("hitch 1000 after 0", 1) && !ok("hitch 1000 later 5", 1) && !ok("hitch 1000 after", 1));
 	CHECK(ok("join_lan", 1) && cmd.id == AE_DEV_CMD_JOIN_LAN && !ok("join_lan now", 1));
+	/* join_closed [<1-4>]: the staged host refuses that many tries (none given: 4) */
+	CHECK(ok("join_closed", 1) && cmd.id == AE_DEV_CMD_JOIN_CLOSED && cmd.number == 4);
+	CHECK(ok("join_closed 2", 1) && cmd.number == 2 && !ok("join_closed 0", 1) && !ok("join_closed 5", 1) && !ok("join_closed 2 3", 1));
 	/* (0.9.3) menu settings find [<text>]: the text is the rest of the line after "find" */
 	CHECK(ok("menu settings find zoom", 1) && cmd.id == AE_DEV_CMD_MENU && !strcmp(cmd.rest, "zoom"));
 	CHECK(ok("menu settings find Zoom Hold", 1) && !strcmp(cmd.rest, "Zoom Hold"));
@@ -507,7 +510,8 @@ static void rest_tests(void)
 	CHECK(ok("menu campaign", 1) && ok("menu campaign seat", 1) && ok("menu campaign seat error", 1) && ok("menu campaign error", 1) &&
 		refused("menu campaign seat seat error") && refused("menu campaign players"));
 	CHECK(ok("menu campaign save 3 2", 1) && ok("menu campaign save 10 0 focus continue", 1) && ok("menu campaign focus skip difficulty 2", 1) &&
-		ok("menu campaign focus squad", 1) && ok("menu campaign focus down", 1) && ok("menu campaign save 3 2 focus dialog", 1) && refused("menu campaign save 0 1") && refused("menu campaign save 11 1") &&
+		ok("menu campaign focus squad", 1) && ok("menu campaign focus down", 1) && ok("menu campaign focus door", 1) &&
+		ok("menu campaign focus formations", 1) && ok("menu campaign save 3 2 focus dialog", 1) && refused("menu campaign save 0 1") && refused("menu campaign save 11 1") &&
 		refused("menu campaign save 3 4") && refused("menu campaign save 3") && refused("menu campaign focus other") &&
 		refused("menu campaign difficulty 4") && refused("menu campaign focus"));
 	CHECK(ok("menu campaign players 3", 1) && cmd.number == 3 && ok("menu campaign players 4 error", 1) && cmd.number == 4 &&
@@ -554,6 +558,8 @@ static void rest_tests(void)
 	CHECK(ae_dev_cmd_gate(AE_DEV_CMD_HITCH, 1, 1) == AE_DEV_CMD_ALLOWED);
 	CHECK(ae_dev_cmd_gate(AE_DEV_CMD_HITCH, 0, 1) == AE_DEV_CMD_SETTING_OFF);
 	CHECK(ae_dev_cmd_gate(AE_DEV_CMD_GOTO, 1, 1) == AE_DEV_CMD_CLIENT);
+	/* (a joined Forge game is edited from the joined machine: DEV MODE on or off there is its own setting) */
+	CHECK(ae_dev_cmd_gate(AE_DEV_CMD_FORGE, 1, 1) == AE_DEV_CMD_ALLOWED && ae_dev_cmd_gate(AE_DEV_CMD_FORGE, 0, 1) == AE_DEV_CMD_SETTING_OFF);
 	/* (a replay's playback: replay and help run, reset does nothing, every other command is refused) */
 	CHECK(ae_dev_cmd_during_replay(AE_DEV_CMD_REPLAY) == AE_DEV_CMD_REPLAY_ALLOWED);
 	CHECK(ae_dev_cmd_during_replay(AE_DEV_CMD_HELP) == AE_DEV_CMD_REPLAY_ALLOWED);
@@ -674,6 +680,73 @@ static void rest_tests(void)
 		!strcmp(cmd.word[0], "ae_dev") && ok("range my-profile_2", 1));
 	CHECK(refused("range a b") && refused("range a/b") && refused("range ..\\x"));
 	/* inject status|maps|open <level>|list <category>|take <category> <number|name>|close|on|off|clear */
+	/* forge: the session, and the editing as the tools do it */
+	CHECK(ok("forge start bloodgulch", 1) && cmd.id == AE_DEV_CMD_FORGE && ok("forge mode monitor", 1) && ok("forge status", 1));
+	CHECK(ok("forge place vehicles\\warthog\\mp_warthog", 1) && cmd.id == AE_DEV_CMD_FORGE && !cmd.has_position &&
+		!strcmp(cmd.word[1], "vehicles\\warthog\\mp_warthog"));
+	CHECK(ok("forge place scenery\\x 10 -20.5 3", 1) && cmd.has_position && cmd.position[0] == 10.0f && cmd.position[1] == -20.5f &&
+		cmd.position[2] == 3.0f);
+	CHECK(ok("forge place scenery\\x 1 2 3 90", 1) && cmd.has_position && cmd.goal[0] == 90.0f);
+	CHECK(refused("forge place") && refused("forge place scenery\\x 1 2") && refused("forge place scenery\\x 1 2 3 4 5") &&
+		refused("forge place scenery\\x a b c"));
+	CHECK(ok("forge copy 12", 1) && cmd.number == 12 && ok("forge delete 0", 1) && ok("forge grab 4095", 1) && cmd.number == 4095);
+	CHECK(refused("forge copy") && refused("forge copy -1") && refused("forge delete 4096") && refused("forge grab x"));
+	CHECK(ok("forge snap 45", 1) && cmd.number == 45 && ok("forge snap off", 1) && cmd.number == 0 && ok("forge snap 15", 1) &&
+		ok("forge snap 90", 1) && refused("forge snap 30") && refused("forge snap"));
+	CHECK(ok("forge list", 1) && refused("forge list now") && refused("forge dance"));
+	CHECK(ok("forge save s3test", 1) && cmd.id == AE_DEV_CMD_FORGE && refused("forge save") && refused("forge save a.b") &&
+		refused("forge save a-b") && refused("forge save s3test extra"));
+	CHECK(ok("forge play s3test ctf", 1) && ok("forge play s3test slayer", 1) && refused("forge play s3test") &&
+		refused("forge play bad-name ctf") && refused("forge play s3test a b"));
+	/* volumes and map settings: a kind, its value in the kind's range, at the feet or at x y z */
+	CHECK(ok("forge volume gravity", 1) && cmd.id == AE_DEV_CMD_FORGE && cmd.number == -1 && !cmd.has_position);
+	CHECK(ok("forge volume gravity 25", 1) && cmd.number == 25 && ok("forge volume gravity 0", 1) && cmd.number == 0 &&
+		ok("forge volume gravity 1000", 1) && cmd.number == 1000 && refused("forge volume gravity 1001") && refused("forge volume gravity -5"));
+	CHECK(ok("forge volume kill", 1) && ok("forge volume ONEWAY", 1) && refused("forge volume kill 5") && refused("forge volume oneway 5"));
+	CHECK(ok("forge volume damage 50", 1) && cmd.number == 50 && ok("forge volume hurt 1", 1) && refused("forge volume hurt 0") &&
+		refused("forge volume hurt 101"));
+	CHECK(ok("forge volume gravity 25 10 -20.5 3", 1) && cmd.has_position && cmd.position[0] == 10.0f && cmd.position[1] == -20.5f &&
+		cmd.position[2] == 3.0f && cmd.number == 25);
+	CHECK(refused("forge volume") && refused("forge volume fog") && refused("forge volume gravity 25 1 2") && refused("forge volume gravity 25 1 2 x") &&
+		refused("forge volume gravity x") && refused("forge volume gravity 25 1 2 3 4"));
+	CHECK(ok("forge settings biped red elite", 1) && cmd.number == 0 && ok("forge settings biped blue elite", 1) && cmd.number == 1 &&
+		ok("forge settings hands ffa cyborg", 1) && cmd.number == 2 && refused("forge settings biped green elite") &&
+		refused("forge settings biped red") && refused("forge settings tags red x"));
+	CHECK(ok("forge settings fog heavy", 1) && cmd.number == 3 && ok("forge settings fog default", 1) && cmd.number == 0 &&
+		refused("forge settings fog rain") && refused("forge settings fog") && refused("forge settings"));
+	CHECK(ok("forge testspawn red", 1) && cmd.number == 0 && ok("forge testspawn ffa", 1) && cmd.number == 2 && refused("forge testspawn") &&
+		refused("forge testspawn green") && refused("forge testspawn red blue"));
+	/* AI: an actor, a team, a goal, a respawn; a route */
+	CHECK(ok("forge ai elite red", 1) && cmd.id == AE_DEV_CMD_FORGE && cmd.number == (7 | (0 << 4)) &&
+		ok("forge ai grunt blue hunt", 1) && cmd.number == (8 | (3 << 4)) &&
+		ok("forge ai elite red route 5", 1) && cmd.number == (7 | (2 << 4) | (5 << 8)));
+	CHECK(refused("forge ai") && refused("forge ai elite") && refused("forge ai elite green") && refused("forge ai elite red fly") &&
+		refused("forge ai elite red hunt respawn") && refused("forge ai elite red hunt 0") && refused("forge ai elite red hunt 601") &&
+		refused("forge ai elite red hunt 5 6"));
+	CHECK(ok("forge route 3", 1) && cmd.number == 3 && ok("forge route 8", 1) && refused("forge route 1") && refused("forge route 9") &&
+		refused("forge route") && refused("forge route x"));
+	CHECK(ok("forge volume patrol", 1) && ok("forge volume patrol 20", 1) && cmd.number == 20 && refused("forge volume patrol 0"));
+	/* Firefight markers: a kind, a round, a wave; the props; the ammunition */
+	CHECK(ok("forge ff infantry", 1) && cmd.id == AE_DEV_CMD_FORGE && ok("forge ff zone 3", 1) && ok("forge ff pad all", 1) &&
+		ok("forge ff player 1 2", 1) && ok("forge ff generator", 1) && ok("forge ff rack", 1) && ok("forge ff drop", 1));
+	CHECK(refused("forge ff") && refused("forge ff tank") && refused("forge ff infantry 6") && refused("forge ff infantry 1 4") &&
+		refused("forge ff infantry 1 2 3") && refused("forge ff rack 1") && refused("forge ff generator 2"));
+	CHECK(ok("forge ff ammo 10", 1) && cmd.number == 10 && ok("forge ff ammo 0", 1) && refused("forge ff ammo 101") && refused("forge ff ammo"));
+	CHECK(ok("forge move 5 1 2 3", 1) && cmd.number == 5 && cmd.has_position && cmd.position[2] == 3.0f && refused("forge move 5 1 2") &&
+		refused("forge move x 1 2 3") && refused("forge move 5 1 2 nan") && refused("forge move 4096 1 2 3"));
+	CHECK(ok("forge send !fm:0:5:1:2:3:0:0:0", 1) && refused("forge send") && refused("forge send fm:0") && refused("forge send !fm:0 1"));
+	CHECK(ok("forge host bloodgulch", 1) && ok("forge host bloodgulch ctf", 1) && refused("forge host") && refused("forge host a:b") &&
+		refused("forge host bloodgulch ctf extra"));
+	CHECK(ok("forge join 127.0.0.1:2302", 1) && refused("forge join") && refused("forge join 127.0.0.1") && refused("forge join 127.0.0.1:0") &&
+		refused("forge join host:2302"));
+	CHECK(ok("forge kill ai", 1) && cmd.id == AE_DEV_CMD_FORGE && refused("forge kill") && refused("forge kill all"));
+	CHECK(ok("forge ready", 1) && cmd.id == AE_DEV_CMD_FORGE && refused("forge ready now"));
+	CHECK(ok("forge face", 1) && cmd.id == AE_DEV_CMD_FORGE && refused("forge face now"));
+	CHECK(ok("forge where 12", 1) && cmd.number == 12 && ok("forge where last", 1) && cmd.number == -1 && ok("forge where ai", 1) &&
+		cmd.number == -2 && ok("forge where all", 1) && cmd.number == -3 && ok("forge where 4095", 1) && cmd.number == 4095 &&
+		refused("forge where") && refused("forge where 4096") && refused("forge where x") && refused("forge where 1 2"));
+	CHECK(ok("forge gametype 7 ctf", 1) && cmd.number == 7 && ok("forge gametype 0 all", 1) && ok("forge gametype last race", 1) && cmd.number == -1 && refused("forge gametype 7") &&
+		refused("forge gametype 7 halo") && refused("forge gametype x ctf"));
 	CHECK(ok("inject status", 1) && cmd.id == AE_DEV_CMD_INJECT && ok("inject maps", 1) && ok("inject close", 1));
 	CHECK(ok("inject on", 1) && ok("inject off", 1) && ok("inject clear", 1));
 	CHECK(ok("inject open tsce_multiplayerv1", 1) && !strcmp(cmd.word[1], "tsce_multiplayerv1"));
@@ -681,6 +754,8 @@ static void rest_tests(void)
 	CHECK(ok("inject take 4 0", 1) && cmd.number == 4 && !strcmp(cmd.word[2], "0"));
 	CHECK(ok("inject take 0 brute_plasma_rifle", 1) && cmd.number == 0 && !strcmp(cmd.word[2], "brute_plasma_rifle"));
 	CHECK(refused("inject") && refused("inject open") && refused("inject list 9") && refused("inject list x"));
+	CHECK(ok("inject body taken own", 1) && ok("inject body own spartan", 1) && ok("inject body campaign spartan", 1) &&
+		refused("inject body") && refused("inject body taken") && refused("inject body hands own") && refused("inject body own fast"));
 	CHECK(refused("inject take 4") && refused("inject take 9 0") && refused("inject take x 0") && refused("inject on now"));
 	CHECK(ae_dev_cmd_gate(AE_DEV_CMD_GOD, 0, 0) == AE_DEV_CMD_SETTING_OFF && ae_dev_cmd_gate(AE_DEV_CMD_GOD, 1, 1) == AE_DEV_CMD_CLIENT &&
 		ae_dev_cmd_gate(AE_DEV_CMD_GOD, 1, 0) == AE_DEV_CMD_ALLOWED);
@@ -814,6 +889,19 @@ static void puppet_tests(void)
 	CHECK(ae_dev_puppet_parse("1 2", &route) == -1 && route.count == 4);
 	CHECK(ae_dev_puppet_parse("1 2 3 fly", &route) == -1 && route.count == 4);
 	CHECK(ae_dev_puppet_parse("1 2 3 walk 2", &route) == -1 && route.count == 4);
+	/* (a point may be waited at, 0.5 to 60 s, once reached) */
+	{
+		struct ae_dev_puppet_route stand;
+
+		memset(&stand, 0, sizeof stand);
+		CHECK(ae_dev_puppet_parse("1 2 3 wait 12 4 5 6", &stand) == 2 && stand.point[0].wait == 12.0f && stand.point[1].wait == 0.0f);
+		CHECK(ae_dev_puppet_parse("1 2 3 wait 0.2", &stand) == -1 && ae_dev_puppet_parse("1 2 3 wait 61", &stand) == -1 &&
+			ae_dev_puppet_parse("1 2 3 wait", &stand) == -1 && stand.count == 2);
+		/* (and faced: degrees, world; without face the way it came) */
+		CHECK(ae_dev_puppet_parse("7 8 9 wait 3 face 180", &stand) == 1 && stand.point[2].faced && stand.point[2].face == 180.0f &&
+			!stand.point[0].faced);
+		CHECK(ae_dev_puppet_parse("7 8 9 face 400", &stand) == -1 && ae_dev_puppet_parse("7 8 9 face", &stand) == -1 && stand.count == 3);
+	}
 	route.count = AE_DEV_PUPPET_POINTS;
 	CHECK(ae_dev_puppet_parse("1 2 3", &route) == -1 && route.count == AE_DEV_PUPPET_POINTS);
 	/* (a step: reached within 0.3 across and 1.0 up or down; else aimed at it, full ahead times the walk) */

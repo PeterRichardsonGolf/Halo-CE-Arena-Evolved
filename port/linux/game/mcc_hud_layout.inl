@@ -9,6 +9,8 @@ struct mcc_hud_layout {
     int panel;
 };
 
+static uint64_t mcc_hud_layout_work; /* AE hook */
+
 static void mcc_hud_layout_bytes(struct mcc_hud_layout *layout,void const *data,unsigned size)
 {
     unsigned char const *bytes=data;
@@ -48,6 +50,7 @@ static int mcc_hud_layout_bitmap(struct mcc_runtime *r,struct mcc_hud_layout *la
     data=mcc_hud_block(r,p+0x60,0x30,&count);
     if (!data) return 0;
     mcc_hud_layout_bytes(layout,&count,4);
+    if ((mcc_hud_layout_work+=count)>4000000u) return 0; /* AE hook */
     for (n=0;n<count;n++) {
         mcc_hud_layout_bytes(layout,data+n*0x30+4,8);
         mcc_hud_layout_bytes(layout,data+n*0x30+16,4); /* registration point */
@@ -55,11 +58,13 @@ static int mcc_hud_layout_bitmap(struct mcc_runtime *r,struct mcc_hud_layout *la
     data=mcc_hud_block(r,p+0x54,0x40,&count);
     if (!data) return 0;
     mcc_hud_layout_bytes(layout,&count,4);
+    if ((mcc_hud_layout_work+=count)>4000000u) return 0; /* AE hook */
     for (n=0;n<count;n++) {
         mcc_hud_layout_bytes(layout,data+n*0x40+0x20,4);
         items=mcc_hud_block(r,data+n*0x40+0x34,0x20,&sprites);
         if (!items) return 0;
         mcc_hud_layout_bytes(layout,&sprites,4);
+        if ((mcc_hud_layout_work+=sprites)>4000000u) return 0; /* AE hook */
         for (i=0;i<sprites;i++) {
             mcc_hud_layout_bytes(layout,items+i*0x20,2);
             mcc_hud_layout_bytes(layout,items+i*0x20+8,24);

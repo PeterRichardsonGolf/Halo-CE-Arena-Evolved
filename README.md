@@ -20,7 +20,7 @@ grew from [ChupathingyCE](https://github.com/ChupathingyCE/chupathingyce). Its f
 It is inspired by the grassroots Halo CE community's competitive rules, with ideas of its own.
 [Halo 1: NHE](https://halo1nhe.com/)'s own maps and gametypes stay supported as an option.
 
-> **Status: in active development.** The current release is **1.0.0-rc8.1**, a release candidate on the way to 1.0:
+> **Status: in active development.** The current release is **1.0.0-rc9**, a release candidate on the way to 1.0:
 > release candidates keep coming until 1.0, and there is no date for it. **Windows and Linux (64-bit) are tested with
 > every release.** The macOS (Apple silicon) and Android (unsigned) builds come from the same code and ship
 > untested: they may not work.
@@ -143,7 +143,7 @@ explained ([port/linux/README.md](port/linux/README.md)).
 
 Arena Evolved lists the online servers in MULTIPLAYER > SERVER BROWSER: pick one and join. A map you lack downloads
 as you join, and a Workshop map comes from Steam when STEAM ACCOUNT is signed in. Our own test servers, on the US West
-Coast, run Arena Evolved 1.0.0-rc8.1 and keep a game going with bots until players join:
+Coast, run Arena Evolved 1.0.0-rc9 and keep a game going with bots until players join:
 
 - **AE #1 Casual** `play.arenaevolved.com:10660`: 4v4 Arena Evolved modes with a map vote, and community demakes of classic maps
 - **AE #2 BTB** `btb.arenaevolved.com:10672`: 16v16 Big Team Battle with vehicles

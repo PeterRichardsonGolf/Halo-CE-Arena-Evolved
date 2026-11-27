@@ -403,6 +403,9 @@ static void go_test(void)
 	CHECK(!ae_fireteam_go_note(&table, fireteam, 0, 2.0f, 600.0f));
 	CHECK(ae_fireteam_order_kind(&table, fireteam) == _ae_order_defend);
 	CHECK(AE_FIRETEAM_GO_HOLD_SECONDS == 15.0f);
+	/* a campaign squad's order is never let go by a rule; elsewhere the rule's answer stands */
+	CHECK(!ae_fireteam_order_lets_go(1, 1) && !ae_fireteam_order_lets_go(1, 0));
+	CHECK(ae_fireteam_order_lets_go(0, 1) && !ae_fireteam_order_lets_go(0, 0));
 }
 
 static void recruit_check_test(void)

@@ -128,6 +128,7 @@ not to the aim and the triggers. Another right click, or the scoreboard
 closing, takes the mouse back for the aim. */
 static BOOL scoreboard_pointer_offered;
 static struct platform_ui_pointer scoreboard_pointer;
+static BOOL forge_pointer_wanted; /* AE hook */
 #endif
 static BOOL scoreboard_pointer_active;
 
@@ -2887,6 +2888,8 @@ BOOL platform_scoreboard_pointer(BOOL offered, struct platform_ui_pointer *point
 }
 #endif
 
+#include "ae_forge_pointer.inc" /* AE hook */
+
 void platform_scoreboard_scroll(int open, long *notches, long *pages)
 {
 	Uint64 now = SDL_GetTicks();
@@ -3046,8 +3049,8 @@ void platform_pump_events(void)
 	pthread_mutex_lock(&input_lock);
 #ifndef HALO_ANDROID
 	/* (the scoreboard closed, or no longer offering it: the pointer goes) */
-	if (scoreboard_pointer_active && (SDL_GetTicks() >= scoreboard_open_until_ms || !scoreboard_pointer_offered ||
-		input_state.ui_pointer))
+	if (scoreboard_pointer_active && (input_state.ui_pointer || (!forge_pointer_wanted && /* AE hook */
+		(SDL_GetTicks() >= scoreboard_open_until_ms || !scoreboard_pointer_offered)))) /* AE hook */
 	{
 		scoreboard_pointer_stop();
 	}
@@ -3224,6 +3227,7 @@ void platform_pump_events(void)
 				binding_captured_input = INPUT_MOUSE + event.button.button;
 				break;
 			}
+#include "ae_forge_pointer_button.inc" /* AE hook */
 #ifndef HALO_ANDROID
 			/* the open scoreboard's pointer: a right click frees it (and
 			fires nothing), and another takes it back; its clicks pick */
@@ -3280,6 +3284,7 @@ void platform_pump_events(void)
 				binding_captured_input = event.wheel.y > 0.0f ? INPUT_WHEEL_UP : INPUT_WHEEL_DOWN;
 				break;
 			}
+#include "ae_forge_pointer_wheel.inc" /* AE hook */
 			if (SDL_GetTicks() < scoreboard_open_until_ms)
 			{
 				/* whole notches, up (away) scrolling up */

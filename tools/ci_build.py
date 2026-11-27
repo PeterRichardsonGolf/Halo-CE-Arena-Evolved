@@ -68,6 +68,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from tools.forge_build import FORGE_DATA_FILES  # noqa: E402
 from tools.version import base_version, commit, release_build, version  # noqa: E402
 
 # what each port's build leaves, and what goes into dist/
@@ -350,6 +351,10 @@ def main() -> int:
         shutil.copy2(ROOT / "CHANGELOG.md", dist / "CHANGELOG.md")
         # (0.9.4) the CREDITS page's text (the TAB menu's)
         shutil.copy2(ROOT / "port/assets/credits.txt", dist / "credits.txt")
+    if args.platform == "linux64":
+        # Content Evolved's Forge's data files (tools/forge_build.py), beside the game
+        for forge_file in FORGE_DATA_FILES:
+            shutil.copy2(ROOT / forge_file, dist / forge_file.name)
     bundle_sdl3 = os.environ.get("HALO_BUNDLE_SDL3")
     if args.platform == "linux64" and bundle_sdl3:
         # (AE) the portable download brings its SDL3 beside halo (the

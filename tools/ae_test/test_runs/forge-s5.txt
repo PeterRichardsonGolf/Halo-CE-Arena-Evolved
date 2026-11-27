@@ -1,0 +1,152 @@
+# FORGE, step 5 (AI): an AI spawn is a marker the level turns into a squad when the game starts. `forge ai <actor> <team> [goal [seconds]]` places one 5
+# world units ahead of the Monitor (the actor is a part of its variant's name, the team covenant for an enemy and players for ALL PLAYERS, a friend of
+# every player; the goal none, patrol, route or hunt, the seconds the delay of its RESPAWN), `forge route <points>` an AI route, `forge volume patrol`
+# an AI PATROL volume; `forge mode play` after them waits for them and plays the AI from its markers.
+list forge-s5
+revision 4
+title FORGE: AI
+
+test enemy
+title A COVENANT Elite fights you
+check The Elite stands ahead of you
+check It fights you: it shoots, and hurts you
+expect 1 log forge dev: ai characters\elite
+expect 1 log forge dev: where ai unit 0
+expect 1 log forge dev: where ai: 1 alive
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ai elite covenant
+setup forge where last
+setup forge mode play
+setup forge where ai
+setup forge ready
+
+test friend
+title ALL PLAYERS' Elite is your friend
+check The Elite does not shoot you
+check Shoot it once: it does not turn on you
+expect 1 log forge dev: ai characters\elite
+expect 1 log forge dev: where ai unit 0
+expect 1 log forge dev: where ai: 1 alive
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ai elite players
+setup forge where last
+setup forge mode play
+setup forge where ai
+setup forge ready
+
+test route-line
+title ROUTE: the line of 3 points shows in the Monitor's mode
+check A line of 3 points ahead of you in the Monitor's mode
+check The line runs from point to point, along the ground
+expect 1 log forge dev: route of 3 points
+expect 1 log forge: an AI route line is drawn
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge route 3
+setup forge where all
+setup forge ready
+
+test route-walk
+title ROUTE goal: the Elite walks its 3 points
+check The Elite stands ahead of you
+check The Elite moves from point to point along the route
+expect 1 log forge dev: route of 3 points
+expect 1 log forge dev: where ai unit 0
+expect 1 no log the goal is none
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge route 3
+setup forge ai elite players route
+setup forge mode play
+setup forge where ai
+setup forge ready
+
+test respawn
+title RESPAWN 2 s: it comes back
+check The Grunt lies dead; another stands there within 2 s
+expect 1 log forge dev: ai characters\grunt
+expect 1 log forge dev: where ai: 1 alive
+expect 1 log forge dev: 1 AI units killed
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ai grunt covenant none 2
+setup forge mode play
+setup forge where ai
+setup forge kill ai
+setup forge ready
+
+test hunt
+title GO TO PLAYER: the Grunt comes to you
+check The Grunt, in sight ahead, walks toward you
+expect 1 log forge dev: ai characters\grunt
+expect 1 log forge dev: where ai unit 0
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ai grunt covenant hunt
+setup forge where last
+setup forge mode play
+setup forge where ai
+setup forge ready
+
+test patrol
+title PATROL volume: the Elite roams in it
+check The volume's edges show round you in the Monitor's mode
+check F1 to play: the Elite walks about in the volume
+expect 1 log forge dev: volume patrol as
+expect 1 log forge dev: ai characters\elite
+expect 1 no log the goal is none
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge volume patrol
+setup forge ai elite players patrol
+setup forge ready

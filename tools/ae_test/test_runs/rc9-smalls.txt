@@ -1,0 +1,56 @@
+# The Theater's camera bar: a slim panel above the playback bar names what the sticks and their clicks do in the view being watched,
+# in Content Evolved's words (BEHIND: ZOOM, ORBIT, RESET; FREE CAMERA: MOVE, AIM, TRACK or FREE, FOLLOW PLAYER; CINEMATIC: DISTANCE,
+# RESET; EYES: no bar). On the keyboard and mouse it names WASD, the mouse and DOWN instead. The first group records one game with the
+# bots (`replay keep` keeps it however short); the watch tests play it back with `replay play newest` and open on their view.
+list rc9-smalls
+revision 3
+title THEATER BAR: THE CAMERA HINTS
+
+group record
+map bloodgulch
+set network.record_replays true
+
+test record-game
+title BLOOD GULCH: play 40 seconds with the bots, then pass
+setup bots 7 even normal
+setup replay keep
+setup replay status
+check Play 40 seconds, then pass (a short game is kept too)
+expect 1 cmd replay status ok
+
+group watch
+map chillout
+set network.record_replays false
+
+test hint-behind
+retest 2
+title REPLAY BAR: BEHIND
+setup replay play newest
+setup replay seek 15
+setup replay behind
+check A panel over the bar: LEFT STICK ZOOM, RIGHT STICK ORBIT
+check Then RS / DOWN RESET (R3 on a PlayStation pad)
+check On the keyboard: W / S ZOOM, MOUSE ORBIT, DOWN RESET
+expect 1 cmd replay behind ok
+
+test hint-free
+retest 3
+title REPLAY BAR: FREE CAMERA
+setup replay play newest
+setup replay seek 15
+setup replay free
+check LEFT STICK MOVE, RIGHT STICK AIM, RS / DOWN FREE
+check It tracks the player first; RS click: FREE becomes TRACK
+check Keyboard: WASD MOVE, MOUSE AIM, DOWN, no L3 hint
+expect 1 cmd replay free ok
+
+test hint-cinematic-eyes
+retest 2
+title REPLAY BAR: CINEMATIC, EYES, PAUSE
+setup replay play newest
+setup replay seek 15
+setup replay cinematic
+check LEFT STICK DISTANCE, then LS RESET; nothing overlaps
+check Y to the eyes: no camera panel; Start: no panel
+check Narrow the window to 4:3: the panel stays in the frame
+expect 1 cmd replay cinematic ok

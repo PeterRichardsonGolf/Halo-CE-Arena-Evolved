@@ -313,6 +313,7 @@ symbols in this file:
 #include "units/units.h"
 #include "coop_enemies.h" /* port: port/linux/game/coop_enemies.c */
 #include "randomizer.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 #include <stddef.h>
 
@@ -3210,8 +3211,10 @@ static boolean encounter_place_actor(
 			starting_location = &spread_location;
 		}
 
+		if (extra_number == 0) starting_location = ae_forge_ai_location(starting_location, spawning, &spread_location); /* AE hook */
 		if (starting_location->actor_variant_index != NONE)
 			actor_palette_index = starting_location->actor_variant_index;
+		actor_palette_index = ae_forge_ai_palette(squad_definition, actor_palette_index); /* AE hook */
 
 		if (VALID_INDEX(actor_palette_index, scenario->ai_actor_palette.count))
 		{

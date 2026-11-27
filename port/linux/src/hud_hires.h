@@ -96,6 +96,8 @@ int hud_hires_override_point_threshold(long asset);
 /* Original HUD sheets lacking redraws, with their tag coordinates unchanged.
  * The cache owns the upscaled texture and invalidates it with the source. */
 long hud_hires_upscale_at(unsigned long address, long width, long height);
+/* the texture drawn for the placeholder whose D3D texture has this Data (the gameplay buttons' bitmaps too), or -1 */
+long hud_hires_placeholder_asset(unsigned long data);
 unsigned int hud_hires_upscale_texture(const unsigned char *bgra, unsigned long width,
 	unsigned long height, long kind, unsigned long *levels);
 #ifdef HALO_CONSOLE_HOST_ART

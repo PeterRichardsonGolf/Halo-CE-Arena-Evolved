@@ -11,6 +11,7 @@ tags (infection.c). The randomizer's own glue is ae_randomizer_glue.inc.
 
 #include "ae_randomizer_glue.h"
 #include "community.h"
+#include "networking/network_game_globals.h"
 #include "tag_multiplayer.h"
 
 /* ---------- Floodfection's tags */
@@ -60,11 +61,14 @@ long tag_multiplayer_firefight_level_profile(char const *scenario_name)
 	return NONE;
 }
 
+/* the profile (the Tag Injector's, port_tag_profiles' index) a game of a saved Forge map plays on its level: the one its host chose
+(tag_multiplayer_game_forge_profile), in a game of a host's or this PC's alone; NONE with no game, or none chosen. A map's own
+placed tags are not this: the map holds those itself (its bake) */
 long tag_multiplayer_forge_level_profile(char const *scenario_name)
 {
 	(void)scenario_name;
 
-	return NONE;
+	return network_game_get_game() ? tag_multiplayer_game_forge_profile() : NONE;
 }
 
 long tag_multiplayer_level_profile(char const *scenario_name)

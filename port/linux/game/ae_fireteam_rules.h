@@ -202,6 +202,10 @@ past the radius, so a goal a fight or a carried flag moved away is set back at o
 past AE_FIRETEAM_ATTACK_DRIFT leashes (inside, the bot is left to fight and roam). Other kinds: 0 */
 int ae_fireteam_press_wanted(short kind, float position_distance, float goal_distance);
 
+/* THE CAMPAIGN SQUAD'S ORDERS STAND: an order a person gave their campaign squad is ended only by their next order. 1 when an
+order may be let go by a rule (a spent GOING, one nobody could finish): never in a campaign squad; elsewhere what the rule says */
+int ae_fireteam_order_lets_go(int campaign_squad, int rule_lets_go);
+
 /* GOING: a bot reports its distance to the point and the time in seconds. The clock starts when the first member is within
 the re-form radius; the order clears itself (1 returned) AE_FIRETEAM_GO_HOLD_SECONDS later, on any member's report */
 int ae_fireteam_go_note(struct ae_fireteam_table *table, int fireteam, short brain, float distance, float now_seconds);

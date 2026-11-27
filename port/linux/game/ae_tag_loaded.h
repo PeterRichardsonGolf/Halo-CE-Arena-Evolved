@@ -13,6 +13,8 @@ struct cache_file_tag_instance;
 
 /* the tags' table was loaded, unloaded or replaced (the menus' tags added): the index is built again when next asked */
 void ae_tag_table_changed(void);
+/* how many times the tags' table has changed: what is kept by tag index is of another table once it moves */
+unsigned long ae_tag_table_generation(void);
 
 /* TRUE with *result tag_loaded's answer (a tag index or NONE); FALSE when the index cannot answer (more tags than it
 holds), and tag_loaded walks the tags as before */

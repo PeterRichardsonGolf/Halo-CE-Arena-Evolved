@@ -323,6 +323,7 @@ symbols in this file:
 #include "randomizer.h" /* AE hook */
 #include "ae_campaign_weapons.h" /* AE hook */
 #include "ae_companion.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -2849,6 +2850,7 @@ long actor_place(
 		short default_state = actor_default_state_none;
 
 		actor_customize_unit(actor_variant_definition_index, unit_index);
+		ae_forge_ai_unit_placed(unit_index, starting_location); /* AE hook */
 
 		if (encounter_index != NONE)
 		{

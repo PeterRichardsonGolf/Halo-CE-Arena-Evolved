@@ -677,11 +677,14 @@ static void slayer_player_update(
 	}
 
 	/* (a client ends the game when the host has) */
-	if (!network_game_distributed_client() &&
-		slayer_get_score(index, _get_score_team) >=
-		game_engine_get_variant()->universal_variant.score_to_win)
 	{
-		game_engine_end_game();
+		extern int g_forge_session_enabled; /* AE hook */
+		if (!g_forge_session_enabled && !network_game_distributed_client() && /* AE hook */
+			slayer_get_score(index, _get_score_team) >=
+			game_engine_get_variant()->universal_variant.score_to_win)
+		{
+			game_engine_end_game();
+		}
 	}
 
 	return;

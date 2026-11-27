@@ -33,6 +33,7 @@ chips AE's own (ae_key_prompts.c). Where everything sits is ae_wheel_layout.c's,
 #include "ae_waypoint_icons.h"
 #include "ae_waypoint_ink.h"
 #include "ae_wheel.h"
+#include "ae_fireteam.h"
 #include "ae_wheel_draw.h"
 #include "ae_wheel_layout.h"
 #include "ae_wheel_rules.h"
@@ -69,6 +70,17 @@ struct wheel_view
 	real x, y;				/* the ring's centre */
 	struct ae_wheel_layout layout;
 };
+
+/* the slices' words: the campaign squad's wheel reads its three order slices as orders (ae_wheel_layout.h) */
+static wchar_t const *wheel_caption(int entry, int dead)
+{
+	return ae_fireteam_campaign_on() ? ae_wheel_caption_squad(entry, dead) : ae_wheel_caption(entry, dead);
+}
+
+static wchar_t const *wheel_word(int entry, int dead)
+{
+	return ae_fireteam_campaign_on() ? ae_wheel_word_squad(entry, dead) : ae_wheel_word(entry, dead);
+}
 
 static boolean view_get(struct wheel_view *view)
 {
@@ -173,7 +185,7 @@ boolean ae_wheel_text_keepout(short local_player_index, real *centre_x, real *ce
 	{
 		float cell[8][2];
 		float middle_x, middle_y;
-		real width = ae_hud_text_measure(ae_wheel_word(state.focus, state.dead), view.layout.word_px) + 2.0f;
+		real width = ae_hud_text_measure(wheel_word(state.focus, state.dead), view.layout.word_px) + 2.0f;
 		short i;
 
 		ae_wheel_word_cell(&view.layout, width, cell, &middle_x, &middle_y);
@@ -472,7 +484,7 @@ static void draw_icon(short local_player_index, struct wheel_view const *view, i
 
 static void draw_word(short local_player_index, struct wheel_view const *view, int entry, boolean dead, real alpha)
 {
-	wchar_t const *word = ae_wheel_word(entry, dead);
+	wchar_t const *word = wheel_word(entry, dead);
 	float cell[8][2];
 	real moved[8][2];
 	real_argb_color fill;
@@ -587,7 +599,7 @@ void ae_wheel_draw(short local_player_index)
 		ae_wheel_entry_place(&view.layout, entry, &place);
 		/* (dark on the focus' fill, plain; the HUD white outlined elsewhere) */
 		tone_rgb(focused ? _ae_tone_dark : _ae_tone_white, caption_rgb);
-		text_centred(local_player_index, ae_wheel_caption(entry, state.dead), view.x + place.caption_x,
+		text_centred(local_player_index, wheel_caption(entry, state.dead), view.x + place.caption_x,
 			view.y + place.caption_y, view.layout.caption_px, caption_rgb, state.alpha,
 			focused ? _ae_text_plain : _ae_text_outline);
 	}

@@ -20,6 +20,7 @@ port/linux/src/port_config.c	if (remembered[slot].name == name && remembered[slo
 port/linux/src/port_config.c	for (index = 0; index < NUMBER_OF_CONFIG_SETTINGS && found < 0; index++) { if (!strcmp(config_settings[index].name, name)) found = (long)index; } if (found >= 0) { remembered[slot].index = found; remembered[slot].name = name; } return found; /* AE hook */
 port/linux/src/port_config.c	{ "display.arena_menus", _config_boolean, "true", "HALO_ARENA_MENUS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "display.arena_menus_scale", _config_integer, "100", "HALO_ARENA_MENUS_SCALE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "forge.last_map", _config_string, "\"\"", NULL, _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "menus.maps_tab", _config_integer, "0", NULL, _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "menus.main_row", _config_integer, "-1", "HALO_MENUS_MAIN_ROW", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "menus.last_playlist", _config_string, "\"casual\"", "HALO_MENUS_LAST_PLAYLIST", _environment_value, /* AE hook */\n_platform_all,
@@ -498,7 +499,7 @@ source/game/game.c	ae_weapon_pack_dispose(); /* AE hook */
 port/linux/src/port_config.c	{ "debug.weapon_pack_ground", _config_boolean, "false", "HALO_WEAPON_PACK_GROUND", _environment_value, /* AE hook */\n_platform_all,
 source/cache/cache_files.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files.c	cache_file_globals.tags_loaded = TRUE;\nae_tag_import_spike_tags_loaded(cache_file_globals.header.name); /* AE hook */\nae_weapon_pack_tags_loaded(cache_file_globals.header.name, cache_file_globals.tag_header->scenario_tag_index); /* AE hook */
-source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloaded(); /* AE hook */\nae_tag_import_spike_tags_unloaded(); /* AE hook */\nae_sound_filter_tags_unloaded(); /* AE hook */\ncache_file_close();
+source/cache/cache_files.c	menu_tags_unloaded();\n}\nae_weapon_pack_tags_unloaded(); /* AE hook */\nae_tag_import_spike_tags_unloaded(); /* AE hook */\nae_sound_filter_tags_unloaded(); /* AE hook */\nae_wide_bitmaps_tags_unloaded(); /* AE hook */\ncache_file_close();
 source/cache/cache_files_windows.c	#include "ae_weapon_pack.h" /* AE hook */
 source/cache/cache_files_windows.c	if (ae_weapon_pack_read(tag_index, offset, size, buffer, completion_flag_reference)) return request_index; /* AE hook */\nif (size & (CACHE_FILE_SECTOR_SIZE - 1)
 port/linux/game/tag_validate.c	#include "ae_tag_validate.inc" /* AE hook */
@@ -2008,7 +2009,7 @@ port/linux/src/xinput_sdl.c	"controls.test_pass", "controls.test_fail", "control
 port/linux/src/xinput_sdl.c	static unsigned long long keyboard_actions_held; /* AE hook */
 port/linux/src/xinput_sdl.c	static unsigned long long keyboard_bound_actions(const struct platform_input_state *input) /* AE hook */
 port/linux/src/xinput_sdl.c	unsigned long long held = 0; /* AE hook */
-port/linux/src/xinput_sdl.c	held |= 1ULL << action; /* AE hook */
+port/linux/src/xinput_sdl.c	if (input_held(input, bindings[action][slot]) && !ae_platform_forge_key_taken(bindings[action][slot])) /* AE hook */\nheld |= 1ULL << action; /* AE hook */
 port/linux/src/xinput_sdl.c	static void keyboard_controls(unsigned long long held, XINPUT_GAMEPAD *pad) /* AE hook */
 port/linux/src/xinput_sdl.c	unsigned long long halo_keyboard_actions(short controller_index) /* AE hook */
 port/linux/src/xinput_sdl.c	unsigned long long held; /* AE hook */
@@ -4634,6 +4635,8 @@ port/linux/src/port_config.c	{ "game.companions_skill", _config_string, "\"heroi
 port/linux/src/port_config.c	{ "game.companions_loadout", _config_string, "\"standard\"", "HALO_COMPANIONS_LOADOUT", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.companions_player_down", _config_string, "\"checkpoint\"", "HALO_COMPANIONS_PLAYER_DOWN", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.companions_door_stack", _config_string, "\"order\"", "HALO_COMPANIONS_DOOR_STACK", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "network.leave_on_tag_mismatch", _config_boolean, "false", "HALO_LEAVE_ON_TAG_MISMATCH", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.companions_formations", _config_boolean, "true", "HALO_SQUAD_FORMATIONS", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.campaign_skip_training", _config_boolean, "false", "HALO_CAMPAIGN_SKIP_TRAINING", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "debug.script_refuse", _config_string, "\"\"", "HALO_SCRIPT_REFUSE", _environment_value, _platform_all, /* AE hook */
 source/hs/hs.c	static short game_difficulty_level_get_ignore_easy_told(void) { return ae_skip_training_difficulty_told(game_difficulty_level_get_ignore_easy()); } /* AE hook */
@@ -5047,6 +5050,8 @@ port/linux/game/randomizer.c	XPTR(void) base_address; /* AE hook */
 port/linux/game/randomizer.c	block->definition = 0; /* AE hook */
 port/linux/game/randomizer.c	if (!ae_randomizer_campaign_game(scenario_name)) return; /* AE hook */
 port/linux/game/randomizer.c	#include "ae_randomizer_glue.inc" /* AE hook */
+# (rc9) a set's or a swap's body (YOUR BODY): its hands and movement go into the engine's players layer once the level's tags are in, before the player spawns; with no body to play it touches nothing (ae_set_body.c)
+port/linux/game/randomizer.c	{ extern void ae_set_body_players(int quiet); ae_set_body_players(FALSE); } /* AE hook */
 port/linux/game/randomizer.h	#include "ae_randomizer_glue.h" /* AE hook */
 port/linux/src/port_config.c	{ "game.daily_challenge", _config_boolean, "false", "HALO_DAILY_CHALLENGE", _environment_value, _platform_all, /* AE hook */
 port/linux/game/randomizer.c	#include "tag_field_bits.h" /* AE hook */
@@ -5093,6 +5098,7 @@ port/linux/src/port_config.c	{ "game.randomizer_hunter_rank", _config_string, "\
 port/linux/src/port_config.c	{ "game.randomizer_jackal_rank", _config_string, "\"any\"", "HALO_RANDOMIZER_JACKAL_RANK", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "game.randomizer_pickup_custom", _config_string, "\"\"", "HALO_RANDOMIZER_PICKUP_CUSTOM", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.randomizer_tag_profile", _config_string, "\"\"", "HALO_RANDOMIZER_TAG_PROFILE", _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "game.campaign_tag_profile", _config_string, "\"\"", "HALO_CAMPAIGN_TAG_PROFILE", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.randomizer_weapon_custom", _config_string, "\"\"", "HALO_RANDOMIZER_WEAPON_CUSTOM", _environment_value, /* AE hook */\n_platform_all,
 port/linux/src/port_config.c	{ "game.campaign_medals", _config_boolean, "false", "HALO_CAMPAIGN_MEDALS", _environment_value, _platform_all, /* AE hook */
 port/linux/src/port_config.c	{ "game.multiplayer_medals", _config_boolean, "false", "HALO_MULTIPLAYER_MEDALS", _environment_value, /* AE hook */\n_platform_all,
@@ -5146,3 +5152,422 @@ source/game/game.c	{ extern void community_map_loading(char const *map_name); co
 port/linux/game/randomizer.c	if (ae_randomizer_loadout_weapon(value, &index)) return index; /* AE hook */
 port/linux/game/randomizer.c	if (ae_randomizer_loadout_primary_missing(current.loadout_weapons[0], loadout_set[0])) loadout_set[0] = loadout_set[1] = NONE; /* AE hook */
 port/linux/game/randomizer.c	ae_randomizer_loadout_add_ae(loadout_choice.definitions, &loadout_choice.count, WEAPON_MAX); /* AE hook */
+# (rc9) Content Evolved's Forge (port/forge, tools/forge_build.py): in the 64-bit Linux build alone (OPENCE_ENABLE_FORGE=1 there, 0 as the header's default). The engine's session rules, the
+# platform layer's Forge pointer and pad, the 64-bit addresses of Forge's tag edits (XBOX_POINTER / XBOX_ADDRESS: a tag block holds an Xbox address) and the DEV MODE command (ae_forge_dev.c).
+port/forge/src/forge_3d_mode.c	extern int ae_forge_dev_mode_toggle(int mode); /* AE hook */
+port/forge/src/forge_3d_mode.c	void ae_forge_dev_select_instance(int best) /* AE hook */\n{ /* AE hook */\nforge_select_instance(best); /* AE hook */\n} /* AE hook */
+port/forge/src/forge_3d_mode.c	#ifndef HALO_64BIT /* AE hook */
+port/forge/src/forge_3d_mode.c	#endif /* AE hook */
+port/forge/src/forge_3d_mode.c	unsigned long const *texture = XBOX_POINTER(unsigned long const, s_xbox_btn_cache[slot].bmp->hardware_format); /* AE hook */
+port/forge/src/forge_3d_mode.c	if (scen->players.address && scen->players.address != XBOX_ADDRESS(s_live_sp_buf)) /* AE hook */
+port/forge/src/forge_3d_mode.c	s_orig_sp_addr = XBOX_POINTER(void, scen->players.address); /* AE hook */
+port/forge/src/forge_3d_mode.c	scen->players.address = XBOX_ADDRESS(s_live_sp_buf); /* AE hook */
+port/forge/src/forge_3d_mode.c	s_orig_nf_addr = XBOX_POINTER(uint8_t, scen->netgame_flags.address); /* AE hook */
+port/forge/src/forge_3d_mode.c	scen->netgame_flags.address = XBOX_ADDRESS(s_live_nf_buf); /* AE hook */
+port/forge/src/forge_3d_mode.c	if (scen->netgame_flags.address && scen->netgame_flags.address != XBOX_ADDRESS(s_live_nf_buf)) /* AE hook */
+port/forge/src/forge_3d_mode.c	if (scen == s_orig_sp_scen && scen->players.address == XBOX_ADDRESS(s_live_sp_buf) && s_orig_sp_addr) /* AE hook */
+port/forge/src/forge_3d_mode.c	scen->players.address = XBOX_ADDRESS(s_orig_sp_addr); /* AE hook */
+port/forge/src/forge_3d_mode.c	if (scen == s_orig_nf_scen && scen->netgame_flags.address == XBOX_ADDRESS(s_live_nf_buf) && s_orig_nf_addr) /* AE hook */
+port/forge/src/forge_3d_mode.c	scen->netgame_flags.address = XBOX_ADDRESS(s_orig_nf_addr); /* AE hook */
+port/forge/src/forge_3d_mode.c	if ((cur_f1 && !prev_f1 && allow_f1) || test_leaves || ae_forge_dev_mode_toggle(g_forge.mode == _forge_mode_3d_monitor)) /* AE hook */
+port/forge/src/forge_ai.c	if (s_built.encounters && scen->ai_encounters.address == XBOX_ADDRESS(s_built.encounters)) /* AE hook */
+port/forge/src/forge_ai.c	return XBOX_POINTER(struct encounter_definition, scen->ai_encounters.address); /* AE hook */
+port/forge/src/forge_ai.c	if (s_built.palette && scen->ai_actor_palette.address == XBOX_ADDRESS(s_built.palette)) /* AE hook */
+port/forge/src/forge_ai.c	return XBOX_POINTER(struct tag_reference, scen->ai_actor_palette.address); /* AE hook */
+port/forge/src/forge_ai.c	scen->ai_encounters.address = XBOX_ADDRESS(s_built.original_encounters); /* AE hook */
+port/forge/src/forge_ai.c	scen->ai_actor_palette.address = XBOX_ADDRESS(s_built.original_palette); /* AE hook */
+port/forge/src/forge_ai.c	XBOX_POINTER(struct firing_position_definition const, encounters[e].firing_positions.address); /* AE hook */
+port/forge/src/forge_ai.c	struct squad_definition const *squads = XBOX_POINTER(struct squad_definition const, encounter->squads.address); /* AE hook */
+port/forge/src/forge_ai.c	XBOX_POINTER(struct actor_starting_location const, squads[s].starting_locations.address); /* AE hook */
+port/forge/src/forge_ai.c	palette[*count].name = XBOX_ADDRESS(tag_get_name(variant)); /* AE hook */
+port/forge/src/forge_ai.c	palette[*count].name_length = (long)strlen(tag_get_name(variant)); /* AE hook */
+port/forge/src/forge_ai.c	squad->move_positions.address = XBOX_ADDRESS(move_count > 0 ? moves : NULL); /* AE hook */
+port/forge/src/forge_ai.c	moves = XBOX_POINTER(struct move_position_definition const, slot->squad->move_positions.address); /* AE hook */
+port/forge/src/forge_ai.c	moves = XBOX_POINTER(struct move_position_definition, slot->squad->move_positions.address); /* AE hook */
+port/forge/src/forge_ai.c	encounters = XBOX_POINTER(struct encounter_definition, scen->ai_encounters.address); /* AE hook */
+port/forge/src/forge_ai.c	original_palette = XBOX_POINTER(struct tag_reference, scen->ai_actor_palette.address); /* AE hook */
+port/forge/src/forge_ai.c	memcpy(squads, XBOX_POINTER(void, encounters[e].squads.address), (size_t)encounters[e].squads.count * sizeof(*squads)); /* AE hook */
+port/forge/src/forge_ai.c	s_built.encounters[e].squads.address = XBOX_ADDRESS(squads); /* AE hook */
+port/forge/src/forge_ai.c	XBOX_POINTER(struct actor_starting_location const, squad->starting_locations.address); /* AE hook */
+port/forge/src/forge_ai.c	squad->starting_locations.address = XBOX_ADDRESS(locations); /* AE hook */
+port/forge/src/forge_ai.c	encounter->squads.address = XBOX_ADDRESS(a->squads); /* AE hook */
+port/forge/src/forge_ai.c	encounter->platoons.address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_ai.c	squad->starting_locations.address = XBOX_ADDRESS(location); /* AE hook */
+port/forge/src/forge_ai.c	s_built.encounters[original_count + i].firing_positions.address = XBOX_ADDRESS(added[i].firing_positions); /* AE hook */
+port/forge/src/forge_ai.c	scen->ai_encounters.address = XBOX_ADDRESS(s_built.encounters); /* AE hook */
+port/forge/src/forge_ai.c	scen->ai_actor_palette.address = XBOX_ADDRESS(s_built.palette); /* AE hook */
+port/forge/src/forge_ai.c	struct squad_definition const *squads = XBOX_POINTER(struct squad_definition const, encounters[e].squads.address); /* AE hook */
+port/forge/src/forge_hooks.c	#ifndef HALO_64BIT /* AE hook */
+port/forge/src/forge_hooks.c	#else /* AE hook */
+port/forge/src/forge_hooks.c	if (g_forge_session_enabled && map_name && strcmp(map_name, "ui") != 0) /* AE hook */
+port/forge/src/forge_hooks.c	forge_runtime_markers_preload(); /* AE hook */
+port/forge/src/forge_hooks.c	#endif /* AE hook */
+port/forge/src/forge_network.c	#include "ae_forge_rules.h" /* AE hook */
+port/forge/src/forge_network.c	struct tag_reference const *iw_ref = XBOX_POINTER(struct tag_reference const, udef->unit.initial_weapons.address); /* AE hook */
+port/forge/src/forge_network.c	if (!ae_forge_rules_line_accepted(g_forge_session_enabled, text_in)) /* AE hook */
+port/forge/src/forge_network.c	return 0; /* AE hook */
+port/forge/src/forge_runtime_tags.c	extern void *custom_edition_sounds_encode(void const *samples, long size, short compression, boolean big_endian_pcm, /* AE hook */
+port/forge/src/forge_runtime_tags.c	long channels, long rate, long encoded_rate, unsigned long *encoded_bytes); /* AE hook */
+port/forge/src/forge_runtime_tags.c	memcpy(buffer, XBOX_POINTER(void const, permutation->samples.address), (size_t)permutation->samples.size); /* AE hook */
+port/forge/src/forge_runtime_tags.c	struct unit_seat *seat0 = XBOX_POINTER(struct unit_seat, ud->unit.seats.address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	blk->definition = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	blk->address = XBOX_ADDRESS(new_sub); /* AE hook */
+port/forge/src/forge_runtime_tags.c	blk->address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	td->definition = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	td->address = XBOX_ADDRESS(new_td); /* AE hook */
+port/forge/src/forge_runtime_tags.c	td->address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	ref->name = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	ref->name = XBOX_ADDRESS(ncopy); /* AE hook */
+port/forge/src/forge_runtime_tags.c	struct bitmap_data *bmp = (struct bitmap_data *)(XBOX_POINTER(uint8_t, bgrp->bitmaps.address) + (size_t)b_idx * 48u); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->base_address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->hardware_format = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->base_address = XBOX_ADDRESS(pix_mem); /* AE hook */
+port/forge/src/forge_runtime_tags.c	halo_custom_edition_texels_channels(XBOX_POINTER(void, bmp->base_address), 0 /* _custom_edition_channels_xbox */); /* AE hook */
+port/forge/src/forge_runtime_tags.c	IDirect3DBaseTexture8_Register(tex, XBOX_POINTER(void, bmp->base_address)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->hardware_format = XBOX_ADDRESS(tex); /* AE hook */
+port/forge/src/forge_runtime_tags.c	struct sound_pitch_range *pr = (struct sound_pitch_range *)(XBOX_POINTER(uint8_t, sdef->pitch_ranges.address) + (size_t)pr_i * sizeof(struct sound_pitch_range)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	struct sound_permutation *perm = (struct sound_permutation *)(XBOX_POINTER(uint8_t, pr->permutations.address) + (size_t)pm_i * sizeof(struct sound_permutation)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	perm->samples.address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	perm->samples.address = XBOX_ADDRESS(sbuf); /* AE hook */
+port/forge/src/forge_runtime_tags.c	struct bitmap_data *bmp = (struct bitmap_data *)(XBOX_POINTER(uint8_t, bgrp->bitmaps.address) + (size_t)bi * sizeof(struct bitmap_data)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->base_address = XBOX_ADDRESS(tag_assets[a_idx]); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t const *src_pixels = XBOX_POINTER(uint8_t const, bmp->base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bmp->base_address = XBOX_ADDRESS(pix_copy); /* AE hook */
+port/forge/src/forge_runtime_tags.c	halo_custom_edition_texels_channels(XBOX_POINTER(void, bmp->base_address), chan_order); /* AE hook */
+port/forge/src/forge_runtime_tags.c	perm->samples.address = XBOX_ADDRESS(tag_assets[a_idx]); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t const *src_snd = XBOX_POINTER(uint8_t const, perm->samples.address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	perm->samples.address = XBOX_ADDRESS(encoded_buf); /* AE hook */
+port/forge/src/forge_runtime_tags.c	sdef->pitch_ranges.address = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	pix = XBOX_POINTER(uint32_t, bmp->base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bgrp->bitmaps.address = XBOX_ADDRESS(bmp); /* AE hook */
+port/linux/game/bots.c	extern int g_forge_session_enabled; /* AE hook */
+port/linux/game/bots.c	if (g_forge_session_enabled) /* AE hook */
+port/linux/game/network_chat.c	extern int forge_menu_open(void); /* AE hook */
+port/linux/game/network_chat.c	boolean forge_menu_has_keys = FALSE; /* AE hook */
+port/linux/game/network_chat.c	forge_menu_has_keys = forge_menu_open() && !chat_input.active; /* AE hook */
+port/linux/game/network_chat.c	if (forge_menu_has_keys) { pad_pressed = 0; requested_port = NONE; } /* AE hook */
+port/linux/game/network_chat.c	pressed = forge_menu_has_keys ? 0 : held & ~chat_actions_held; /* AE hook */
+port/linux/game/tag_pack_conditions.c	#include "opence_features.h" /* AE hook */
+port/linux/game/tag_pack_conditions.c	#if OPENCE_ENABLE_FORGE /* AE hook */
+port/linux/game/tag_pack_conditions.c	int forge_pack_wanted(void); /* AE hook */
+port/linux/game/tag_pack_conditions.c	#else /* AE hook */
+port/linux/game/tag_pack_conditions.c	#endif /* AE hook */
+port/linux/src/d3d8_gl.c	#include "ae_forge_pointer_gl.inc" /* AE hook */
+port/linux/src/sdl_platform.c	static BOOL forge_pointer_wanted; /* AE hook */
+port/linux/src/sdl_platform.c	#include "ae_forge_pointer.inc" /* AE hook */
+port/linux/src/sdl_platform.c	if (scoreboard_pointer_active && (input_state.ui_pointer || (!forge_pointer_wanted && /* AE hook */
+port/linux/src/sdl_platform.c	(SDL_GetTicks() >= scoreboard_open_until_ms || !scoreboard_pointer_offered)))) /* AE hook */
+port/linux/src/sdl_platform.c	#include "ae_forge_pointer_button.inc" /* AE hook */
+port/linux/src/sdl_platform.c	#include "ae_forge_pointer_wheel.inc" /* AE hook */
+port/linux/src/sdl_platform.h	BOOL platform_forge_pointer(BOOL wanted, struct platform_ui_pointer *pointer); /* AE hook */
+port/linux/src/xinput_sdl.c	#include "ae_forge_input.inc" /* AE hook */
+port/linux/src/xinput_sdl.c	ae_forge_input_unmapped(port, &physical); /* AE hook */
+port/linux/src/xinput_sdl.c	ae_forge_input_remapped(port, &physical, captured, port_gamepad(gamepads, count, port) != NULL); /* AE hook */
+source/effects/effects.c	#include "opence_features.h" /* AE hook */
+source/effects/effects.c	int forge_volumes_effect_damage_blocked(long object_index); /* AE hook */
+source/game/game_engine.c	extern int g_forge_session_enabled; /* AE hook */
+source/game/game_engine.c	if (!network_game_distributed_client() && !g_forge_session_enabled) /* AE hook */
+source/game/game_engine.c	if (respawn_ticks <= 0 || network_game_distributed_client() || g_forge_session_enabled || now % TICKS_PER_SECOND) /* AE hook */
+source/game/game_engine.c	if (g_forge_session_enabled) /* AE hook */
+source/game/game_engine.c	if (g_forge_session_enabled || players_in_game() <= 1) /* AE hook */
+source/game/game_engine_slayer.c	extern int g_forge_session_enabled; /* AE hook */
+source/game/game_engine_slayer.c	if (!g_forge_session_enabled && !network_game_distributed_client() && /* AE hook */
+source/items/items.c	item->item.flags |= FLAG(_item_attached_to_unit_bit) | FLAG(_item_has_been_held_bit); /* AE hook */
+source/main/main.c	extern int forge_level_is_session(void); /* AE hook */
+source/main/main.c	if (players_are_all_dead() && forge_level_is_session()) /* AE hook */
+source/main/main.c	players_respawn_at_checkpoint(); /* AE hook */
+source/objects/objects.c	object_port_wreck_look(object_index); /* AE hook */
+port/forge/src/forge_ai.c	#ifndef HALO_64BIT /* AE hook */
+port/forge/src/forge_ai.c	#endif /* AE hook */
+port/forge/src/forge_cache_builder.c	#ifndef HALO_64BIT /* AE hook */
+port/forge/src/forge_cache_builder.c	#endif /* AE hook */
+port/forge/src/forge_runtime_tags.c	#ifndef HALO_64BIT /* AE hook */
+port/forge/src/forge_runtime_tags.c	#endif /* AE hook */
+port/forge/src/forge_runtime_tags.c	(free)(file); /* AE hook */
+port/forge/src/forge_3d_mode.c	uint8_t const *perms = XBOX_POINTER(uint8_t const, *(uint32_t const *)(itmc + 0x04)); /* AE hook */
+port/forge/src/forge_ai.c	XPTR(char) name; /* AE hook */
+port/forge/src/forge_ai.c	XPTR(void) base_address; /* AE hook */
+port/forge/src/forge_ai.c	!_stricmp(XBOX_POINTER(char const, instances[i].name), path)) /* AE hook */
+port/forge/src/forge_ai.c	kind = forge_ai_kind_of(XBOX_POINTER(char const, instances[i].name)); /* AE hook */
+port/forge/src/forge_ai.c	if (kind < 0 || forge_ai_kind_group(kind) != group || forge_ai_tag_is_poor(XBOX_POINTER(char const, instances[i].name))) /* AE hook */
+port/forge/src/forge_ai.c	forge_catalog_entry_hash(group_tag, XBOX_POINTER(char const, instances[i].name)) == hash) /* AE hook */
+port/forge/src/forge_cache_builder.c	uint8_t const *geom_ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(mod2 + 0xD4u)); /* AE hook */
+port/forge/src/forge_cache_builder.c	uint8_t const *part_ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(geom + 0x28u)); /* AE hook */
+port/forge/src/forge_cache_builder.c	uint8_t const *ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(loaded->data + f_rel_off + 4u)); /* AE hook */
+port/forge/src/forge_cache_builder.c	uint8_t const *ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(loaded->data + f_rel_off + 12u)); /* AE hook */
+port/forge/src/forge_hooks.c	XPTR(char) name; /* AE hook */
+port/forge/src/forge_hooks.c	XPTR(void) base_address; /* AE hook */
+port/forge/src/forge_map_settings.c	XPTR(char) name; /* AE hook */
+port/forge/src/forge_map_settings.c	XPTR(void) base_address; /* AE hook */
+port/forge/src/forge_map_settings.c	instances[index].name && instances[index].base_address && !_stricmp(XBOX_POINTER(char const, instances[index].name), path)) /* AE hook */
+port/forge/src/forge_map_settings.c	XBOX_POINTER(struct biped_definition, instance->base_address)->biped = movement_state.originals[index]; /* AE hook */
+port/forge/src/forge_map_settings.c	definition = XBOX_POINTER(struct biped_definition, instance_of(biped)->base_address); /* AE hook */
+port/forge/src/forge_map_settings.c	movement_copy(&definition->biped, &XBOX_POINTER(struct biped_definition, instance_of(spartan)->base_address)->biped); /* AE hook */
+port/forge/src/forge_map_settings.c	name = XBOX_POINTER(char const, instance_of(level_tag)->name); /* AE hook */
+port/forge/src/forge_map_settings.c	if (hands_best(profiles[pass], XBOX_POINTER(char const, biped->name), settings.hands[slot], sizeof(settings.hands[slot]))) /* AE hook */
+port/forge/src/forge_network.c	XPTR(char) name; /* AE hook */
+port/forge/src/forge_network.c	XPTR(void) base_address; /* AE hook */
+port/forge/src/forge_network.c	if (ti->tag_index == NONE || !ti->name || !XBOX_POINTER(char const, ti->name)[0] || !ti->base_address) /* AE hook */
+port/forge/src/forge_network.c	if (forge_catalog_entry_hash(grp, XBOX_POINTER(char const, ti->name)) == hash) /* AE hook */
+port/forge/src/forge_runtime_tags.c	XPTR(char) name; /* AE hook */
+port/forge/src/forge_runtime_tags.c	XPTR(void) base_address; /* AE hook */
+port/forge/src/forge_runtime_tags.c	grown[new_abs_idx].name = XBOX_ADDRESS(name_copy); /* AE hook */
+port/forge/src/forge_runtime_tags.c	grown[new_abs_idx].base_address = XBOX_ADDRESS(base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *reg_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(mbuf + 0xC8u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *geom_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(mbuf + 0xD4u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *perm_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(reg + 0x44u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	att_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(obuf + 0x13Cu)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *geom_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(root_buf + 0xD4u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *shdr_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(root_buf + 0xE0u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *node_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(root_buf + 0xBCu)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *dst_parts = XBOX_POINTER(uint8_t, *(uint32_t const *)(dst_geom + 40u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *anim_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(root_buf + 0x78u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t const *n_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(mod_buf + 0xBCu)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *def_ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(anim + 0x88u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *fdata_ptr = XBOX_POINTER(uint8_t, *(uint32_t const *)(anim + 0x9Cu)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *refl_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(root_buf + 0xC8u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(f_ptr + 4) = XBOX_ADDRESS(child_base); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(f_ptr + 8) = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(f_ptr + 12) = XBOX_ADDRESS(tag_buf + rel); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(f_ptr + 16) = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(f_ptr + 4) = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	*(uint32_t *)(pt->tag_buf + 0x44u) = XBOX_ADDRESS(NULL); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *node_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(mbuf + 0xBCu)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *shdr_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(mbuf + 0xE0u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *parts_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(geom + 40u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *ov_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(pt->tag_buf + 0x04u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *anim_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(pt->tag_buf + 0x78u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *cn_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(pt->tag_buf + 0x290u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *bsp_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(cn + 0x38u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *v_base = XBOX_POINTER(uint8_t, *(uint32_t const *)(bsp + 7u * 12u + 4u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	return XBOX_POINTER(struct scenario, instances[i].base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	char const *tpath = XBOX_POINTER(char const, instances[i].name); /* AE hook */
+port/forge/src/forge_runtime_tags.c	ov_elems = XBOX_POINTER(uint8_t const, *(uint32_t const *)(static_elem + 0x5C)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t const *fn_elems = XBOX_POINTER(uint8_t const, *(uint32_t const *)(ov + 0x158u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	bitm_base = XBOX_POINTER(uint8_t const, instances[abs_idx].base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	b_elems = XBOX_POINTER(uint8_t const, *(uint32_t const *)(bitm_base + 0x64u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	if (_stricmp(XBOX_POINTER(char const, instances[i].name), "ui\\hud\\counter") == 0 || /* AE hook */
+port/forge/src/forge_runtime_tags.c	_stricmp(XBOX_POINTER(char const, instances[i].name), "ui/hud/counter") == 0) /* AE hook */
+port/forge/src/forge_runtime_tags.c	p = XBOX_POINTER(uint8_t const, instances[i].base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *base = XBOX_POINTER(uint8_t, instances[i].base_address); /* AE hook */
+port/forge/src/forge_runtime_tags.c	(_stricmp(XBOX_POINTER(char const, instances[i].name), "ui\\hud\\counter") == 0 || /* AE hook */
+port/forge/src/forge_runtime_tags.c	_stricmp(XBOX_POINTER(char const, instances[i].name), "ui/hud/counter") == 0)) /* AE hook */
+port/forge/src/forge_runtime_tags.c	btn_elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x0AC)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x64)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x70)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x7C)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x88)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *ielems = XBOX_POINTER(uint8_t, *(uint32_t *)(ch + 0x38u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x94)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	uint8_t *ielems = XBOX_POINTER(uint8_t, *(uint32_t *)(ov + 0x38u)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	ielems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x160)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x3A8)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	elems = XBOX_POINTER(uint8_t, *(uint32_t *)(base + 0x3D0)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	patch_vehicle_tag_for_player_driving(instances[ti].tag_index, XBOX_POINTER(char const, instances[ti].name)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	patch_forge_device_and_light_tag_runtime(instances[ti].tag_index, g, XBOX_POINTER(char const, instances[ti].name)); /* AE hook */
+# (rc9, Forge's save, load and play) a Forge session's binds (Forge's F1 mode, F2 palette, F4 third person, F5 quick save by default) are not read as TEST RUN's NOTE, SKIP and RELOAD, nor as the menus' BACK and START: ae_forge_rules.h's key rule
+port/linux/src/xinput_sdl.c	if (k[SDL_SCANCODE_F1] && !ae_platform_forge_key_taken(SDL_SCANCODE_F1)) pad->wButtons |= XINPUT_GAMEPAD_BACK; /* AE hook */
+port/linux/src/ae_platform.c	if (input.keys[SDL_SCANCODE_F2] && !ae_platform_forge_key_taken(SDL_SCANCODE_F2)) /* AE hook */
+# (rc9) a saved Forge map has no file by its name under maps\: the loader looks in custom_maps for its own (ae_forge_maps.c)
+source/cache/cache_files.c	#include "ae_forge_maps.h" /* AE hook */
+source/cache/cache_files.c	ae_forge_maps_xbox_path(map_name, path, size); /* AE hook */
+# (rc9) Forge finds a saved map's file by its name in custom_maps, forge_maps and Faber_data\forge_maps (ae_forge_maps_path), where this build's own lookup is of Custom Edition levels
+port/forge/src/forge_runtime_tags.c	int ae_forge_maps_path(char const *name, char *path, int size); /* AE hook */
+port/forge/src/forge_runtime_tags.c	if (!leaf[0] || !(ae_forge_maps_path(leaf, path, (int)sizeof(path)) /* AE hook */ || custom_edition_map_file_path(leaf, path)))
+# (rc9) the maps Forge saved on a stock map's cache are rows of the game's map list (ae_forge_maps.c)
+port/linux/game/ui_map_list.c	#include "ae_forge_maps.h" /* AE hook */
+port/linux/game/ui_map_list.c	add_forge_entries(); /* AE hook */
+port/linux/game/ui_map_list.c	static void add_forge_entries(void) /* AE hook */\n{ /* AE hook */\nchar level[MAP_NAME_LENGTH], title[HALO_CUSTOM_MAP_NAME_SIZE]; /* AE hook */\nwchar_t name[DISPLAY_NAME_LENGTH]; /* AE hook */\nint forge_count = ae_forge_maps_xbox_count(), forge_each; /* AE hook */\nlong character; /* AE hook */\nfor (forge_each = 0; forge_each < forge_count; forge_each++) /* AE hook */\n{ /* AE hook */\nif (!ae_forge_maps_xbox_entry(forge_each, level, (int)sizeof(level), title, (int)sizeof(title))) /* AE hook */\ncontinue; /* AE hook */\nfor (character = 0; title[character] && character < DISPLAY_NAME_LENGTH - 1; character++) /* AE hook */\nname[character] = (wchar_t)(unsigned char)title[character]; /* AE hook */\nname[character] = 0; /* AE hook */\nadd_entry(level, name, name, L"Forge map", NONE, 13, level); /* AE hook */\n} /* AE hook */\n} /* AE hook */
+# (rc9) the CAREER screen's Forge rows: the time spent in Forge and the maps made (ae_forge_glue.c writes them)
+port/linux/src/port_config.c	{ "forge.seconds", _config_integer, "0", NULL, _environment_value, /* AE hook */\n_platform_all,
+port/linux/src/port_config.c	{ "forge.maps_made", _config_integer, "0", NULL, _environment_value, /* AE hook */\n_platform_all,
+# (rc9) an object saved for a gametype (Forge's flag, which CE keeps but plays nowhere) is in games of that gametype only: its OBJECT_GAMETYPES line, which a build that does not know it skips
+port/forge/src/forge_cache_builder.c	if (po->gametype_flags && po->gametype_flags < 0x1Fu && state_buf.data) /* AE hook */\n{ /* AE hook */\nchar gametypes_line[40]; /* AE hook */\nint gametypes_len = snprintf(gametypes_line, sizeof(gametypes_line), "OBJECT_GAMETYPES|%u%c%c", (unsigned)po->gametype_flags, 13, 10); /* AE hook */\nuint32_t o = buf_alloc(&state_buf, (uint32_t)gametypes_len, 1); /* AE hook */\nif (state_buf.data) memcpy(state_buf.data + o, gametypes_line, (size_t)gametypes_len); /* AE hook */\n} /* AE hook */
+port/forge/src/forge_runtime_tags.c	unsigned gametypes = 0; /* AE hook */
+port/forge/src/forge_runtime_tags.c	else if (in_forge_state && strncmp(line, "OBJECT_GAMETYPES|", 17) == 0) /* AE hook */\n{ /* AE hook */\ngametypes = (unsigned)atoi(line + 17); /* AE hook */\n} /* AE hook */
+port/forge/src/forge_runtime_tags.c	unsigned object_gametypes = gametypes; /* AE hook */\nint in_this_game = ae_forge_dev_gametype_plays(object_gametypes); /* AE hook */
+port/forge/src/forge_runtime_tags.c	gametypes = 0; /* AE hook */
+port/forge/src/forge_runtime_tags.c	if (!in_this_game && !baked) /* AE hook */\n{ /* AE hook */\nplatform_log("Forge: %s is for gametypes %u: not in this game", tpath, object_gametypes); /* AE hook */\n} /* AE hook */
+port/forge/src/forge_runtime_tags.c	if (!in_this_game) /* AE hook */\n{ /* AE hook */\n/* (a map's own placement of an object for other gametypes: taken out of this game) */ /* AE hook */\nif (found_oidx != NONE) /* AE hook */\nobject_delete(found_oidx); /* AE hook */\nplatform_log("Forge: %s is for gametypes %u: %s", tpath, object_gametypes, found_oidx != NONE ? "taken out of this game" : "not in this game"); /* AE hook */\n} /* AE hook */
+port/forge/src/forge_runtime_tags.c	int ae_forge_dev_gametype_plays(unsigned flags); /* AE hook */
+# a kill volume's kill is said in the log (a TEST RUN list measures it)
+port/forge/src/forge_volumes.c	error(_error_silent, "forge volumes: a kill volume killed a unit at %.2f %.2f %.2f", unit->object.position.x, unit->object.position.y, unit->object.position.z); /* AE hook */
+# a reloaded saved object keeps its gametypes in the editor, so a save after an edit writes its OBJECT_GAMETYPES line again
+port/forge/src/forge_runtime_tags.c	saved_object_gametypes_keep(made_idx, object_gametypes); /* AE hook */
+port/forge/src/forge_runtime_tags.c	po->gametype_flags = (uint16_t)object_gametypes; /* AE hook */
+port/forge/src/forge_runtime_tags.c	inst->gametype_flags = po->gametype_flags; /* AE hook */
+# Arena Evolved joining a Content Evolved host that plays a modded game (crossplay, ae_ce_host.c): a host that signed itself
+# (0xFF00 + its mod version) is read by its own rules, its long Firefight record made this game's, and the capability message
+# it asks of every machine sent; every other host and record goes the old way
+port/linux/game/firefight.c	#include "ae_ce_host.h" /* AE hook */
+port/linux/game/firefight.c	if (!ae_ce_host_joined()) /* AE hook */
+port/linux/game/firefight.c	ae_ce_host_game_starting(); /* AE hook */
+source/networking/network_client_manager.c	#include "ae_ce_host.h" /* AE hook */
+source/networking/network_client_manager.c	#include "ae_ce_host_rules.h" /* AE hook */
+source/networking/network_client_manager.c	ae_ce_host_left(); /* AE hook */
+source/networking/network_client_manager.c	ae_ce_host_joining(advertised_index >= 0 && advertised_index < MAXIMUM_NETWORK_ADVERTISED_GAMES ? (int)network_game_client_advertised_versions[advertised_index].ce_class : -1); /* AE hook */
+source/networking/network_client_manager.c	network_game_client_advertised_versions[game_index].ce_class = ae_ce_host_advertised(network_game_client_advertised_versions[game_index].version, advertisement->__unknown5A, network_game_client_advertised_versions[game_index].flags, &network_game_client_advertised_versions[game_index].version); /* AE hook */
+source/networking/network_client_manager.c	advertised_game->engine_type = ae_ce_host_engine(network_game_client_advertised_versions[advertised_game - available_games].ce_class, advertisement->engine_type); /* AE hook */
+source/networking/network_client_manager.c	ae_ce_host_capability(client->connection); /* AE hook */
+source/networking/network_client_manager.c	ae_ce_host_capability(client->connection); /* AE hook */
+source/networking/network_client_manager.c	if (!ae_ce_host_join_check(network_game_client_advertised_versions[game_index].ce_class, network_game_client_advertised_versions[game_index].flags, network_game_client_advertised_versions[game_index].reserved, tell)) return FALSE; /* AE hook */
+source/networking/network_client_message_handler.c	#include "ae_ce_host.h" /* AE hook */
+source/networking/network_client_message_handler.c	{ int ce_piece = ae_ce_host_piece(piece->total_size, piece->offset, piece->length, piece->data, &network_game_client_settings_staging, sizeof(network_game_client_settings_staging)); if (ce_piece == AE_CE_HOST_PIECE_MORE) return TRUE; if (ce_piece == AE_CE_HOST_PIECE_REFUSED) { network_game_client_rejected_by_game(client, source_address, _rejection_code_game_is_closed); return TRUE; } if (ce_piece == AE_CE_HOST_PIECE_DONE) { network_game_client_settings_staging_size = 0; result = network_game_client_game_settings_updated(client, &network_game_client_settings_staging); ae_ce_host_record_result(result); if (!result) network_event("network_game_client_game_settings_updated() failed"); return result; } } /* AE hook */
+source/networking/network_messages.c	struct data_packet_field client_randomizer_capability_fields[2]; /* AE hook */
+source/networking/network_messages.c	struct data_packet_definition client_randomizer_capability; /* AE hook */
+source/networking/network_messages.c	DEFINE_NETWORK_GAME_MESSAGE(message_client_randomizer_capability, 0x01); /* AE hook */
+source/networking/network_messages.c	NETWORK_GAME_MESSAGE_DEFINITION(client_randomizer_capability, "message_client_randomizer_capability_packet", message_client_randomizer_capability), /* AE hook */
+source/networking/network_messages.c	{ 3, 0, &data_0030aa68.client_randomizer_capability }, /* AE hook */
+source/networking/network_messages.c	36, /* AE hook */
+source/networking/network_messages.c	case _message_client_randomizer_capability: /* AE hook */
+source/networking/network_messages.h	_message_client_randomizer_capability, /* AE hook */
+# ... and its lobby listing of a modded game (format 2, its stamp holding the mod version): shown when the mod version is this game's
+port/linux/src/p2p_lobby.c	#include "../game/ae_ce_host_rules.h" /* AE hook */
+port/linux/src/p2p_lobby.c	int ce_modded, ce_mod_version; /* AE hook */
+port/linux/src/p2p_lobby.c	(bytes[2] != LISTING_FORMAT && bytes[2] != AE_CE_HOST_LISTING_FORMAT)) /* AE hook */
+port/linux/src/p2p_lobby.c	listing->ce_modded = bytes[2] == AE_CE_HOST_LISTING_FORMAT; listing->ce_mod_version = listing->ce_modded && offset < size ? bytes[offset] : 0; if (listing->ce_modded) listing->kind = 0, listing->ae_build = 0; /* AE hook */
+port/linux/src/p2p_lobby.c	shown->engine_type = (unsigned char)ae_ce_host_listing_engine(listing->ce_modded, listing->engine_type, AE_CE_HOST_ENGINE_AE_FIREFIGHT); /* AE hook */
+port/linux/src/p2p_lobby.c	if (listing.version < delta_legacy_minimum() || listing.version > delta_legacy_maximum() || !ae_ce_host_listing_taken(listing.ce_modded, listing.ce_mod_version)) /* AE hook */
+port/linux/src/p2p_lobby.c	listing.version > delta_legacy_maximum() || !ae_ce_host_listing_taken(listing.ce_modded, listing.ce_mod_version) || /* AE hook */
+source/networking/network_client_message_handler.c	#include "networking/network_game_protocol.h" /* AE hook */
+# (rc9, Forge's volumes and map settings; ae_forge_engine.h, the volumes' and map settings' functions in port/forge/src, in the 64-bit Linux build alone: any other answers as the game does) a GRAVITY volume's pull in place of the world's: items, projectiles, physics objects, bipeds (in the air, off the ground it stands on, no inertia, ONE WAY floors, no falling damage), ragdolls and the host's reading of a client's vehicle and unit; a team's player biped and hands, the test spawn's copy, the atmosphere
+port/linux/game/biped_ragdoll.c	#include "ae_forge_engine.h" /* AE hook */
+port/linux/game/biped_ragdoll.c	ae_forge_gravity_correct_at(velocity, &ragdoll->positions[index], gravity); /* AE hook */
+port/linux/game/network_distributed.c	#include "ae_forge_engine.h" /* AE hook */
+port/linux/game/network_distributed.c	boolean gravity; /* AE hook */
+port/linux/game/network_distributed.c	noted->gravity = FALSE; /* AE hook */
+port/linux/game/network_distributed.c	if (ae_forge_unit_pulled(&object->object.position, noted->grounded, &noted->gravity)) /* AE hook */
+port/linux/game/network_distributed.c	{ /* AE hook */
+port/linux/game/network_distributed.c	bound->speed = MAXIMUM_PREDICTED_SPEED + bound->frame_speed; /* AE hook */
+port/linux/game/network_distributed.c	bound->rise = UNIT_WORLD_BOUND; /* AE hook */
+port/linux/game/network_distributed.c	bound->top_height = UNIT_WORLD_BOUND; /* AE hook */
+port/linux/game/network_distributed.c	bound->airborne_ticks = 0; /* AE hook */
+port/linux/game/network_distributed.c	} /* AE hook */
+port/linux/game/network_objects.c	#include "ae_forge_engine.h" /* AE hook */
+port/linux/game/network_objects.c	long gravity_vehicle_index; /* AE hook */
+port/linux/game/network_objects.c	long gravity_time; /* AE hook */
+port/linux/game/network_objects.c	if (ae_forge_vehicle_pulled(&vehicle->object.bounding_sphere_center, vehicle_index, &objects_host_vehicle_predictions[player_index].gravity_vehicle_index, &objects_host_vehicle_predictions[player_index].gravity_time, 8 * TICKS_PER_SECOND)) /* AE hook */
+port/linux/game/network_objects.c	return TRUE; /* AE hook */
+port/linux/game/network_objects.c	objects_host_vehicle_predictions[index].gravity_vehicle_index = NONE; /* AE hook */
+source/game/players.c	#include "ae_forge_engine.h" /* AE hook */
+source/game/players.c	unit_definition_index = ae_forge_player_biped(player_index, unit_definition_index); /* AE hook */
+source/game/players.c	ae_forge_player_control(player->unit_index, &control_data); /* AE hook */
+source/interface/first_person_weapons.c	#include "ae_forge_engine.h" /* AE hook */
+source/interface/first_person_weapons.c	ae_forge_hands_interface(render.local_player_index, unit_index, /* AE hook */
+source/interface/first_person_weapons.c	struct game_globals_first_person_interface), FALSE); /* AE hook */
+source/interface/first_person_weapons.c	if (first_person_weapon->weapon_index!=NONE && unit_index!=NONE && ae_forge_hands_stale(local_player_index, unit_index)) first_person_weapon_switch_weapons(local_player_index); /* AE hook */
+source/interface/first_person_weapons.c	first_person_interface= ae_forge_hands_interface(local_player_index, first_person_weapon->unit_index, first_person_interface, TRUE); /* AE hook */
+source/items/items.c	#include "ae_forge_engine.h" /* AE hook */
+source/items/items.c	ae_forge_gravity_correct_at(&new_velocity, &item->object.position, global_gravity); /* AE hook */
+source/items/projectiles.c	#include "ae_forge_engine.h" /* AE hook */
+source/items/projectiles.c	float gravity_pull[3]; /* AE hook */
+source/items/projectiles.c	int gravity_pulled; /* AE hook */
+source/items/projectiles.c	gravity_pulled = ae_forge_gravity_pull(&projectile->object.position, gravity_pull); /* AE hook */
+source/items/projectiles.c	if (gravity_pulled) ae_forge_gravity_correct(&new_velocity, gravity_pull, gravity_acceleration * time_remaining); /* AE hook */
+source/items/projectiles.c	if (gravity_pulled) ae_forge_gravity_correct(&average_velocity, gravity_pull, gravity_acceleration * time_remaining * 0.5f); /* AE hook */
+source/items/projectiles.c	if (gravity_pulled) ae_forge_gravity_correct(&new_velocity, gravity_pull, -gravity_acceleration * time_remaining); /* AE hook */
+source/objects/damage.c	#include "ae_forge_engine.h" /* AE hook */
+source/objects/damage.c	if (ae_forge_damage_ignored(damage->owner_object_index, object_index)) return; /* AE hook */
+source/physics/physics.c	#include "ae_forge_engine.h" /* AE hook */
+source/physics/physics.c	real ground_gravity = global_gravity; /* AE hook */
+source/physics/physics.c	ground_gravity = ae_forge_physics_gravity(&object->object.bounding_sphere_center, physics->mass, gravity, total_force); /* AE hook */
+source/physics/physics.c	(ground_gravity/ground_depth*mass_point->ground_depth - normal_velocity*ground_damp_fraction); /* AE hook */
+source/physics/physics.c	real ground_gravity = global_gravity; /* AE hook */
+source/physics/physics.c	ground_gravity = ae_forge_physics_gravity(&object->object.bounding_sphere_center, physics->mass, gravity, &total_force); /* AE hook */
+source/physics/physics.c	ground_gravity/physics->ground_depth*mass_point->ground_depth - /* AE hook */
+source/render/render.c	#include "ae_forge_engine.h" /* AE hook */
+source/render/render.c	if (ae_forge_fog(window->local_player_index, render.visible_sky_index == NONE, &render.fog)) render.visible_sky_model = FALSE; /* AE hook */
+source/units/bipeds.c	#include "ae_forge_engine.h" /* AE hook */
+source/units/bipeds.c	if (ae_forge_biped_fall_protected(biped_index, &biped->object.bounding_sphere_center, TEST_FLAG(biped->biped.flags, _biped_airborne_bit))) immune = TRUE; /* AE hook */
+source/units/bipeds.c	float pull[3]; /* AE hook */
+source/units/bipeds.c	boolean pulled; /* AE hook */
+source/units/bipeds.c	if (!TEST_FLAG(in_flags, _biped_physics_in_dead_bit) && ae_forge_biped_stop_inertia(physics->biped_index, &physics->position)) physics->velocity = *global_zero_vector3d; /* AE hook */
+source/units/bipeds.c	pulled = (boolean)ae_forge_gravity_pull(&physics->position, pull); /* AE hook */
+source/units/bipeds.c	if (pulled && !TEST_FLAG(in_flags, _biped_physics_in_flying_bit) && !TEST_FLAG(in_flags, _biped_physics_in_absolute_movement_bit) && !TEST_FLAG(in_flags, _biped_physics_in_airborne_bit) && !climbing && ae_forge_biped_lifted(pull, &physics->ground_plane.n)) SET_FLAG(in_flags, _biped_physics_in_airborne_bit, TRUE); /* AE hook */
+source/units/bipeds.c	if (pulled) { physics->new_velocity.i += pull[0] * global_gravity; physics->new_velocity.j += pull[1] * global_gravity; physics->new_velocity.k = physics->velocity.k + pull[2] * global_gravity; } /* AE hook */
+source/units/bipeds.c	if (!TEST_FLAG(physics->in_flags, _biped_physics_in_no_collision_bit) && !TEST_FLAG(physics->in_flags, _biped_physics_in_flying_bit) && collision_count < 16 && ae_forge_biped_one_way(&position, &clipped_position, &clipped_velocity, physics->width, &collisions[collision_count])) collision_count++; /* AE hook */
+# (rc9, Forge's map settings) a tag's name in the live tag table is a 32-bit address: its text is read through XBOX_POINTER
+port/forge/src/forge_map_settings.c	snprintf(path, FORGE_MAP_SETTINGS_PATH_MAX, "%s", XBOX_POINTER(char const, instance->name)); /* AE hook */
+port/forge/src/forge_map_settings.c	char const *name = instance && instance->name ? XBOX_POINTER(char const, instance->name) : ""; /* AE hook */
+# free(NULL) does nothing, as the C library's: the game's sources redefine free to debug_free, and code written for the
+# C library's (Forge's tag loading frees the buffer of a file it did not find) faulted in the header check.
+source/cseries/debug_memory.c	if (!pointer) return; /* AE hook */
+# (rc9) the arms a local player was built with are forgotten as a level loads or goes (a tag index is of one level)
+port/forge/src/forge_map_settings.c	void ae_forge_level_forget(void); /* AE hook */
+port/forge/src/forge_map_settings.c	ae_forge_level_forget(); /* AE hook */
+# (rc9, Forge's AI; ae_forge_engine.c) each hook asks the glue, which answers as the game does while the level has no Forge AI (ae_forge_ai_on: set as forge_ai.c builds the level's AI from spawns, cleared as a level loads or goes)
+port/forge/src/forge_ai.c	void ae_forge_ai_set(int on); /* AE hook */
+port/forge/src/forge_ai.c	ae_forge_ai_set(0); /* AE hook */
+port/forge/src/forge_ai.c	ae_forge_ai_set(1); /* AE hook */
+source/ai/action_alert.c	#include "ae_forge_engine.h" /* AE hook */
+source/ai/action_alert.c	if (!actor->meta.swarm && ae_forge_ai_runs(actor_index)) { actor->orders.move.override_movement_type = _actor_movement_type_combat; actor->orders.move.stationary_crouch = FALSE; actor->orders.move.moving_crouch = FALSE; } /* AE hook */
+source/ai/action_alert.c	boolean forge_handled = FALSE; /* AE hook */
+source/ai/action_alert.c	short forge_next = actor->input.vehicle_passenger || move_position_order == _move_position_order_none ? NONE : ae_forge_ai_route(actor_index, move_position_order, current_position_index, &forge_handled); /* AE hook */
+source/ai/action_alert.c	if (forge_handled) /* AE hook */
+source/ai/action_alert.c	return forge_next; /* AE hook */
+source/ai/actors.c	#include "ae_forge_engine.h" /* AE hook */
+source/ai/actors.c	ae_forge_ai_unit_placed(unit_index, starting_location); /* AE hook */
+source/ai/ai.c	#include "ae_forge_engine.h" /* AE hook */
+source/ai/ai.c	ae_forge_ai_encounters(); /* AE hook */
+source/ai/encounters.c	#include "ae_forge_engine.h" /* AE hook */
+source/ai/encounters.c	if (extra_number == 0) starting_location = ae_forge_ai_location(starting_location, spawning, &spread_location); /* AE hook */
+source/ai/encounters.c	actor_palette_index = ae_forge_ai_palette(squad_definition, actor_palette_index); /* AE hook */
+source/game/game_allegiance.c	#include "ae_forge_engine.h" /* AE hook */
+source/game/game_allegiance.c	skull_enmity = ae_forge_ai_team_enmity(our_team_index, other_team_index); /* AE hook */
+source/game/game_allegiance.c	if (skull_enmity != NONE) /* AE hook */
+source/game/game_allegiance.c	return (boolean)skull_enmity; /* AE hook */
+source/game/game_allegiance.c	skull_alliance = ae_forge_ai_team_enmity(our_team_index, other_team_index); /* AE hook */
+source/game/game_allegiance.c	if (skull_alliance != NONE) /* AE hook */
+source/game/game_allegiance.c	return (boolean)!skull_alliance; /* AE hook */
+# (rc9, Forge's FIREFIGHT category) the game's weapon racks refill a player's ammunition (weapon_racks.c): the level's scenery looked at once a second, and only when the props' rack or drop area tag is loaded
+source/game/game.c	{ extern void weapon_racks_tick(void); weapon_racks_tick(); } /* AE hook */
+# (the same, a new level's start) no rack, near player or refill is carried over from the last level; the reset clears a table nothing reads until a rack is found
+source/game/game.c	{ extern void weapon_racks_reset(void); weapon_racks_reset(); } /* AE hook */
+# (rc9, Forge's network; ae_forge_net_rules.h) every line of a peer is read by the rules alone; a Forge session answers delta_legacy_announce, _minimum and _maximum with its own version
+# (the build with Forge sets the probe; with no session each returns the table's number as before), advertises no Delta wire and takes no Delta host's shortcut; one config key
+port/forge/src/forge_network.c	#include "ae_forge_net_rules.h" /* AE hook */
+port/forge/src/forge_runtime_tags.c	void delta_forge_probe_set(int (*probe)(void)); /* AE hook */
+port/forge/src/forge_runtime_tags.c	static int forge_net_session_probe(void) { return g_forge_session_enabled != 0; } /* AE hook */
+port/forge/src/forge_runtime_tags.c	delta_forge_probe_set(forge_net_session_probe); /* AE hook */
+port/linux/src/delta.c	#include "../game/ae_forge_net_rules.h" /* AE hook */
+port/linux/src/delta.c	return ae_forge_net_rules_announce(delta_forge_session_on(), number); /* AE hook */
+port/linux/src/delta.c	return ae_forge_net_rules_minimum(delta_forge_session_on(), number); /* AE hook */
+port/linux/src/delta.c	return ae_forge_net_rules_maximum(delta_forge_session_on(), number); /* AE hook */
+port/linux/src/port_config.c	{ "forge.host_only_edit", _config_boolean, "false", "HALO_FORGE_HOST_ONLY_EDIT", _environment_value, /* AE hook */\n_platform_all,
+source/networking/network_client_manager.c	#include "ae_forge_net_rules.h" /* AE hook */
+source/networking/network_client_manager.c	if (matches > 0 && distributed && ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) /* AE hook */
+source/networking/network_server_message_handler.c	#include "ae_forge_net_rules.h" /* AE hook */
+source/networking/network_server_message_handler.c	if (ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) { /* AE hook */
+source/networking/network_server_message_handler.c	delta_peer_advertised_wire(advertisement.reserved, (int)sizeof(advertisement.reserved)); } /* AE hook */ }
+# (rc9, Forge's network) the tag table as the level's tags left it is noted once a level, the base the host's and a joiner's tags are compared by
+port/linux/game/randomizer.c	extern void forge_network_note_level_tags(void); /* AE hook */
+port/linux/game/randomizer.c	forge_network_note_level_tags(); /* AE hook */
+# (rc9, Forge's network) a joined machine is in a Forge session only as its own menus made it (a host's variant named Forge never does); the host's own delete keeps the last spawn of a team and the last flag of its type; one config key
+port/forge/src/forge_hooks.c	return !firing_range_requested() && game_connection() != _game_connection_network_client && forge_variant_named_forge(game_engine_get_variant()); /* AE hook */
+port/linux/src/port_config.c	{ "forge.clients_edit_map", _config_boolean, "true", "HALO_FORGE_CLIENTS_EDIT_MAP", _environment_value, /* AE hook */\n_platform_all,
+port/forge/src/forge_3d_mode.c	forge_network_slot_made(live_idx); /* AE hook */
+port/forge/src/forge_ai.c	forge_network_slot_made((int32_t)(g_forge.live_instance_count - 1)); /* AE hook */
+port/forge/src/forge_hooks.c	forge_session_start(0, 1); /* AE hook */
+# a map's tags unloaded: the wide bitmaps remembered for it are forgotten (the table of 16 filled over several
+# Custom Edition maps, and later maps' wide bitmaps were drawn flat again; the call is in the tags-unloaded entry)
+source/cache/cache_files.c	#include "ae_wide_bitmaps.h" /* AE hook */
+# the player fonts swapped: the fonts' GSUB tables kept (by the fonts' data addresses) are forgotten first, as the
+# next font's data may come at a freed one's address and be read with the old font's table (ae_text_hires.c)
+port/linux/src/text_hires.c	ae_text_fonts_forget(); /* AE hook */
+# a genuine crash's report is given 10 s, then SIGALRM at its default ends the process (a crash inside malloc or
+# stdio left the report waiting on their locks: frozen, never ended); the stack walk's setup is done at start
+# (port/linux/src/ae_crash_deadline.h)
+port/linux/src/memory_watch.c	#include "ae_crash_deadline.h" /* AE hook */
+port/linux/src/memory_watch.c	ae_crash_deadline(10); /* AE hook */
+port/linux/src/memory_watch.c	ae_crash_backtrace_ready(); /* AE hook */
+# the HUD layout fingerprint's bitmap walks get a budget (MCC_HUD_MAX_VISITS, 4000000) for one map's
+# HUDs: many HUD tags naming one bitmap of many sequences and sprites (a host-shared MCC package) walked them
+# without end; over the budget a layout is unknown and keeps the MCC frame
+port/linux/game/mcc_hud_layout.inl	static uint64_t mcc_hud_layout_work; /* AE hook */
+port/linux/game/mcc_hud_layout.inl	if ((mcc_hud_layout_work+=count)>4000000u) return 0; /* AE hook */
+port/linux/game/mcc_hud_layout.inl	if ((mcc_hud_layout_work+=sprites)>4000000u) return 0; /* AE hook */
+port/linux/game/mcc_hud_ownership.inl	mcc_hud_layout_work=0; /* AE hook */
+port/linux/game/skulls.c	ae_ce_host_tags_differ(count, hash, message.count, message.hash); /* AE hook */
+port/linux/game/network_distributed.c	if (skulls_tags_handles_message(message, size)) { skulls_tags_handle_message(machine_index, message, size); return; } /* AE hook */
+port/linux/game/network_distributed.c	#include "halo_skulls.h" /* AE hook */
+port/linux/game/skulls.c	#include "ae_ce_host.h" /* AE hook */

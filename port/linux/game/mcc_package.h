@@ -19,4 +19,15 @@ int mcc_package_base_resource_path(unsigned type,unsigned set,char path[128]);
 /* Retain a present package override, otherwise use one fixed local base set. */
 int mcc_package_resource_candidate(char const *name,unsigned type,unsigned set,char path[128]);
 int mcc_package_shared_resource(char const *path, unsigned type);
+/* The package Forge saves maps made on MCC maps in (mcc_maps\forge\<name>,
+ * port/forge's forge_export_mcc_scenario_map): each is its base map's file
+ * with Forge's trailer, which names the base level ("Base Map: mcc_maps\...").
+ * It holds none of the base's resources: those are read as the base map's
+ * are (its package's own, else MCC's _shared sets), never copied. */
+#define MCC_PACKAGE_FORGE "forge"
+/* The base level of a map in the Forge package (canonical, 64 characters);
+ * 0 for any other map, or one whose trailer names none. */
+int mcc_package_forge_base(char const *name, char base[64]);
+/* Forget what mcc_package_forge_base read: a Forge map was saved. */
+void mcc_package_forge_forget(void);
 #endif

@@ -1992,8 +1992,13 @@ static void ui_voice_frame(const struct ui_voice_clip *clip, double cursor, floa
 		else if (clip->step <= 1.0)
 		{
 			float frames[RESAMPLER_TAPS] RESAMPLER_ALIGNED;
-			double position = phase * RESAMPLER_TABLE_STEPS;
+			/* (the fraction in double: as a float, a cursor just under a whole frame rounds it to 1.0, which would read
+			the row past resampler_deltas' last) */
+			double position = (cursor - (double)center) * RESAMPLER_TABLE_STEPS;
 			unsigned long row = (unsigned long)position, tap;
+
+			if (row >= RESAMPLER_TABLE_STEPS)
+				row = RESAMPLER_TABLE_STEPS - 1;
 
 			for (tap = 0; tap < RESAMPLER_TAPS; tap++)
 				frames[tap] = ui_voice_sample(clip, center + 1 - RESAMPLER_ZERO_CROSSINGS + (long)tap, channel);

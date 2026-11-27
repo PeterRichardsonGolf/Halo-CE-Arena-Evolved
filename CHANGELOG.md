@@ -4,6 +4,79 @@ What has changed in Halo CE: Arena Evolved, newest first. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). The first
 release is 0.1.0-beta, a pre-release; the sections before it are dated.
 
+## 1.0.0-rc9 - 2026-11-26
+
+Most of what is new here is a TESTING feature: Forge, Theater, the AI squad's orders, item sets, joining Content Evolved
+hosts. They are marked TESTING in the menus. Play them and tell us what breaks: bugs at
+https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/issues, ideas at
+https://github.com/PeterRichardsonGolf/Halo-CE-Arena-Evolved/discussions.
+
+### Added
+
+- FORGE (testing, Linux 64-bit only), Content Evolved's map editor behind an AE door: build on a map from the main menu.
+  Fly as the Monitor, place, move, turn, copy and delete objects, set which gametype an object is for, save the map under
+  MY MAPS and play it. Kill and damage volumes, gravity, one-way walls, fog and the players' body per map; enemies and
+  friends with a route, a patrol area and respawns; Firefight markers and resupply racks. Other builds show COMING SOON.
+  Playing Forge with others is not in this release.
+- ITEM SETS (testing): a set carries its own weapon, vehicle and enemy settings, and YOUR BODY: play a campaign level alone
+  as another body when it fits, with its HANDS and MOVEMENT. HOW SETS PLAY shows what a level will take from a set;
+  campaign swaps (weapons, enemies, ranks), a picker in the campaign lobby, and an ITEM SETS tab in MAPS & MODS.
+- THEATER (testing): a hint bar that names the keys of the view you are in, and an empty list says how to turn recording
+  on (it is off by default).
+- CROSSPLAY (testing): AE joins a Content Evolved host's Firefight games.
+- A join that lands while a server changes map is tried again by itself, up to 3 times 4 seconds apart, instead of
+  stopping at "the game is closed".
+- network.leave_on_tag_mismatch (off by default): leave a Content Evolved host's game, with a message that says why, when
+  its tags are not the ones on this PC. Off, the game plays on and says so.
+- CAMPAIGN > FORMATIONS: the AI squad's automatic formation on or off.
+
+### Changed
+
+- AI SQUAD (testing), ORDERS REWORKED: an order now stands until you give the next one; the squad no longer comes back to
+  you on its own. One member takes point and the others move with him in a wedge. On the wheel in a campaign: MOVE, ATTACK,
+  DEFEND and WATCH send the squad to the place you point at, MOUNT puts it in a vehicle's seats (the gun first) and gets it
+  out again, FALL IN calls it back to follow you. A member sent to a vehicle on its roof turns it over first. In a fight the
+  squad goes to the ordered place first, then fights around it, and keeps short-range weapons for close targets.
+- AI SQUAD (testing): a squad member on a vehicle's gun now takes enemies all the way round the vehicle, not only those in
+  front of where it last aimed. A bot on a vehicle's gun, in multiplayer too, holds its fire for the vehicle's driver only.
+  The squad stays a testing feature: it follows, boards and fights, it does not yet clear rooms or move as a tactical team.
+- MAPS & MODS: its pages sit behind a tab strip.
+
+### Fixed
+
+- A sound that started outside the level's bounds could read past its data.
+- The map and gametype pickers no longer freeze when their saved folded-sections file ends in a lone carriage return.
+- Custom Edition maps' wide bitmaps are no longer drawn flat after several maps have been played.
+- Changing the player font no longer gives it the wrong digits.
+- Blood drops no longer use another map's particle after a map change.
+- A crash whose report hangs now ends the game or server within 10 seconds.
+- MY PLAYLIST no longer freezes on BACK after a held song was taken out of the list.
+- A service record no longer starts over when a custom map's name or a weapon's name holds a line break or "|".
+- The first career read no longer freezes on an unfinished game with a control character in its profile name.
+- A bot nav file with unended routes can no longer push the route planner past its table.
+- MCC maps whose HUDs share huge sprite lists no longer stall the load.
+- Servers: network.events_token and community.key are kept out of the log and out of console answers like passwords (a
+  console line that set the token wrote it whole to the server's log), and a server hook that sets a secret setting no
+  longer logs its value. A script that reads them back now gets "(set)" or "(none)".
+- A saved map whose preview picture is damaged is refused instead of being read.
+- AI SQUAD: an enemy called out at the end of one level is no longer the squad's target in the next.
+
+### Known issues
+
+- FORGE is Linux 64-bit only and for one player; its network play, and the rest of the editor's pages, come later.
+- CROSSPLAY: a Content Evolved host's Firefight games can be joined; its co-op games (with the randomizer or skulls) cannot
+  yet. The game says so when it refuses.
+- BOTS in CAPTURE THE FLAG reach the enemy flag less often than they did before 1.0.0-rc5, most of all on big maps. We are
+  looking for the cause.
+- AI SQUAD: no member drives a vehicle yet; a member may stand in a dropship's bay instead of sitting; a member does not
+  take a seat a marine already sits in; on some terrain (rocks, ledges you jump up) a member finds no way to follow you
+  or to reach an ordered place. With the AI squad on, an item set's YOUR BODY does not play (it plays in a level played
+  alone).
+- FORGE: a saved map's picture in MY MAPS is a blank grid.
+- ITEM SETS: a body or a weapon that a set adds shows no stowed weapon (BACKPACK WEAPONS) until their places are
+  measured for such models.
+- THEATER plays a recording without sound.
+
 ## 1.0.0-rc8.1 - 2026-11-26
 
 ### Fixed

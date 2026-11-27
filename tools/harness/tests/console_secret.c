@@ -19,11 +19,13 @@ int main(int argc, char **argv)
 			"SV_SET server.web_password abcdefgh", "sv_set SERVER.WEB_MODERATOR_PASSWORD abcdefgh",
 			"sv_set server.password x", "\tsv_set  server.web_viewer_password x", "sv_set server.publisher_key_file x",
 			"sv_set \"server.web_password\" abcdefgh", "\"sv_password\" x", "\"SV_SET\" \"server.password\" x",
+			"sv_set network.events_token x", "sv_set COMMUNITY.KEY x", "sv_set server.alert_webhook https://x",
 			NULL,
 		};
 		static const char *const plain[] = {
 			"sv_set server.name Passwords", "sv_status", "say my password is safe", "sv_passwordless",
-			"sv_settings", "sv_set", "", "kick password", "sv_pass x", "sv_se server.web_password x", NULL,
+			"sv_settings", "sv_set", "", "kick password", "sv_pass x", "sv_se server.web_password x",
+			"sv_set input.keyboard_prompts x", "sv_set controls.test_pass F7", "say my token is .key", NULL,
 		};
 		int index;
 

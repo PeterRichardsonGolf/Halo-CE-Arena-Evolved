@@ -75,6 +75,7 @@ same datum index (identifier and all), so that any message can name one:
 #include "ae_grenades.h" /* AE hook */
 #include "ae_script_sleep_network.h" /* AE hook */
 #include "biped_ragdoll.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 #include <math.h>
 
@@ -450,6 +451,9 @@ static struct
 	real_point3d rest_position;
 	real ground_height;
 	real ground_rise_speed;
+	/* the vehicle last pulled by a Forge GRAVITY volume (NONE: none), and when: no ceiling for it till it has been out of them a while */
+	long gravity_vehicle_index; /* AE hook */
+	long gravity_time; /* AE hook */
 } objects_host_vehicle_predictions[MAXIMUM_TRACKED_PLAYERS];
 /* a client: the host's objects it has, by absolute index */
 static long objects_client_has[MAXIMUM_TRACKED_OBJECTS];
@@ -2074,6 +2078,9 @@ static boolean network_objects_vehicle_below_ceiling(
 	real ticks;
 	real ceiling;
 
+	/* (a Forge GRAVITY volume's pull, or its throw lately: the volumes are the map's, and the host's copy is pulled as the client's is) */
+	if (ae_forge_vehicle_pulled(&vehicle->object.bounding_sphere_center, vehicle_index, &objects_host_vehicle_predictions[player_index].gravity_vehicle_index, &objects_host_vehicle_predictions[player_index].gravity_time, 8 * TICKS_PER_SECOND)) /* AE hook */
+		return TRUE; /* AE hook */
 	if (type == _vehicle_type_human_boat || type == _vehicle_type_human_plane ||
 		type == _vehicle_type_alien_fighter || type == _vehicle_type_turret ||
 		objects_host_vehicle_predictions[player_index].ground_vehicle_index != vehicle_index ||
@@ -3865,6 +3872,7 @@ void network_objects_new_game(
 		objects_host_vehicle_predictions[index].accepted_vehicle_index = NONE;
 		objects_host_vehicle_predictions[index].ground_vehicle_index = NONE;
 		objects_host_vehicle_predictions[index].rest_vehicle_index = NONE;
+		objects_host_vehicle_predictions[index].gravity_vehicle_index = NONE; /* AE hook */
 	}
 	objects_client_synchronized = FALSE;
 	objects_client_ready_time = NONE;

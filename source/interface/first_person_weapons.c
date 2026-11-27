@@ -134,6 +134,7 @@ symbols in this file:
 #include "ae_view_model.h" /* AE hook */
 #include "ae_view_sway.h" /* AE hook */
 #include "ae_split_layout.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 /* (a replay's playback has no local player: local player 0's arms and weapon are the player watched through their eyes, network_replay_playback.c) */ unsigned char network_replay_playing(void); long network_replay_eyes_player(void); static long fpw_player(short local_player_index) { if (network_replay_playing()) return local_player_index == 0 ? network_replay_eyes_player() : NONE; return local_player_get_player_index(local_player_index); } /* AE hook */
 #include "game/game_engine.h"
 
@@ -569,10 +570,11 @@ void first_person_weapon_draw(
 					struct real_matrix4x3 model_node_matrices[MAXIMUM_NODES_PER_ANIMATION];
 					struct render_model_effect model_effect;
 					struct game_globals_first_person_interface *first_person_interface=
+						ae_forge_hands_interface(render.local_player_index, unit_index, /* AE hook */
 						TAG_BLOCK_GET_ELEMENT(
 							&scenario_get_game_globals()->first_person_interface,
 							0,
-							struct game_globals_first_person_interface);
+							struct game_globals_first_person_interface), FALSE); /* AE hook */
 					struct animation_graph *animation_graph= animation_graph_definition_get(
 						weapon_definition->weapon.interface_definition.first_person_animations.index);
 					struct render_lighting *lighting= object_get_cached_render_lighting(unit_index, FLT_MAX);
@@ -937,6 +939,7 @@ void first_person_weapons_update(
 			{
 				first_person_weapon_switch_weapons(local_player_index);
 			}
+			if (first_person_weapon->weapon_index!=NONE && unit_index!=NONE && ae_forge_hands_stale(local_player_index, unit_index)) first_person_weapon_switch_weapons(local_player_index); /* AE hook */
 			first_person_weapon_update(local_player_index);
 		}
 	}
@@ -1805,6 +1808,7 @@ static void first_person_weapon_switch_weapons(
 							&scenario_get_game_globals()->first_person_interface,
 							0,
 							struct game_globals_first_person_interface);
+						first_person_interface= ae_forge_hands_interface(local_player_index, first_person_weapon->unit_index, first_person_interface, TRUE); /* AE hook */
 						if (first_person_interface->hands.index!=NONE)
 						{
 							first_person_weapon->hands_node_remapping_table_valid=

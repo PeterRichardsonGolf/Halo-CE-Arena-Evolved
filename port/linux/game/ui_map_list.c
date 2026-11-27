@@ -61,6 +61,7 @@ asks whether the map is in its family's folders (ui_map_list_family_present).
 #include <stddef.h> /* AE hook */
 #include "ae_map_folders.h" /* AE hook */
 #include "ae_map_list_gate.h" /* AE hook */
+#include "ae_forge_maps.h" /* AE hook */
 
 #include "bitmaps/bitmap_group.h"
 #include "tag_files/tag_groups.h"
@@ -749,6 +750,25 @@ static void add_entry(
 	ui_map_list_count_value++;
 }
 
+/* the maps Forge saved on a stock map's cache (custom_maps\\<name>.map): rows of their own, after the community maps; Custom Edition ones are in the
+Custom Edition family's list as any other */
+static void add_forge_entries(void) /* AE hook */
+{ /* AE hook */
+	char level[MAP_NAME_LENGTH], title[HALO_CUSTOM_MAP_NAME_SIZE]; /* AE hook */
+	wchar_t name[DISPLAY_NAME_LENGTH]; /* AE hook */
+	int forge_count = ae_forge_maps_xbox_count(), forge_each; /* AE hook */
+	long character; /* AE hook */
+	for (forge_each = 0; forge_each < forge_count; forge_each++) /* AE hook */
+	{ /* AE hook */
+		if (!ae_forge_maps_xbox_entry(forge_each, level, (int)sizeof(level), title, (int)sizeof(title))) /* AE hook */
+			continue; /* AE hook */
+		for (character = 0; title[character] && character < DISPLAY_NAME_LENGTH - 1; character++) /* AE hook */
+			name[character] = (wchar_t)(unsigned char)title[character]; /* AE hook */
+		name[character] = 0; /* AE hook */
+		add_entry(level, name, name, L"Forge map", NONE, 13, level); /* AE hook */
+	} /* AE hook */
+} /* AE hook */
+
 /* a map pack's map's row (<file>@<pack>, maps_<pack>: halo_map_packs.h):
 named as the library of known Xbox mod maps or the pack's maplist.txt names
 it, marked with its pack's tag ([CE+]), with the picture of the Xbox's map
@@ -1100,6 +1120,7 @@ void ui_map_list_refresh(
 			add_entry(community[index], ae_map_warm_up_name(community[index], name, 0), ae_map_warm_up_name(community[index], name, 1), ae_map_warm_up_description(community[index], L"Community map"), NONE, 13, community[index]); /* AE hook */
 		}
 	}
+	add_forge_entries(); /* AE hook */
 	ae_map_warm_up_first(ui_map_list + XBOX_MAP_COUNT, ui_map_list_count_value - XBOX_MAP_COUNT, sizeof(ui_map_list[0]), offsetof(struct ui_map_entry, map_name)); /* AE hook */
 #ifdef HALO_CUSTOM_EDITION
 	for (family = _map_family_custom_edition; family <= _map_family_halo_pc; family++)

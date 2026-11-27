@@ -206,9 +206,38 @@ static void test_caret(void)
 	CHECK(width == 12);
 }
 
+/* a player font swapped: its data freed and the next font's read, here at the same address; the fonts' tables kept
+are forgotten first (text_hires.c), so the next font's digits come from its own GSUB (the two weights have theirs at
+different offsets), as they do from its own buffer */
+static void test_font_at_a_freed_address(void)
+{
+	unsigned char *first = read_file(AE_FONT_DIR "/Overpass-900.ttf"), *second = read_file(AE_FONT_DIR "/Overpass-750.ttf");
+	unsigned char *buffer = malloc(171472);
+	stbtt_fontinfo info, own;
+	unsigned long digit;
+
+	CHECK(first && second && buffer);
+	if (first && second && buffer)
+	{
+		CHECK(stbtt_InitFont(&own, second, 0));
+		memcpy(buffer, first, 170460);
+		CHECK(stbtt_InitFont(&info, buffer, 0));
+		CHECK(ae_text_tabular_glyph(&info, '1') != stbtt_FindGlyphIndex(&info, '1'));
+		ae_text_fonts_forget();
+		memcpy(buffer, second, 171472);
+		CHECK(stbtt_InitFont(&info, buffer, 0));
+		for (digit = '0'; digit <= '9'; digit++)
+			CHECK(ae_text_tabular_glyph(&info, digit) == ae_text_tabular_glyph(&own, digit));
+	}
+	free(first);
+	free(second);
+	free(buffer);
+}
+
 int main(void)
 {
 	test_fonts();
+	test_font_at_a_freed_address();
 	test_pen();
 	test_layout();
 	test_caret();

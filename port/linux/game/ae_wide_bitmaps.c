@@ -94,6 +94,13 @@ static boolean levels_left_out(struct bitmap_data *bitmap)
 	return TRUE;
 }
 
+void ae_wide_bitmaps_tags_unloaded(void)
+{
+	/* (the bitmaps remembered are the map's: its tags go, and the next map's have room again) */
+	memset(wide, 0, sizeof(wide));
+	wide_count = 0;
+}
+
 void ae_wide_bitmap_prepare(struct bitmap_data *bitmap)
 {
 	long factor;

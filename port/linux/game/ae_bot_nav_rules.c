@@ -209,6 +209,9 @@ int ae_bot_nav_parse(char const *text, struct ae_bot_nav_map *map)
 			if (open_route >= 0)
 			{
 				nav_error(map, line_number, "route inside a route (end missing)");
+				/* (its points given back, as an unended route at the file's end gives them: else they stay counted,
+				and a later route's points run past the table) */
+				map->point_count = map->routes[open_route].first;
 				open_route = -1;
 			}
 			if (tokens < 3 || !nav_name_ok(token[1]) || map->route_count >= AE_BOT_NAV_ROUTES)

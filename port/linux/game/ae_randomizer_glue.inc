@@ -15,6 +15,21 @@ the randomizer (ae_randomizer_glue.h).
 static int ae_imported;
 static unsigned long ae_import_signature;
 
+/* a Forge session's level, or a map Forge saved (any game of it): its bake, its props and its saved AI tags are read as the level loads
+(forge_level_tags), which the randomizer's own rules for a multiplayer level would leave out */
+static int ae_randomizer_forge_level(char const *scenario_name)
+{
+#if OPENCE_ENABLE_FORGE
+	extern int g_forge_session_enabled;
+	extern int forge_saved_map(char const *scenario_name);
+
+	return g_forge_session_enabled || (scenario_name && forge_saved_map(scenario_name));
+#else
+	(void)scenario_name;
+	return 0;
+#endif
+}
+
 /* whether this level is one the randomizer plays at all: a campaign level played alone (or in split
 screen on one machine), a Firefight game, or the firing range's level. Any multiplayer game's level, a
 network game's of any kind and the menus' own are not: nothing is read, copied or logged for them */
@@ -27,7 +42,8 @@ static int ae_randomizer_campaign_game(char const *scenario_name)
 		game && game->variant.game_engine_index == game_engine_firefight);
 
 	return ae_randomizer_rules_plays(firefight, scenario_name && firing_range_level_profile(scenario_name) != NULL,
-		game != NULL || network_game_distributed_client(), scenario && scenario->type == _scenario_type_solo);
+		game != NULL || network_game_distributed_client(), scenario && scenario->type == _scenario_type_solo) ||
+		ae_randomizer_forge_level(scenario_name);
 }
 
 /* the firing range's profile was injected by the randomizer's own range branch (ae_tag_inject.c leaves it) */

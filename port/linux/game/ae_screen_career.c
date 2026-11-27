@@ -15,6 +15,9 @@ the career rank, the overall or focused skill rank with its bar and numbers, and
 #include "ae_career_view_rules.h"
 #include "ae_glue_career.h"
 #include "ae_glue_career_xp.h"
+#include "ae_forge_maps_rules.h"
+#include "ae_screen_forge.h"
+#include "../src/port_config.h"
 #include "ae_mcc_rank.h"
 #include "ae_screen_challenges.h"
 #include "ae_glue_social.h"
@@ -53,6 +56,8 @@ static struct
 	int have_key;
 	int count;
 	char value[AE_SOCIAL_PLAYLISTS + 1][8];
+	/* (rc9) the FORGE rows' values: the time in Forge, the maps made */
+	char forge_time[24], forge_maps[16];
 	/* (0.9.4) the EXPERIENCE line in the panel (layout units, as last drawn; width 0: not drawn), the answer chosen and waiting
 	for its confirm (0: none), and the dialog open */
 	struct ae_rect experience_rect;
@@ -153,6 +158,17 @@ static void rows_build(void)
 			career.value[index + 1][0] = 0;
 		flow->rows[count] = (struct ae_flow_row){ AE_FLOW_ROW_OWN, -1, list->label, career.value[index + 1], NULL, NULL };
 		flow->rows[count].value_title = played(list);
+		flow->rows[count++].status = 1;
+	}
+	/* (rc9: Content Evolved's creator card has FORGE: TIME and MAPS MADE; the build that has Forge shows them) */
+	if (ae_screen_forge_available() && count < AE_FLOW_ROWS - 3)
+	{
+		ae_forge_maps_duration_text(config_integer("forge.seconds"), career.forge_time, (int)sizeof(career.forge_time));
+		snprintf(career.forge_maps, sizeof(career.forge_maps), "%ld", (long)config_integer("forge.maps_made"));
+		flow->rows[count++] = (struct ae_flow_row){ AE_FLOW_ROW_HEADER, -1, "FORGE", NULL, NULL, NULL };
+		flow->rows[count] = (struct ae_flow_row){ AE_FLOW_ROW_OWN, -1, "FORGE TIME", career.forge_time, NULL, NULL };
+		flow->rows[count++].status = 1;
+		flow->rows[count] = (struct ae_flow_row){ AE_FLOW_ROW_OWN, -1, "FORGE MAPS MADE", career.forge_maps, NULL, NULL };
 		flow->rows[count++].status = 1;
 	}
 	flow->count = count;

@@ -16,5 +16,7 @@ void ae_wide_bitmap_prepare(struct bitmap_data *bitmap);
 
 /* the bitmap's pixels into buffer (at once), the rows' pixels averaged by that factor; FALSE for any other bitmap */
 boolean ae_wide_bitmap_read(struct bitmap_data *bitmap, void *buffer);
+/* a map's tags unloaded: the bitmaps remembered for it are forgotten */
+void ae_wide_bitmaps_tags_unloaded(void);
 
 #endif

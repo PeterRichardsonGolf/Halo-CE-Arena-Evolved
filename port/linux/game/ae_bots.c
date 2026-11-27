@@ -19,6 +19,7 @@ stays upstream's but for the AE hook lines.
 #include "bots.h"
 #include "ae_burst_rifle.h"
 #include "ae_bots.h"
+#include "ae_fireteam.h"
 #include "ae_lan_bots.h"
 #include "ae_bots_combat_rules.h"
 #include "ae_weapon_pack.h"
@@ -49,6 +50,8 @@ EVO rifle, the magnums) is worth no more than this to a bot, below the power wea
 needler pack's distance */
 #define AE_BOTS_PDW_VALUE 7
 #define AE_BOTS_PDW_RANGE 6.5f
+/* (a shotgun's reach, bots.c's close class: 3 units or less) */
+#define AE_BOTS_SHOTGUN_RANGE 3.0f
 /* a pull a tick after the rifle's quickest (0.7.0: each AE rifle's own, ae_burst_rifle_pull_ticks: the BATTLE
 RIFLE's bursts 14 ticks apart, the EVO RIFLE's pulls 11, the DMR's 10), as a pull in the burst's recovery is lost;
 bots.c adds its skill's few ticks */
@@ -90,6 +93,15 @@ void ae_bots_weapon_kind(long definition_index, short *value, short *tap_ticks, 
 			if (row->bot_tap_ticks >= 0)
 				*tap_ticks = row->bot_tap_ticks;
 		}
+	}
+	/* (THE CAMPAIGN SQUAD holds the weapon whose tag's last name is "mauler" for close work: a shotgun's reach there, so WEAPON
+	RANGE holds its fire at a far target and WEAPON BY RANGE takes the other weapon. Multiplayer bots keep its row's reach) */
+	{
+		char const *name = ae_fireteam_campaign_on() ? tag_get_name(definition_index) : NULL;
+		char const *last = name ? strrchr(name, '\\') : NULL;
+
+		if (name && !strcmp(last ? last + 1 : name, "mauler") && *range > AE_BOTS_SHOTGUN_RANGE)
+			*range = AE_BOTS_SHOTGUN_RANGE;
 	}
 }
 

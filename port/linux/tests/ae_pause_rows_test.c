@@ -228,6 +228,33 @@ int main(void)
 			CHECK(ae_pause_row_look(row) == AE_PAUSE_LOOK_HEADER || ae_pause_row_help(row, &facts)[0] != 0);
 		}
 	}
+	/* (rc9 a Forge session: SAVE MAP right after RESUME, its help by whether the map has been saved, and QUIT asks what leaving loses) */
+	{
+		static const short expected[] = { AE_PAUSE_RESUME, AE_PAUSE_SAVE_MAP, AE_PAUSE_SETTINGS, AE_PAUSE_QUIT };
+		struct ae_pause_facts forge;
+
+		memset(&forge, 0, sizeof(forge));
+		forge.game = AE_PAUSE_ALONE;
+		forge.forge = 1;
+		count = ae_pause_rows(&forge, rows, AE_PAUSE_ROWS_MAXIMUM);
+		CHECK(same(rows, count, expected, 4));
+		CHECK(!strcmp(ae_pause_row_label(AE_PAUSE_SAVE_MAP, &forge), "SAVE MAP") && ae_pause_row_look(AE_PAUSE_SAVE_MAP) == AE_PAUSE_LOOK_ACTION);
+		CHECK(!strncmp(ae_pause_row_help(AE_PAUSE_SAVE_MAP, &forge), "Name your map", 13));
+		CHECK(ae_pause_row_confirm(AE_PAUSE_QUIT, &forge, &title, &body, &yes) && !strcmp(title, "Leave Forge?") && !strcmp(yes, "LEAVE") &&
+			!strcmp(body, "Your map is not saved: everything placed is lost."));
+		forge.forge_saved = 1;
+		snprintf(forge.forge_name, sizeof(forge.forge_name), "GULCH REMIX");
+		snprintf(forge.forge_time, sizeof(forge.forge_time), "21:14");
+		CHECK(!strcmp(ae_pause_row_help(AE_PAUSE_SAVE_MAP, &forge), "Saves GULCH REMIX over its last save (21:14). Save a copy under another name from Forge's own menu."));
+		CHECK(ae_pause_row_confirm(AE_PAUSE_QUIT, &forge, &title, &body, &yes) && !strcmp(body, "Anything placed since your last save (21:14) is lost."));
+		forge.forge_time[0] = 0;
+		CHECK(ae_pause_row_confirm(AE_PAUSE_QUIT, &forge, &title, &body, &yes) && !strcmp(body, "Anything placed since your last save is lost."));
+		/* a game that is not Forge has no SAVE MAP */
+		forge.forge = 0;
+		count = ae_pause_rows(&forge, rows, AE_PAUSE_ROWS_MAXIMUM);
+		CHECK(count == 3 && rows[1] == AE_PAUSE_SETTINGS);
+		CHECK(ae_pause_row_confirm(AE_PAUSE_QUIT, &forge, &title, &body, &yes) && !strcmp(title, "Quit?"));
+	}
 	if (failures)
 		return 1;
 	printf("ae_pause_rows_test: ok\n");

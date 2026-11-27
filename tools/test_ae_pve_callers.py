@@ -22,6 +22,9 @@ ALLOWED = {
     "port/linux/game/firefight.c", "port/linux/game/firefight_generators.c", "port/linux/game/firefight_hud.c",
     "port/linux/game/firefight_objectives.c", "port/linux/game/skulls.c",
     "port/linux/include/halo_firefight.h", "port/linux/game/ae_firefight_glue.h",
+    # Forge (port/forge): at the main menu it asks whether the stats' loopback socket (open only with the community services'
+    # opt-in, ae_pve_rules_stats_socket) was asked for a link code, and says it; it writes no record, medal, score or rank
+    "port/forge/src/forge_hooks.c",
     # Arena Evolved's own campaign score and medals rules, and the settings table's names
     "port/linux/game/ae_campaign_medals_rules.c", "port/linux/game/ae_campaign_medals_rules.h",
     "port/linux/game/ae_campaign_score.c", "port/linux/game/ae_campaign_score.h",

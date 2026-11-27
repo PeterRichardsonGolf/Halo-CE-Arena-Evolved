@@ -692,7 +692,8 @@ static void ae_bots_fireteam_roles_update(void)
 					timed_serial[slot] = serial;
 					timed_since[slot] = now;
 				}
-				else if (ae_fireteam_gave_up(order, (int)able, (float)(now - timed_since[slot]) / (float)TICKS_PER_SECOND))
+				else if (ae_fireteam_order_lets_go(ae_fireteam_campaign_on(),
+					ae_fireteam_gave_up(order, (int)able, (float)(now - timed_since[slot]) / (float)TICKS_PER_SECOND)))
 				{
 					error(_error_silent, "ae fireteam: fireteam %ld let go of its %s order (nobody could finish it)", slot,
 						order == _ae_order_regroup ? "regroup" : "going");

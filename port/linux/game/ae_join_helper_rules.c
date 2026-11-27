@@ -70,6 +70,28 @@ static void set(char *to, int size, char const *text)
 	snprintf(to, (size_t)size, "%s", text ? text : "");
 }
 
+int ae_join_helper_retry_tries_before(int tries_made, unsigned long since_last_ms)
+{
+	return tries_made > 0 && since_last_ms <= AE_JH_RETRY_RUN_MS ? tries_made : 0;
+}
+
+int ae_join_helper_retry_due(int cause, int tries_made, int can_join_again)
+{
+	return can_join_again && cause == AE_JH_CLOSED && tries_made >= 0 && tries_made < AE_JH_RETRY_TRIES;
+}
+
+void ae_join_helper_retry_words(int try_number, struct ae_join_helper_words *words)
+{
+	int shown = try_number < 1 ? 1 : try_number > AE_JH_RETRY_TRIES ? AE_JH_RETRY_TRIES : try_number;
+
+	memset(words, 0, sizeof(*words));
+	set(words->title, (int)sizeof(words->title), "THE GAME IS CHANGING MAPS");
+	set(words->reason, (int)sizeof(words->reason), "The host is changing maps. Trying again in a few seconds.");
+	snprintf(words->note, sizeof(words->note), "Try %d of %d.", shown, AE_JH_RETRY_TRIES);
+	words->action_kind = AE_JH_ACTION_OK;
+	set(words->action, (int)sizeof(words->action), "CANCEL");
+}
+
 void ae_join_helper_workshop_item(char const *map, char *item, int size)
 {
 	char const *at = map ? strstr(map, "@ws") : NULL;

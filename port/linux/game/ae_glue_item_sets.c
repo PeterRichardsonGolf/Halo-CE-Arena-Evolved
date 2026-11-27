@@ -16,6 +16,13 @@ Those two settings are read where a campaign level played alone loads its tags a
 #include "ae_maps_hub_data.h"
 #include "ae_item_sets_data.h"
 #include "../src/port_tag_profiles.h"
+#include "../src/port_tag_mp_profiles.h"
+#include "game/game.h"
+#include "interface/ui_widget.h"
+#include "main/main.h"
+#include "tag_campaign.h"
+#include "firing_range.h"
+#include "ae_glue_campaign.h"
 #include "../src/port_config.h"
 
 #include <ctype.h>
@@ -113,10 +120,15 @@ static int engine_sets(struct ae_is_set *sets, int maximum)
 
 static int engine_play(char const *folder)
 {
+	/* (a set played, or none, puts a campaign swap aside: the lobby plays one choice) */
 	if (!folder || !folder[0])
+	{
+		tag_campaign_profile_choose(NONE);
 		return config_write(SWITCH_KEY, "false") && config_write(PROFILE_KEY, "");
+	}
 	if (profile_of(folder) < 0)
 		return 0;
+	tag_campaign_profile_choose(NONE);
 	platform_log("item sets: %s plays", folder);
 	return config_write(PROFILE_KEY, folder) && config_write(SWITCH_KEY, "true");
 }
@@ -202,6 +214,7 @@ static int engine_entries(char const *folder, struct ae_is_entry *out, int maxim
 			snprintf(entry->failed, sizeof(entry->failed), "%s", port_tag_profiles_tag_option(profile, tag, "failed"));
 			entry->bytes = port_tag_profiles_tag_size(profile, tag);
 			entry->works = entry->bytes > 0;
+			snprintf(entry->name, sizeof(entry->name), "%s", port_tag_profiles_tag_option(profile, tag, "name"));
 			kept++;
 		}
 	return kept;
@@ -441,11 +454,317 @@ static int engine_randomizer_on(void)
 	return config_boolean("game.randomizer") != 0;
 }
 
+/* ---------- an item's settings, the body and the fit */
+
+/* the tag's keys the page writes (tag_option_keys in port_tag_profiles.c) */
+static int option_key_ok(char const *key)
+{
+	static char const *const keys[] = { "name", "faction", "class", "type", "custom_type", "hud", "replace", "fit" };
+	int each;
+
+	for (each = 0; each < 8; each++)
+		if (!strcmp(key, keys[each]))
+			return 1;
+	return 0;
+}
+
+static int engine_entry_option(char const *folder, long tag, char const *key, char *value, int size)
+{
+	long profile = profile_of(folder);
+
+	if (profile < 0 || !option_key_ok(key))
+		return 0;
+	snprintf(value, (size_t)size, "%s", port_tag_profiles_tag_option(profile, tag, key));
+	return 1;
+}
+
+static int engine_entry_set_option(char const *folder, long tag, char const *key, char const *value)
+{
+	long profile = profile_of(folder);
+
+	return profile >= 0 && option_key_ok(key) && port_tag_profiles_tag_set_option(profile, tag, key, value);
+}
+
+static int engine_body_option(char const *folder, char const *key, char *value, int size)
+{
+	long profile = profile_of(folder);
+
+	if (profile < 0)
+		return 0;
+	snprintf(value, (size_t)size, "%s", port_tag_profiles_option(profile, key));
+	return 1;
+}
+
+static int engine_body_set_option(char const *folder, char const *key, char const *value)
+{
+	long profile = profile_of(folder);
+
+	return profile >= 0 && port_tag_profiles_set_option(profile, key, value);
+}
+
+/* a biped's fit as the last level that read it found it (the "fit" setting the spawn writes: ae_set_body.c): the card has no
+numbers from a level that has not run, so only whether it fits is known */
+static void engine_entry_fit(char const *folder, long tag, struct ae_is_fit *fit)
+{
+	long profile = profile_of(folder);
+	char const *seen = profile >= 0 ? port_tag_profiles_tag_option(profile, tag, "fit") : "";
+
+	memset(fit, 0, sizeof(*fit));
+	if (!seen[0])
+		return;
+	fit->known = 1;
+	fit->fits = !strcmp(seen, "yes");
+}
+
+/* the campaign maps' weapons, enemies and equipment are read the first time an item's path is asked about (tag_injector_tag_stock) */
+static int engine_replace_known(void)
+{
+	return 1;
+}
+
+static int engine_entry_stock(char const *folder, long tag)
+{
+	long profile = profile_of(folder);
+
+	return profile >= 0 && tag_injector_tag_stock(profile, tag) != 0;
+}
+
+/* ---------- the campaign swaps */
+
+static long swap_of(char const *file)
+{
+	port_tag_campaign_profiles_scan();
+	return file && file[0] ? port_tag_campaign_profiles_find(file) : -1;
+}
+
+static int engine_swaps(struct ae_is_swap *swaps, int maximum)
+{
+	long count, each, used;
+	int kept = 0;
+
+	port_tag_campaign_profiles_scan();
+	port_tag_profiles_scan();
+	count = port_tag_campaign_profiles_count();
+	used = tag_campaign_profile_chosen();
+	for (each = 0; each < count && kept < maximum; each++)
+	{
+		struct ae_is_swap *swap = &swaps[kept++];
+		long set = port_tag_profiles_find(port_tag_campaign_profiles_option(each, "profile"));
+
+		memset(swap, 0, sizeof(*swap));
+		snprintf(swap->name, sizeof(swap->name), "%s", port_tag_campaign_profiles_name(each));
+		snprintf(swap->file, sizeof(swap->file), "%s", port_tag_campaign_profiles_file(each));
+		snprintf(swap->set_folder, sizeof(swap->set_folder), "%s", port_tag_campaign_profiles_option(each, "profile"));
+		swap->set_found = set >= 0 && !same_text(swap->set_folder, DEV_PROFILE);
+		if (swap->set_found)
+		{
+			snprintf(swap->set_name, sizeof(swap->set_name), "%s", port_tag_profiles_name(set));
+			swap->set_items_on = tag_injector_profile_enabled_count(set, 0);
+		}
+		swap->in_use = used == each;
+		snprintf(swap->weapon_replace, sizeof(swap->weapon_replace), "%s", port_tag_campaign_profiles_option(each, "weapon_replace"));
+		snprintf(swap->enemy_replace, sizeof(swap->enemy_replace), "%s", port_tag_campaign_profiles_option(each, "enemy_replace"));
+	}
+	return kept;
+}
+
+static int engine_swap_create(char const *name, char const *set_folder, char *file, int size)
+{
+	long swap;
+
+	port_tag_campaign_profiles_scan();
+	swap = port_tag_campaign_profiles_create(name, set_folder);
+	if (swap < 0)
+		return 0;
+	snprintf(file, (size_t)size, "%s", port_tag_campaign_profiles_file(swap));
+	platform_log("item sets: campaign swap %s made", file);
+	return 1;
+}
+
+static int engine_swap_remove(char const *file)
+{
+	long swap = swap_of(file);
+
+	if (swap < 0)
+		return 0;
+	/* (a swap deleted while the lobby plays it: the lobby plays nothing) */
+	if (tag_campaign_profile_chosen() == swap)
+		tag_campaign_profile_choose(NONE);
+	return port_tag_campaign_profiles_delete(swap) != 0;
+}
+
+static int engine_swap_rename(char const *file, char const *name)
+{
+	long swap = swap_of(file);
+
+	return swap >= 0 && port_tag_campaign_profiles_rename(swap, name) != 0;
+}
+
+/* the keys of a swap's file the page writes */
+static int swap_key_ok(char const *key)
+{
+	static char const *const keys[] = { "profile", "weapon_rotation", "weapon_replace", "enemy_rotation", "enemy_replace", "player_biped",
+		"player_hands", "player_movement" };
+	int each;
+
+	for (each = 0; each < 8; each++)
+		if (!strcmp(key, keys[each]))
+			return 1;
+	return 0;
+}
+
+static int engine_swap_option(char const *file, char const *key, char *value, int size)
+{
+	long swap = swap_of(file);
+
+	if (swap < 0)
+		return 0;
+	if (!strcmp(key, "name"))
+		snprintf(value, (size_t)size, "%s", port_tag_campaign_profiles_name(swap));
+	else if (swap_key_ok(key))
+		snprintf(value, (size_t)size, "%s", port_tag_campaign_profiles_option(swap, key));
+	else
+		return 0;
+	return 1;
+}
+
+static int engine_swap_set_option(char const *file, char const *key, char const *value)
+{
+	long swap = swap_of(file);
+
+	if (swap < 0)
+		return 0;
+	if (!strcmp(key, "name"))
+		return port_tag_campaign_profiles_rename(swap, value) != 0;
+	return swap_key_ok(key) && port_tag_campaign_profiles_set_option(swap, key, value) != 0;
+}
+
+static int section_ok(char const *section)
+{
+	return !strcmp(section, "weapons") || !strcmp(section, "enemies") || !strcmp(section, "loadout");
+}
+
+static int engine_swap_list_count(char const *file, char const *section, char const *key)
+{
+	long swap = swap_of(file);
+
+	return swap >= 0 && section_ok(section) ? (int)port_tag_campaign_profiles_list_count(swap, section, key) : 0;
+}
+
+static int engine_swap_list_get(char const *file, char const *section, char const *key, int entry, char *path, int size)
+{
+	long swap = swap_of(file);
+
+	if (swap < 0 || !section_ok(section) || entry < 0 || entry >= port_tag_campaign_profiles_list_count(swap, section, key))
+		return 0;
+	snprintf(path, (size_t)size, "%s", port_tag_campaign_profiles_list(swap, section, key, entry));
+	return 1;
+}
+
+static int engine_swap_list_has(char const *file, char const *section, char const *key, char const *path)
+{
+	long swap = swap_of(file);
+
+	return swap >= 0 && section_ok(section) && port_tag_campaign_profiles_list_has(swap, section, key, path) != 0;
+}
+
+static int engine_swap_list_set(char const *file, char const *section, char const *key, char const *path, int on)
+{
+	long swap = swap_of(file);
+
+	return swap >= 0 && section_ok(section) && port_tag_campaign_profiles_list_set(swap, section, key, path, on) != 0;
+}
+
+/* ---------- the lobby's choice */
+
+static int engine_picked(char *id, int size)
+{
+	long swap = tag_campaign_profile_chosen();
+	char folder[64];
+
+	id[0] = 0;
+	if (swap >= 0)
+	{
+		snprintf(id, (size_t)size, "%s", port_tag_campaign_profiles_file(swap));
+		return AE_IS_PICK_SWAP;
+	}
+	if (played_folder(folder, sizeof(folder)) && profile_of(folder) >= 0)
+	{
+		snprintf(id, (size_t)size, "%s", folder);
+		return AE_IS_PICK_SET;
+	}
+	return AE_IS_PICK_NONE;
+}
+
+/* a pick written as ae_is_pick_writes says: the swap's file (or none), the randomizer's set (or none) and the injection switch */
+static int engine_pick(int pick, char const *id)
+{
+	struct ae_is_pick_writes writes;
+	int ok = 1;
+
+	ae_is_pick_writes(pick, &writes);
+	if (writes.swap_file)
+	{
+		long swap = swap_of(id);
+
+		if (swap < 0)
+			return 0;
+		tag_campaign_profile_choose(swap);
+	}
+	else if (writes.clear_swap)
+		tag_campaign_profile_choose(NONE);
+	if (writes.set_folder)
+	{
+		if (profile_of(id) < 0)
+			return 0;
+		ok = config_write(PROFILE_KEY, id) && ok;
+	}
+	else if (writes.clear_set)
+		ok = config_write(PROFILE_KEY, "") && ok;
+	ok = config_write(SWITCH_KEY, writes.injection ? "true" : "false") && ok;
+	platform_log("item sets: the lobby plays %s", pick == AE_IS_PICK_NONE ? "the campaign's own" : id);
+	return ok;
+}
+
+/* ---------- the firing range */
+
+static int engine_range_ready(void)
+{
+	char why[120];
+
+	return ae_campaign_range_map(why, (int)sizeof(why));
+}
+
+/* the same start as DEV MODE's `range <folder>`: from the menus only, the set's folder named, player 1's profile made the player */
+static int engine_range_start(char const *folder, char *why, int size)
+{
+	why[0] = 0;
+	if (!ae_campaign_range_map(why, size))
+		return 0;
+	if (game_in_progress() && !main_menu_is_active())
+	{
+		snprintf(why, (size_t)size, "leave this game first");
+		return 0;
+	}
+	firing_range_request(folder);
+	if (!ae_campaign_start_range(main_get_difficulty()))
+	{
+		ae_range_cancel();
+		snprintf(why, (size_t)size, "no profile for player 1");
+		return 0;
+	}
+	return 1;
+}
+
 static struct ae_is_backend const engine =
 {
 	engine_sets, engine_play, engine_create, engine_copy, engine_rename, engine_remove_set, engine_entries, engine_entry_enable,
 	engine_entry_remove, engine_maps, engine_maps_reason, engine_map_open, engine_map_close, engine_kind_count, engine_kind_items,
-	engine_item_look, engine_kind_addable, engine_item_add, engine_item_remove, engine_randomizer_on,
+	engine_item_look, engine_kind_addable, engine_item_add, engine_item_remove, engine_randomizer_on, engine_entry_option,
+	engine_entry_set_option, engine_body_option, engine_body_set_option, engine_entry_fit, engine_replace_known,
+	engine_entry_stock, engine_swaps, engine_swap_create, engine_swap_remove, engine_swap_rename, engine_swap_option, engine_swap_set_option,
+	engine_swap_list_count, engine_swap_list_get, engine_swap_list_has, engine_swap_list_set, engine_picked, engine_pick, engine_range_ready,
+	engine_range_start,
 };
 
 struct ae_is_backend const *ae_is_backend_engine(void)

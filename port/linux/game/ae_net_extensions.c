@@ -28,6 +28,7 @@ int ae_firefight_net_rules(unsigned long *values, unsigned char *widths, int max
 int ae_firefight_net_widths(unsigned char *widths, int maximum);
 void ae_firefight_net_apply(unsigned long const *values, int count);
 void ae_firefight_net_clear(void);
+void ae_ce_host_left(void);
 
 enum
 {
@@ -323,6 +324,7 @@ void ae_net_extensions_client_reset(void)
 {
 	memset(&client, 0, sizeof(client));
 	ae_firefight_net_clear();
+	ae_ce_host_left();
 }
 
 /* the host's game requires a capability this build has not: the player told why, and the game left */

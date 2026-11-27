@@ -60,6 +60,7 @@ itself) */
 #include "ae_map_warm_up.h"
 #include "ae_mapinfo.h"
 #include "ae_stage_map.h"
+#include "ae_forge_maps.h"
 #include <xtl.h>
 #include "../../third_party/zlib/zlib_prefixed.h"
 
@@ -89,7 +90,7 @@ static struct
 	char text[16384];
 	/* each map's source group (its badge), and the groups past the folders' */
 	short source[AE_SETUP_MAPS_MAXIMUM];
-	int disc_group, warm_up_group, btb_group, mod_group, ce_group, halomd_group;
+	int disc_group, warm_up_group, btb_group, mod_group, ce_group, halomd_group, forge_group;
 	/* (0.6.0) MCC's maps read in place: the WORKSHOP folder, and the menus' MCC maps (names, item ids, pictures). (0.7.6)
 	The AE MAPS and COMMUNITY folders, and the WORKSHOP folder's sections: a collection of Steam's (its answer is the cache's,
 	ae_mcc_workshop_collection_count), then an item of several maps by its title, then OTHER's */
@@ -580,6 +581,8 @@ void ae_setup_maps_load(struct ae_setup_maps *maps)
 	group_add(maps, "STOCK MCC");
 	group_add(maps, "NHE");
 	group_add(maps, "COMMUNITY COMPETITIVE");
+	/* (rc9: the maps Forge saved, MY MAPS' list: after the fixed sources, ahead of the rest, as they are the player's own work) */
+	glue.forge_group = group_add(maps, "FORGE MAPS");
 	glue.disc_group = -1;
 	if (disc && disc[0])
 	{
@@ -781,6 +784,12 @@ void ae_setup_maps_load(struct ae_setup_maps *maps)
 		}
 		else
 			source = glue.mod_group;
+		if (glue.forge_group >= 0 && ae_forge_maps_is_level(names[index]))
+		{
+			ae_setup_map_join(map, glue.forge_group);
+			if (source < 0 || source == glue.mod_group)
+				source = glue.forge_group;
+		}
 		if (ae_map_warm_up(names[index]))
 			ae_setup_map_join(map, glue.warm_up_group);
 		if (map->size == 'l')

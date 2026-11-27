@@ -453,6 +453,8 @@ void object_pvs_activate(long object_index);
 void objects_scripting_set_scale(long object_index, real scale, short interpolation_frame_count);
 void object_delete(long object_index);
 void object_reconnect_to_map(long object_index, struct location const *location);
+/* port: a light attached to an object that was moved by hand (Forge's grab) goes with it */
+void object_attached_lights_moved(long object_index);
 real_matrix4x3 *object_get_node_matrix(long object_index, short node_index);
 short object_get_marker_by_name(long object_index, char const *name, struct object_marker *markers, short maximum_marker_count);
 void object_align_marker_to_matrix(struct object_datum *object, struct object_marker const *child_marker, real_matrix4x3 const *destination_matrix);

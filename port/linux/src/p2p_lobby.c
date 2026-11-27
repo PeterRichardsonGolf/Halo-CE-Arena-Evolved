@@ -88,6 +88,7 @@ back for good.
 
 #include "ae_listing_build.h" /* AE hook */
 #include "../game/ae_server_listing_rules.h" /* AE hook */
+#include "../game/ae_ce_host_rules.h" /* AE hook */
 
 const char *updater_version(void); /* AE hook */
 
@@ -152,6 +153,7 @@ struct listing
 	unsigned char sealed_token[P2P_SEALED_TOKEN_SIZE];
 	int player_count, maximum_player_count, engine_type, kind;
 	unsigned long ae_build; /* AE hook */
+	int ce_modded, ce_mod_version; /* AE hook */
 	char name[P2P_LISTING_NAME_SIZE + 1];
 	char map[P2P_LISTING_MAP_SIZE + 1];
 	char gametype[P2P_LISTING_GAMETYPE_SIZE + 1];
@@ -409,7 +411,7 @@ static int listing_read(const unsigned char *bytes, int size, struct listing *li
 	int offset = 0;
 
 	if (size < MINIMUM_LISTING_SIZE || size > MAXIMUM_LISTING_SIZE || bytes[0] != 'H' || bytes[1] != 'L' ||
-		bytes[2] != LISTING_FORMAT)
+		(bytes[2] != LISTING_FORMAT && bytes[2] != AE_CE_HOST_LISTING_FORMAT)) /* AE hook */
 	{
 		return 0;
 	}
@@ -450,6 +452,7 @@ static int listing_read(const unsigned char *bytes, int size, struct listing *li
 	the size check below) */
 	listing->kind = offset < size ? bytes[offset] : 0;
 	listing->ae_build = offset + STAMP_SIZE <= size ? ae_listing_build_read(bytes + offset + 1) : 0; /* AE hook */
+	listing->ce_modded = bytes[2] == AE_CE_HOST_LISTING_FORMAT; listing->ce_mod_version = listing->ce_modded && offset < size ? bytes[offset] : 0; if (listing->ce_modded) listing->kind = 0, listing->ae_build = 0; /* AE hook */
 	offset += STAMP_SIZE;
 	if (offset + P2P_SIGNATURE_SIZE != size)
 		return 0;
@@ -762,7 +765,7 @@ static void listing_take(const struct queued *queued, const struct listing *list
 	memcpy(shown->gametype, listing->gametype, sizeof(shown->gametype));
 	shown->player_count = (unsigned char)listing->player_count;
 	shown->maximum_player_count = (unsigned char)listing->maximum_player_count;
-	shown->engine_type = (unsigned char)listing->engine_type;
+	shown->engine_type = (unsigned char)ae_ce_host_listing_engine(listing->ce_modded, listing->engine_type, AE_CE_HOST_ENGINE_AE_FIREFIGHT); /* AE hook */
 	shown->kind = (unsigned char)listing->kind;
 	shown->ae_build = listing->ae_build; /* AE hook */
 	shown->open = (listing->flags & _listing_open) != 0;
@@ -862,7 +865,7 @@ static int listing_wanted(const unsigned char *payload, int size, int retained, 
 
 	if (!listing_read(payload, size, &listing))
 		return 0;
-	if (listing.version < delta_legacy_minimum() || listing.version > delta_legacy_maximum())
+	if (listing.version < delta_legacy_minimum() || listing.version > delta_legacy_maximum() || !ae_ce_host_listing_taken(listing.ce_modded, listing.ce_mod_version)) /* AE hook */
 	{
 		if (listing.version > delta_legacy_maximum() && !(listing.flags & _listing_closed))
 			newer_heard(key_hash);
@@ -894,7 +897,7 @@ static void update_browsing(void)
 		again here, where its signature is: the time it was queued at may
 		have run out) */
 		if (!listing_read(queued.payload, queued.size, &listing) || listing.version < delta_legacy_minimum() ||
-			listing.version > delta_legacy_maximum() ||
+			listing.version > delta_legacy_maximum() || !ae_ce_host_listing_taken(listing.ce_modded, listing.ce_mod_version) || /* AE hook */
 			!signing_key_hash(listing.key, key_hash) || memcmp(key_hash, queued.key_hash, P2P_KEY_HASH_SIZE) ||
 			!listing_current(&listing, queued.retained))
 		{

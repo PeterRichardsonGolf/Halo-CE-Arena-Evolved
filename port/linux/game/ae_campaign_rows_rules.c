@@ -106,6 +106,19 @@ char const *ae_campaign_rows_door_help(int every, int squad_on)
 		"Mark a door with DEFEND or SMART and your squad lines up beside it; ATTACK sends them in. Otherwise they follow you through.";
 }
 
+char const *ae_campaign_rows_formations_value(int on)
+{
+	return on ? "ON" : "OFF";
+}
+
+char const *ae_campaign_rows_formations_help(int on, int squad_on)
+{
+	if (!squad_on)
+		return "Turn AI SQUAD on first: this sets whether your squad forms up by itself.";
+	return on ? "Your squad forms up by itself as it follows: a file in tight halls, a wedge outdoors, and it moves as one on an order." :
+		"Your squad makes no formation of its own: each member goes straight to its place. Orders and doors you mark still work.";
+}
+
 int ae_campaign_rows_continue_case(int squad_count, int players, int save_takes_squad)
 {
 	if (players > 1)

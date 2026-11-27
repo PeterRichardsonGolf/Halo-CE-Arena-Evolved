@@ -107,8 +107,10 @@ machine (their datum identifiers need not be).
 #include "ae_server_lobby.h" /* AE hook */
 #include "ae_weapon_selection_game.h" /* AE hook */
 #include "ae_grenades.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 #include "ae_sword_lunge.h" /* AE hook */
 #include "ae_grenade_shot.h" /* AE hook */
+#include "halo_skulls.h" /* AE hook */
 #include "network_riding_map.h"
 #include "map_share.h"
 #include "network_afk.h"
@@ -684,6 +686,8 @@ static struct distributed_host_speed
 	real top_height;
 	/* the last tick it had the unit on the ground (or where it started) */
 	long ground_time;
+	/* pulled by a Forge GRAVITY volume since it last stood on the ground out of every one: no bound on its rise or fall */
+	boolean gravity; /* AE hook */
 } distributed_host_speeds[MAXIMUM_TRACKED_PLAYERS];
 /* a client: where each of its own players' units was at its last ticks,
 and how long the host takes to have them (ticks) */
@@ -2943,6 +2947,7 @@ static void distributed_on_foot_bound(
 		noted->grounded = FALSE;
 		noted->flight_speed = 0.0f;
 		noted->flight_rise = 0.0f;
+		noted->gravity = FALSE; /* AE hook */
 		noted->ground_height = object->object.position.z;
 		noted->ground_frame_k = frame_velocity->k;
 		noted->top_height = object->object.position.z;
@@ -3087,6 +3092,15 @@ static void distributed_on_foot_bound(
 	bound->airborne_ticks = noted->grounded ? 0 : now - noted->ground_time;
 	if (!(bound->rise >= 0.0f))
 		bound->rise = UNIT_WORLD_BOUND;
+	/* (a Forge GRAVITY volume's pull, or its throw since: it may fall any way at any speed the game lets it, and rise as high; the volumes
+	are the map's, the same on every machine) */
+	if (ae_forge_unit_pulled(&object->object.position, noted->grounded, &noted->gravity)) /* AE hook */
+	{ /* AE hook */
+		bound->speed = MAXIMUM_PREDICTED_SPEED + bound->frame_speed; /* AE hook */
+		bound->rise = UNIT_WORLD_BOUND; /* AE hook */
+		bound->top_height = UNIT_WORLD_BOUND; /* AE hook */
+		bound->airborne_ticks = 0; /* AE hook */
+	} /* AE hook */
 }
 
 /* (the host) how fast a client's player's unit on foot may fall at a
@@ -6291,6 +6305,7 @@ void network_distributed_handle_message(
 		return;
 	}
 	if (ae_variant_ext_handles_message(message, size)) { ae_variant_ext_handle_message(machine_index, message, size); return; } /* AE hook */
+	if (skulls_tags_handles_message(message, size)) { skulls_tags_handle_message(machine_index, message, size); return; } /* AE hook */
 	if (ae_pgcr_stats_handles_message(message, size)) { ae_pgcr_stats_handle_message(machine_index, message, size); return; } /* AE hook */
 	if (ae_round_handles_message(message, size)) { ae_round_handle_message(machine_index, message, size); return; } /* AE hook */
 	if (ae_server_ingame_handles_message(message, size)) { ae_server_ingame_handle_message(machine_index, message, size); return; } /* AE hook */

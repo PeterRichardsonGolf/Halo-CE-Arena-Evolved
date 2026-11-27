@@ -1,0 +1,30 @@
+# Forge's default palette (port/forge/src/forge_runtime_tags.c): the weapons,
+# equipment, vehicles, scenery, doors, lights and actors a Forge map may place. No
+# tag is copied into a level from here: Forge reads each one from this pack
+# the moment it is placed, with what it names. Every campaign map, and the
+# multiplayer maps that have a palette tag no other map has. The keep rules
+# hold every bitmap and sound those tags reach, and leave out the levels'
+# dialogue, music and ambience, but not the actors' own voices. See
+# port/linux/TAG_INJECTION.md.
+
+name = "watanoge_forge"
+version = 1
+maps = ["a10", "a30", "a50", "b30", "b40", "c10", "c20", "c40", "d20", "d40",
+	"beavercreek", "bloodgulch", "boardingaction", "carousel", "chillout", "damnation", "sidewinder"]
+minimum_bitmaps = 20
+minimum_sounds = 20
+wanted = ["condition:forge"]
+
+[keep]
+include_prefixes = ["vehicles\\", "weapons\\", "scenery\\", "effects\\", "powerups\\", "characters\\",
+	"levels\\", "ui\\hud\\", "rasterizer\\", "sound\\sfx\\impulse\\", "sound\\sfx\\weapons\\",
+	"sound\\sfx\\vehicles\\", "sound\\sfx\\ui\\", "sound\\sfx\\ambience\\",
+	"sound\\dialog\\marines\\", "sound\\dialog\\sarge2\\", "sound\\dialog\\sargeant\\", "sound\\dialog\\grunt\\",
+	"sound\\dialog\\elite\\", "sound\\dialog\\jackal\\", "sound\\dialog\\crewman\\", "sound\\dialog\\hunter\\",
+	"sound\\dialog\\flood\\"]
+
+[text]
+notice = "Forge needs to build its tags\nfrom the maps: a few minutes,\nonce. It starts when this closes."
+building = "Building Forge's tags\nfrom the maps:\n"
+ready = "Forge's tags are ready."
+failed = "Forge's tags could not be\nbuilt (is the card full?).\nForge cannot start until they are."

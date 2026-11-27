@@ -15,6 +15,10 @@ answer 5): AE_COLOR_SCRIM is drawn behind dialogs only.
 #ifndef __AE_STYLE_H
 #define __AE_STYLE_H
 
+/* a testing feature's mark: its main-menu row's status value (the badges' slot), and the start of its screen's crumb */
+#define AE_TESTING_MARK "TESTING"
+#define AE_TESTING_CRUMB AE_TESTING_MARK " \xE2\x80\xA2 "
+
 #define AE_COLOR_PANEL          0x181F26D1u   /* rgba(24,31,38,.82) */
 #define AE_COLOR_RULE           0xC8D6E033u   /* rgba(200,214,224,.20) */
 #define AE_COLOR_ROW            0x202830BDu   /* rgba(32,40,48,.74) */
@@ -53,6 +57,7 @@ answer 5): AE_COLOR_SCRIM is drawn behind dialogs only.
 #define AE_COLOR_RING           0xE8EEF2FFu   /* the 2 u white focus ring, the selection's colour (preflight P9) */
 /* a challenge's reward drawn after the career bar's fill: the post-game's "this game's gain" ice blue at .5 over the track */
 #define AE_COLOR_CAREER_GHOST   0x788BA3FFu
+#define AE_COLOR_SELECTION_WARNING 0x0B5FC0FFu /* the warning blue on the selection bar, 5.3:1 (the plain one is 2.7:1 there) */
 #define AE_COLOR_SELECTION_MUTED 0x0F171EADu  /* the selection text at .68: a quiet word on the bar (5.4:1 on it) */
 #define AE_DISABLED_ROW_ALPHA   0.43f
 /* a button's glyph, one white set for every device and button in the menus and on the HUD (the HUD's key sheets draw it

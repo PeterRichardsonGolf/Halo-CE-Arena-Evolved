@@ -37,6 +37,19 @@ static struct
 		long deck_until;
 		/* CUT OFF (ae_bots_squad_cut_off): a barrier between it and the player, the next test of the line, held until */
 		boolean cut_off;
+		/* AN ORDER'S POINT (ae_bots_squad_order_*): the order it has a place for, the place, walking to it, standing at it */
+		long order_serial;
+		real_point3d order_place;
+		boolean order_walking;
+		boolean order_arrived;
+		/* (said once an order: no path, walking straight; no path and the line blocked) */
+		boolean order_straight;
+		boolean order_blocked;
+		/* (the point man's stand for the others, in ticks this order) */
+		long order_waited;
+		/* (what it does under the order, said as it changes; a new order's first tick searches its path at once) */
+		int order_state;
+		boolean order_fresh;
 		long cut_check_tick;
 		long cut_until;
 		/* TRACK FOLLOW (ae_bots_squad_track_follows): indoors it walks the player's track; logged as it changes */
@@ -113,6 +126,19 @@ static struct
 		long lip_ticks;
 		long lip_tick;
 		long gaps[AE_SQUAD_GAP_BUCKETS];
+		/* the tick its stay at a lip began, its way to the player not shrinking since (0 none) */
+		long lip_since;
+		/* the least gap to the player while he stood AE_SQUAD_FORMATION_HALT_TICKS or more (0 none yet) */
+		real near_still;
+		/* the track crumb it walks to, its least distance to it and since when (a crumb it cannot reach is passed over) */
+		real_point3d crumb_goal;
+		real crumb_best;
+		long crumb_since;
+		/* LINE UP (ae_bots_squad_rules.h): the point on the player's line it walks to first, the crumb it lined up for, since when
+		(0 not lining up) */
+		real_point3d lineup_at;
+		real_point3d lineup_crumb;
+		long lineup_since;
 	} members[AE_COMPANION_MOST];
 	/* halo.log's counts */
 	long targets_found;
@@ -155,9 +181,11 @@ static struct
 	/* the bsp the walkable surfaces were prepared for, and when */
 	short prepared_bsp;
 	long prepared_tick;
-	/* ONE AT A TIME (ae_bots_squad_rules.h): the member crossing at a jump crumb (-1 none), the crumb, since when */
+	/* ONE AT A TIME (ae_bots_squad_rules.h): the member crossing at a jump crumb (-1 none), the crumb, the crumb after it
+	(the crossing's far end), since when */
 	long crossing;
 	real_point3d crossing_at;
+	real_point3d crossing_to;
 	long crossing_since;
 } ae_squad;
 
@@ -198,6 +226,35 @@ static void ae_squad_make_way(struct bots_tick *tick, long slot);
 static void ae_squad_oscillation_note(struct bots_tick const *tick, long slot);
 static void ae_squad_progress_note(struct bots_bot const *bot, struct bots_tick const *tick, long slot);
 
+/* a member's point order: ATTACK, DEFEND, WATCH or MOVE with a point; kind and point may be NULL */
+static boolean ae_squad_point_order(long slot, short *kind, real_point3d *point)
+{
+	long fireteam = slot >= 0 && slot < AE_COMPANION_MOST ? ae_fireteam_of_brain(slot) : NONE;
+	short order = fireteam != NONE ? ae_fireteam_order_of(fireteam) : (short)_ae_order_none;
+	real_point3d at;
+
+	if (order != _ae_order_attack && order != _ae_order_defend && order != _ae_order_watch && order != _ae_order_go)
+		return FALSE;
+	if (!ae_fireteam_order_point_of(fireteam, &at))
+		return FALSE;
+	if (kind)
+		*kind = order;
+	if (point)
+		*point = at;
+	return TRUE;
+}
+
+/* ON THE LEASH (ae_bots_squad_on_leash): the pull to the player holds only with no point order and no vehicle it was sent to */
+static boolean ae_squad_on_leash(long slot)
+{
+	return (boolean)ae_bots_squad_on_leash(ae_squad_point_order(slot, NULL, NULL), ae_companion_mount_of(slot) != NONE);
+}
+
+int bots_squad_member_on_leash(long slot)
+{
+	return slot >= 0 && slot < AE_COMPANION_MOST && ae_squad_on_leash(slot);
+}
+
 static void ae_squad_tick_begin(void)
 {
 	long now = game_time_get();
@@ -205,13 +262,18 @@ static void ae_squad_tick_begin(void)
 
 	if (ae_squad.tick_valid && now == ae_squad.tick)
 		return;
-	if (!ae_squad.tick_valid || now < ae_squad.tick)
+	/* (a new game, the game's time back, or the squad back after a pause (a test's level loaded again, a saved point loaded,
+	every member gone): the members start again, their own numbers too) */
+	if (!ae_squad.tick_valid || now < ae_squad.tick || now - ae_squad.tick > TICKS_PER_SECOND)
 	{
 		/* (the game's random seed, which the members' own numbers are drawn from: a test run's numbers name it) */
 		platform_log("squad seed: %lu", (unsigned long)network_game_get_random_seed());
 		csmemset(ae_squad.members, 0, sizeof(ae_squad.members));
 		ae_squad.crossing = NONE;
 		ae_squad_door_forget();
+		/* (the enemy the player called out belongs to the game that ended: its index names another object now) */
+		ae_squad_focus.unit_index = NONE;
+		ae_squad_focus.until = 0;
 	}
 	ae_squad.tick = now;
 	ae_squad.tick_valid = TRUE;
@@ -235,6 +297,12 @@ static void ae_squad_tick_begin(void)
 	if (!bots_globals.map_ready || (bots_paths.source && bots_paths.source != structure) ||
 		global_structure_bsp_index_get() != ae_squad.prepared_bsp)
 	{
+		/* (the level moved on to another section: an order's point is behind it, the squad is with the player again) */
+		if (ae_squad.prepared_bsp >= 0 && global_structure_bsp_index_get() != ae_squad.prepared_bsp)
+		{
+			platform_log("squad order: the level moved on: the squad falls in");
+			ae_fireteam_campaign_reset();
+		}
 		ae_squad.prepared_bsp = global_structure_bsp_index_get();
 		ae_squad.prepared_tick = now;
 		bots_paths_release();
@@ -303,8 +371,9 @@ static long ae_squad_find_foe(struct bots_bot *bot, struct bots_tick *tick, bool
 		if (distance > reach)
 			continue;
 		bearing = (real)fabs(bots_angle_difference((real)atan2(point.y - eye->y, point.x - eye->x), bot->yaw));
-		/* (out of view: unless close by, it shot the member, it is the one fought or the player called it out) */
-		if (bearing > half_view && distance > 8.0f && !hurt && !current && !focused)
+		/* (out of view: unless close by, it shot the member, it is the one fought, the player called it out, or the member is a
+		seated gunner) */
+		if (!ae_bots_squad_foe_in_view(bearing, half_view, distance, hurt, current, focused, gunner))
 			continue;
 		score = ae_bots_squad_foe_score(distance, bearing, current) - (focused ? AE_SQUAD_FOCUS_BONUS : 0.0f);
 		for (place = kept; place > 0 && best[place - 1].score > score; place--)
@@ -817,7 +886,7 @@ static void ae_squad_heard(struct player_datum const *marker, short mark_kind, l
 		object_try_and_get_and_verify_type(object_index, _object_mask_unit | _object_mask_vehicle))
 	{
 		ae_squad_focus.unit_index = object_index;
-		ae_squad_focus.until = game_time_get() + AE_SQUAD_FOCUS_SECONDS * TICKS_PER_SECOND;
+		ae_squad_focus.until = game_time_get() + AE_SQUAD_FOCUS_STANDS_SECONDS * TICKS_PER_SECOND;
 		ae_squad_focus.focuses++;
 		answer = AE_MARK_KIND_ENEMY;
 		platform_log("companion: the squad fights the enemy called out at %.1f %.1f %.1f first", spot->x, spot->y, spot->z);
@@ -1092,6 +1161,277 @@ static real ae_squad_fight_radius(struct bots_bot *bot, real radius)
 	return MIN(radius, (real)ae_bots_squad_fight_leash(ae_squad.indoors, ae_squad.indoors));
 }
 
+static boolean ae_squad_low_line_blocked(real_point3d const *from, real_point3d const *to, real_point3d *hit);
+
+static long ae_squad_nearest_slot(real_point3d const *point, real *distance);
+
+/* THE POINT MAN of the order (ae_bots_squad_rules.h): the member, the order it was chosen for; NONE with none */
+static long ae_squad_order_lead = NONE;
+static long ae_squad_order_lead_serial;
+
+/* (the standing report of an order's point: the tick of the last line) */
+static long ae_squad_order_said;
+
+static char const *ae_squad_order_name(short kind)
+{
+	return kind == _ae_order_attack ? "attack" : kind == _ae_order_defend ? "defend" : kind == _ae_order_watch ? "watch" : "move";
+}
+
+/* TRUE while member slot has a living body in the game */
+static boolean ae_squad_member_lives(long slot)
+{
+	struct player_datum const *player = bots_globals.bots[slot].player_index != NONE ?
+		player_try_and_get(bots_globals.bots[slot].player_index) : NULL;
+
+	return player && player->unit_index != NONE && object_try_and_get(player->unit_index) &&
+		!TEST_FLAG(object_get(player->unit_index)->object.damage_flags, _object_dead_bit);
+}
+
+/* what a member does under an order, said in the log as it changes (a test and a review read the order's course by it) */
+enum { AE_SQUAD_DOES_NOTHING, AE_SQUAD_DOES_WALK, AE_SQUAD_DOES_STAND, AE_SQUAD_DOES_FIGHT, AE_SQUAD_DOES_WAIT, AE_SQUAD_DOES_STRAIGHT,
+	AE_SQUAD_DOES_BLOCKED, AE_SQUAD_DOES_SEARCH, AE_SQUAD_DOES_MOUNT, AE_SQUAD_DOES_FETCH, AE_SQUAD_DOES_DOOR, AE_SQUAD_DOES_COVER };
+
+static void ae_squad_order_does(long slot, int does, real to_place)
+{
+	static char const *const words[] = { "", "walks to its place", "stands at its place", "fights about its place",
+		"stands for the others", "walks straight at its place (no path)", "has no way to its place", "waits for a path",
+		"goes to a vehicle", "goes for a weapon", "is at a door", "takes cover" };
+
+	if (slot < 0 || slot >= AE_COMPANION_MOST || ae_squad.members[slot].order_state == does)
+		return;
+	ae_squad.members[slot].order_state = does;
+	if (does != AE_SQUAD_DOES_NOTHING)
+		platform_log("squad order: %ld %s (%.1f away) at tick %ld", slot + 1, words[does], to_place, game_time_get());
+}
+
+/* AN ORDER'S POINT, the member's place at it (ae_bots_squad_order_offset): chosen once an order; a WATCH's is where it stands */
+static void ae_squad_order_place(struct bots_tick const *tick, long slot, short kind, real_point3d const *point)
+{
+	long fireteam = ae_fireteam_of_brain(slot);
+	long serial = fireteam != NONE ? ae_fireteam_order_serial_of(fireteam) + 1 : 0;
+	real_point3d place = *point, probe, floor;
+	float dx = 0.0f, dy = 0.0f;
+
+	if (serial == ae_squad.members[slot].order_serial)
+		return;
+	ae_squad.members[slot].order_serial = serial;
+	ae_squad.members[slot].order_walking = FALSE;
+	ae_squad.members[slot].order_arrived = FALSE;
+	ae_squad.members[slot].cover_valid = FALSE;
+	ae_squad.members[slot].order_straight = FALSE;
+	ae_squad.members[slot].order_blocked = FALSE;
+	ae_squad.members[slot].walk_failed_until = 0;
+	ae_squad.members[slot].order_state = AE_SQUAD_DOES_NOTHING;
+	ae_squad.members[slot].order_fresh = TRUE;
+	ae_squad.members[slot].walk_valid = FALSE;
+	ae_squad.members[slot].order_waited = 0;
+	/* (the point man: the living member nearest the point as the order comes) */
+	if (ae_squad_order_lead_serial != serial)
+	{
+		real nearest = 0.0f;
+
+		ae_squad_order_lead_serial = serial;
+		ae_squad_order_lead = kind == _ae_order_watch ? NONE : ae_squad_nearest_slot(point, &nearest);
+		if (ae_squad_order_lead != NONE)
+			platform_log("squad order: %s: %ld is the point man (%.1f from the point)", ae_squad_order_name(kind),
+				ae_squad_order_lead + 1, nearest);
+	}
+	if (kind == _ae_order_watch)
+		place = tick->position;
+	else
+	{
+		long other, rank = 0;
+
+		if (bots_surface_below(point, &floor) != NONE)
+			place = floor;
+		/* (its rank in the wedge: the point man 0, the others in their numbers' order) */
+		if (slot != ae_squad_order_lead)
+			for (other = 0, rank = 1; other < slot; other++)
+				rank += other != ae_squad_order_lead && ae_fireteam_of_brain(other) == fireteam &&
+					bots_globals.bots[other].player_index != NONE;
+		/* (the way the squad comes: the player's line to the point, one way for every member; a point at the player's own
+		feet: the way they face) */
+		{
+			real_point3d leader_at;
+			long leader = ae_companion_leader(&tick->position, &leader_at);
+			real way = 0.0f;
+
+			if (leader != NONE && bots_distance2d(&leader_at, point) > 1.0f)
+				way = (real)atan2(point->y - leader_at.y, point->x - leader_at.x);
+			else if (leader != NONE)
+				way = (real)atan2(object_get(leader)->object.forward.j, object_get(leader)->object.forward.i);
+			ae_bots_squad_order_offset((int)rank, (float)way, &dx, &dy);
+		}
+		probe = place;
+		probe.x += dx;
+		probe.y += dy;
+		probe.z += 0.5f;
+		if (bots_surface_below(&probe, &floor) != NONE && fabs(floor.z - place.z) <= AE_SQUAD_SPOT_STEP)
+			place = floor;
+	}
+	ae_squad.members[slot].order_place = place;
+	platform_log("squad order: %s: %ld's place %.2f %.2f %.2f (%.1f away)", ae_squad_order_name(kind), slot + 1, place.x, place.y,
+		place.z, bots_distance3d(&tick->position, &place));
+}
+
+/* AN ORDER'S POINT, held (ae_bots_squad_order_step): out of a fight the member walks to its place and stands; in one it fights
+inside the order's radius with the fight's own moves and its cover, and walks back in, shooting, from outside it */
+static void ae_squad_order_hold(struct bots_bot *bot, struct bots_tick *tick, long slot, short kind)
+{
+	real_point3d place = ae_squad.members[slot].order_place;
+	long lead = ae_squad_order_lead;
+	real to_place, direction;
+	int step;
+
+	/* (the point man dead or gone: no point man; each member goes to its own place and is at it by itself) */
+	if (lead != NONE && lead != slot && (lead < 0 || lead >= AE_COMPANION_MOST || !ae_squad_member_lives(lead)))
+		lead = NONE;
+
+	/* (AS ONE: until the point man stands at the point, the others' places are theirs about him as he is; FORMATIONS off:
+	each walks to its own place) */
+	if (ae_bots_squad_moves_as_one(config_boolean("game.companions_formations")) && lead != NONE && lead != slot && lead < AE_COMPANION_MOST && !ae_squad.members[lead].order_arrived &&
+		ae_squad.members[lead].order_serial == ae_squad.members[slot].order_serial && bots_globals.bots[lead].player_index != NONE)
+	{
+		struct player_datum const *man = player_try_and_get(bots_globals.bots[lead].player_index);
+
+		if (man && man->unit_index != NONE && !TEST_FLAG(object_get(man->unit_index)->object.damage_flags, _object_dead_bit))
+		{
+			real_point3d at, floor;
+
+			object_get_origin(man->unit_index, &at);
+			at.x += place.x - ae_squad.members[lead].order_place.x;
+			at.y += place.y - ae_squad.members[lead].order_place.y;
+			at.z += 0.3f;
+			if (bots_surface_below(&at, &floor) != NONE)
+				place = floor;
+		}
+	}
+	/* (a new order: its path is searched this tick, whatever the bot was walking) */
+	if (ae_squad.members[slot].order_fresh)
+	{
+		ae_squad.members[slot].order_fresh = FALSE;
+		bot->path.valid = FALSE;
+		bot->path_tick = 0;
+	}
+	to_place = bots_distance2d(&tick->position, &place);
+	step = ae_bots_squad_order_step(tick->fighting, (float)to_place, ae_bots_squad_order_radius(kind == _ae_order_attack),
+		ae_squad.members[slot].order_walking);
+	/* (THE ORDER FIRST: a fight inside the order's radius does not keep a member from its place; it goes there, firing on
+	the way, and fights about the place once it has been at it) */
+	if (step == AE_SQUAD_ORDER_FIGHT && !ae_squad.members[slot].order_arrived)
+		step = to_place > AE_SQUAD_ORDER_NEAR ? AE_SQUAD_ORDER_WALK : AE_SQUAD_ORDER_STAND;
+	/* (the point man stands for one strung out behind; FORMATIONS off: he walks on) */
+	if (lead == slot && step == AE_SQUAD_ORDER_WALK && ae_bots_squad_moves_as_one(config_boolean("game.companions_formations")))
+	{
+		real worst = 0.0f;
+		long other;
+
+		for (other = 0; other < AE_COMPANION_MOST; other++)
+			if (other != slot && ae_squad.members[other].order_serial == ae_squad.members[slot].order_serial &&
+				bots_globals.bots[other].player_index != NONE)
+			{
+				struct player_datum const *mate = player_try_and_get(bots_globals.bots[other].player_index);
+				real_point3d at;
+
+				if (!mate || mate->unit_index == NONE || TEST_FLAG(object_get(mate->unit_index)->object.damage_flags, _object_dead_bit) ||
+					ae_squad.members[other].order_state == AE_SQUAD_DOES_BLOCKED)
+					continue;
+				object_get_origin(mate->unit_index, &at);
+				worst = MAX(worst, bots_distance2d(&at, &tick->position));
+			}
+		if (ae_bots_squad_order_waits((float)worst, ae_squad.members[slot].order_waited, tick->fighting))
+		{
+			if (!ae_squad.members[slot].order_waited)
+				platform_log("squad order: the point man %ld stands for the others (%.1f behind)", slot + 1, worst);
+			ae_squad.members[slot].order_waited++;
+			ae_squad.members[slot].order_walking = FALSE;
+			tick->moving = FALSE;
+			ae_squad_order_does(slot, AE_SQUAD_DOES_WAIT, to_place);
+			return;
+		}
+	}
+
+	if (step == AE_SQUAD_ORDER_FIGHT)
+	{
+		ae_squad.members[slot].order_walking = FALSE;
+		ae_squad_order_does(slot, AE_SQUAD_DOES_FIGHT, to_place);
+		return;
+	}
+	if (step == AE_SQUAD_ORDER_WALK)
+	{
+		int walk = ae_squad_walk_to(bot, slot, tick->player->unit_index, &tick->position, &place, &direction);
+		boolean straight = FALSE;
+
+		/* (no path found to its place: straight at it while nothing stands in the line, the walk's own jumps and steps
+		aside on the way; the path is searched again as it nears) */
+		if (walk == AE_SQUAD_WALK_FAILED && !ae_squad_low_line_blocked(&tick->position, &place, NULL))
+		{
+			direction = (real)atan2(place.y - tick->position.y, place.x - tick->position.x);
+			walk = AE_SQUAD_WALK_GO;
+			straight = TRUE;
+		}
+		if (walk == AE_SQUAD_WALK_GO)
+		{
+			ae_squad.members[slot].order_walking = TRUE;
+			ae_squad_walk(bot, tick, slot, direction);
+			ae_squad_order_does(slot, straight ? AE_SQUAD_DOES_STRAIGHT : AE_SQUAD_DOES_WALK, to_place);
+			return;
+		}
+		/* (left standing by the walk, or with no way on, near its place: it is at it; farther: said, and tried again) */
+		if (to_place <= AE_SQUAD_ORDER_NEAR && !tick->fighting)
+			step = AE_SQUAD_ORDER_STAND;
+		else
+			ae_squad_order_does(slot, walk == AE_SQUAD_WALK_FAILED ? AE_SQUAD_DOES_BLOCKED : AE_SQUAD_DOES_SEARCH, to_place);
+	}
+	ae_squad.members[slot].order_walking = FALSE;
+	if (!tick->fighting)
+	{
+		bot->goal_kind = _bots_goal_none;
+		bot->path.valid = FALSE;
+		tick->moving = FALSE;
+	}
+	/* (every 5 s while the order stands: who is at their place, how far the player is; a test measures the order by it) */
+	if (tick->now < ae_squad_order_said || tick->now - ae_squad_order_said >= 5 * TICKS_PER_SECOND)
+	{
+		long other, at_place = 0, members = 0;
+		real_point3d leader_at;
+		real away = ae_companion_leader(&tick->position, &leader_at) != NONE ? bots_distance3d(&leader_at, &place) : -1.0f;
+
+		ae_squad_order_said = tick->now;
+		for (other = 0; other < AE_COMPANION_MOST; other++)
+			if (ae_fireteam_of_brain(other) == ae_fireteam_of_brain(slot) && bots_globals.bots[other].player_index != NONE)
+			{
+				struct player_datum const *mate = player_try_and_get(bots_globals.bots[other].player_index);
+				real_point3d at;
+
+				members++;
+				if (!mate || mate->unit_index == NONE || !ae_squad.members[other].order_serial)
+					continue;
+				object_get_origin(mate->unit_index, &at);
+				at_place += bots_distance2d(&at, &ae_squad.members[other].order_place) <= ae_bots_squad_order_radius(kind == _ae_order_attack);
+			}
+		platform_log("squad order: %s stands: %ld of %ld at their places, the player %.0f away", ae_squad_order_name(kind), at_place, members,
+			away);
+	}
+	if (step == AE_SQUAD_ORDER_STAND)
+		ae_squad_order_does(slot, AE_SQUAD_DOES_STAND, to_place);
+	/* (at its place only once the point man is at the point: a place about him on the way is not the order's) */
+	if (step == AE_SQUAD_ORDER_STAND && !ae_squad.members[slot].order_arrived && (lead == NONE || lead == slot ||
+		lead >= AE_COMPANION_MOST || ae_squad.members[lead].order_arrived))
+	{
+		long other, arrived = 0, members = 0;
+
+		ae_squad.members[slot].order_arrived = TRUE;
+		for (other = 0; other < AE_COMPANION_MOST; other++)
+			if (ae_fireteam_of_brain(other) == ae_fireteam_of_brain(slot) && bots_globals.bots[other].player_index != NONE)
+			{
+				members++;
+				arrived += ae_squad.members[other].order_arrived && ae_squad.members[other].order_serial == ae_squad.members[slot].order_serial;
+			}
+		platform_log("squad order: %s: %ld in position (%ld of %ld)", ae_squad_order_name(kind), slot + 1, arrived, members);
+	}
+}
+
 /* THE SQUAD IS A FIRETEAM (ae_fireteam.c's campaign squad, ae_bots_fireteam.inc): FOLLOW and REGROUP hold the member to its slot
 about the player on the tether, as a big team game's person-led squad (the leash, the slot, the hold in it); ATTACK, DEFEND, WATCH
 and GOING HERE give it a goal at the order's point, walked here */
@@ -1109,6 +1449,16 @@ static void ae_squad_fireteam(struct bots_bot *bot, struct bots_tick *tick, long
 		if (!tick->fighting)
 			tick->moving = FALSE;
 		return;
+	}
+	/* (an order's point: held by the squad's own rules, off the player's leash) */
+	{
+		short order_kind;
+
+		if (ae_squad_point_order(slot, &order_kind, NULL) && ae_squad.members[slot].order_serial)
+		{
+			ae_squad_order_hold(bot, tick, slot, order_kind);
+			return;
+		}
 	}
 	goal = ae_bots_fireteam_goal(bot, bot->player_index, &tick->position, tick->fighting);
 	/* (KEEP PACE: the player moving on, a fighting member walks its slot as out of a fight, the fight's aim and trigger on the
@@ -1395,7 +1745,7 @@ static void ae_squad_progress_note(struct bots_bot const *bot, struct bots_tick 
 	real left = 0.0f;
 	real_point3d step;
 	real_point3d const *from = &tick->position;
-	boolean crumb_moved = FALSE;
+	boolean crumb_moved = FALSE, at_lip, patience_over, shrunk;
 	long index;
 
 	if (bot->path.valid)
@@ -1413,12 +1763,24 @@ static void ae_squad_progress_note(struct bots_bot const *bot, struct bots_tick 
 		crumb_moved = (boolean)(bots_distance3d(&step, &ae_squad.members[slot].crumb) > 0.05f);
 		ae_squad.members[slot].crumb = step;
 	}
-	if (!ae_squad.members[slot].progress_tick || tick->now < ae_squad.members[slot].progress_tick ||
-		ae_companion_progress((float)ae_squad.members[slot].left_best, (float)left, 0, crumb_moved ? 1 : 0) ||
+	/* (at a lip: run-ups or a crouched walk now or within the last second; past its patience only a shrinking way is progress) */
+	at_lip = (boolean)(ae_squad.members[slot].runup_since || (ae_squad.members[slot].lip_tick &&
+		tick->now - ae_squad.members[slot].lip_tick <= TICKS_PER_SECOND));
+	if (!at_lip || tick->now < ae_squad.members[slot].lip_since)
+		ae_squad.members[slot].lip_since = 0;
+	else if (!ae_squad.members[slot].lip_since)
+		ae_squad.members[slot].lip_since = tick->now > 0 ? tick->now : 1;
+	patience_over = (boolean)(ae_squad.members[slot].lip_since &&
+		ae_bots_squad_lip_patience_over(tick->now - ae_squad.members[slot].lip_since));
+	shrunk = (boolean)ae_companion_progress((float)ae_squad.members[slot].left_best, (float)left, 0, 0);
+	if (shrunk)
+		ae_squad.members[slot].lip_since = 0;
+	if (!ae_squad.members[slot].progress_tick || tick->now < ae_squad.members[slot].progress_tick || shrunk ||
+		(!patience_over && (crumb_moved ||
 		/* (walking on, not losing ground: a swing to and fro behind a barrier loses it) */
 		(ae_companion_walked((float)bots_distance3d(&tick->position, &ae_squad.members[slot].progress_at)) &&
 			left <= ae_squad.members[slot].left_best + AE_COMPANION_WALKED) ||
-		(!tick->moving && !ae_squad.members[slot].walking))
+		(!tick->moving && !ae_squad.members[slot].walking))))
 	{
 		ae_squad.members[slot].progress_tick = tick->now > 0 ? tick->now : 1;
 		ae_squad.members[slot].left_best = left;
@@ -1585,7 +1947,7 @@ static void ae_squad_make_way(struct bots_tick *tick, long slot)
 	dy = tick->position.y - at.y;
 	along = dx * (real)cos(way) + dy * (real)sin(way);
 	across = -dx * (real)sin(way) + dy * (real)cos(way);
-	if (!ae_bots_squad_in_strip((float)along, (float)across, (float)speed))
+	if (!ae_bots_squad_in_strip((float)along, (float)across, (float)speed, moved < 0.5f * pushed * AE_SQUAD_PLAYER_RUN))
 		return;
 	ae_squad.stats[AE_SQUAD_STAT_STRIP]++;
 	/* (blocked: the member right ahead and him moving under half what his stick asks) */
@@ -1684,7 +2046,27 @@ static struct
 	boolean has[AE_COMPANION_MOST];
 	real_point3d slot[AE_COMPANION_MOST];
 	int point[AE_COMPANION_MOST];
+	/* AUTOMATIC FORMATIONS (ae_bots_squad_rules.h): the formation, the one wanted and since when, the width about the player
+	and when it was measured, where and since when he stands */
+	int formation;
+	int formation_want;
+	long formation_want_since;
+	real width;
+	long width_tick;
+	real_point3d still_at;
+	long still_since;
 } ae_squad_slots;
+/* a slot's cost for each unit it lies from the member's formation spot */
+#define AE_SQUAD_FORMATION_WEIGHT 1.5f
+/* the width about the player: a level ray each side this long, measured every half second at a body's middle */
+#define AE_SQUAD_WIDTH_RAY 3.0f
+#define AE_SQUAD_WIDTH_HEIGHT 0.5f
+
+/* the squad's formation now (AUTOMATIC FORMATIONS) */
+static int ae_squad_formation_now(void)
+{
+	return ae_squad_slots.formation;
+}
 
 /* a member's body's feet, FALSE when it has none */
 static boolean ae_squad_member_feet(long member, real_point3d *at)
@@ -1701,6 +2083,23 @@ static boolean ae_squad_member_feet(long member, real_point3d *at)
 	}
 	object_get_origin(player->unit_index, at);
 	return TRUE;
+}
+
+/* ONE AT A TIME (ae_bots_squad_rules.h): whether the member crossing still holds the others back: not yet near the
+crossing's far end, measured along it from the takeoff, and still by the takeoff */
+static boolean ae_squad_crossing_holds(long now)
+{
+	real_point3d at;
+	real dx, dy, length, along;
+
+	if (ae_squad.crossing == NONE || !ae_squad_member_feet(ae_squad.crossing, &at))
+		return FALSE;
+	dx = ae_squad.crossing_to.x - ae_squad.crossing_at.x;
+	dy = ae_squad.crossing_to.y - ae_squad.crossing_at.y;
+	length = (real)sqrt(dx * dx + dy * dy);
+	along = length > 0.01f ? ((at.x - ae_squad.crossing_at.x) * dx + (at.y - ae_squad.crossing_at.y) * dy) / length : 0.0f;
+	return (boolean)ae_bots_squad_crossing_waits(1, (float)along, (float)length,
+		(float)bots_distance2d(&at, &ae_squad.crossing_at), now - ae_squad.crossing_since);
 }
 
 /* the nearest a straight walk from a to b comes to point p (across) */
@@ -1775,7 +2174,8 @@ static void ae_squad_slots_assign(struct ae_squad_grid_plan const *plan, real_po
 	long door_count;
 	real_point3d member_at[AE_COMPANION_MOST];
 	long members[AE_COMPANION_MOST], men = 0, member, point;
-	int kept[AE_COMPANION_MOST], slot_of_man[AE_COMPANION_MOST], man;
+	int kept[AE_COMPANION_MOST], slot_of_man[AE_COMPANION_MOST], man, has_spot[AE_COMPANION_MOST];
+	float spot[AE_COMPANION_MOST][2], ring_in, ring_out;
 
 	for (member = 0; member < AE_COMPANION_MOST; member++)
 	{
@@ -1820,6 +2220,17 @@ static void ae_squad_slots_assign(struct ae_squad_grid_plan const *plan, real_po
 			in_reach[point] = ae_bots_squad_in_any_door_reach((float)bots_distance2d(&door_at[door], &plan->points[point].floor),
 				(float)door_reach[door], 0);
 	}
+	ae_bots_squad_formation_ring(ae_squad_slots.formation, &ring_in, &ring_out);
+	for (man = 0; man < men; man++)
+	{
+		float along, across;
+
+		/* (its formation spot: behind him on his heading, to his left or right) */
+		has_spot[man] = ae_bots_squad_formation_spot(ae_squad_slots.formation, man < 3 ? (int)man : 2, (float)ae_squad_slots.width,
+			&along, &across);
+		spot[man][0] = (float)(leader_at->x - cos(ae_squad_slots.yaw) * along - sin(ae_squad_slots.yaw) * across);
+		spot[man][1] = (float)(leader_at->y - sin(ae_squad_slots.yaw) * along + cos(ae_squad_slots.yaw) * across);
+	}
 	for (man = 0; man < men; man++)
 	{
 		/* (its slot kept: the new plan's point at the old slot's place, within a grid step) */
@@ -1845,15 +2256,21 @@ static void ae_squad_slots_assign(struct ae_squad_grid_plan const *plan, real_po
 			real off = (real)fabs(at->floor.z - leader_at->z);
 
 			/* (FILE REVERSAL: in a narrow corridor he turned back in, ahead of him is as good: none passes him) */
-			if (!ae_bots_squad_slot_ok((float)at->flood,
+			if (!ae_bots_squad_slot_ok_ring((float)at->flood,
 					ae_squad_slots.reversal ? -1.0f : (float)ae_squad_facing_dot(ae_squad_slots.yaw, leader_at, &at->floor),
 					ae_squad_slots.reversal ? -1.0f : (float)ae_squad_facing_dot(ae_squad_slots.yaw, lead, &at->floor),
-					(float)ae_squad_segment_near(&member_at[man], &at->floor, leader_at), in_reach[point], moving))
+					(float)ae_squad_segment_near(&member_at[man], &at->floor, leader_at), in_reach[point], moving, ring_in, ring_out))
 			{
 				cost[man][point] = 1.0e6f;
 				continue;
 			}
-			cost[man][point] = ae_bots_squad_slot_cost((float)at->flood, point_cluster[point] != cluster, off > AE_SQUAD_FLOOR_OFF, 0) +
+			/* (with a formation spot: its distance from the spot, else from the follow ring's preferred distance; another room or
+			floor costs as before) */
+			cost[man][point] = (has_spot[man] ?
+				ae_bots_squad_slot_cost(AE_SQUAD_RING_PREFER, point_cluster[point] != cluster, off > AE_SQUAD_FLOOR_OFF, 0) +
+					AE_SQUAD_FORMATION_WEIGHT * (float)sqrt((at->floor.x - spot[man][0]) * (at->floor.x - spot[man][0]) +
+						(at->floor.y - spot[man][1]) * (at->floor.y - spot[man][1])) :
+				ae_bots_squad_slot_cost((float)at->flood, point_cluster[point] != cluster, off > AE_SQUAD_FLOOR_OFF, 0)) +
 				AE_SQUAD_SLOT_MAN_WEIGHT * (float)bots_distance3d(&member_at[man], &at->floor);
 		}
 	}
@@ -1934,6 +2351,48 @@ static void ae_squad_slots_service(long now)
 		lead.x += velocity->i * TICKS_PER_SECOND * 0.5f;
 		lead.y += velocity->j * TICKS_PER_SECOND * 0.5f;
 	}
+	/* (AUTOMATIC FORMATIONS: the width about him every half second, how long he stands, the pick and its hold; a new formation
+	plans the slots again) */
+	if (!airborne && (now - ae_squad_slots.width_tick >= TICKS_PER_SECOND / 2 || now < ae_squad_slots.width_tick))
+	{
+		real_point3d middle = leader_at;
+
+		middle.z += AE_SQUAD_WIDTH_HEIGHT;
+		ae_squad_slots.width = ae_squad_door_ray(&middle, ae_squad_slots.yaw + 1.5708f, AE_SQUAD_WIDTH_RAY) +
+			ae_squad_door_ray(&middle, ae_squad_slots.yaw - 1.5708f, AE_SQUAD_WIDTH_RAY);
+		ae_squad_slots.width_tick = now;
+	}
+	if (bots_distance2d(&leader_at, &ae_squad_slots.still_at) > 0.3f || now < ae_squad_slots.still_since)
+	{
+		ae_squad_slots.still_at = leader_at;
+		ae_squad_slots.still_since = now;
+	}
+	{
+		boolean fighting = FALSE;
+		int want, formation;
+
+		for (member = 0; member < AE_COMPANION_MOST; member++)
+			if (bots_squad_member_fighting(member))
+				fighting = TRUE;
+		want = ae_bots_squad_formation_pick(fighting,
+			ae_squad_door.state >= AE_SQUAD_DOOR_GRENADE, ae_squad_door.state == AE_SQUAD_DOOR_STACKING ||
+				ae_squad_door.state == AE_SQUAD_DOOR_STACKED,
+			now - ae_squad_slots.still_since, (float)ae_squad_slots.width, !ae_squad.indoors);
+		/* (FORMATIONS off, game.companions_formations or HALO_SQUAD_FORMATIONS=0: none, the follow ring) */
+		want = ae_bots_squad_formation_wanted(config_boolean("game.companions_formations"), want);
+		if (want != ae_squad_slots.formation_want || now < ae_squad_slots.formation_want_since)
+		{
+			ae_squad_slots.formation_want = want;
+			ae_squad_slots.formation_want_since = now;
+		}
+		formation = ae_bots_squad_formation_hold(ae_squad_slots.formation, want, now - ae_squad_slots.formation_want_since);
+		if (formation != ae_squad_slots.formation)
+		{
+			platform_log("squad formation: %s (width %.1f)", ae_bots_squad_formation_name(formation), ae_squad_slots.width);
+			ae_squad_slots.formation = formation;
+			invalid = TRUE;
+		}
+	}
 	for (member = 0; member < AE_COMPANION_MOST; member++)
 	{
 		if (ae_squad_slots.has[member] && ae_squad_member_feet(member, &member_at) &&
@@ -1961,7 +2420,13 @@ static void ae_squad_slots_service(long now)
 	{
 		if (airborne)
 			return;
-		ae_squad_grid_request(&leader_at, AE_SQUAD_SLOT_REACH);
+		{
+			float ring_in, ring_out;
+
+			/* (the grid out as far as the formation's ring reaches) */
+			ae_bots_squad_formation_ring(ae_squad_slots.formation, &ring_in, &ring_out);
+			ae_squad_grid_request(&leader_at, MAX(AE_SQUAD_SLOT_REACH, ring_out + 0.6f));
+		}
 		ae_squad_slots.asked = TRUE;
 		ae_squad_slots.planned_at = leader_at;
 		ae_squad_slots.planned_cluster = cluster;
@@ -2163,6 +2628,110 @@ static void ae_squad_paths_forget(void)
 }
 
 
+/* MOUNT: every living member within AE_SQUAD_SMART_MOUNT_REACH is sent to the vehicle (the gunner's seat goes to the first to
+come, the passenger seats to the next); how many were sent */
+static long ae_squad_mount_all(long vehicle, real_point3d const *vehicle_at)
+{
+	long slot, sent = 0;
+
+	for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+	{
+		struct bots_bot const *bot = &bots_globals.bots[slot];
+		struct player_datum const *player = bot->player_index != NONE ? player_try_and_get(bot->player_index) : NULL;
+		real_point3d at;
+		real away;
+
+		if (!player || player->unit_index == NONE || TEST_FLAG(object_get(player->unit_index)->object.damage_flags, _object_dead_bit))
+			continue;
+		object_get_origin(player->unit_index, &at);
+		away = bots_distance3d(&at, vehicle_at);
+		if (!ae_bots_squad_smart_in_reach(AE_SQUAD_SMART_MOUNT, (float)away) || !ae_companion_mount(slot, vehicle))
+			continue;
+		sent++;
+		platform_log("squad order: mount: %ld is sent to the vehicle (%.1f away)", slot + 1, away);
+	}
+	return sent;
+}
+
+/* the vehicle with a seat for a member nearest a point, within reach of it; NONE with none */
+static long ae_squad_vehicle_near(real_point3d const *point, real reach)
+{
+	struct object_iterator iterator;
+	long best = NONE;
+	real best_away = reach;
+
+	object_iterator_new(&iterator, _object_mask_vehicle, 0);
+	while (object_iterator_next(&iterator))
+	{
+		struct object_datum const *vehicle = object_get(iterator.index);
+		real away = bots_distance3d(&vehicle->object.position, point);
+		/* (a dropship is boarded only when the player points at it: never the nearest vehicle's pick) */
+		char const *name = tag_get_name(vehicle->definition_index);
+
+		if (name && (strstr(name, "pelican") || strstr(name, "dropship") || strstr(name, "lifepod")))
+			continue;
+		if (away <= best_away && ae_companion_has_free_seat(iterator.index))
+		{
+			best = iterator.index;
+			best_away = away;
+		}
+	}
+	return best;
+}
+
+/* THE CAMPAIGN SQUAD'S WHEEL (the squad is off the player's leash under every order but FALL IN): FALL IN (the wheel's REGROUP)
+ends the order and every vehicle a member was sent to: follow; MOUNT (the wheel's RIDE) sends the squad to the vehicle called
+(the one marked, else the caller's own, else the nearest with a seat), and with a member seated or sent already it gets the squad
+out; ATTACK, DEFEND, WATCH and MOVE let go of a vehicle a member was sent to. TRUE when the call was all dealt with here */
+static boolean ae_squad_wheel(struct player_datum const *marker, long object_index, real_point3d const *spot, short wheel_entry, long led)
+{
+	long slot, vehicle = NONE, sent_or_seated = 0;
+
+	for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+	{
+		struct bots_bot const *bot = &bots_globals.bots[slot];
+		struct player_datum const *player = bot->player_index != NONE ? player_try_and_get(bot->player_index) : NULL;
+
+		if (ae_companion_mount_of(slot) != NONE || (player && player->unit_index != NONE &&
+			object_get(player->unit_index)->object.parent_object_index != NONE))
+			sent_or_seated++;
+	}
+	if (wheel_entry == AE_WHEEL_REGROUP)
+	{
+		for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+			ae_companion_mount(slot, NONE);
+		ae_companion_board_again();
+		ae_fireteam_order((int)led, _ae_order_follow, NULL, NONE);
+		platform_log("squad order: fall in: the squad follows again");
+		return TRUE;
+	}
+	if (wheel_entry == AE_WHEEL_RIDE)
+	{
+		if (sent_or_seated)
+		{
+			for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+				ae_companion_mount(slot, NONE);
+			ae_companion_dismount();
+			platform_log("squad order: mount: the squad gets out (%ld seated or sent)", sent_or_seated);
+			return TRUE;
+		}
+		if (object_index != NONE && ae_companion_has_free_seat(object_index))
+			vehicle = object_index;
+		else if (marker->unit_index != NONE && object_get(marker->unit_index)->object.parent_object_index != NONE &&
+			ae_companion_has_free_seat(object_get_ultimate_parent(marker->unit_index)))
+			vehicle = object_get_ultimate_parent(marker->unit_index);
+		else
+			vehicle = ae_squad_vehicle_near(spot, AE_SQUAD_SMART_MOUNT_REACH);
+		if (vehicle == NONE || !ae_squad_mount_all(vehicle, &object_get(vehicle)->object.position))
+			platform_log("squad order: mount: no vehicle with a seat in reach");
+		return TRUE;
+	}
+	if (wheel_entry == AE_WHEEL_ATTACK || wheel_entry == AE_WHEEL_DEFEND || wheel_entry == AE_WHEEL_WATCH || wheel_entry == AE_WHEEL_GOING)
+		for (slot = 0; slot < AE_COMPANION_MOST; slot++)
+			ae_companion_mount(slot, NONE);
+	return FALSE;
+}
+
 static boolean ae_squad_smart(struct player_datum const *marker, short mark_kind, long object_index, real_point3d const *spot, long led)
 {
 	struct object_datum *object = object_index != NONE ? (struct object_datum *)object_try_and_get(object_index) : NULL;
@@ -2193,7 +2762,13 @@ static boolean ae_squad_smart(struct player_datum const *marker, short mark_kind
 		}
 	}
 	if (pick == AE_SQUAD_SMART_FOCUS || pick == AE_SQUAD_SMART_MOVE)
+	{
+		/* (an object the squad has no use for, a vehicle with no seat left, a weapon held or empty: said; the tap is a place's) */
+		if (pick == AE_SQUAD_SMART_MOVE && object)
+			platform_log("ae squad: SMART on %s: no seat and no weapon for the squad there, a move to the place",
+				tag_get_name(object->definition_index));
 		return FALSE;
+	}
 	if (pick == AE_SQUAD_SMART_CANCEL)
 	{
 		for (slot = 0; slot < AE_COMPANION_MOST; slot++)
@@ -2224,9 +2799,11 @@ static boolean ae_squad_smart(struct player_datum const *marker, short mark_kind
 				ae_squad_say(player_get(bots_globals.bots[other].player_index), L": on you");
 				return TRUE;
 			}
-		if (!ae_companion_mount(slot, object_index))
+		if (!ae_squad_mount_all(object_index, &object->object.position))
+		{
+			platform_log("ae squad: SMART on a vehicle: no seat for a member");
 			return TRUE;
-		platform_log("ae squad: SMART on a vehicle: %ld mans it (%.1f units away)", slot + 1, distance);
+		}
 	}
 	else
 	{
@@ -2292,7 +2869,10 @@ static boolean ae_squad_cover(struct bots_bot *bot, struct bots_tick *tick, long
 	real_point3d eye, ground;
 	real direction, dx, dy, length;
 
-	if (!tick->fighting || !foe || fireteam == NONE || ae_fireteam_order_of(fireteam) != _ae_order_follow)
+	/* (under FOLLOW about the player; under an order's point about the member's place there) */
+	boolean at_order = ae_squad_point_order(slot, NULL, NULL);
+
+	if (!tick->fighting || !foe || fireteam == NONE || (ae_fireteam_order_of(fireteam) != _ae_order_follow && !at_order))
 	{
 		ae_squad.members[slot].cover_valid = FALSE;
 		return FALSE;
@@ -2344,7 +2924,7 @@ static boolean ae_squad_cover(struct bots_bot *bot, struct bots_tick *tick, long
 					probe.y += radius * (real)sin(angle);
 					if (bots_surface_below(&probe, &floor) == NONE || fabs(floor.z - ground.z) > AE_SQUAD_SPOT_STEP ||
 						bots_distance2d(&floor, leader_at) > AE_SQUAD_COVER_LEASH ||
-						bots_distance2d(&floor, leader_at) < AE_SQUAD_SPOT_LEADER_GAP || ae_squad_cover_crowded(slot, &floor) ||
+						(!at_order && bots_distance2d(&floor, leader_at) < AE_SQUAD_SPOT_LEADER_GAP) || ae_squad_cover_crowded(slot, &floor) ||
 						ae_squad_in_door_reach(&floor, 0.0f, NONE, NULL) || fabs(floor.z - leader_at->z) > AE_SQUAD_FLOOR_OFF)
 						continue;
 					/* (a spot behind a wall from the member is no walk) */
@@ -2411,7 +2991,33 @@ static boolean ae_squad_go_mount(struct bots_bot *bot, struct bots_tick *tick, l
 
 	if (vehicle == NONE || !(object = (struct object_datum *)object_try_and_get(vehicle)))
 		return FALSE;
-	if (bots_distance3d(&object->object.position, &tick->position) < AE_SQUAD_MOUNT_ENTER)
+	/* (UPTURNED: no seat to take; beside it the member rights it as a player does, the action held on the game's own
+	flip prompt, and boards once it stands on its wheels) */
+	if (object->object.up.k <= AE_SQUAD_MOUNT_UPRIGHT && bots_distance2d(&object->object.position, &tick->position) < AE_SQUAD_MOUNT_FLIP)
+	{
+		static long pressed[AE_COMPANION_MOST], said[AE_COMPANION_MOST];
+
+		if (tick->player->action_result == _player_action_result_flip_vehicle && tick->player->action_object_index == vehicle)
+		{
+			tick->moving = FALSE;
+			if (slot >= 0 && slot < AE_COMPANION_MOST && pressed[slot] != tick->now - 1)
+			{
+				tick->flags |= FLAG(_unit_control_action_bit);
+				pressed[slot] = tick->now;
+				if (tick->now - said[slot] > 5 * TICKS_PER_SECOND || tick->now < said[slot])
+				{
+					said[slot] = tick->now;
+					platform_log("squad order: mount: %ld flips the vehicle over", slot + 1);
+				}
+			}
+			return TRUE;
+		}
+		tick->move_direction = (real)atan2(object->object.position.y - tick->position.y, object->object.position.x - tick->position.x);
+		tick->moving = TRUE;
+		tick->throttle_scale = 0.6f;
+		return TRUE;
+	}
+	if (object->object.up.k > AE_SQUAD_MOUNT_UPRIGHT && bots_distance3d(&object->object.position, &tick->position) < AE_SQUAD_MOUNT_ENTER)
 	{
 		tick->moving = FALSE;
 		return TRUE;
@@ -2457,7 +3063,24 @@ static void ae_squad_gunner_fire(struct bots_bot *bot, struct bots_tick *tick, l
 	if (!ae_bots_squad_gunner_holds(bots_angle_difference((real)atan2(dy, dx), bot->yaw), (real)atan2(dz, horizontal) - bot->pitch,
 			distance, tick->now - bot->target_seen_tick, tick->now - bot->target_first_seen_tick) ||
 		!ae_bots_fight_friendly_fire_clear(bot, tick))
+	{
+		static long said[AE_COMPANION_MOST];
+
+		/* (why the gun is quiet with a target, once in two seconds) */
+		if (tick->now - said[slot] >= TICKS_PER_SECOND * 2 || tick->now < said[slot])
+		{
+			said[slot] = tick->now;
+			platform_log("companion: %ld's gun holds at %.1f units: aim %.0f and %.0f degrees off (cone %.0f), seen %ld ticks ago, "
+				"for %ld%s", slot + 1, distance,
+				fabs(bots_angle_difference((real)atan2(dy, dx), bot->yaw)) / BOTS_DEGREES,
+				fabs((real)atan2(dz, horizontal) - bot->pitch) / BOTS_DEGREES, ae_bots_squad_gunner_cone(distance) / BOTS_DEGREES,
+				(long)(tick->now - bot->target_seen_tick), (long)(tick->now - bot->target_first_seen_tick),
+				ae_bots_squad_gunner_holds(bots_angle_difference((real)atan2(dy, dx), bot->yaw),
+					(real)atan2(dz, horizontal) - bot->pitch, distance, tick->now - bot->target_seen_tick,
+					tick->now - bot->target_first_seen_tick) ? ", a teammate in the line" : "");
+		}
 		return;
+	}
 	tick->flags |= FLAG(_unit_control_weapon_primary_trigger_bit);
 	if (distance > ae_squad.gunner_farthest)
 		ae_squad.gunner_farthest = distance;
@@ -2593,10 +3216,11 @@ static boolean ae_squad_track_follow_on(struct bots_tick const *tick, long slot,
 	boolean walk_failed = (boolean)(tick->now < ae_squad.members[slot].walk_failed_until);
 	real_point3d own;
 	boolean has_slot = ae_squad_slot_of(slot, &own);
-	/* (indoors the follow slot is walked to where one stands; the track when none does, the walk to it failed, or the slot is a
-	storey above or below the member: the player's own way there, his drop or his jump, is the way) */
+	/* (indoors the follow slot is walked to where one stands; the track when none does, the squad is in a file (a narrow way),
+	the walk to it failed, or the slot is a storey above or below the member: the player's own way there, his drop or his jump,
+	is the way) */
 	boolean on = (boolean)ae_bots_squad_track_follows(walk_failed || (has_slot && fabs(own.z - tick->position.z) > AE_SQUAD_FLOOR_OFF) ||
-		(!has_slot && ae_squad_player_indoors(tick->now, leader_at)),
+		((!has_slot || ae_squad_formation_now() == AE_SQUAD_FORMATION_FILE) && ae_squad_player_indoors(tick->now, leader_at)),
 		ae_companion_track_goal(&tick->position, &step), order == _ae_order_follow || order == _ae_order_none);
 
 	/* (a change between the track and the slot waits until it was wanted AE_SQUAD_MODE_HOLD_TICKS: no flip each tick) */
@@ -2759,7 +3383,9 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 	struct bots_tick tick;
 	real_point3d leader_at;
 	long leader;
-	boolean have_leader, in_vehicle, deck, narrow, keep_pace, track_follow, door_moved = FALSE;
+	boolean have_leader, in_vehicle, deck, narrow, keep_pace, track_follow, door_moved = FALSE, leashed, point_order;
+	short order_kind = _ae_order_none;
+	real_point3d order_point;
 	real vitality, distance = 0.0f;
 
 	csmemset(&tick, 0, sizeof(tick));
@@ -2817,6 +3443,11 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 	bot->last_vitality = vitality;
 	bot->last_position = tick.position;
 	in_vehicle = (boolean)(tick.object->object.parent_object_index != NONE);
+	point_order = ae_squad_point_order(slot, &order_kind, &order_point);
+	if (point_order)
+		ae_squad_order_place(&tick, slot, order_kind, &order_point);
+	else
+		ae_squad.members[slot].order_serial = 0;
 
 	leader = ae_companion_leader(&tick.position, &leader_at);
 	have_leader = (boolean)(leader != NONE);
@@ -2826,18 +3457,26 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 	/* (ON A DECK: the player or this member on an object's ground, a lift, or on narrow ground, a bridge deck: a path there
 	finds the ground under the object, or a step aside is a step off; the member walks the player's own track in single
 	file, never strafes, steps aside or unsticks sideways) */
-	deck = (boolean)(have_leader && !in_vehicle && (ae_companion_on_deck(leader) || ae_companion_on_deck(tick.player->unit_index)));
+	leashed = ae_squad_on_leash(slot);
+	deck = (boolean)(have_leader && !in_vehicle && leashed &&
+		(ae_companion_on_deck(leader) || ae_companion_on_deck(tick.player->unit_index)));
 	narrow = deck;
 	/* (CUT OFF: a barrier between it and the player, the pipes of a doorway the player jumped: it walks the player's track over it,
 	as on a deck; the formation's spot behind the player is on the barrier's far side) */
 	if (have_leader)
 		ae_squad_player_indoors(tick.now, &leader_at);
-	if (have_leader && !in_vehicle)
+	/* (off the leash, under an order's point or sent to a vehicle, a barrier between it and the player is nothing to it) */
+	if (have_leader && !in_vehicle && leashed)
 		ae_squad_cut_off_check(&tick, slot, &leader_at, distance);
+	else if (ae_squad.members[slot].cut_off && !leashed)
+	{
+		ae_squad.members[slot].cut_off = FALSE;
+		platform_log("companion: %ld is off the player's leash: the barrier between them is left", slot + 1);
+	}
 	if (ae_squad.members[slot].cut_off)
 		deck = TRUE;
 	/* (held a while after it was last seen: a bridge's far end, a wider piece of it, does not flip it off and on) */
-	if (!in_vehicle && have_leader)
+	if (!in_vehicle && have_leader && leashed)
 		deck = (boolean)ae_bots_squad_deck_held(deck, tick.now, &ae_squad.members[slot].deck_until);
 	if (deck != ae_squad.members[slot].deck)
 	{
@@ -2846,7 +3485,7 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 			!deck ? "" : narrow ? " (an object's or narrow ground)" : " (cut off by a barrier)");
 	}
 	/* (TRACK FOLLOW: indoors, off a deck, it walks the player's track in single file instead of going to a formation spot) */
-	track_follow = (boolean)(have_leader && !in_vehicle && !deck && ae_squad_track_follow_on(&tick, slot, &leader_at));
+	track_follow = (boolean)(have_leader && !in_vehicle && !deck && leashed && ae_squad_track_follow_on(&tick, slot, &leader_at));
 	ae_squad_look(bot, &tick, have_leader, &leader_at);
 	tick.weapon_index = bots_current_weapon(tick.unit);
 	/* (the gunner's seat: it fights with the vehicle's gun, as a multiplayer bot's gunner does) */
@@ -2875,16 +3514,34 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 	}
 	/* (MOUNT: a member sent to a vehicle walks to it) */
 	else if (have_leader && !deck && ae_squad_go_mount(bot, &tick, slot))
+	{
 		ae_squad.members[slot].track_walked = FALSE;
+		if (point_order)
+			ae_squad_order_does(slot, AE_SQUAD_DOES_MOUNT, 0.0f);
+	}
 	/* (no fetch on a deck: a step off it for a weapon is a fall) */
-	else if (have_leader && !deck && ae_squad_fetch(bot, &tick, slot, &leader_at))
+	/* (under an order's point only a weapon it was sent for: no walk off its place for one of its own choosing) */
+	else if (have_leader && !deck && (!point_order || ae_squad.members[slot].pickup_ordered) && ae_squad_fetch(bot, &tick, slot, &leader_at))
+	{
 		ae_squad.members[slot].track_walked = FALSE;
+		if (point_order)
+			ae_squad_order_does(slot, AE_SQUAD_DOES_FETCH, 0.0f);
+	}
 	/* (DOOR STACK: stacked at a door, going in, inside) */
 	else if (have_leader && !deck && (door_moved = ae_squad_door_member(bot, &tick, slot)) != FALSE)
+	{
 		ae_squad.members[slot].track_walked = FALSE;
+		if (point_order)
+			ae_squad_order_does(slot, AE_SQUAD_DOES_DOOR, 0.0f);
+	}
 	/* (COVER: in a fight with the player standing, a spot out of the enemy's sight) */
-	else if (have_leader && !deck && !keep_pace && ae_squad_cover(bot, &tick, slot, &leader_at))
+	else if (have_leader && !deck && (!keep_pace || point_order) &&
+		ae_squad_cover(bot, &tick, slot, point_order ? &ae_squad.members[slot].order_place : &leader_at))
+	{
 		ae_squad.members[slot].track_walked = FALSE;
+		if (point_order)
+			ae_squad_order_does(slot, AE_SQUAD_DOES_COVER, 0.0f);
+	}
 	else if (!have_leader)
 	{
 		if (!tick.fighting)
@@ -2901,7 +3558,7 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 			(ae_bots_squad_track_wants_move(distance, ae_squad.members[slot].moving, slot) ||
 			ae_bots_squad_perched(tick.position.z - leader_at.z, distance))))
 		{
-			real_point3d step = leader_at;
+			real_point3d step = leader_at, walk_to;
 			int cue = 0;
 
 			ae_companion_track_goal_cue_for(slot, &tick.position, &step, &cue);
@@ -2915,9 +3572,66 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 				ae_squad.members[slot].goal = step;
 				ae_squad.members[slot].goal_valid = TRUE;
 			}
+			/* (a crumb in a door's reach it gained nothing on for 2 s, not one he jumped at, is passed over: the next one on is its
+			goal) */
+			{
+				real to_crumb = bots_distance2d(&tick.position, &step);
+				real_point3d from = step;
+				float line_x = 0.0f, line_y = 0.0f;
+
+				if (bots_distance2d(&step, &ae_squad.members[slot].crumb_goal) > 0.05f || tick.now < ae_squad.members[slot].crumb_since ||
+					to_crumb < ae_squad.members[slot].crumb_best - AE_SQUAD_CRUMB_GAIN)
+				{
+					ae_squad.members[slot].crumb_goal = step;
+					ae_squad.members[slot].crumb_best = to_crumb;
+					ae_squad.members[slot].crumb_since = tick.now;
+				}
+				/* (LINE UP: off the player's line to a crumb it gains nothing on, it walks onto that line first; once a crumb) */
+				else if (!(cue & AE_COMPANION_TRACK_JUMPED) && tick.now - ae_squad.members[slot].crumb_since >= AE_SQUAD_LINEUP_TICKS &&
+					bots_distance2d(&step, &ae_squad.members[slot].lineup_crumb) > 0.05f &&
+					ae_companion_track_cue_crumb(&tick.position, &from) && bots_distance2d(&from, &step) > 0.05f &&
+					ae_bots_squad_lineup_point((float)from.x, (float)from.y, (float)step.x, (float)step.y, (float)tick.position.x,
+						(float)tick.position.y, &line_x, &line_y))
+				{
+					ae_squad.members[slot].lineup_at = step;
+					ae_squad.members[slot].lineup_at.x = line_x;
+					ae_squad.members[slot].lineup_at.y = line_y;
+					ae_squad.members[slot].lineup_crumb = step;
+					ae_squad.members[slot].lineup_since = tick.now > 0 ? tick.now : 1;
+					ae_squad.members[slot].crumb_since = tick.now;
+					if (ae_bots_events_on())
+						platform_log("companion: %ld lines up on the player's way at %.1f %.1f, to the crumb at %.1f %.1f", slot + 1,
+							line_x, line_y, step.x, step.y);
+				}
+				else if (ae_bots_squad_crumb_unreachable((cue & AE_COMPANION_TRACK_JUMPED) != 0,
+						ae_squad_in_door_reach(&step, 0.0f, NONE, NULL), tick.now - ae_squad.members[slot].crumb_since))
+				{
+					platform_log("companion: %ld passes over a crumb it cannot reach at %.1f %.1f (%.1f away)", slot + 1, step.x, step.y,
+						to_crumb);
+					ae_companion_track_skip(slot, &step);
+					ae_squad.members[slot].goal_valid = FALSE;
+					ae_squad.members[slot].crumb_since = tick.now;
+					if (ae_companion_track_goal_cue_for(slot, &tick.position, &step, &cue))
+						ae_squad.members[slot].crumb_goal = step;
+				}
+			}
+			/* (LINE UP: to the point on his line first, until there, its crumb changed or out of time; its stall watch waits) */
+			walk_to = step;
+			if (ae_squad.members[slot].lineup_since)
+			{
+				if (bots_distance2d(&ae_squad.members[slot].lineup_crumb, &step) > 0.05f ||
+					tick.now - ae_squad.members[slot].lineup_since >= AE_SQUAD_LINEUP_MOST_TICKS ||
+					bots_distance2d(&tick.position, &ae_squad.members[slot].lineup_at) < AE_SQUAD_ARRIVE)
+					ae_squad.members[slot].lineup_since = 0;
+				else
+				{
+					walk_to = ae_squad.members[slot].lineup_at;
+					ae_squad.members[slot].crumb_since = tick.now;
+				}
+			}
 			bot->goal_kind = _bots_goal_none;
 			bot->path.valid = FALSE;
-			ae_squad_walk(bot, &tick, slot, (real)atan2(step.y - tick.position.y, step.x - tick.position.x));
+			ae_squad_walk(bot, &tick, slot, (real)atan2(walk_to.y - tick.position.y, walk_to.x - tick.position.x));
 			/* (on open ground, after he turned back lately with the member now ahead of him on his way: it stands and lets him by,
 			its track folding back past it; MAKE WAY still steps it aside. On narrow ground it walks on ahead: FILE REVERSAL) */
 			if (!narrow && ae_squad_player_turned_tick() && tick.now - ae_squad_player_turned_tick() < AE_SQUAD_PLAYER_TURN_TICKS &&
@@ -2928,22 +3642,17 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 			if (cue & AE_COMPANION_TRACK_JUMPED)
 			{
 				long other = ae_squad.crossing;
-				real_point3d other_at, crumb = step;
+				real_point3d crumb = step;
 
 				(void)ae_companion_track_cue_crumb(&tick.position, &crumb);
-				/* (the one crossing is past it, or gone: the crossing is free) */
-				if (other != NONE && (!ae_squad_member_feet(other, &other_at) ||
-					bots_distance2d(&other_at, &ae_squad.crossing_at) > AE_SQUAD_CROSSING_CLEAR + 1.0f ||
-					tick.now - ae_squad.crossing_since >= AE_SQUAD_CROSSING_TICKS))
+				/* (the one crossing is across, gone, away from it or out of time: the crossing is free) */
+				if (other != NONE && !ae_squad_crossing_holds(tick.now))
 				{
 					ae_squad.crossing = NONE;
 					other = NONE;
 				}
 
-				if (other != NONE && other != slot && ae_squad_member_feet(other, &other_at) &&
-					bots_distance2d(&ae_squad.crossing_at, &crumb) < 0.5f &&
-					ae_bots_squad_crossing_waits(1, (float)bots_distance2d(&other_at, &ae_squad.crossing_at),
-						tick.now - ae_squad.crossing_since))
+				if (other != NONE && other != slot && bots_distance2d(&ae_squad.crossing_at, &crumb) < 0.5f)
 				{
 					if (bots_distance2d(&tick.position, &crumb) < AE_SQUAD_CROSSING_CLEAR + AE_SQUAD_FILE_GAP)
 						tick.moving = FALSE;
@@ -2955,6 +3664,7 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 				{
 					ae_squad.crossing = slot;
 					ae_squad.crossing_at = crumb;
+					ae_squad.crossing_to = step;
 					ae_squad.crossing_since = tick.now;
 				}
 				/* (the jump at the crumb, not on the way to it) */
@@ -3059,8 +3769,12 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 	}
 	if (TEST_FLAG(tick.flags, _unit_control_weapon_primary_trigger_bit))
 	{
+		struct unit_datum const *ridden = in_vehicle ? (struct unit_datum const *)object_try_and_get_and_verify_type(
+			tick.object->object.parent_object_index, _object_mask_unit) : NULL;
+
 		ae_squad.trigger_ticks++;
-		if (in_vehicle)
+		/* (the gunner's trigger alone: a passenger's own weapon is not the gun) */
+		if (ridden && ridden->unit.gunner_object_index == tick.player->unit_index)
 			ae_squad.gunner_trigger_ticks++;
 	}
 	/* (OUTCOME: on foot with the player, its gap to him, a tick stuck, a tick at a lip) */
@@ -3075,6 +3789,9 @@ static void ae_squad_update(struct bots_bot *bot, long slot, struct player_actio
 			ae_squad.members[slot].stuck_ticks++;
 		if (ae_squad.members[slot].runup_since || ae_squad.members[slot].lip_tick == tick.now)
 			ae_squad.members[slot].lip_ticks++;
+		if (tick.now - ae_squad_slots.still_since >= AE_SQUAD_FORMATION_HALT_TICKS && tick.now >= ae_squad_slots.still_since &&
+			(ae_squad.members[slot].near_still <= 0.0f || distance < ae_squad.members[slot].near_still))
+			ae_squad.members[slot].near_still = distance > 0.01f ? distance : 0.01f;
 	}
 	if (TEST_FLAG(tick.flags, _unit_control_throw_grenade_bit))
 		ae_squad.grenades++;
@@ -3226,7 +3943,8 @@ void bots_squad_report_lines(float closest_pair)
 	for (group = 0; group < (int)NUMBEROF(groups); group++)
 		if (ae_bots_squad_stats_line(line, (int)sizeof line, groups[group], ae_squad.stats) > 0)
 			ae_squad_report_line(3 + group, line, now);
-	/* (each member that has walked with the player: its seconds stuck and at a lip, its 90th percentile gap to him) */
+	/* (each member that has walked with the player: its seconds stuck and at a lip, its 90th percentile gap to him, its least gap
+	while he stood (99 not yet)) */
 	for (member = 0; member < AE_COMPANION_MOST; member++)
 	{
 		long walked = 0, bucket;
@@ -3235,9 +3953,10 @@ void bots_squad_report_lines(float closest_pair)
 			walked += ae_squad.members[member].gaps[bucket];
 		if (!walked)
 			continue;
-		snprintf(line, sizeof line, "squad member %ld: stuck %.1f lip %.1f gap90 %.2f", member + 1,
+		snprintf(line, sizeof line, "squad member %ld: stuck %.1f lip %.1f gap90 %.2f near %.2f", member + 1,
 			(double)ae_squad.members[member].stuck_ticks / TICKS_PER_SECOND, (double)ae_squad.members[member].lip_ticks / TICKS_PER_SECOND,
-			(double)ae_bots_squad_gap_p90(ae_squad.members[member].gaps) / 100.0);
+			(double)ae_bots_squad_gap_p90(ae_squad.members[member].gaps) / 100.0,
+			ae_squad.members[member].near_still > 0.0f ? (double)ae_squad.members[member].near_still : 99.0);
 		ae_squad_report_line(7 + member, line, now);
 	}
 }

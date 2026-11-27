@@ -34,7 +34,7 @@ MAX_SETUPS, SETUP_LENGTH, EXPECT_LENGTH = 10, 119, 95
 GAME_COMMANDS = {"give", "spawn", "powerup", "respawn", "kill", "end", "score", "goto", "time", "reset", "option", "dummy", "tune"}
 EXPECT_RULES = ("weapon", "ammo", "spawn", "death", "kill", "score", "object", "gone", "respawn", "hud", "cmd",
                 "game_over", "no", "log", "option", "round_start", "round_end", "down", "out", "revived", "zone",
-                "round_wait", "match_over", "stat", "member", "crossed")
+                "round_wait", "match_over", "stat", "member", "crossed", "ahead")
 EXPECT_RULES += ("hurt",)
 # a `press` line's buttons (ae_test_run.c press_service) and its length (AE_TEST_RUN_PRESS_TEXT less one)
 PRESS_BUTTONS = ("a", "b", "x", "y", "up", "down", "left", "right", "start", "select", "lb", "rb", "delete")
@@ -480,8 +480,11 @@ def lint(path, keys=None, players=None):
             elif name.lower() not in REST_COMMANDS and len(words) - (2 if words[0] == "dev" else 1) > COMMAND_WORDS:
                 bad(at_line, f"setup {name} has {len(words) - (2 if words[0] == 'dev' else 1)} words after its name: the "
                              f"game reads {COMMAND_WORDS}, drops the rest and refuses the line")
-            elif name.lower() in GAME_COMMANDS:
+            elif name.lower() in GAME_COMMANDS and not target.get("starts_game"):
                 target["game_setups"].append((at_line, name.lower()))
+            # (a menus test whose setup starts a game itself: its later lines have that game. `forge start`, `campaign`)
+            if words[:2] == ["forge", "start"] or name.lower() == "campaign":
+                target["starts_game"] = True
             target["setups"] += 1
             if target["setups"] == MAX_SETUPS + 1:
                 bad(at_line, f"more than {MAX_SETUPS} setups with the group's")

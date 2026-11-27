@@ -1,0 +1,101 @@
+# FORGE, step 4 (volumes and map settings): a volume is a box the world's physics and damage ask about: a GRAVITY volume pulls what is in it
+# (players, vehicles, items, grenades, ragdolls) at its STRENGTH times the world's gravity, a KILL volume kills what is in it, a DAMAGE one hurts it,
+# a ONE WAY slab is a floor from above. MAP SETTINGS sets what the map's players are (a team's biped, its atmosphere). `forge volume <kind> [value]`
+# makes a volume where the Monitor's feet would stand (gravity: a 12 x 12 x 40 column from the ground up, value the strength in hundredths, 25 =
+# a quarter); the volume and the settings are made once the Monitor flies, and `forge mode play` after them waits for them. `forge settings biped red
+# (the Spartan spawns at one of the map's spawns, so each volume test then puts it where the volume is: `goto`).
+# other` sets RED's biped to the level's other biped; `forge testspawn red` is MAP SETTINGS' TEST SPAWN, begun when the Monitor is left.
+list forge-s4
+revision 6
+title FORGE: VOLUMES AND MAP SETTINGS
+
+test gravity
+retest 6
+title GRAVITY volume (25): a jump goes high and comes down slowly
+check Jump in the column: you rise far above a normal jump
+check You come down slowly
+check Walk out of the column: gravity is the world's again
+expect 1 log forge dev: volume gravity as
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge volume gravity 25
+setup forge mode play
+setup forge ready
+setup goto 98.49 -157.64 1.7 facing 0
+
+test kill
+retest 6
+title KILL volume: you die in it
+check The Spartan dies at once: it stands in the box
+expect 1 log forge dev: volume kill as
+expect 1 log forge volumes: a kill volume killed a unit
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge volume kill
+setup forge mode play
+setup forge ready
+setup goto 98.49 -157.64 1.7 facing 0
+
+test damage
+retest 6
+title DAMAGE volume (25 a second): the box hurts
+check In the box your shield, then your health, drain
+check Step out of the box: they stop draining
+expect 1 log forge dev: volume damage as
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge volume damage 25
+setup forge mode play
+setup forge ready
+setup goto 98.49 -157.64 1.7 facing 0
+
+test biped
+title MAP SETTINGS: RED's biped, and TEST SPAWN
+check You spawn as another biped than the Spartan
+check A copy of it stands before you and moves as you move
+expect 1 log forge dev: red biped is
+expect 1 log forge dev: test spawn begun
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge settings biped red other
+setup forge testspawn red
+setup forge mode play
+setup forge ready
+
+test one-way
+title ONE WAY volume: a floor from above
+check Monitor mode: the slab's edges show round you
+check F1, jump: you rise through it and stand on its top
+expect 1 log forge dev: volume oneway as
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge volume oneway
+setup forge ready
+
+test fog
+title MAP SETTINGS: atmosphere HEAVY FOG
+check The far map fades into a heavy fog
+check MAP SETTINGS (hold F2), MAP DEFAULT: the map's fog
+expect 1 log forge dev: atmosphere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge settings fog heavy
+setup forge ready

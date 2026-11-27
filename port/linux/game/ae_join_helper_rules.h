@@ -68,6 +68,21 @@ int ae_join_helper_cause_of_reason(int reason);
 be NULL), map the Workshop
 map's name (<name>@ws<item>) for AE_JH_WORKSHOP */
 void ae_join_helper_words(int cause, char const *detail, char const *map, struct ae_join_helper_words *words);
+/* THE GAME IS CHANGING MAPS: a join the host refused as closed (code 5: its game is between maps) is made again by itself
+AE_JH_RETRY_TRIES times, AE_JH_RETRY_WAIT_MS apart, while a waiting dialog says so (CANCEL stops it); a refusal after the
+last, or of another cause, shows the cause's own words. A try counts toward the same run while it comes within
+AE_JH_RETRY_RUN_MS of the one before; later, a refusal starts a new run */
+#define AE_JH_RETRY_TRIES 3
+#define AE_JH_RETRY_WAIT_MS 4000UL
+#define AE_JH_RETRY_RUN_MS 30000UL
+/* the tries a run has made before this refusal: tries_made after the last one, 0 when since_last_ms is past the run's */
+int ae_join_helper_retry_tries_before(int tries_made, unsigned long since_last_ms);
+/* whether a refusal of this cause is tried again by itself: a join to make again (can_join_again), the cause CLOSED and
+fewer than AE_JH_RETRY_TRIES tries made */
+int ae_join_helper_retry_due(int cause, int tries_made, int can_join_again);
+/* the waiting dialog's words for the try about to be made (1 to AE_JH_RETRY_TRIES): title, reason, note ("Try 2 of 3."),
+the one action CANCEL */
+void ae_join_helper_retry_words(int try_number, struct ae_join_helper_words *words);
 /* the Workshop item's number in a map name ("name@ws2899770689" -> "2899770689"), "" when it has none */
 void ae_join_helper_workshop_item(char const *map, char *item, int size);
 /* the item's page for a browser ("" without an item) */

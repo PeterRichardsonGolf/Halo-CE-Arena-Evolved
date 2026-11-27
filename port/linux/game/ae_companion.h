@@ -42,6 +42,9 @@ int ae_companion_kill(void);
 int ae_companion_dry(void);
 /* MOUNT: member slot (0 up) is sent to man vehicle (NONE: let go); 1 when sent (a vehicle with a free seat) */
 int ae_companion_mount(long slot, long vehicle);
+/* the squad gets out of its seats and boards nothing (how many got out) until ae_companion_board_again or a vehicle it is sent to */
+int ae_companion_dismount(void);
+void ae_companion_board_again(void);
 /* the vehicle member slot was sent to man, NONE with none (given up after AE_SQUAD_MOUNT_GIVE_UP_TICKS) */
 long ae_companion_mount_of(long slot);
 /* whether a vehicle has a seat a member may take (not the driver's) */
@@ -88,6 +91,8 @@ int ae_companion_track_goal_cue(real_point3d const *from, real_point3d *goal, in
 /* the same for one member, never back to a crumb older than the one it last walked from (a track that doubles back); and that
 member's oldest crumb forgotten (a warp, a new body) */
 int ae_companion_track_goal_cue_for(long slot, real_point3d const *from, real_point3d *goal, int *cue);
+/* a member's walk passes over the crumb at crumb, one it cannot reach */
+void ae_companion_track_skip(long slot, real_point3d const *crumb);
 void ae_companion_track_forget(long slot);
 /* the crumb a cue of ae_companion_track_goal_cue is of (the one before the goal), 0 none */
 int ae_companion_track_cue_crumb(real_point3d const *from, real_point3d *crumb);

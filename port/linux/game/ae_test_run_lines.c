@@ -47,9 +47,17 @@ enum ae_test_run_lines_action ae_test_run_lines_step(struct ae_test_run_lines *l
 		{
 			lines->next++;
 			lines->tries = 0;
+			lines->slow = 0;
 		}
-		else if (now - lines->first_at >= (ok < 0 ? AE_TEST_RUN_LINES_NOT_YET_FOR_MS : AE_TEST_RUN_LINES_RETRY_FOR_MS))
-			return fail(lines, AE_TEST_RUN_LINES_REFUSED, lines->next, line);
+		else
+		{
+			lines->slow = ok < -1;
+			if (now - lines->first_at >= (ok < -1 ? AE_TEST_RUN_LINES_BEING_MADE_FOR_MS :
+				ok < 0 ? AE_TEST_RUN_LINES_NOT_YET_FOR_MS : AE_TEST_RUN_LINES_RETRY_FOR_MS))
+			{
+				return fail(lines, AE_TEST_RUN_LINES_REFUSED, lines->next, line);
+			}
+		}
 	}
 	/* (the game settled once: the lines after the first follow as each is accepted) */
 	if (lines->settle)
@@ -69,7 +77,7 @@ enum ae_test_run_lines_action ae_test_run_lines_step(struct ae_test_run_lines *l
 		return AE_TEST_RUN_LINES_DONE;
 	}
 	/* (a refused line again, a little later) */
-	if (lines->tries && now - lines->sent_at < AE_TEST_RUN_LINES_RETRY_MS)
+	if (lines->tries && now - lines->sent_at < (lines->slow ? AE_TEST_RUN_LINES_BEING_MADE_MS : AE_TEST_RUN_LINES_RETRY_MS))
 		return AE_TEST_RUN_LINES_WAIT;
 	if (!lines->tries)
 		lines->first_at = now;

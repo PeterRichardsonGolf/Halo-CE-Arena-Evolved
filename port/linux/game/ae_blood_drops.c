@@ -18,6 +18,7 @@ the game's particles. Nothing here is simulated: only drawn.
 #include "game/game.h"
 
 #include "ae_blood.h"
+#include "ae_tag_loaded.h"
 #include "ae_blood_rules.h"
 
 enum
@@ -64,11 +65,14 @@ static long ae_blood_drops_particle(char const *species)
 
 static short ae_blood_drops_kind(long decal)
 {
+	static unsigned long generation;
 	long now = game_time_get();
 	short index;
 
-	if (ae_blood_drops_time == NONE || now < ae_blood_drops_time)
+	/* (the kinds are kept by decal and particle tag index: a new game, or another map's tags, starts them over) */
+	if (ae_blood_drops_time == NONE || now < ae_blood_drops_time || generation != ae_tag_table_generation())
 	{
+		generation = ae_tag_table_generation();
 		for (index = 0; index < AE_BLOOD_DROPS_KINDS; index++)
 			ae_blood_drop_kinds[index].decal = NONE;
 	}

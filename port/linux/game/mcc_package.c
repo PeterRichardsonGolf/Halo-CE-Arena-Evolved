@@ -89,6 +89,66 @@ int mcc_package_map_path(char const *name, char path[128])
     return 1;
 }
 
+/* whether `canonical` is a level of the Forge package (mcc_maps\forge\<name>) */
+static int mcc_package_forge_level(char const *canonical)
+{
+    static char const forge[]="mcc_maps\\" MCC_PACKAGE_FORGE "\\";
+    size_t i;
+    for (i=0;forge[i];i++) {
+        unsigned char a=(unsigned char)canonical[i];
+        if (a>='A' && a<='Z') a=(unsigned char)(a+'a'-'A');
+        if (a!=(unsigned char)forge[i]) return 0;
+    }
+    return canonical[i]!=0;
+}
+
+/* (the last map asked about: the loader and the lobby's readiness polls ask
+ * often, and the trailer changes only as Forge saves, which forgets it) */
+static struct { char name[64], base[64]; int found, known; } mcc_package_forge_last;
+
+void mcc_package_forge_forget(void)
+{
+    memset(&mcc_package_forge_last,0,sizeof(mcc_package_forge_last));
+}
+
+int mcc_package_forge_base(char const *name, char base[64])
+{
+    char canonical[64], path[128], text[1025], *line;
+    unsigned char header[0x200];
+    uint32_t state_offset, state_size, signature;
+    size_t length, i;
+    FILE *file;
+    base[0]=0;
+    if (!mcc_package_name(name,canonical) || !mcc_package_forge_level(canonical)) return 0;
+    if (mcc_package_forge_last.known && !strcmp(mcc_package_forge_last.name,canonical)) {
+        strcpy(base,mcc_package_forge_last.base);
+        return mcc_package_forge_last.found;
+    }
+    mcc_package_forge_forget();
+    strcpy(mcc_package_forge_last.name,canonical);
+    mcc_package_forge_last.known=1;
+    if (!mcc_package_map_path(canonical,path) || !(file=fopen(path,"rb"))) return 0;
+    length=fread(header,1,sizeof(header),file);
+    /* (Forge's trailer: its state's offset and size at 0x1E4, 'FLG1' at 0x1FC) */
+    state_offset=(uint32_t)header[0x1E4]|(uint32_t)header[0x1E5]<<8|(uint32_t)header[0x1E6]<<16|(uint32_t)header[0x1E7]<<24;
+    state_size=(uint32_t)header[0x1E8]|(uint32_t)header[0x1E9]<<8|(uint32_t)header[0x1EA]<<16|(uint32_t)header[0x1EB]<<24;
+    signature=(uint32_t)header[0x1FC]|(uint32_t)header[0x1FD]<<8|(uint32_t)header[0x1FE]<<16|(uint32_t)header[0x1FF]<<24;
+    if (length!=sizeof(header) || signature!=0x464C4731u || state_offset<0x800u || !state_size ||
+        fseek(file,(long)state_offset,SEEK_SET)) {fclose(file);return 0;}
+    length=fread(text,1,state_size<sizeof(text)-1 ? state_size : sizeof(text)-1,file);
+    fclose(file);
+    text[length]=0;
+    if (!(line=strstr(text,"Base Map: "))) return 0;
+    line+=10;
+    for (i=0;line[i] && line[i]!='\r' && line[i]!='\n';i++) {}
+    line[i]=0;
+    /* (a base map in the Forge package would read its own trailer for ever) */
+    if (!mcc_package_name(line,base) || mcc_package_forge_level(base)) {base[0]=0;return 0;}
+    strcpy(mcc_package_forge_last.base,base);
+    mcc_package_forge_last.found=1;
+    return 1;
+}
+
 int mcc_package_resource_path(char const *name, unsigned type, char path[128])
 {
     char canonical[64], *separator;

@@ -1,0 +1,38 @@
+# ITEM SETS, rc9 phase 2: the first screen's HOW SETS PLAY, campaign swaps (their list, a swap's page, a slot's picks), a set's firing range row, and the
+# campaign lobby's ITEM SETS row and picker. Each test opens on its scene from made-up data (DEV MODE's `menu maps sets <scene>`, `menu campaign focus
+# items`): nothing is read from this PC and nothing is written. A swap plays in a campaign level played alone, in the randomizer's place.
+list item-sets-rc9-pick
+revision 1
+title ITEM SETS: FOUR OF THE SWAPS AND PICKER TESTS
+
+test home
+title HOW SETS PLAY on the first screen
+check CAMPAIGN SWAPS shows 3 and a chevron; the card lists them
+check MULTIPLAYER SWAPS (down one) says COMES WITH FORGE
+check A on CAMPAIGN SWAPS opens the list of swaps
+menus
+setup menu maps sets home
+
+test swap-enemies
+title A swap's enemies and body
+check Enemy rows show; ELITE says MAJOR: 3 PICKED
+check BIPED is focused: CHOICES and the set's cyborg_mp
+check HANDS and MOVEMENT say COMES NEXT
+menus
+setup menu maps sets swap-enemies
+
+test picker
+title The lobby's ITEM SETS picker
+check NONE, CAMPAIGN SWAPS and WITH THE RANDOMIZER heads
+check Spirit Run says IN USE; no arrows on any row
+check A on another row picks it and returns to the lobby
+menus
+setup menu maps sets picker
+
+test lobby-row
+title The campaign lobby's ITEM SETS row
+check ITEM SETS sits between SKULLS and RANDOMIZER: SPIRIT RUN
+check RANDOMIZER reads SWAP PLAYS INSTEAD; A says why
+check The RULES fact on the right starts with SPIRIT RUN
+menus
+setup menu campaign focus items

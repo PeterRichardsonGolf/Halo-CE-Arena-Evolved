@@ -1,0 +1,79 @@
+# ITEM SETS, rc9 body: a set's YOUR BODY plays its HANDS and its MOVEMENT as well as its biped, in a campaign level played alone. Each
+# test makes the DEV profile ae_dev a set (a biped and hands taken out of a Custom Edition map, DEV MODE's `inject take`, then `inject
+# body <hands> <movement>` keeps the choices in the set's file), turns the randomizer on with that set, and starts the level from the
+# menus (`campaign 4`): the level opens with the set already playing. HANDS is the arms you see in first person for every weapon;
+# MOVEMENT is SPARTAN (the campaign's player's numbers) or the biped's own. A campaign swap that plays wins over the set (a unit test
+# holds that: the swap's file is not staged here); AI companions are off in each test (a game with companions is hosted, and a set's body plays in a game played alone); a body that does not fit a player is not used (the log says why).
+list item-sets-rc9-body
+revision 4
+title ITEM SETS: THE BODY'S HANDS AND MOVEMENT
+
+group set-plays
+gametype coop
+set game.randomizer true
+set game.tag_injection true
+set game.randomizer_tag_profile ae_dev
+
+test hands-own
+retest 4
+title Its own hands, moving as the campaign's player
+check The log says the set plays the biped with its own hands
+check Your arms are Warlock's (Halo 2 look), not Chief's
+check Switch weapons (X): the arms stay Warlock's
+expect 1 log set body: the set plays as
+expect 1 log hands drawn: player 1: h2 warlock\globals\hands
+menus
+setup config game.companions 0
+setup inject clear
+setup inject open h2_warlock
+setup inject take 4 0
+setup inject take 8 0
+setup inject body own spartan
+setup campaign 4
+
+test hands-chosen
+retest 4
+title Chosen hands, the biped's own movement
+check The log names the hands and says movement its own
+check Your arms are Warlock's (Halo 2 look), not Chief's
+check Run and jump: the biped's own numbers
+expect 1 log movement its own
+expect 1 log hands drawn: player 1: h2 warlock\globals\hands
+menus
+setup config game.companions 0
+setup inject clear
+setup inject open h2_warlock
+setup inject take 4 0
+setup inject take 8 0
+setup inject body taken own
+setup campaign 4
+
+test hands-campaign
+retest 4
+title The campaign's hands on the biped
+check The log says hands the campaign's own
+check Your arms are the campaign's usual arms
+check Switch weapons (X): the arms stay the campaign's
+expect 1 log hands the campaign's own
+expect 1 log hands drawn: player 1: the level's own
+expect 1 no log hands drawn: player 1: h2 warlock
+menus
+setup config game.companions 0
+setup inject clear
+setup inject open h2_warlock
+setup inject take 4 0
+setup inject body campaign spartan
+setup campaign 4
+
+group set-off
+gametype coop
+set game.randomizer false
+
+test no-set
+title No set playing: the campaign as before
+check The log has no set body line
+check Your arms are the campaign's usual arms
+check Run and jump as the campaign's player does
+expect 1 no log set body:
+menus
+setup campaign 4

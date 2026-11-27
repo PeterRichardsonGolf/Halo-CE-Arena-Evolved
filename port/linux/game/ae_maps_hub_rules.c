@@ -32,7 +32,18 @@ const char *ae_hub_tab_name(int tab)
 
 int ae_hub_tab_visible(int tab, int dev_mode)
 {
-	return tab >= 0 && tab < AE_HUB_TABS && (tab != AE_HUB_TAB_ITEM_SETS || dev_mode);
+	/* (every page is shown to everyone: ITEM SETS too, marked as a testing feature on its page) */
+	(void)dev_mode;
+	return tab >= 0 && tab < AE_HUB_TABS;
+}
+
+int ae_hub_tabs_shown(int dev_mode)
+{
+	int tab, shown = 0;
+
+	for (tab = 0; tab < AE_HUB_TABS; tab++)
+		shown += ae_hub_tab_visible(tab, dev_mode);
+	return shown;
 }
 
 int ae_hub_tab_resolve(int tab, int dev_mode)
@@ -95,7 +106,9 @@ static struct stage const mods_stages[] = { { "list", AE_HUB_STATE_LIST }, { "mo
 static struct stage const item_sets_stages[] = { { "list", 0 }, { "empty", 1 }, { "options", 2 }, { "delete", 3 }, { "pick", 4 },
 	{ "cant-open", 5 }, { "kinds", 6 }, { "items", 7 }, { "adding", 8 }, { "added", 9 }, { "refused", 10 }, { "contents", 11 },
 	{ "remove", 12 }, { "failed", 13 }, { "biped", 14 }, { "switched", 15 }, { "new", 16 }, { "real-kinds", 17 }, { "real-items", 18 },
-	{ "real-add", 19 }, { NULL, 0 } };
+	{ "real-add", 19 }, { "settings", 20 }, { "body", 21 }, { "body-nofit", 22 }, { "body-card", 23 },
+	{ "swaps", 24 }, { "swaps-empty", 25 }, { "swap-weapons", 26 }, { "swap-enemies", 27 }, { "swap-ranks", 28 }, { "swap-slot", 29 },
+	{ "swap-delete", 30 }, { "swap-new", 31 }, { "range", 32 }, { "range-wait", 33 }, { "picker", 34 }, { "picker-waits", 35 }, { "home", 36 }, { NULL, 0 } };
 
 static struct stage const *stages_of(int tab)
 {
@@ -136,7 +149,7 @@ const char *ae_hub_stage_names(int tab)
 	case AE_HUB_TAB_WORKSHOP: return "list|signed-out|collections-show|collections|collection|collection-map|collection-getting|"
 		"collection-installed|collection-get-confirm|collection-remove-confirm|collection-no-room";
 	case AE_HUB_TAB_MODS: return "list|moving|restart";
-	case AE_HUB_TAB_ITEM_SETS: return "list|empty|options|delete|pick|cant-open|kinds|items|adding|added|refused|contents|remove|failed|biped|switched|new|real-kinds|real-items|real-add";
+	case AE_HUB_TAB_ITEM_SETS: return "list|empty|options|delete|pick|cant-open|kinds|items|adding|added|refused|contents|remove|failed|biped|switched|new|real-kinds|real-items|real-add|settings|body|body-nofit|body-card|swaps|swaps-empty|swap-weapons|swap-enemies|swap-ranks|swap-slot|swap-delete|swap-new|range|range-wait|picker|picker-waits|home";
 	}
 	return "";
 }

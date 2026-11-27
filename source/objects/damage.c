@@ -158,6 +158,7 @@ static short ae_blood; /* AE hook */
 #include "units/vehicles.h"
 #include "ae_bomb_assault.h" /* AE hook */
 #include "biped_ragdoll.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 #include "mcc_damage.h" /* port: port/linux/game/mcc_damage.c */
 #include "server_team_switch.h" /* port: port/linux/game/server_team_switch.c */
 
@@ -1739,6 +1740,7 @@ void object_cause_damage(
 	ae_bots_damage_note(damage->owner_player_index, object_index, damage->definition_index, damage->flags); /* AE hook */
 	if (ae_dev_cmd_god_protects(object_index)) return; /* AE hook */
 	if (firing_range_damage_ignored(damage->owner_object_index, object_index)) return; /* AE hook */
+	if (ae_forge_damage_ignored(damage->owner_object_index, object_index)) return; /* AE hook */
 
 	damage_effect = damage_effect_definition_get(damage->definition_index);
 	damage_definition = &damage_effect->damage;

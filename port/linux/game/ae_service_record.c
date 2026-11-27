@@ -258,14 +258,15 @@ int ae_sr_record_game(struct ae_service_record *record, struct ae_sr_game const 
 			ae_rs_map_add(player->map, &player->map_count, AE_SR_MAPS, game->map, won, in->kills, in->deaths);
 			player->last.has = 1;
 			player->last.mode = mode;
-			snprintf(player->last.map, sizeof(player->last.map), "%s", game->map);
+			clean_name(game->map, player->last.map, sizeof(player->last.map));
 			player->last.result = won ? 0 : in->x.tied ? 2 : 1;
 			player->last.kills = in->kills > 0 ? in->kills : 0;
 			player->last.deaths = in->deaths > 0 ? in->deaths : 0;
 			player->last.assists = in->assists > 0 ? in->assists : 0;
 			player->last.spree = in->x.x.best_spree;
 			player->last.medals = in->medals_earned;
-			snprintf(player->last.weapon, sizeof(player->last.weapon), "%s", in->weapon_count > 0 ? in->weapons[0].name : "");
+			/* (a map's own names: kept as a name is, so its line reads back) */
+			clean_name(in->weapon_count > 0 ? in->weapons[0].name : "", player->last.weapon, sizeof(player->last.weapon));
 		}
 	}
 	/* the owners' rivals in this game */

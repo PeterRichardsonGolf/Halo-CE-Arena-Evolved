@@ -51,6 +51,7 @@ Implements:
 
 #include "halo_firefight.h"
 #include "ae_firefight_glue.h"
+#include "ae_ce_host.h" /* AE hook */
 #include "halo_port_limits.h"
 #include "bots.h"
 #include "halo_skulls.h"
@@ -1699,13 +1700,15 @@ static void firefight_player_added(
 static void firefight_game_ending(
 	void)
 {
-	/* (a client's copy of the host's rules is for its game only) */
-	ae_firefight_net_clear();
+	/* (a client's copy of the host's rules is for its game only; a Content Evolved host's are kept for the join) */
+	if (!ae_ce_host_joined()) /* AE hook */
+		ae_firefight_net_clear();
 }
 
 static void firefight_game_starting(
 	void)
 {
+	ae_ce_host_game_starting(); /* AE hook */
 }
 
 static void firefight_statistics_append(

@@ -18,6 +18,8 @@ int ae_text_tabular_glyph_in(unsigned char const *gsub, unsigned long length, in
 
 /* a character's glyph in the font: its tabular one where the font has it; 0 if the font has no glyph for it */
 int ae_text_tabular_glyph(struct stbtt_fontinfo const *info, unsigned long code);
+/* the fonts' tables kept are forgotten: a font's data is about to be freed (another may come at its address) */
+void ae_text_fonts_forget(void);
 
 /* the advance of a character's glyph (ae_text_tabular_glyph's), in font units; -1 if the font has no glyph for it */
 int ae_text_font_advance(struct stbtt_fontinfo const *info, unsigned long code);

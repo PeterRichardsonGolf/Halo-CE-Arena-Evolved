@@ -11,7 +11,8 @@ from harness import build, function, mutated, read
 
 CONSOLE_HOOK = '\tif (ae_setting_is_secret(setting, setting_length)) return 1; /* AE hook */\n'
 EXPECTED_SECRET = ['server.password', 'server.web_password', 'server.web_owner_password',
-                   'server.web_moderator_password', 'server.web_viewer_password', 'server.alert_webhook']
+                   'server.web_moderator_password', 'server.web_viewer_password', 'server.alert_webhook',
+                   'network.events_token', 'community.key']
 
 
 def setting_names():
@@ -20,7 +21,7 @@ def setting_names():
     return sorted(set(names))
 
 
-def generated(old_console=False):
+def generated(old_console=False, fault=None):
     console = read('port/linux/src/server_console.c')
     commands = read('port/linux/game/server_commands.c')
     code = read('port/linux/src/ae_secret_settings.h') + '\n'
@@ -28,6 +29,8 @@ def generated(old_console=False):
         code += function(console, name) + '\n'
     if old_console:
         code = mutated(code, CONSOLE_HOOK, '')
+    if fault:
+        code = mutated(code, *fault)
     code += function(commands, 'server_commands_setting_secret') + '\n'
     return (('under_test.inc', code),)
 
@@ -53,10 +56,23 @@ def test_secret(name):
 
 def test_ordinary_settings_shown():
     seen = views(build('secret_settings', generated()))
-    for name in ('server.name', 'server.max_players', 'server.motd', 'server.alert_disk_mb'):
+    for name in ('server.name', 'server.max_players', 'server.motd', 'server.alert_disk_mb', 'input.keyboard_prompts',
+                 'controls.test_pass'):
         assert seen[name] == (False, False), name
 
 
 def test_negative_control_webhook_logged_without_the_hook():
     seen = views(build('secret_settings', generated(old_console=True)))
     assert seen['server.alert_webhook'] == (True, False)
+
+
+def test_negative_control_events_token_shown_without_the_token_rule():
+    rule = (' || ae_secret_name_holds(name, length, "token")', '')
+    seen = views(build('secret_settings', generated(fault=rule)))
+    assert seen['network.events_token'] == (False, False)
+
+
+def test_negative_control_community_key_shown_without_the_key_rule():
+    rule = (' ||\n\t\tae_secret_name_ends(name, length, ".key");', ';')
+    seen = views(build('secret_settings', generated(fault=rule)))
+    assert seen['community.key'] == (False, False)

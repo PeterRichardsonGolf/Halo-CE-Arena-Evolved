@@ -42,6 +42,11 @@ enum ae_mp_row
 /* 1 for the COMING SOON rows (FORGE, FRIENDS), 0 otherwise (out of range too) */
 int ae_main_row_coming_soon(int row);
 
+/* the first row of the COMING SOON group: FORGE in a build with no Forge, FRIENDS in a build where FORGE opens (forge_open 1) */
+int ae_main_soon_first(int forge_open);
+/* 1 for the COMING SOON rows when FORGE is a door (forge_open 1) or not (0); 0 out of range */
+int ae_main_row_coming_soon_when(int row, int forge_open);
+
 /* the row the main menu opens on: last_used_row when it is a main row (a COMING SOON row too), else MULTIPLAYER
 (the first launch stores -1) */
 int ae_main_first_focus(int last_used_row);

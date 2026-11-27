@@ -1873,6 +1873,28 @@ MCC protocol version 52 reserves OpenCE text chat (87-89) and aim assist (90),
 with MCC data messages at 91-94. Ordinary Xbox and Custom Edition sessions
 use upstream version 32.
 
+### Arena Evolved: Content Evolved's modded hosts
+
+(`port/linux/game/ae_ce_host.c`, its rules `ae_ce_host_rules.c`, unit-tested.) A Content Evolved host that plays a modded
+game (Firefight, or a campaign with the randomizer or skulls) advertises `0xFF00` plus its mod version in the version's
+place and its network version in the reserved bytes' last two (offset 24). This build joins such a host when the mod
+version is 112 and the network version is its own (44), and says why when not. The network version, the messages'
+numbers of every other game and the size of this build's game settings record are unchanged, and nothing this build
+advertises or sends to any other host changes.
+
+- The host's version is kept as its network version, so every list, the lobby and the join test treat it as a host of
+  44. A listing of format 2 (the lobby's modded games) is read when its stamp holds mod version 112.
+- The game settings record of a Firefight game is Content Evolved's longer one: 0x2C bytes more, the Firefight options,
+  after the first 0x2C option bytes. A client takes a record of exactly that size, from a host that signed itself or
+  whose kind it does not know, makes it this build's record (the engine index 6, Firefight's there, is this build's 7;
+  the last five option bytes, which Content Evolved uses for Floodfection, are zeroed) and keeps the Firefight options
+  for the game. Any other size is refused as before.
+- The client says its mod version in `_message_client_randomizer_capability` (one byte, message 35), before the join and
+  every second in the lobby, as the host asks of every machine; an Arena Evolved host never receives it from an Arena
+  Evolved client, and ignores it from another.
+- Not played: a game that shares Tag Injector tags (the advertisement's flag 0x40, or a Firefight tag profile) which
+  this build cannot download; the client says so and leaves.
+
 ### Comparing two builds
 
 `tools/net_compare.py` checks that two builds play a network game in step:

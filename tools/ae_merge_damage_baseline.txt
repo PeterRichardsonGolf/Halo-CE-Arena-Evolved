@@ -1,4 +1,11 @@
 # Warnings tools/ae_merge_damage.py accepts today: file | warning | source line. Rewrite with --update.
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | real_point3d mon_pt = { g_forge.cam_x, g_forge.cam_y, g_forge.cam_z };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | rectangle2d bbar = { by0, bx0, by1, bx1 };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | rectangle2d ib = { in_y0, in_x0, in_y1, in_x1 };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | rectangle2d lsq = { (short)(sy - 6), (short)(sx - 6), (short)(sy + 6), (short)(sx + 6) };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | rectangle2d r1 = { row1_y0, bx0, row1_y1, bx1 };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | rectangle2d r2 = { row2_y0, bx0, row2_y1, bx1 };
+port/forge/src/forge_3d_mode.c | -Wmissing-braces | static real_point3d s_last_valid_spartan_pos = { 0.0f, 0.0f, 0.0f };
 port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | real_vector3d forward = { 1.f, 0.f, 0.f };
 port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | real_vector3d up = { 0.f, -sine(radians), cosine(radians) };
 port/linux/game/ae_backpack_weapons.c | -Wmissing-braces | { "back", "spine1", { -0.085f, -0.055f, 0.045f }, { 0.f, 0.707f, -0.707f }, { 0.f, -0.707f, -0.707f } },

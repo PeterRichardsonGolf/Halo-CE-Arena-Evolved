@@ -22,6 +22,8 @@ leash are the fireteam's (ae_fireteam_rules.h).
 /* an enemy the player called out is fought first for this long; its score is lowered by the bonus (a near one is still fought
 first when the called one is far) */
 #define AE_SQUAD_FOCUS_SECONDS 8
+/* (the campaign squad: an enemy called out stays the squad's first target until it is dead or the next call names another) */
+#define AE_SQUAD_FOCUS_STANDS_SECONDS 600
 #define AE_SQUAD_FOCUS_BONUS 25.0f
 /* a deck (ae_companion.h) is held this long after it was last seen (3 s), so its far end or a wider piece does not flip it */
 #define AE_SQUAD_DECK_HOLD_TICKS 90
@@ -114,7 +116,7 @@ int ae_bots_squad_room_changed(long was, long now);
 /* DOOR STACK: at a door (a machine of the door kind, which opens by itself for a body within its activation radius) the squad
 stacks on the player's side at places found about the door (PLACES below); on GO they go in nearest first and clear the room by its
 clear list. A DEFEND or SMART within AE_SQUAD_DOOR_NEAR
-of a door stacks there; with every door on, the player still AE_SQUAD_DOOR_AUTO_TICKS within AE_SQUAD_DOOR_AUTO_NEAR of a closed
+of a door stacks there; with every door on, the player still AE_SQUAD_DOOR_AUTO_TICKS within AE_SQUAD_DOOR_AUTO_NEAR of a shut or open
 door the level has not locked does. A grenade goes in first only when an enemy in the room was seen or heard within
 AE_SQUAD_DOOR_HEARD_TICKS, the thrower has one and the player is AE_SQUAD_GRENADE_SAFE or more from the blast, the entry
 AE_SQUAD_GRENADE_WAIT_TICKS after the throw; a door still shut AE_SQUAD_DOOR_LOCKED_TICKS after the first man came into its
@@ -222,8 +224,8 @@ int ae_bots_squad_runup_jump(float speed, long run_ticks);
 crumb behind it: walking back would undo its way) */
 #define AE_SQUAD_GOAL_BACK 0.5f
 int ae_bots_squad_goal_keeps(float new_to_player, float old_to_player);
-/* whether the squad stacks at a door on its own */
-int ae_bots_squad_door_auto(int every_door, long player_still_ticks, float player_to_door, int closed, int locked);
+/* whether the squad stacks at a door on its own, shut or open */
+int ae_bots_squad_door_auto(int every_door, long player_still_ticks, float player_to_door, int locked);
 /* whether a door is locked: still shut (its position near 0) this long after the first man came into its reach */
 int ae_bots_squad_door_locked(long ticks_first_in_radius, float door_position);
 
@@ -256,6 +258,9 @@ enum { AE_SQUAD_SMART_NONE, AE_SQUAD_SMART_FOCUS, AE_SQUAD_SMART_CANCEL, AE_SQUA
 #define AE_SQUAD_SMART_TAKE_REACH 25.0f
 /* a member sent to a vehicle gets in within this distance of it (world units), and gives up after this long (ticks, 20 s) */
 #define AE_SQUAD_MOUNT_ENTER 2.5f
+/* (a vehicle whose up leans past this is upturned: no seat is taken, a member within AE_SQUAD_MOUNT_FLIP of it rights it) */
+#define AE_SQUAD_MOUNT_UPRIGHT 0.4f
+#define AE_SQUAD_MOUNT_FLIP 3.0f
 /* the seat is taken within AE_SQUAD_MOUNT_BOARD of the vehicle: twice the walk's stop, room for a vehicle's width */
 #define AE_SQUAD_MOUNT_BOARD 5.0f
 #define AE_SQUAD_MOUNT_GIVE_UP_TICKS 600
@@ -296,6 +301,11 @@ held while its aim is within the cone on its target, atan(AE_SQUAD_GUNNER_CONE_S
 from the player, as a human gunner hits with the chain gun; on foot as before */
 #define AE_SQUAD_GUNNER_REACH_SCALE 1.5f
 float ae_bots_squad_gunner_reach(float sight, int seated_gunner);
+/* whether a member takes a foe at a bearing (radians, off its aim) for a target: on foot one inside half its field of view, or
+within AE_SQUAD_NEAR_VIEW units, or that hurt it, or the one it fights, or the one the player called out. A seated gunner takes one at
+any bearing: its vehicle turns under it, and its turret turns all the way round */
+#define AE_SQUAD_NEAR_VIEW 8.0f
+int ae_bots_squad_foe_in_view(float bearing, float half_view, float distance, int hurt, int current, int focused, int seated_gunner);
 /* the cone (radians) at a distance (world units) */
 float ae_bots_squad_gunner_cone(float distance);
 /* whether the gunner holds the trigger: its aim off the target (radians), the distance, ticks since seen and since first seen */
@@ -474,16 +484,18 @@ int ae_bots_squad_override_ok(float wall_ahead);
 int ae_bots_squad_oscillation(float heading_before, float heading_now, long ticks_between, int fighting);
 
 /* MAKE WAY: a member in the player's way (AE_SQUAD_STRIP_AHEAD ahead of him or less, within AE_SQUAD_STRIP_HALF across his way,
-him moving faster than AE_SQUAD_MOVING) steps to the side with AE_SQUAD_WAY_ROOM of room (the roomier), else walks on ahead of him.
+AE_SQUAD_STRIP_HALF_HELD when he is held up, moving under half what his stick asks; him moving or pushing faster than
+AE_SQUAD_MOVING) steps to the side with AE_SQUAD_WAY_ROOM of room (the roomier), else walks on ahead of him.
 FILE REVERSAL: when he turns back more than AE_SQUAD_REVERSAL_DEGREES in a corridor narrower than AE_SQUAD_REVERSAL_WIDTH, the
 members on his new way ahead lead: none tries to pass him to get behind */
 #define AE_SQUAD_STRIP_AHEAD 1.5f
 #define AE_SQUAD_STRIP_HALF 0.3f
+#define AE_SQUAD_STRIP_HALF_HELD 0.55f
 #define AE_SQUAD_WAY_ROOM 0.6f
 #define AE_SQUAD_REVERSAL_DEGREES 120.0f
 #define AE_SQUAD_REVERSAL_WIDTH 1.6f
 enum { AE_SQUAD_WAY_LEFT, AE_SQUAD_WAY_RIGHT, AE_SQUAD_WAY_AHEAD };
-int ae_bots_squad_in_strip(float along, float across, float player_speed);
+int ae_bots_squad_in_strip(float along, float across, float player_speed, int held);
 int ae_bots_squad_make_way(float room_left, float room_right);
 /* the side kept (AE_SQUAD_WAY_LEFT, RIGHT or AHEAD) unless the kept side's room fell under AE_SQUAD_WAY_ROOM: then the side
 ae_bots_squad_make_way picks now */
@@ -532,13 +544,17 @@ int ae_bots_squad_fire_line_ok(float nearest_player);
 float ae_bots_squad_throttle(float player_speed, float max_speed, float to_slot, float to_player);
 
 /* ONE AT A TIME: a crumb of the player's track where he jumped is jumped within AE_SQUAD_CUE_JUMP_NEAR of it, not on the way to
-it; one member crosses there at a time: another waits while the one crossing is within AE_SQUAD_CROSSING_CLEAR of the crumb,
-AE_SQUAD_CROSSING_TICKS at most */
+it; a member within AE_SQUAD_CROSSING_CLEAR of that crumb takes the crossing, from that crumb to the next one. One member
+crosses there at a time: another waits until the one crossing has come within AE_SQUAD_CROSSING_LANDED of the crossing's far
+end (measured along it), while it stays within AE_SQUAD_CROSSING_NEAR of the takeoff, AE_SQUAD_CROSSING_TICKS at most */
 #define AE_SQUAD_CUE_JUMP_NEAR 0.6f
 #define AE_SQUAD_CROSSING_CLEAR 1.0f
+#define AE_SQUAD_CROSSING_LANDED 0.3f
+#define AE_SQUAD_CROSSING_NEAR 3.0f
 #define AE_SQUAD_CROSSING_TICKS 90
 int ae_bots_squad_cue_jump_now(float to_crumb);
-int ae_bots_squad_crossing_waits(int another_crosses, float crosser_to_crumb, long crossing_ticks);
+int ae_bots_squad_crossing_waits(int another_crosses, float crosser_along, float crossing_length, float crosser_to_takeoff,
+	long crossing_ticks);
 
 /* THE SQUAD'S COST: each tick's milliseconds counted in AE_SQUAD_COST_BUCKETS tenths of a millisecond (the last for more); the
 99th percentile of the ticks counted, in hundredths of a millisecond, 0 for none */
@@ -549,6 +565,32 @@ long ae_bots_squad_cost_p99(long const *histogram);
 #define AE_SQUAD_PLAYER_TURN_TICKS 90
 int ae_bots_squad_oscillation_after(float heading_before, float heading_now, long ticks_between, int fighting,
 	long ticks_since_player_turned);
+
+/* AN ORDER'S POINT (the campaign squad: ATTACK, DEFEND, WATCH and MOVE stand until the player's next order; the member is off the
+player's leash). One member is the POINT MAN (the one nearest the point when the order came): its place is the point itself. The
+others have places in a wedge behind it, AE_SQUAD_ORDER_SPACING apart (ae_bots_squad_order_offset: rank 0 the point man, 1 back and
+left, 2 back and right, 3 behind; dx, dy for a way of advance in radians), and on the way they walk to those places about the point
+man as he is, so the squad moves as one; the point man stands for the others while one is more than AE_SQUAD_ORDER_STRING behind
+its place, AE_SQUAD_ORDER_WAIT_TICKS an order at most (ae_bots_squad_order_waits). Out of a fight it walks to its place and stands there
+(AE_SQUAD_ORDER_ARRIVE); in a fight it fights inside the order's radius about its place (AE_SQUAD_ORDER_RADIUS, an ATTACK's
+AE_SQUAD_ORDER_ATTACK_RADIUS: its own moves, cover to cover) and walks back in, shooting, when it is outside it */
+#define AE_SQUAD_ORDER_SPACING 1.4f
+#define AE_SQUAD_ORDER_ARRIVE 0.6f
+/* (a member the walk leaves standing, or with no way on, this near its place is at it) */
+#define AE_SQUAD_ORDER_NEAR 1.5f
+#define AE_SQUAD_ORDER_RADIUS 6.0f
+#define AE_SQUAD_ORDER_ATTACK_RADIUS 10.0f
+enum { AE_SQUAD_ORDER_STAND, AE_SQUAD_ORDER_WALK, AE_SQUAD_ORDER_FIGHT };
+#define AE_SQUAD_ORDER_STRING 7.0f
+#define AE_SQUAD_ORDER_WAIT_TICKS 240
+void ae_bots_squad_order_offset(int rank, float way, float *dx, float *dy);
+int ae_bots_squad_order_waits(float worst_behind, long waited_ticks, int fighting);
+float ae_bots_squad_order_radius(int attack);
+/* walking: the member was walking to its place last tick (it stops inside half the arrive distance, starts past the whole) */
+int ae_bots_squad_order_step(int fighting, float to_place, float radius, int walking);
+/* whether a member is on the player's leash (the pull to the player: the track, the cut-off walk, the catch-up warps): only with
+no point order and no vehicle it was sent to */
+int ae_bots_squad_on_leash(int point_order, int sent_to_vehicle);
 
 /* THE WARP, LAST: a member's standing still is a stall only while its walk to the player failed lately, it is cut off or it walks
 his track; never while it holds a cover place or stands at its slot, which it does on purpose, nor on an order away from the
@@ -568,5 +610,80 @@ stuck is one it wants to walk, slower than AE_SQUAD_STUCK_SPEED (units a second)
 #define AE_SQUAD_STUCK_SPEED 0.3f
 long ae_bots_squad_gap_p90(long const *histogram);
 int ae_bots_squad_stuck_tick(int wants_move, float speed, int fighting);
+/* a member at a lip (run-ups, crouched walks) AE_SQUAD_LIP_PATIENCE_TICKS (12 s) with its way to the player not shrinking:
+its walk to and fro and its standing are no progress, so THE WARP, LAST takes it to the player (a ledge it cannot jump);
+lip_ticks: under 0 none */
+#define AE_SQUAD_LIP_PATIENCE_TICKS 360
+int ae_bots_squad_lip_patience_over(long lip_ticks);
+/* a door for the squad: a machine of the door kind, or a platform the level names a door (its tag's name has "door" in it: a10
+builds its doors as platforms); a lift or a gear is none */
+#define AE_SQUAD_MACHINE_DOOR 0
+#define AE_SQUAD_MACHINE_PLATFORM 1
+int ae_bots_squad_machine_is_door(int kind, char const *tag_name);
+/* a track crumb in a door's reach that the member gained nothing on (AE_SQUAD_CRUMB_GAIN closer) for AE_SQUAD_CRUMB_STALL_TICKS
+(2 s) is one it cannot reach (a door it cannot pass): it takes the next crumb on; never a crumb the player jumped at, nor one on
+open ground or a barrier's top (the crossing's own rules) */
+#define AE_SQUAD_CRUMB_STALL_TICKS 60
+#define AE_SQUAD_CRUMB_GAIN 0.2f
+int ae_bots_squad_crumb_unreachable(int jump_cue, int at_door, long ticks_no_gain);
+/* LINE UP: a member that gained nothing on a track crumb for AE_SQUAD_LINEUP_TICKS (not one the player jumped at) and stands more
+than AE_SQUAD_LINEUP_OFF off the player's line to it (from the crumb before it, AE_SQUAD_LINEUP_LEAST long or more) walks first to
+the point on that line AE_SQUAD_LINEUP_BACK before the crumb (x, y), for AE_SQUAD_LINEUP_MOST_TICKS at most, then on to the
+crumb; once a crumb. 1 when it lines up */
+#define AE_SQUAD_LINEUP_TICKS 30
+#define AE_SQUAD_LINEUP_MOST_TICKS 45
+#define AE_SQUAD_LINEUP_OFF 0.25f
+#define AE_SQUAD_LINEUP_LEAST 0.3f
+#define AE_SQUAD_LINEUP_BACK 0.6f
+int ae_bots_squad_lineup_point(float from_x, float from_y, float crumb_x, float crumb_y, float at_x, float at_y, float *x, float *y);
+
+/* AUTOMATIC FORMATIONS: the squad's formation picked from what the player does and the width of the space about him, in order: a
+fight, an entry through a door, a stack at one, a halt (he stood AE_SQUAD_FORMATION_HALT_TICKS), then by the width: under
+AE_SQUAD_FILE_WIDE a file, under AE_SQUAD_STAGGER_WIDE a tight stagger, else a stagger (indoors) or a wedge (outdoors). A new pick
+is taken once it held AE_SQUAD_FORMATION_HOLD_TICKS; a fight, an entry and a stack at once */
+enum
+{
+	AE_SQUAD_FORMATION_FIGHT,
+	AE_SQUAD_FORMATION_ENTRY,
+	AE_SQUAD_FORMATION_STACK,
+	AE_SQUAD_FORMATION_HALT,
+	AE_SQUAD_FORMATION_FILE,
+	AE_SQUAD_FORMATION_TIGHT,
+	AE_SQUAD_FORMATION_STAGGER,
+	AE_SQUAD_FORMATION_WEDGE,
+	AE_SQUAD_FORMATIONS
+};
+#define AE_SQUAD_FORMATION_HALT_TICKS 60
+#define AE_SQUAD_FORMATION_HOLD_TICKS 30
+#define AE_SQUAD_FILE_WIDE 1.5f
+#define AE_SQUAD_STAGGER_WIDE 3.0f
+int ae_bots_squad_formation_pick(int fighting, int entering, int stacking, long still_ticks, float width, int outdoors);
+/* AUTOMATIC FORMATIONS OFF (game.companions_formations false): the squad makes no formation of its own. Under a FOLLOW the
+picked formation is none (AE_SQUAD_FORMATIONS: the follow ring); DOOR STACK's EVERY DOOR is taken as ON ORDER (a stack only at a
+door the player marks); under an order each member walks to its own place: the others do not keep theirs about the point man,
+and he does not stand for them */
+int ae_bots_squad_formation_wanted(int formations_on, int picked);
+int ae_bots_squad_door_every(int formations_on, int every_setting);
+int ae_bots_squad_moves_as_one(int formations_on);
+int ae_bots_squad_formation_hold(int current, int wanted, long wanted_ticks);
+/* a formation's spot for the member of a rank (0 to 2, entry order): along, behind the player on his heading; across, to his left
+(+) or right (-); kept AE_SQUAD_SIDE_ROOM inside the width's walls. A halt's spots are AE_SQUAD_HALT_NEAR or more from him, a
+file's AE_SQUAD_FILE_APART apart on his line, a tight stagger's and a stagger's two on both sides AE_SQUAD_TIGHT_APART or
+AE_SQUAD_STAGGER_APART behind him and the third twice that on his line, a wedge's on his rear quarters AE_SQUAD_WEDGE_OUT out; a fight, an entry or a stack have
+none (0) */
+#define AE_SQUAD_HALT_NEAR 1.5f
+#define AE_SQUAD_FILE_APART 1.2f
+#define AE_SQUAD_TIGHT_APART 1.0f
+#define AE_SQUAD_STAGGER_APART 1.5f
+#define AE_SQUAD_WEDGE_OUT 2.0f
+#define AE_SQUAD_SIDE_ROOM 0.4f
+int ae_bots_squad_formation_spot(int formation, int rank, float width, float *along, float *across);
+char const *ae_bots_squad_formation_name(int formation);
+/* the slots' ring under a formation: a halt's from AE_SQUAD_HALT_NEAR less 0.2; out to its farthest spot (in a wide space) and 0.6;
+a formation without spots keeps the follow ring */
+void ae_bots_squad_formation_ring(int formation, float *ring_in, float *ring_out);
+/* the follow slot's test (ae_bots_squad_slot_ok) with the ring given */
+int ae_bots_squad_slot_ok_ring(float to_player, float behind_player, float behind_lead, float path_near_player, int in_door_reach,
+	int moving, float ring_in, float ring_out);
 
 #endif

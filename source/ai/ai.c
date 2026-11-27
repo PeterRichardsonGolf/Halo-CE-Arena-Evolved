@@ -239,6 +239,7 @@ symbols in this file:
 #include "tag_files/tag_groups.h"
 
 #include <stddef.h>
+#include "ae_forge_engine.h" /* AE hook */
 #ifdef HALO_64BIT
 #include "main/console.h"
 #endif
@@ -1903,6 +1904,7 @@ boolean ai_consider_major_upgrade(
 void ai_initialize_for_new_map(
 	void)
 {
+	ae_forge_ai_encounters(); /* AE hook */
 	csmemset(ai_globals, 0, sizeof(struct ai_globals));
 
 	ai_globals->ai_active = TRUE;

@@ -85,4 +85,11 @@ void decals_disconnect_from_structure_bsp(
 void decals_reconnect_to_structure_bsp(
 	void);
 
+/* port: Forge's placed decals (decals.c) */
+void decal_capture_begin(long *indices, short maximum);
+short decal_capture_end(void);
+boolean decal_exists(long decal_index);
+void decal_delete_made(long decal_index);
+extern union real_vector3d const *decal_forced_forward;
+
 #endif // __DECALS_H

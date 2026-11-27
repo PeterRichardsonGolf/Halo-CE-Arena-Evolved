@@ -572,6 +572,84 @@ def test_expect_crossed_rule_passes_members_across_in_time(tmp_path):
     assert rows[("one", 1)]["verdict"] == "PASS" and "18" in rows[("one", 1)]["reason"]
 
 
+def test_expect_member_rule_adds_rises_across_a_reset(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Stuck\nexpect 1 member stuck max 2\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    # (the counts carried in from an earlier test (5.0), then started again from 0 when the squad came back: 1.0 + 2.5)
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: squad member 1: stuck 5.0 lip 0.0 gap90 2.00\n"
+                   "arena-evolved: squad member 1: stuck 6.0 lip 0.0 gap90 2.00\n"
+                   "arena-evolved: squad member 1: stuck 0.5 lip 0.0 gap90 2.00\n"
+                   "arena-evolved: squad member 1: stuck 3.0 lip 0.0 gap90 2.00\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    assert rows[("one", 1)]["verdict"] == "FAIL" and "4" in rows[("one", 1)]["reason"]
+
+
+def test_expect_ahead_rule_and_comma_counts(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Stacked\ncheck None first\ncheck None first here\n"
+                              "expect 1 stat doors stacks min 1\nexpect 2 ahead x lt -8.5 max 0\nexpect 3 ahead x lt -20 max 0\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    # (a count followed by a comma is read; member 2 past the door 2 s before the player)
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: squad doors: track ticks 0, stacks 0, entries 0\n"
+                   "arena-evolved: companion: positions t+10s human -6.1 -2.8 0.0 (bsp 1), 1 -6.5 -3.8 0.0 (bsp 2), "
+                   "2 -11.8 -2.8 0.0 (bsp 3)\n"
+                   "arena-evolved: companion: positions t+12s human -9.0 -2.8 0.0 (bsp 1), 1 -7.0 -3.8 0.0 (bsp 2), "
+                   "2 -12.0 -2.8 0.0 (bsp 3)\n"
+                   "arena-evolved: squad doors: track ticks 9, stacks 1, entries 0\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    assert rows[("one", 1)]["verdict"] == "PASS"
+    assert rows[("one", 2)]["verdict"] == "FAIL" and "member 2" in rows[("one", 2)]["reason"]
+    assert rows[("one", 3)]["verdict"] == "FAIL" and "never" in rows[("one", 3)]["reason"]
+    assert expect.validate("ahead x lt -8.5 max 0") is None and expect.validate("ahead x lt -8.5 min 0")
+
+
+def test_expect_member_near_is_the_least_and_old_lines_still_read(tmp_path):
+    import json
+
+    import expect
+
+    listing = write(tmp_path, "list case\nrevision 1\ngroup g\nmap m\ngametype coop\n"
+                              "test one\ncheck Apart\ncheck Stuck\nexpect 1 member near min 1.0\nexpect 2 member stuck max 2\n")
+    stream = tmp_path / "events.jsonl"
+    stream.write_text("\n".join(json.dumps(event) for event in [
+        {"t": 0, "ev": "test", "list": "case", "test": "one", "state": "start"},
+        {"t": 9, "ev": "test", "list": "case", "test": "one", "state": "verdict", "verdict": "PASS"}]) + "\n")
+    log = tmp_path / "game.log"
+    # (near: the least gap to the player while he stood; 99 before he stood; the worst member is the nearest; a line without
+    # near (an older build) still reads)
+    log.write_text("arena-evolved: test run setup: one (map m coop, 1 players here)\n"
+                   "arena-evolved: squad member 1: stuck 0.0 lip 0.0 gap90 2.00\n"
+                   "arena-evolved: squad member 1: stuck 0.5 lip 0.0 gap90 2.00 near 99.00\n"
+                   "arena-evolved: squad member 2: stuck 0.0 lip 0.0 gap90 2.00 near 1.60\n"
+                   "arena-evolved: squad member 1: stuck 1.0 lip 0.0 gap90 2.00 near 0.70\n"
+                   "arena-evolved: test run: case one PASS\n")
+    rows = {(row["test"], row["check"]): row for row in expect.report(listing, stream, log)}
+    assert rows[("one", 1)]["verdict"] == "FAIL" and "member 1 near" in rows[("one", 1)]["reason"] and "0.7" in rows[("one", 1)]["reason"]
+    assert rows[("one", 2)]["verdict"] == "PASS"
+    assert expect.validate("member near min 1.0") is None
+
+
 def test_route_from_log_walks_the_players_logged_positions(tmp_path):
     import route_from_log
 
@@ -605,6 +683,24 @@ def test_member_and_crossed_expects_lint(tmp_path):
     bad = write(tmp_path, "list case\nrevision 1\ntitle Outcome\ngroup g\nmap a10\ngametype coop\n"
                           "test one\ntitle One\nsetup goto 0 0 0\ncheck They cross\nexpect 1 crossed z gt 0 3 within 20\n", "bad")
     assert any("crossed needs" in line for line in messages(bad))
+
+
+def test_route_from_log_writes_his_stops_as_waits():
+    import route_from_log
+
+    # (half-second positions: he walks, stands 6 lines (3 s) at -6.1 -2.8, then walks on)
+    lines = ["arena-evolved: companion: positions t+%ds human %.1f -2.8 0.0 (bsp 1), 1 not in" % (i // 2, -1.0 - i) for i in range(6)]
+    lines += ["arena-evolved: companion: positions t+3s human -6.1 -2.8 0.0 (bsp 1), 1 not in"] * 6
+    lines += ["arena-evolved: companion: positions t+6s human %.1f -2.8 0.0 (bsp 1), 1 not in" % (-7.1 - i) for i in range(3)]
+    text = " ".join(route_from_log.route_lines(lines))
+    assert "-6.0 -2.8 0.1 wait 3.0" in text or "-6.1 -2.8 0.1 wait 3.0" in text
+    assert text.count("wait") == 1
+    # (his aim, when the line has it, faces the wait)
+    aimed = [line.replace("(bsp 1)", "(bsp 1) aim 180") if " -6.1 " in line else line for line in lines]
+    assert "wait 3.0 face 180" in " ".join(route_from_log.route_lines(aimed))
+    # (a stand before the first step (the test's start) or after the last (its end) is no wait)
+    ends = [lines[0]] * 8 + lines + [lines[-1]] * 8
+    assert " ".join(route_from_log.route_lines(ends)).count("wait") == 1
 
 
 def test_stat_expects_lint(tmp_path):
@@ -866,7 +962,7 @@ def test_deploy_puts_a_build_in_place_with_its_record(tmp_path, monkeypatch, cap
     (tree / "BUILD_COMMIT").write_text("1234abcd\n")
     (tree / "CHANGELOG.md").write_text("# changes\n")
     (build / "halo").write_bytes(b"program 1234abcd")
-    for name in ("social.txt", "matchmaking.txt", "credits.txt"):
+    for name in ("social.txt", "matchmaking.txt", "credits.txt", "forge_markers.bin", "tag_props.bin"):
         (build / name).write_text(name)
     install = tmp_path / "install"
     install.mkdir()

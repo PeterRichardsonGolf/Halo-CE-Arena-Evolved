@@ -32,6 +32,7 @@ others' presses never drive them.
 #include "ae_screen_create_game.h"
 #include "ae_screen_game_options.h"
 #include "ae_screen_pause.h"
+#include "ae_forge_dev.h"
 #include "ae_screen_settings.h"
 #include "ae_server_ingame.h"
 #include "ae_team_override.h"
@@ -452,6 +453,7 @@ static const char *row_value(struct seat const *seat, int row)
 	case AE_PAUSE_FRIENDLY_FIRE: return ae_glue_pause_friendly_fire() ? "ON" : "OFF";
 	case AE_PAUSE_INVITE: return ae_invite_share_copied() ? "COPIED" : "COPY LINK";
 	case AE_PAUSE_SERVER: return ae_ingame_role_word(seat->facts.server_role);
+	case AE_PAUSE_SAVE_MAP: return seat->facts.forge_saved && seat->facts.forge_name[0] ? seat->facts.forge_name : "NOT SAVED YET";
 	}
 	return NULL;
 }
@@ -1192,6 +1194,13 @@ static void row_accept(struct seat *seat, int row)
 	{
 	case AE_PAUSE_RESUME:
 		ae_sound_request(AE_SOUND_BACK, 0);
+		seat_close(seat, 1);
+		return;
+	case AE_PAUSE_SAVE_MAP:
+		/* (rc9) Forge's own save: its name box the first time, then the map updated at once; the pause closes for it) */
+		if (!ae_forge_dev_save_map())
+			break;
+		ae_sound_request(AE_SOUND_FORWARD, 0);
 		seat_close(seat, 1);
 		return;
 	case AE_PAUSE_SETTINGS:
@@ -2163,7 +2172,7 @@ static void draw_panel(struct seat *seat, struct ae_rect const *in, int framed)
 	ae_draw_view(in->x, in->y, in->width, in->height);
 	ae_widget_view_panel(&seat->density, width_px, height_px, player, player_colors[player],
 		seat->page == PAGE_BOTS ? "BOTS" : seat->page == PAGE_PLAYERS || seat->page == PAGE_CARD ? "PLAYERS" :
-		seat->page == PAGE_SERVER ? "SERVER" : "PAUSED", 0, 0, &content);
+		seat->page == PAGE_SERVER ? "SERVER" : seat->facts.forge ? "FORGE \xE2\x80\xA2 PAUSED" : "PAUSED", 0, 0, &content);
 	/* (no page dots: the rows right under the header, as the mockups' view panel has them: the stripe, the pad, the
 	header's emblem, the pad) */
 	{

@@ -167,6 +167,8 @@ static boolean network_objects_reconcile(long unit, real_point3d const *p, real_
 static boolean mcc_script_effects_host_movement(void) { return FALSE; }
 /* (Arena Evolved's melee lunge speed bound: none in this fixture) */
 static real ae_melee_lunge_gate_speed(long unit_index) { (void)unit_index; return 0.0f; }
+/* (Arena Evolved) Forge (ae_forge_engine.h): out of every volume no pull holds a unit */
+static int ae_forge_unit_pulled(real_point3d const *at, int grounded, boolean *noted) { (void)at; (void)grounded; (void)noted; return 0; }
 #include "under_test.inc"
 
 static boolean biped_riding_rebase(long unit)

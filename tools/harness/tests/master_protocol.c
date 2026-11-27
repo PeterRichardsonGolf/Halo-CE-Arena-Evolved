@@ -1035,8 +1035,12 @@ int main(int argc, char **argv)
 		size = make_listing(bytes, 1, _listing_open, 4, 4, 4);
 		bytes[size] = 0;
 		CHECK(!listing_read(bytes, size + 1, &listing), "a listing with a byte after its signature was read");
-		size = make_listing(bytes, 2, _listing_open, 4, 4, 4);
-		CHECK(!listing_read(bytes, size, &listing), "a listing of format 2 was read");
+		size = make_listing(bytes, 3, _listing_open, 4, 4, 4);
+		CHECK(!listing_read(bytes, size, &listing), "a listing of format 3 was read");
+		/* (format 2 is the modded Content Evolved host's: read, as that host's and with no kind or build of ours) */
+		size = make_listing(bytes, AE_CE_HOST_LISTING_FORMAT, _listing_open, 4, 4, 4);
+		CHECK(listing_read(bytes, size, &listing) && listing.ce_modded && listing.kind == 0 && listing.ae_build == 0,
+			"a listing of format 2 was not read as a modded host's");
 		size = make_listing(bytes, 1, _listing_open, 4, 4, 4);
 		bytes[0] = 'h';
 		CHECK(!listing_read(bytes, size, &listing), "a listing without HL was read");

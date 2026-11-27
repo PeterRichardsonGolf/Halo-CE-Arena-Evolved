@@ -46,9 +46,12 @@ licence, and no code of it is here).
 
 #include "ae_backpack_rules.h"
 #include "ae_backpack_weapons.h"
+#include "ae_forge_engine.h"
 #include "ae_bomb_assault.h"
 
 #include <string.h>
+
+boolean tag_injector_tag_injected(long tag_index);
 
 /* port/linux/src/ae_config_players.c: each player's own (split screen) */
 int ae_config_player_boolean(int player, const char *name);
@@ -352,6 +355,9 @@ void ae_backpack_weapons_render(
 	{
 		return;
 	}
+	/* (a body in Forge's Monitor mode is drawn as the Monitor, which holds no weapon: none is drawn on it, and none casts its shadow) */
+	if (ae_forge_unit_in_monitor_mode(unit_index))
+		return;
 	unit = unit_get(unit_index);
 	for (slot = 0; slot < MAXIMUM_WEAPONS_PER_UNIT; slot++)
 	{
@@ -388,6 +394,13 @@ void ae_backpack_weapons_render(
 		else
 		{
 			place = ae_backpack_place(weapon_index, &on_back, &on_thighs);
+			/* (a body or a weapon a tag profile added, an item set's: their places are measured for the game's own models
+			alone, so a stowed weapon is not drawn there) */
+			if (tag_injector_tag_injected(object->definition_index) ||
+				tag_injector_tag_injected(object_get(weapon_index)->definition_index))
+			{
+				place = AE_BACKPACK_PLACE_NONE;
+			}
 			if (bomb_carried && (place == AE_BACKPACK_PLACE_BACK || place == AE_BACKPACK_PLACE_BACK_SECOND ||
 				place == AE_BACKPACK_PLACE_LONG))
 			{

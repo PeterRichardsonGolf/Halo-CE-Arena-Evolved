@@ -1045,7 +1045,8 @@ static void run_hook_command(char const *command)
 	boolean succeeded = FALSE;
 	char *output;
 
-	server_log(_server_log_info, "console", "hook: %s", command);
+	server_log(_server_log_info, "console", "hook: %s", server_console_line_is_secret(command) ? "(a password's command)" :
+		command);
 	output = server_commands_run(command, _server_role_admin, _server_origin_init_file, &succeeded);
 	if (output)
 		server_console_free(output);

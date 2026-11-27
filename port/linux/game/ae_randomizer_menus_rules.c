@@ -417,7 +417,7 @@ void ae_rnd_lobby_summary(struct ae_rnd_facts const *facts, char *text, size_t s
 static const char *const extra_keys[] =
 {
 	"game.randomizer", "game.randomizer_crazy", "game.randomizer_crazy_weapons", "game.randomizer_crazy_enemies",
-	"game.randomizer_crazy_flamethrower", "game.randomizer_crazy_pods", "game.randomizer_tag_profile", "game.tag_injection",
+	"game.randomizer_crazy_flamethrower", "game.randomizer_crazy_pods", "game.randomizer_tag_profile", "game.campaign_tag_profile", "game.tag_injection",
 	"game.randomizer_profile_1", "game.randomizer_profile_2", "game.randomizer_profile_3", "game.randomizer_profile_4",
 	"game.randomizer_profile_5", "game.randomizer_profile_6", "game.randomizer_profile_7", "game.randomizer_profile_8",
 };

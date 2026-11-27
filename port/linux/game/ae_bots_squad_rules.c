@@ -206,6 +206,13 @@ float ae_bots_squad_gunner_reach(float sight, int seated_gunner)
 	return seated_gunner ? sight * AE_SQUAD_GUNNER_REACH_SCALE : sight;
 }
 
+int ae_bots_squad_foe_in_view(float bearing, float half_view, float distance, int hurt, int current, int focused, int seated_gunner)
+{
+	if (bearing < 0.0f)
+		bearing = -bearing;
+	return seated_gunner || hurt || current || focused || bearing <= half_view || distance <= AE_SQUAD_NEAR_VIEW;
+}
+
 int ae_bots_squad_cut_off(int line_blocked, float distance)
 {
 	return line_blocked && distance >= AE_SQUAD_CUT_OFF_GAP;
@@ -327,10 +334,9 @@ int ae_bots_squad_entry_grenade(long ticks_since_seen_or_heard, int has_grenade,
 		player_to_blast >= AE_SQUAD_GRENADE_SAFE;
 }
 
-int ae_bots_squad_door_auto(int every_door, long player_still_ticks, float player_to_door, int closed, int locked)
+int ae_bots_squad_door_auto(int every_door, long player_still_ticks, float player_to_door, int locked)
 {
-	return every_door && player_still_ticks >= AE_SQUAD_DOOR_AUTO_TICKS && player_to_door <= AE_SQUAD_DOOR_AUTO_NEAR && closed &&
-		!locked;
+	return every_door && player_still_ticks >= AE_SQUAD_DOOR_AUTO_TICKS && player_to_door <= AE_SQUAD_DOOR_AUTO_NEAR && !locked;
 }
 
 int ae_bots_squad_door_locked(long ticks_first_in_radius, float door_position)
@@ -658,7 +664,14 @@ float ae_bots_squad_leader_yaw(float vx, float vy, float aim_yaw, float last_yaw
 int ae_bots_squad_slot_ok(float to_player, float behind_player, float behind_lead, float path_near_player, int in_door_reach,
 	int moving)
 {
-	if (to_player < AE_SQUAD_RING_IN || to_player > AE_SQUAD_RING_OUT || path_near_player < AE_SQUAD_PATH_CLEAR || in_door_reach)
+	return ae_bots_squad_slot_ok_ring(to_player, behind_player, behind_lead, path_near_player, in_door_reach, moving,
+		AE_SQUAD_RING_IN, AE_SQUAD_RING_OUT);
+}
+
+int ae_bots_squad_slot_ok_ring(float to_player, float behind_player, float behind_lead, float path_near_player, int in_door_reach,
+	int moving, float ring_in, float ring_out)
+{
+	if (to_player < ring_in || to_player > ring_out || path_near_player < AE_SQUAD_PATH_CLEAR || in_door_reach)
 		return 0;
 	if (moving)
 		return behind_player < -AE_SQUAD_BEHIND && behind_lead < -AE_SQUAD_BEHIND;
@@ -782,10 +795,11 @@ int ae_bots_squad_oscillation(float heading_before, float heading_now, long tick
 	return !fighting && ticks_between <= AE_SQUAD_OSCILLATION_TICKS && turn > AE_SQUAD_OSCILLATION_TURN;
 }
 
-int ae_bots_squad_in_strip(float along, float across, float player_speed)
+int ae_bots_squad_in_strip(float along, float across, float player_speed, int held)
 {
-	return player_speed > AE_SQUAD_MOVING && along >= 0.0f && along <= AE_SQUAD_STRIP_AHEAD &&
-		across <= AE_SQUAD_STRIP_HALF && across >= -AE_SQUAD_STRIP_HALF;
+	float half = held ? AE_SQUAD_STRIP_HALF_HELD : AE_SQUAD_STRIP_HALF;
+
+	return player_speed > AE_SQUAD_MOVING && along >= 0.0f && along <= AE_SQUAD_STRIP_AHEAD && across <= half && across >= -half;
 }
 
 int ae_bots_squad_make_way(float room_left, float room_right)
@@ -874,9 +888,11 @@ int ae_bots_squad_cue_jump_now(float to_crumb)
 	return to_crumb <= AE_SQUAD_CUE_JUMP_NEAR;
 }
 
-int ae_bots_squad_crossing_waits(int another_crosses, float crosser_to_crumb, long crossing_ticks)
+int ae_bots_squad_crossing_waits(int another_crosses, float crosser_along, float crossing_length, float crosser_to_takeoff,
+	long crossing_ticks)
 {
-	return another_crosses && crosser_to_crumb < AE_SQUAD_CROSSING_CLEAR && crossing_ticks < AE_SQUAD_CROSSING_TICKS;
+	return another_crosses && crosser_along < crossing_length - AE_SQUAD_CROSSING_LANDED &&
+		crosser_to_takeoff < AE_SQUAD_CROSSING_NEAR && crossing_ticks < AE_SQUAD_CROSSING_TICKS;
 }
 
 long ae_bots_squad_cost_p99(long const *histogram)
@@ -901,6 +917,40 @@ int ae_bots_squad_oscillation_after(float heading_before, float heading_now, lon
 {
 	return ticks_since_player_turned >= AE_SQUAD_PLAYER_TURN_TICKS &&
 		ae_bots_squad_oscillation(heading_before, heading_now, ticks_between, fighting);
+}
+
+void ae_bots_squad_order_offset(int rank, float way, float *dx, float *dy)
+{
+	/* (side, back): the point man, then back and left, back and right, behind */
+	static float const side[4] = { 0.0f, -1.0f, 1.0f, 0.0f };
+	static float const back[4] = { 0.0f, 1.0f, 1.0f, 2.0f };
+	int place = rank < 0 ? 0 : rank % 4;
+	float s = side[place] * AE_SQUAD_ORDER_SPACING, b = back[place] * AE_SQUAD_ORDER_SPACING;
+
+	*dx = -sinf(way) * s - cosf(way) * b;
+	*dy = cosf(way) * s - sinf(way) * b;
+}
+
+int ae_bots_squad_order_waits(float worst_behind, long waited_ticks, int fighting)
+{
+	return !fighting && worst_behind > AE_SQUAD_ORDER_STRING && waited_ticks < AE_SQUAD_ORDER_WAIT_TICKS;
+}
+
+float ae_bots_squad_order_radius(int attack)
+{
+	return attack ? AE_SQUAD_ORDER_ATTACK_RADIUS : AE_SQUAD_ORDER_RADIUS;
+}
+
+int ae_bots_squad_order_step(int fighting, float to_place, float radius, int walking)
+{
+	if (fighting)
+		return to_place > radius ? AE_SQUAD_ORDER_WALK : AE_SQUAD_ORDER_FIGHT;
+	return to_place > (walking ? AE_SQUAD_ORDER_ARRIVE * 0.5f : AE_SQUAD_ORDER_ARRIVE) ? AE_SQUAD_ORDER_WALK : AE_SQUAD_ORDER_STAND;
+}
+
+int ae_bots_squad_on_leash(int point_order, int sent_to_vehicle)
+{
+	return !point_order && !sent_to_vehicle;
 }
 
 int ae_bots_squad_stalled(int walk_failed_lately, int cut_off, int on_track, int in_cover, int at_slot, int on_order)
@@ -934,4 +984,147 @@ long ae_bots_squad_gap_p90(long const *histogram)
 int ae_bots_squad_stuck_tick(int wants_move, float speed, int fighting)
 {
 	return wants_move && speed < AE_SQUAD_STUCK_SPEED && !fighting;
+}
+
+int ae_bots_squad_lip_patience_over(long lip_ticks)
+{
+	return lip_ticks >= AE_SQUAD_LIP_PATIENCE_TICKS;
+}
+
+int ae_bots_squad_formation_wanted(int formations_on, int picked)
+{
+	return formations_on ? picked : AE_SQUAD_FORMATIONS;
+}
+
+int ae_bots_squad_door_every(int formations_on, int every_setting)
+{
+	return formations_on && every_setting;
+}
+
+int ae_bots_squad_moves_as_one(int formations_on)
+{
+	return formations_on != 0;
+}
+
+int ae_bots_squad_formation_pick(int fighting, int entering, int stacking, long still_ticks, float width, int outdoors)
+{
+	if (fighting)
+		return AE_SQUAD_FORMATION_FIGHT;
+	if (entering)
+		return AE_SQUAD_FORMATION_ENTRY;
+	if (stacking)
+		return AE_SQUAD_FORMATION_STACK;
+	if (still_ticks >= AE_SQUAD_FORMATION_HALT_TICKS)
+		return AE_SQUAD_FORMATION_HALT;
+	if (width < AE_SQUAD_FILE_WIDE)
+		return AE_SQUAD_FORMATION_FILE;
+	if (width < AE_SQUAD_STAGGER_WIDE)
+		return AE_SQUAD_FORMATION_TIGHT;
+	return outdoors ? AE_SQUAD_FORMATION_WEDGE : AE_SQUAD_FORMATION_STAGGER;
+}
+
+int ae_bots_squad_formation_hold(int current, int wanted, long wanted_ticks)
+{
+	if (wanted == current || wanted == AE_SQUAD_FORMATION_FIGHT || wanted == AE_SQUAD_FORMATION_ENTRY ||
+		wanted == AE_SQUAD_FORMATION_STACK || wanted_ticks >= AE_SQUAD_FORMATION_HOLD_TICKS)
+		return wanted;
+	return current;
+}
+
+int ae_bots_squad_formation_spot(int formation, int rank, float width, float *along, float *across)
+{
+	float side = rank % 2 == 0 ? 1.0f : -1.0f;
+	float room = width * 0.5f - AE_SQUAD_SIDE_ROOM;
+
+	if (room < 0.0f)
+		room = 0.0f;
+	switch (formation)
+	{
+	case AE_SQUAD_FORMATION_HALT:
+		/* (the two first on his rear quarters, the third straight behind; pressed in by the walls, farther back) */
+		*across = rank == 2 ? 0.0f : side * (room < 1.1f ? room : 1.1f);
+		*along = rank == 2 ? AE_SQUAD_HALT_NEAR + 0.5f : 1.1f;
+		if (*along * *along + *across * *across < AE_SQUAD_HALT_NEAR * AE_SQUAD_HALT_NEAR)
+			*along = sqrtf(AE_SQUAD_HALT_NEAR * AE_SQUAD_HALT_NEAR - *across * *across);
+		return 1;
+	case AE_SQUAD_FORMATION_FILE:
+		*along = AE_SQUAD_FILE_APART * (float)(rank + 1);
+		*across = 0.0f;
+		return 1;
+	case AE_SQUAD_FORMATION_TIGHT:
+		/* (the first two on both sides, the third behind them on his line) */
+		*along = AE_SQUAD_TIGHT_APART * (rank == 2 ? 2.0f : 1.0f);
+		*across = rank == 2 ? 0.0f : side * (room < 0.6f ? room : 0.6f);
+		return 1;
+	case AE_SQUAD_FORMATION_STAGGER:
+		*along = AE_SQUAD_STAGGER_APART * (rank == 2 ? 2.0f : 1.0f);
+		*across = rank == 2 ? 0.0f : side * (room < 1.2f ? room : 1.2f);
+		return 1;
+	case AE_SQUAD_FORMATION_WEDGE:
+		*along = rank == 2 ? AE_SQUAD_WEDGE_OUT * 1.5f : AE_SQUAD_WEDGE_OUT;
+		*across = rank == 2 ? 0.0f : side * (room < AE_SQUAD_WEDGE_OUT ? room : AE_SQUAD_WEDGE_OUT);
+		return 1;
+	default:
+		*along = 0.0f;
+		*across = 0.0f;
+		return 0;
+	}
+}
+
+char const *ae_bots_squad_formation_name(int formation)
+{
+	static char const *const names[AE_SQUAD_FORMATIONS] = { "fight", "entry", "stack", "halt", "file", "tight stagger", "stagger",
+		"wedge" };
+
+	return formation >= 0 && formation < AE_SQUAD_FORMATIONS ? names[formation] : "none";
+}
+
+void ae_bots_squad_formation_ring(int formation, float *ring_in, float *ring_out)
+{
+	float along, across, farthest = 0.0f;
+	int rank;
+
+	*ring_in = formation == AE_SQUAD_FORMATION_HALT ? AE_SQUAD_HALT_NEAR - 0.2f : AE_SQUAD_RING_IN;
+	*ring_out = AE_SQUAD_RING_OUT;
+	for (rank = 0; rank < 3; rank++)
+		if (ae_bots_squad_formation_spot(formation, rank, 6.0f, &along, &across) &&
+			sqrtf(along * along + across * across) > farthest)
+			farthest = sqrtf(along * along + across * across);
+	if (farthest > 0.0f)
+		*ring_out = farthest + 0.6f;
+}
+
+int ae_bots_squad_crumb_unreachable(int jump_cue, int at_door, long ticks_no_gain)
+{
+	return !jump_cue && at_door && ticks_no_gain >= AE_SQUAD_CRUMB_STALL_TICKS;
+}
+
+int ae_bots_squad_lineup_point(float from_x, float from_y, float crumb_x, float crumb_y, float at_x, float at_y, float *x, float *y)
+{
+	float dx = crumb_x - from_x, dy = crumb_y - from_y, length = sqrtf(dx * dx + dy * dy), back;
+
+	if (length < AE_SQUAD_LINEUP_LEAST)
+		return 0;
+	dx /= length;
+	dy /= length;
+	if (fabsf(-(at_x - from_x) * dy + (at_y - from_y) * dx) <= AE_SQUAD_LINEUP_OFF)
+		return 0;
+	back = length < AE_SQUAD_LINEUP_BACK ? length : AE_SQUAD_LINEUP_BACK;
+	*x = crumb_x - dx * back;
+	*y = crumb_y - dy * back;
+	return 1;
+}
+
+int ae_bots_squad_machine_is_door(int kind, char const *tag_name)
+{
+	char const *at;
+
+	if (kind == AE_SQUAD_MACHINE_DOOR)
+		return 1;
+	if (kind != AE_SQUAD_MACHINE_PLATFORM || !tag_name)
+		return 0;
+	for (at = tag_name; at[0] && at[1] && at[2] && at[3]; at++)
+		if ((at[0] | 0x20) == 'd' && (at[1] | 0x20) == 'o' && (at[2] | 0x20) == 'o' && (at[3] | 0x20) == 'r')
+			return 1;
+	return 0;
 }

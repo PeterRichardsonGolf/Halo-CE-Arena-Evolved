@@ -121,6 +121,11 @@ int main(void)
 	CHECK(!strcmp(ae_campaign_rows_door_help(0, 1), "Mark a door with DEFEND or SMART and your squad lines up beside it; ATTACK sends them in. Otherwise they follow you through."));
 	CHECK(!strcmp(ae_campaign_rows_door_help(1, 1), "Your squad lines up beside any closed door you wait at, and goes in when you walk through or call ATTACK."));
 	CHECK(!strcmp(ae_campaign_rows_door_help(1, 0), "Turn AI SQUAD on first: this sets how your squad takes doors."));
+	/* FORMATIONS: ON / OFF and its help by value; dimmed without a squad */
+	CHECK(!strcmp(ae_campaign_rows_formations_value(1), "ON") && !strcmp(ae_campaign_rows_formations_value(0), "OFF"));
+	CHECK(strstr(ae_campaign_rows_formations_help(1, 1), "forms up by itself") != NULL);
+	CHECK(strstr(ae_campaign_rows_formations_help(0, 1), "no formation of its own") != NULL);
+	CHECK(!strcmp(ae_campaign_rows_formations_help(1, 0), "Turn AI SQUAD on first: this sets whether your squad forms up by itself."));
 
 	if (!failures)
 		printf("ae_campaign_rows_rules: ok\n");

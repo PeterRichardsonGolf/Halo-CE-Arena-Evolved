@@ -55,6 +55,7 @@ symbols in this file:
 #include "ai/ai.h"
 #include "game/game_allegiance.h"
 #include "saved games/game_state.h"
+#include "ae_forge_engine.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -200,6 +201,9 @@ boolean game_team_is_enemy(
 
 	if (skull_enmity != NONE)
 		return (boolean)skull_enmity;
+	skull_enmity = ae_forge_ai_team_enmity(our_team_index, other_team_index); /* AE hook */
+	if (skull_enmity != NONE) /* AE hook */
+		return (boolean)skull_enmity; /* AE hook */
 
 	if (VALID_INDEX(our_team_index, NUMBER_OF_GAME_TEAMS) &&
 		VALID_INDEX(other_team_index, NUMBER_OF_GAME_TEAMS))
@@ -231,6 +235,9 @@ boolean game_team_is_ally(
 
 	if (skull_alliance != NONE)
 		return (boolean)skull_alliance;
+	skull_alliance = ae_forge_ai_team_enmity(our_team_index, other_team_index); /* AE hook */
+	if (skull_alliance != NONE) /* AE hook */
+		return (boolean)!skull_alliance; /* AE hook */
 
 	if (VALID_INDEX(our_team_index, NUMBER_OF_GAME_TEAMS) &&
 		VALID_INDEX(other_team_index, NUMBER_OF_GAME_TEAMS))

@@ -2459,7 +2459,13 @@ static void main_lost_map_private(
 		respawns. Scripted failures still revert, or their cutscene would
 		never end. A missing save falls back to checkpoint positions. */
 		if (game_connection() != _game_connection_network_server)
-			game_state_revert();
+		{
+			extern int forge_level_is_session(void); /* AE hook */
+			if (players_are_all_dead() && forge_level_is_session()) /* AE hook */
+				players_respawn_at_checkpoint(); /* AE hook */
+			else
+				game_state_revert();
+		}
 		else if ((players_are_all_dead() && !network_coop_wipe_reverts()) || !main_coop_host_revert())
 			players_respawn_at_checkpoint();
 	}

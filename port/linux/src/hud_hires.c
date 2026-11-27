@@ -294,6 +294,23 @@ void hud_hires_register_placeholder(long asset, const unsigned long *texture)
 	placeholder_filter_build();
 }
 
+/* the texture drawn for the placeholder whose D3D texture has this Data, or -1 (the texture caches that make their
+own images of it) */
+long hud_hires_placeholder_asset(unsigned long data)
+{
+	unsigned long bit = placeholder_filter_bit(data);
+	long index;
+
+	if (!(placeholder_filter[bit >> 3] & 1 << (bit & 7)))
+		return -1;
+	for (index = 0; data && index < placeholder_count; index++)
+	{
+		if (placeholders[index].data == data)
+			return placeholders[index].asset;
+	}
+	return -1;
+}
+
 unsigned int hud_hires_placeholder_texture(unsigned long data, unsigned long *levels)
 {
 	unsigned long bit = placeholder_filter_bit(data);

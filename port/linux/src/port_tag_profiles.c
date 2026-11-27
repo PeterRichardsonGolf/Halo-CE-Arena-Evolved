@@ -143,8 +143,14 @@ a share it downloaded is named (after the host's names) */
 
 /* a tag's settings, by their keys in profile.toml (port_tag_profiles.h) */
 static const char *const tag_option_keys[] = { "faction", "type", "class", "custom_type", "hud", "replace", "name",
-	"failed", "pickup", "pickup_text" };
+	"failed", "pickup", "pickup_text", "fit" };
 #define TAG_OPTION_COUNT (sizeof(tag_option_keys) / sizeof(tag_option_keys[0]))
+
+/* a profile's own settings (top-level keys of profile.toml): the body a level plays as while it plays: a biped's path, the hands
+as "path#map", and "own" for the biped's own movement */
+static const char *const body_keys[] = { "player_biped", "player_hands", "player_movement" };
+#define BODY_KEY_COUNT (sizeof(body_keys) / sizeof(body_keys[0]))
+#define MAXIMUM_BODY_LENGTH 320
 
 /* an edit of a tag's values (the Tag Editor's: tag_editor.c), by its key */
 struct tag_profile_edit
@@ -179,6 +185,8 @@ struct tag_profile
 	long tag_count;
 	/* its pack's bytes, as the scan found them */
 	unsigned long pack_size;
+	/* its body's settings, by body_keys ("" for none) */
+	char body[BODY_KEY_COUNT][MAXIMUM_BODY_LENGTH];
 };
 
 /* ---------- globals */
@@ -522,6 +530,13 @@ static int profile_read(struct tag_profile *profile, const char *root, const cha
 	}
 	if (toml_text(result.toptab, "name", path) && toml_text(result.toptab, "name", path)[0])
 		text_copy(profile->name, sizeof(profile->name), toml_text(result.toptab, "name", path));
+	for (index = 0; index < (int)BODY_KEY_COUNT; index++)
+	{
+		const char *body = toml_text(result.toptab, body_keys[index], path);
+
+		if (body && strlen(body) < MAXIMUM_BODY_LENGTH)
+			text_copy(profile->body[index], sizeof(profile->body[index]), body);
+	}
 	tags = toml_get(result.toptab, "tags");
 	if (tags.type == TOML_ARRAY && tags.u.arr.size > 0)
 	{
@@ -649,7 +664,8 @@ static int profile_read(struct tag_profile *profile, const char *root, const cha
 no room */
 static char *profile_text(const struct tag_profile *profile)
 {
-	size_t capacity = 256 + (size_t)profile->tag_count * (256 + (MAXIMUM_TAG_NAME_LENGTH + MAXIMUM_MAP_NAME_LENGTH +
+	size_t capacity = 256 + BODY_KEY_COUNT * (MAXIMUM_BODY_LENGTH + 32) * TOML_CHARACTER_LENGTH +
+		(size_t)profile->tag_count * (256 + (MAXIMUM_TAG_NAME_LENGTH + MAXIMUM_MAP_NAME_LENGTH +
 		MAXIMUM_FILE_NAME_LENGTH + TAG_OPTION_COUNT * MAXIMUM_OPTION_LENGTH) * TOML_CHARACTER_LENGTH);
 	char *text;
 	long index;
@@ -670,6 +686,14 @@ static char *profile_text(const struct tag_profile *profile)
 	snprintf(text, capacity, "# the Tag Injector's profile (Settings > Gameplay > Tag Injector)\nname = \"");
 	toml_string_append(text, capacity, profile->name);
 	snprintf(text + strlen(text), capacity - strlen(text), "\"\nformat = %d\n", format);
+	for (index = 0; index < (long)BODY_KEY_COUNT; index++)
+	{
+		if (!profile->body[index][0])
+			continue;
+		snprintf(text + strlen(text), capacity - strlen(text), "%s = \"", body_keys[index]);
+		toml_string_append(text, capacity, profile->body[index]);
+		snprintf(text + strlen(text), capacity - strlen(text), "\"\n");
+	}
 	for (index = 0; index < profile->tag_count; index++)
 	{
 		const struct tag_profile_tag *tag = &profile->tags[index];
@@ -948,10 +972,12 @@ long port_tag_profiles_duplicate(long profile, const char *name)
 	long tag_count;
 	long index;
 	int copied = 1;
+	char body[BODY_KEY_COUNT][MAXIMUM_BODY_LENGTH];
 
 	if (!found)
 		return -1;
 	/* (the original's, kept while the scans below forget it) */
+	memcpy(body, found->body, sizeof(body));
 	tag_count = found->tag_count;
 	if (tag_count)
 	{
@@ -1003,6 +1029,7 @@ long port_tag_profiles_duplicate(long profile, const char *name)
 	if (directory)
 		posix_directory_close(directory);
 	copy = *profile_get(index);
+	memcpy(copy.body, body, sizeof(body));
 	copy.tags = tags;
 	copy.tag_count = tag_count;
 	copied = copied && profile_write(&copy);
@@ -1165,6 +1192,39 @@ int port_tag_profiles_tag_set_option(long profile, long tag, const char *key, co
 	platform_log("tag injector: %s of the profile %s: %s = \"%s\"", found->name, profile_get(profile)->name, key,
 		clean);
 	return profile_write(profile_get(profile));
+}
+
+static int body_key_index(const char *key)
+{
+	size_t index;
+
+	for (index = 0; key && index < BODY_KEY_COUNT; index++)
+		if (!strcmp(key, body_keys[index]))
+			return (int)index;
+	return -1;
+}
+
+const char *port_tag_profiles_option(long profile, const char *key)
+{
+	struct tag_profile *found = profile_get(profile);
+	int index = body_key_index(key);
+
+	return found && index >= 0 ? found->body[index] : "";
+}
+
+int port_tag_profiles_set_option(long profile, const char *key, const char *value)
+{
+	struct tag_profile *found = profile_get(profile);
+	int index = body_key_index(key);
+
+	if (!found || index < 0 || (value && strlen(value) >= MAXIMUM_BODY_LENGTH))
+		return 0;
+	if (!strcmp(found->body[index], value ? value : ""))
+		return 1;
+	text_copy(found->body[index], sizeof(found->body[index]), value);
+	port_tag_profiles.scans++;
+	platform_log("tag injector: the profile %s: %s = \"%s\"", found->name, key, found->body[index]);
+	return profile_write(found);
 }
 
 long port_tag_profiles_tag_edit_count(long profile, long tag)

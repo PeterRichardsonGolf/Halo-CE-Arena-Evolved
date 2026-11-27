@@ -67,6 +67,7 @@ has is not kept again.
 #include "randomizer.h"
 #include "network_distributed.h"
 #include "ae_firefight_doors.h"
+#include "ae_ce_host.h" /* AE hook */
 #include "tag_import.h"
 
 void platform_log(char const *format, ...);
@@ -2944,6 +2945,21 @@ void skulls_tags_handle_message(long machine_index, unsigned short const *data, 
 	memcpy(&message, data, sizeof(message));
 	if (GET_MESSAGE_TYPE(message.header.header) != 2 || message.header.count != 1)
 		return;
+	/* (a host says it once a level. The same report again is read once a minute of game time at most, another report (a new
+	level's, another host's) once in five seconds, so a host sending reports over and over fills neither the log nor the
+	screen; a new level's clock starts again) */
+	{
+		static long read_tick = -1, read_count;
+		static unsigned long read_hash;
+		long now = game_time_get();
+		long wait = message.count == read_count && message.hash == read_hash ? 60 * 30 : 5 * 30;
+
+		if (read_tick >= 0 && now >= read_tick && now - read_tick < wait)
+			return;
+		read_tick = now;
+		read_count = message.count;
+		read_hash = message.hash;
+	}
 	if (count == message.count && hash == message.hash)
 	{
 		error(_error_silent, "skulls: the level's tags are the host's (%ld, %08lx)", count, hash);
@@ -2953,6 +2969,7 @@ void skulls_tags_handle_message(long machine_index, unsigned short const *data, 
 		"host. Its enemies, weapons and skulls will not match", count, hash, message.count, message.hash);
 	platform_log("skulls: this level's tags differ from the host's (%ld here, %ld there): the randomizer's and the "
 		"skulls' copies are not the same on both machines", count, message.count);
+	ae_ce_host_tags_differ(count, hash, message.count, message.hash); /* AE hook */
 	for (local_player_index = 0; local_player_index < local_player_count(); local_player_index++)
 	{
 		skulls_print(local_player_index, "Expect enemies and items out of sync.");

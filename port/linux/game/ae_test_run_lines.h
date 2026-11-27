@@ -9,7 +9,8 @@ done, the first player alive). A refused line is sent again every AE_TEST_RUN_LI
 AE_TEST_RUN_LINES_RETRY_FOR_MS have passed since it was first sent: what it needs (a living player, the weapon just
 given in hand, a dummy at its spot) is often a few ticks away. A line the game answers "not yet" (what it acts on is on
 its way: a replay that loads, or plays to a seek's second) is sent again so for AE_TEST_RUN_LINES_NOT_YET_FOR_MS
-instead. A line still refused then, a line with no answer in
+instead, and a line it answers "being made" (what it needs is being written: a tag pack built from the game's maps on
+its first use) every AE_TEST_RUN_LINES_BEING_MADE_MS for AE_TEST_RUN_LINES_BEING_MADE_FOR_MS. A line still refused then, a line with no answer in
 AE_TEST_RUN_LINES_ANSWER_MS, or a game that never settles, fails the setup: the runner shows it on the card as a SETUP
 ERROR with the game's own answer, and the test is not judged as if its scene were there.
 */
@@ -24,6 +25,9 @@ a second or two); a refused line goes again every three ticks or so, for three s
 #define AE_TEST_RUN_LINES_RETRY_FOR_MS 3000
 /* a replay loads in a second or two and plays to a seek's second at 4 times (a minute's in 15 s) */
 #define AE_TEST_RUN_LINES_NOT_YET_FOR_MS 20000
+/* a tag pack is written in well under a minute on a fast disk; a slow one takes a few */
+#define AE_TEST_RUN_LINES_BEING_MADE_MS 1000
+#define AE_TEST_RUN_LINES_BEING_MADE_FOR_MS 300000
 
 enum ae_test_run_lines_action
 {
@@ -50,6 +54,7 @@ struct ae_test_run_lines
 	short settle;           /* the first line waits for the game to settle */
 	short finished;         /* DONE or FAILED was returned */
 	short why;              /* FAILED: enum ae_test_run_lines_why */
+	short slow;             /* line `next` was answered being made: it goes again at that pace */
 	unsigned long since;    /* when the wait for the game to settle began */
 	unsigned long sent_at;  /* when line `next` was last sent */
 	unsigned long first_at; /* when line `next` was first sent */
@@ -59,7 +64,7 @@ struct ae_test_run_lines
 with lines, or one that goes on in the game of the test before it) */
 void ae_test_run_lines_start(struct ae_test_run_lines *lines, short count, int settle, unsigned long now);
 /* one step. settled: the game is settled now (asked only before the first line); answered, ok: the line out has its answer
-now, and whether the game accepted it (1), refused it (0) or answered not yet (-1). Returns the action; SEND and FAILED name the line in *line (FAILED before any line:
+now, and whether the game accepted it (1), refused it (0), answered not yet (-1) or being made (-2). Returns the action; SEND and FAILED name the line in *line (FAILED before any line:
 -1). After DONE or FAILED every call returns the same */
 enum ae_test_run_lines_action ae_test_run_lines_step(struct ae_test_run_lines *lines, int settled, int answered, int ok,
 	unsigned long now, short *line);

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "ae_career_record.h"
 #include "ae_social_rules.h"
 #include "ae_social_match_rules.h"
@@ -599,8 +600,23 @@ static void test_settle(void)
 	EQ(forgiven, 0); EQ(quits, 0);
 }
 
+/* a pending game whose profile the finds clean to another (a control character in a file's line): settled, not looped on */
+static void test_pending_unfindable_profile(void)
+{
+	int forgiven = -1, quits = -1;
+
+	ae_career_init(&career);
+	CHECK(ae_career_pending_set(&career, "a", "x", 10));
+	career.pending[0].profile[0] = '\x01';
+	alarm(5);
+	ae_career_pending_settle(&career, 1, 50, &forgiven, &quits);
+	alarm(0);
+	EQ(career.pending_count, 0); EQ(forgiven, 1);
+}
+
 int main(void)
 {
+	test_pending_unfindable_profile();
 	test_records();
 	test_file();
 	test_old_and_newer();

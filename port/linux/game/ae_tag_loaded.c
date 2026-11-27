@@ -30,6 +30,11 @@ void ae_tag_table_changed(void)
 	table_generation++;
 }
 
+unsigned long ae_tag_table_generation(void)
+{
+	return table_generation;
+}
+
 static void instance_get(void *context, long index, long *group, char const **name)
 {
 	struct cache_file_tag_instance const *instances = context;

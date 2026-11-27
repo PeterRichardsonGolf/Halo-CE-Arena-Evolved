@@ -41,6 +41,14 @@ int main(void)
 	for (row = 0; row < AE_MAIN_ROWS; row++)
 		CHECK(ae_main_row_coming_soon(row) == (row >= AE_MAIN_FORGE));
 	CHECK(!ae_main_row_coming_soon(AE_MAIN_THEATER) && ae_main_row_coming_soon(AE_MAIN_FORGE) && ae_main_row_coming_soon(AE_MAIN_FRIENDS));
+	/* a build where FORGE opens: only FRIENDS waits, and COMING SOON's label sits before it */
+	CHECK(ae_main_soon_first(0) == AE_MAIN_FORGE && ae_main_soon_first(1) == AE_MAIN_FRIENDS);
+	for (row = 0; row < AE_MAIN_ROWS; row++)
+	{
+		CHECK(ae_main_row_coming_soon_when(row, 0) == ae_main_row_coming_soon(row));
+		CHECK(ae_main_row_coming_soon_when(row, 1) == (row == AE_MAIN_FRIENDS));
+	}
+	CHECK(!ae_main_row_coming_soon_when(-1, 1) && !ae_main_row_coming_soon_when(AE_MAIN_ROWS, 1));
 	CHECK(!ae_main_row_coming_soon(-1));
 	CHECK(!ae_main_row_coming_soon(AE_MAIN_ROWS));
 

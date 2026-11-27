@@ -155,3 +155,16 @@ if __name__ == "__main__":
     executable = build_mixer(generated(Path(other).read_text(encoding="latin-1") if other else None,
                                       scalar=bool(os.environ.get("MIXER_SCALAR"))))
     sys.exit(subprocess.run([str(executable), *(sys.argv[1:] or ["metrics"])]).returncode)
+
+
+def test_ui_voice_reads_no_row_past_the_table():
+    """(AE) a UI voice's table row stays inside resampler_deltas: its fraction is taken in double (as a float, a cursor just
+    under a whole frame rounded it to 1.0: row RESAMPLER_TABLE_STEPS, 16 bytes past the table under the sanitizer)"""
+    source = (Path(__file__).resolve().parents[3] / "port/linux/src/dsound_sdl.c").read_text()
+    frame = source[source.index("static void ui_voice_frame("):]
+    frame = frame[:frame.index("\n}\n")]
+    table = frame[frame.index("else if (clip->step <= 1.0)"):]
+    table = table[:table.index("resampler_dot(")]
+    assert "double position = (cursor - (double)center) * RESAMPLER_TABLE_STEPS;" in table
+    assert "if (row >= RESAMPLER_TABLE_STEPS)" in table and "row = RESAMPLER_TABLE_STEPS - 1;" in table
+    assert "phase * RESAMPLER_TABLE_STEPS" not in table

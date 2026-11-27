@@ -870,6 +870,8 @@ void firefight_options_set(struct firefight_options const *options);
 
 extern struct game_variant global_variant;
 boolean firefight_active(void);
+/* (weapon_racks.c) every weapon a unit holds given its reserve full; whether one wanted it */
+boolean firefight_unit_weapons_refill(long unit_index);
 real firefight_player_stun_scale(void);
 /* (actor_combat.c) Firefight's enemies' firing, of their tags': their rate
 and bursts by it, their pauses by its inverse (1: as they are) */

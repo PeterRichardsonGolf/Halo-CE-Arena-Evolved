@@ -12,9 +12,12 @@ things are nearer than 8 u. The seek line is 6 u thick with a 20 u playhead; the
 #include "cseries.h"
 #include "../src/ae_draw.h"
 #include "../src/ae_layout.h"
+#include "../src/ae_platform.h"
 #include "ae_style.h"
 #include "ae_theater_rules.h"
 #include "ae_theater_strip.h"
+#include "ae_hooks.h"
+#include "ae_ui.h"
 #include "network_replay.h"
 
 #define SIDE_U 48.0f
@@ -110,6 +113,92 @@ static void chip_draw(void)
 	ae_draw_rect(x, TOP_U, width, CHIP_HEIGHT_U, 0.0f, AE_COLOR_VIEW_PANEL);
 	ae_draw_rect(x, TOP_U, EDGE_U, CHIP_HEIGHT_U, 0.0f, AE_COLOR_ACCENT);
 	centred_text(AE_FONT_ROW, 26.0f, x + PANEL_PAD_U, TOP_U + CHIP_HEIGHT_U * 0.5f, AE_ALIGN_LEFT, AE_COLOR_TITLE, text);
+}
+
+/* the camera bar's right limit in the 1920 frame: the post-game screen's prompts' (ae_screen_postgame.c), so a 4:3 window's bar
+stops where its prompts do */
+#define CAMERA_RIGHT 1754.0f
+#define CAMERA_HEIGHT_U 48.0f
+#define CAMERA_GAP_U 8.0f
+
+struct camera_hint
+{
+	char const *control, *action;
+};
+
+/* the camera bar's hints for the view, in Content Evolved's words (MOVE and AIM, ZOOM and ORBIT, DISTANCE; the stick click's TRACK,
+FREE, RESET, and L3's FOLLOW PLAYER). A controller names its sticks and clicks (RS / LS, R3 / L3 on a PlayStation pad); the keyboard
+and mouse, when last used, their keys: WASD, the mouse, and the arrow down that does the stick click's work (no key does L3's).
+Returns how many */
+static int camera_hints(struct camera_hint *hints)
+{
+	int view = network_replay_camera_view(), keyboard = ae_platform_keyboard_last_used(), count = 0;
+	int playstation = ae_ui_last_device() == AE_DEVICE_PLAYSTATION;
+	char const *right_click = keyboard ? "DOWN" : playstation ? "R3 / DOWN" : "RS / DOWN";
+	char const *left_click = playstation ? "L3" : "LS";
+
+	if (view == 2)
+	{
+		hints[count++] = (struct camera_hint){ keyboard ? "WASD" : "LEFT STICK", "MOVE" };
+		hints[count++] = (struct camera_hint){ keyboard ? "MOUSE" : "RIGHT STICK", "AIM" };
+		hints[count++] = (struct camera_hint){ right_click, network_replay_camera_tracking() ? "FREE" : "TRACK" };
+		if (!keyboard)
+			hints[count++] = (struct camera_hint){ left_click, "FOLLOW PLAYER" };
+	}
+	else if (view == 0)
+	{
+		hints[count++] = (struct camera_hint){ keyboard ? "W / S" : "LEFT STICK", "ZOOM" };
+		hints[count++] = (struct camera_hint){ keyboard ? "MOUSE" : "RIGHT STICK", "ORBIT" };
+		hints[count++] = (struct camera_hint){ right_click, "RESET" };
+	}
+	else if (view == 3)
+	{
+		hints[count++] = (struct camera_hint){ keyboard ? "W / S" : "LEFT STICK", "DISTANCE" };
+		if (!keyboard)
+			hints[count++] = (struct camera_hint){ left_click, "RESET" };
+	}
+	return count;
+}
+
+/* the camera bar: a slim panel above the playback bar, the hints that fit before the frame's right limit, each its control
+(title colour) and what it does (body colour) */
+static void camera_bar_draw(struct ae_layout const *layout, float bar_y)
+{
+	struct camera_hint hints[4];
+	struct ae_frame frame;
+	int count = camera_hints(hints), each, shown = 0;
+	float x = SIDE_U, y = bar_y - CAMERA_GAP_U - CAMERA_HEIGHT_U, limit, used = 0.0f, width, middle = y + CAMERA_HEIGHT_U * 0.5f;
+
+	if (!count)
+		return;
+	ae_frame_compute(layout->width, ae_settings_ui_scale(), &frame);
+	limit = ae_frame_x(&frame, CAMERA_RIGHT / 1920.0f);
+	if (limit > layout->width - SIDE_U)
+		limit = layout->width - SIDE_U;
+	/* (the hints that fit: the panel's padding on both sides) */
+	for (each = 0; each < count; each++)
+	{
+		float next = ae_draw_text_width(AE_FONT_BODY, LABEL_U, hints[each].control) + 10.0f +
+			ae_draw_text_width(AE_FONT_BODY, LABEL_U, hints[each].action);
+
+		if (x + PANEL_PAD_U + used + (each ? PROMPT_GAP_U : 0.0f) + next + PANEL_PAD_U > limit)
+			break;
+		used += (each ? PROMPT_GAP_U : 0.0f) + next;
+		shown++;
+	}
+	if (!shown)
+		return;
+	width = PANEL_PAD_U + used + PANEL_PAD_U;
+	ae_draw_rect(x, y, width, CAMERA_HEIGHT_U, 0.0f, AE_COLOR_VIEW_PANEL);
+	ae_draw_rect(x, y, EDGE_U, CAMERA_HEIGHT_U, 0.0f, AE_COLOR_ACCENT);
+	x += PANEL_PAD_U;
+	for (each = 0; each < shown; each++)
+	{
+		if (each)
+			x += PROMPT_GAP_U;
+		x += centred_text(AE_FONT_BODY, LABEL_U, x, middle, AE_ALIGN_LEFT, AE_COLOR_TITLE, hints[each].control) + 10.0f;
+		x += centred_text(AE_FONT_BODY, LABEL_U, x, middle, AE_ALIGN_LEFT, AE_COLOR_TEXT, hints[each].action);
+	}
 }
 
 static void bar_draw(struct ae_layout const *layout, int paused)
@@ -227,6 +316,8 @@ void ae_theater_strip_draw(void)
 	if (!network_replay_lines_hidden())
 		chip_draw();
 	bar_draw(&layout, paused);
+	if (!paused)
+		camera_bar_draw(&layout, layout.height - BOTTOM_U - BAR_HEIGHT_U);
 	if (paused)
 		pause_card_draw(&layout);
 }

@@ -305,6 +305,11 @@ void *mcc_runtime_allocate(struct mcc_runtime *runtime, uint32_t bytes)
 
 boolean mcc_cache_tags_loaded(void) { return mcc_loaded; }
 
+char const *mcc_cache_level_name(void)
+{
+    return mcc_loaded && mcc_loaded_cache.level_name[0] ? mcc_loaded_cache.level_name : NULL;
+}
+
 short mcc_cache_scenario_type(void)
 {
     return mcc_loaded ? (short)mcc_loaded_cache.report.identity.scenario_type : NONE;

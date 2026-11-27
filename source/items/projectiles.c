@@ -146,6 +146,7 @@ symbols in this file:
 #include "ae_grenades.h" /* AE hook */
 #include "ae_tracked_grenade.h" /* AE hook */
 #include "ae_grenade_shot.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 /* port: port/linux/game/overshield_effect.c */
 boolean overshield_effect_active(long object_index);
 boolean overshield_effect_hit_effect_allowed(long effect_index);
@@ -748,6 +749,8 @@ boolean projectile_update(
 		struct collision_result collision;
 		boolean moved = FALSE;
 		real gravity_acceleration;
+		float gravity_pull[3]; /* AE hook */
+		int gravity_pulled; /* AE hook */
 		real final_speed = speed;
 		real average_speed = speed;
 		real_vector3d average_velocity = projectile->object.translational_velocity;
@@ -758,6 +761,7 @@ boolean projectile_update(
 			"c:\\halo\\SOURCE\\items\\projectiles.c",
 			326,
 			&projectile->object.translational_velocity);
+		gravity_pulled = ae_forge_gravity_pull(&projectile->object.position, gravity_pull); /* AE hook */
 
 		if (projectile->projectile.target_object_index != NONE &&
 			definition->projectile.guided_angular_velocity > 0.0f)
@@ -884,6 +888,8 @@ boolean projectile_update(
 			gravity_acceleration = global_gravity * definition->projectile.air_gravity_scale;
 		new_velocity.k -= gravity_acceleration * time_remaining;
 		average_velocity.k -= gravity_acceleration * time_remaining * 0.5f;
+		if (gravity_pulled) ae_forge_gravity_correct(&new_velocity, gravity_pull, gravity_acceleration * time_remaining); /* AE hook */
+		if (gravity_pulled) ae_forge_gravity_correct(&average_velocity, gravity_pull, gravity_acceleration * time_remaining * 0.5f); /* AE hook */
 
 		match_vassert(
 			"c:\\halo\\SOURCE\\items\\projectiles.c",
@@ -932,6 +938,7 @@ boolean projectile_update(
 		{
 			time_remaining = 1.0f - collision.t;
 			new_velocity.k += gravity_acceleration * time_remaining;
+			if (gravity_pulled) ae_forge_gravity_correct(&new_velocity, gravity_pull, -gravity_acceleration * time_remaining); /* AE hook */
 			if (final_speed != 0.0f)
 			{
 				real restored_speed = time_remaining * projectile->projectile.deceleration + final_speed;

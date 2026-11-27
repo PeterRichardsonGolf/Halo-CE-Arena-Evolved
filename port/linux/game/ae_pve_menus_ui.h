@@ -11,6 +11,8 @@ drawing. Include after cseries.h and ae_setup_flow.h.
 
 #include "ae_setup_flow.h"
 
+struct ae_event;
+
 /* a setting written when it is one of the campaign rule screens' (ae_pve_menus_key_allowed): 1 written, 0 refused or failed */
 int ae_pve_menus_ui_write(const char *key, const char *value);
 /* a setting's text as the config holds it ("true", "50", "per_player"); "" when unknown. Valid until the next call */
@@ -70,6 +72,8 @@ struct ae_pvem_rows
 	void (*y_action)(struct ae_pvem_rows *rows);
 	const char *y_word;
 	short y_hidden;
+	/* (FORGE KEYS) asked first with each event: nonzero when it took the event (A, left and right told apart on a row) */
+	int (*handle_first)(struct ae_pvem_rows *rows, struct ae_event const *event);
 };
 /* pushes the screen with the data as the caller filled it (flow.hit_* are set here); 0 when the stack is full */
 int ae_pve_menus_rows_open(struct ae_pvem_rows *rows);

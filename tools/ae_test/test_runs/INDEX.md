@@ -1059,6 +1059,37 @@ The own flag's waypoint WHEN SPOTTED (the AE CTF seeds): away from home it shows
 - `carrier-hidden`: Enemy runs your flag behind your base's walls
 - `flag-dropped`: Your flag dropped: its waypoint shows without sight
 
+## forge-s1: FORGE: THE MONITOR FLIES
+
+File `forge-s1.txt`, 3 tests.
+
+FORGE, step 1 (Content Evolved's Forge, port/forge, in the 64-bit Linux build): the session starts from DEV MODE's `forge start <map>`
+
+- `monitor`: MONITOR: you fly, Forge's prompts show
+- `body`: F4: the Monitor's body shows
+- `campaign-level`: B30: a campaign level loads with no cutscene
+
+## forge-s2: FORGE: EDIT AND THE DOOR
+
+File `forge-s2.txt`, 3 tests.
+
+FORGE, step 2 (editing and the door): Content Evolved's in-game tools as it has them (grab, turn with the rotation snap, copy, delete)
+
+- `grab-rotate`: GRAB: the Warthog turns by 45 degrees and stays
+- `copy-delete`: COPY and DELETE: the copy goes, the Warthog stays
+- `door`: FORGE > NEW MAP > BLOODGULCH opens a Forge session
+
+## forge-s3: FORGE: SAVE, LOAD, PLAY
+
+File `forge-s3.txt`, 4 tests.
+
+FORGE, step 3 (save, load, play): Forge's SAVE MAP writes the session's map as custom_maps\<name>.map (the picture and the saved state are in the
+
+- `save-map`: SAVE MAP: s3test is written and named in the pause
+- `my-maps`: MY MAPS lists s3test with its picture
+- `play-ctf`: CTF on s3test: the flag and both objects are there
+- `play-slayer`: SLAYER on s3test: the CTF-only objects are gone
+
 ## foundation-rc5: H2 FOUNDATION: ITS WEAPON LAYOUT
 
 File `foundation-rc5.txt`, 5 tests.

@@ -55,6 +55,8 @@ check The screen draws
 screen 1
 """
 VERDICTS = "PASS:5,FAIL:5,NOTE:5,SKIP:5"
+# the files a build writes beside the game, which the game reads from its own folder
+SIDE_FILES = ("forge_markers.bin", "tag_props.bin", "social.txt", "matchmaking.txt", "credits.txt")
 
 
 def binary():
@@ -95,6 +97,11 @@ def start(game, root, seconds, verdicts=VERDICTS, keys=None):
     (root / "bin").mkdir(exist_ok=True)
     if not (root / "bin" / "halo").exists():
         shutil.copy(game, root / "bin" / "halo")
+    # (the files the game reads beside itself: without Forge's two it plays with no props, racks or marker meshes)
+    for name in SIDE_FILES:
+        side = Path(game).parent / name
+        if side.is_file() and not (root / "bin" / name).exists():
+            shutil.copy(side, root / "bin" / name)
     log = open(root / "out.log", "a")
     return subprocess.Popen([str(root / "bin" / "halo")], cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT, start_new_session=True)
 

@@ -153,6 +153,7 @@ symbols in this file:
 #include "ae_join_fetch.h" /* AE hook */
 #include "ae_menus_swap.h" /* AE hook */
 #include "ae_pack_versions.h" /* AE hook */
+#include "ae_forge_maps.h" /* AE hook */
 #include "ae_weapon_pack.h" /* AE hook */
 #include "ae_sound_filter.h" /* AE hook */
 #include "ae_map_folders.h" /* AE hook */
@@ -161,6 +162,7 @@ symbols in this file:
 #include "ae_tag_import_spike.h" /* AE hook */
 #include "firing_range.h" /* AE hook */
 #include "cev_glue.h" /* AE hook */
+#include "ae_wide_bitmaps.h" /* AE hook */
 #ifdef HALO_ANDROID
 /* port: geometry the map holds and does not write, drawn on Android from
 GL buffers of its own (port/linux/src/d3d8_gl.c) */
@@ -765,6 +767,7 @@ void cache_files_map_file_path(
 	}
 	ae_map_folders_xbox_path(map_name, path, size); /* AE hook */
 	ae_map_share_xbox_path(map_name, path, size); /* AE hook */
+	ae_forge_maps_xbox_path(map_name, path, size); /* AE hook */
 }
 
 void scenario_tags_unload(
@@ -805,6 +808,7 @@ void scenario_tags_unload(
 	ae_weapon_pack_tags_unloaded(); /* AE hook */
 	ae_tag_import_spike_tags_unloaded(); /* AE hook */
 	ae_sound_filter_tags_unloaded(); /* AE hook */
+	ae_wide_bitmaps_tags_unloaded(); /* AE hook */
 	cache_file_close();
 	if (mcc_cache_tags_loaded())
 	{

@@ -56,6 +56,8 @@ static boolean players_are_all_dead(void){return all_dead;}
 static boolean main_coop_host_revert(void){if(!game_state_globals.saved_game_valid)return FALSE;reverts++;return TRUE;}
 static void players_respawn_at_checkpoint(void){respawns++;}
 static void game_state_revert(void){reverts++;}
+/* (Arena Evolved) main.c asks whether a Forge session is on: none is in a co-op game */
+static int forge_level_is_session(void){return 0;}
 static void game_state_call_before_save_procs(void){}
 static void main_stop_time(void){}
 static void main_start_time(void){}

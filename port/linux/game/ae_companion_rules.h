@@ -84,6 +84,10 @@ the human was in the air since the last crumb (the last one is marked JUMPED); 0
 #define AE_COMPANION_TRACK_GAP 4.0f
 int ae_companion_track_push(float track[][3], unsigned char flags[], int *count, float x, float y, float z, int airborne_since,
 	int crouched);
+/* the spot the human left the ground from: a crumb of its own however near the last, unless within AE_COMPANION_TRACK_TAKEOFF_NEAR
+of it in plan (and AE_COMPANION_TRACK_RISE in height), so that the jump marks where it was made; 1 when added */
+#define AE_COMPANION_TRACK_TAKEOFF_NEAR 0.25f
+int ae_companion_track_takeoff(float track[][3], unsigned char flags[], int *count, float x, float y, float z);
 /* what a member walking to crumb goal (ae_companion_track_step) does there: the jump of the crumb it just reached (goal - 1,
 within AE_COMPANION_TRACK_CUE of it in plan), the crouch of that crumb or of the goal */
 #define AE_COMPANION_TRACK_CUE 1.2f

@@ -158,6 +158,7 @@ static int mcc_hud_plan_prepare(struct mcc_hud_plan *plan,struct mcc_runtime *r)
     }
     /* Check the traversal budget before fingerprinting. Even padding may
      * overlap another consumer's fields, so this pass never writes. */
+    mcc_hud_layout_work=0; /* AE hook */
     for (i=0;i<roots;i++) {
         uint32_t entry_index=plan->uses[i].offset;
         uint32_t *entry=(uint32_t *)(r->tag_index+entry_index*32);

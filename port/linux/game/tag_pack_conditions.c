@@ -21,11 +21,16 @@ static int firefight_pack_wanted(void)
 	return ae_firefight_doors_pack_on();
 }
 
-/* the Forge menu opened on this machine, once: this build has no Forge */
+/* the Forge menu opened on this machine, once (port/forge/src/forge_runtime_tags.c): a build without Forge has none */
+#include "opence_features.h" /* AE hook */
+#if OPENCE_ENABLE_FORGE /* AE hook */
+int forge_pack_wanted(void); /* AE hook */
+#else /* AE hook */
 static int forge_pack_wanted(void)
 {
 	return 0;
 }
+#endif /* AE hook */
 
 struct tag_pack_condition const tag_pack_conditions[] =
 {

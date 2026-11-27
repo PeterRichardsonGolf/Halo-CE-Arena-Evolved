@@ -140,6 +140,8 @@ static void ae_squad_heard(struct player_datum const *marker, short mark_kind, l
 /* (ae_bots_squad.inc) S3: a campaign SMART tap on the squad's own order marker, a vehicle or a weapon (ae_bots_squad_smart_pick):
 TRUE when it was one of those (the focus and the place go on as before) */
 static boolean ae_squad_smart(struct player_datum const *marker, short mark_kind, long object_index, real_point3d const *spot, long led);
+/* (ae_bots_squad.inc) the campaign squad's own answers to the wheel: FALL IN, MOUNT; TRUE when the call was dealt with there */
+static boolean ae_squad_wheel(struct player_datum const *marker, long object_index, real_point3d const *spot, short wheel_entry, long led);
 
 /* (the host) a mark was made: the bots it goes to */
 void ae_bots_marks_heard(struct player_datum const *marker, short mark_kind, long object_index, real_point3d const *spot, short wheel_entry)
@@ -161,6 +163,11 @@ void ae_bots_marks_heard(struct player_datum const *marker, short mark_kind, lon
 	/* (S3: a campaign squad's SMART tap on its own marker, a vehicle or a weapon) */
 	if (campaign && led != NONE && wheel_entry == AE_WHEEL_SMART && ae_squad_smart(marker, mark_kind, object_index, spot, led))
 		return;
+	if (campaign && led != NONE && ae_squad_wheel(marker, object_index, spot, wheel_entry, led))
+	{
+		ae_squad_heard(marker, mark_kind, object_index, spot, wheel_entry, ae_fireteam_order_of(led));
+		return;
+	}
 	if (led != NONE)
 	{
 		order = ae_fireteam_call_order((int)led, wheel_entry);

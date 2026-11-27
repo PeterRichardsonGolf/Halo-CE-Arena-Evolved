@@ -146,6 +146,18 @@ int main(void)
 		/* (a seated gunner sees half as far again: heroic's 42 is 63; on foot as before) */
 		CHECK(fabs(ae_bots_squad_gunner_reach(42.0f, 1) - 63.0f) < 0.01 && ae_bots_squad_gunner_reach(42.0f, 0) == 42.0f);
 		CHECK(ae_bots_squad_foe_in_reach(AE_SQUAD_ENGAGE_REACH * AE_SQUAD_GUNNER_REACH_SCALE / ae_bots_squad_gunner_reach(1.0f, 1)));
+		/* a foe beside or behind the aim, 40 units off: not a target on foot, one for a seated gunner */
+		CHECK(!ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, 40.0f, 0, 0, 0, 0));
+		CHECK(ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, 40.0f, 0, 0, 0, 1));
+		CHECK(ae_bots_squad_foe_in_view(179.0f * degree, 30.0f * degree, 60.0f, 0, 0, 0, 1));
+		/* (on foot: in view, close by, the one that hurt it, the one fought, the one called out) */
+		CHECK(ae_bots_squad_foe_in_view(-29.0f * degree, 30.0f * degree, 40.0f, 0, 0, 0, 0));
+		CHECK(!ae_bots_squad_foe_in_view(-31.0f * degree, 30.0f * degree, 40.0f, 0, 0, 0, 0));
+		CHECK(ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, AE_SQUAD_NEAR_VIEW, 0, 0, 0, 0));
+		CHECK(!ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, AE_SQUAD_NEAR_VIEW + 0.5f, 0, 0, 0, 0));
+		CHECK(ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, 40.0f, 1, 0, 0, 0));
+		CHECK(ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, 40.0f, 0, 1, 0, 0));
+		CHECK(ae_bots_squad_foe_in_view(90.0f * degree, 30.0f * degree, 40.0f, 0, 0, 1, 0));
 	}
 	/* cut off by a barrier: the line blocked and a step away; not when beside the player, not with a clear line */
 	CHECK(ae_bots_squad_cut_off(1, AE_SQUAD_CUT_OFF_GAP) && ae_bots_squad_cut_off(1, 5.0f));
@@ -226,10 +238,10 @@ int main(void)
 	/* a door the level keeps shut or unpowered is locked for the squad */
 	CHECK(ae_bots_squad_door_shut_for_good(1, 1.0f) && ae_bots_squad_door_shut_for_good(0, 0.0f) &&
 		!ae_bots_squad_door_shut_for_good(0, 0.5f));
-	/* (every door: the player still 2 s within 4 of a closed door the level has not locked) */
-	CHECK(ae_bots_squad_door_auto(1, 60, 3.9f, 1, 0) && !ae_bots_squad_door_auto(0, 60, 3.9f, 1, 0));
-	CHECK(!ae_bots_squad_door_auto(1, 59, 3.9f, 1, 0) && !ae_bots_squad_door_auto(1, 60, 4.1f, 1, 0) &&
-		!ae_bots_squad_door_auto(1, 60, 3.9f, 0, 0) && !ae_bots_squad_door_auto(1, 60, 3.9f, 1, 1));
+	/* (every door: the player still 2 s within 4 of a door the level has not locked, shut or open) */
+	CHECK(ae_bots_squad_door_auto(1, 60, 3.9f, 0) && !ae_bots_squad_door_auto(0, 60, 3.9f, 0));
+	CHECK(!ae_bots_squad_door_auto(1, 59, 3.9f, 0) && !ae_bots_squad_door_auto(1, 60, 4.1f, 0) &&
+		!ae_bots_squad_door_auto(1, 60, 3.9f, 1));
 	/* (locked: still shut 1 s after the first man came into its reach) */
 	CHECK(ae_bots_squad_door_locked(30, 0.0f) && !ae_bots_squad_door_locked(29, 0.0f) && !ae_bots_squad_door_locked(30, 0.2f));
 	/* PLACES: a grid point is walkable with a floor 0.6 or less below, flat (normal z 0.7),
@@ -415,8 +427,12 @@ int main(void)
 	CHECK(AE_SQUAD_FILE_GAP == 0.8f);
 	/* (MAKE WAY: a member in the player's way (within 1.5 ahead, 0.3 across, him moving) steps to the side with 0.6 of room, else
 	walks on ahead; FILE REVERSAL: a turn back over 120 degrees in a corridor under 1.6 wide) */
-	CHECK(ae_bots_squad_in_strip(1.0f, 0.2f, 1.0f) && !ae_bots_squad_in_strip(1.6f, 0.0f, 1.0f) && !ae_bots_squad_in_strip(1.0f, 0.4f, 1.0f) &&
-		!ae_bots_squad_in_strip(-0.2f, 0.0f, 1.0f) && !ae_bots_squad_in_strip(1.0f, 0.0f, 0.2f));
+	CHECK(ae_bots_squad_in_strip(1.0f, 0.2f, 1.0f, 0) && !ae_bots_squad_in_strip(1.6f, 0.0f, 1.0f, 0) &&
+		!ae_bots_squad_in_strip(1.0f, 0.4f, 1.0f, 0) && !ae_bots_squad_in_strip(-0.2f, 0.0f, 1.0f, 0) &&
+		!ae_bots_squad_in_strip(1.0f, 0.0f, 0.2f, 0));
+	/* (him held up, under half what his stick asks: a member 0.4 across his way is in it, 0.6 not) */
+	CHECK(ae_bots_squad_in_strip(1.0f, 0.4f, 1.0f, 1) && ae_bots_squad_in_strip(1.0f, -0.5f, 1.0f, 1) &&
+		!ae_bots_squad_in_strip(1.0f, 0.6f, 1.0f, 1));
 	CHECK(ae_bots_squad_make_way(0.7f, 0.2f) == AE_SQUAD_WAY_LEFT && ae_bots_squad_make_way(0.2f, 0.9f) == AE_SQUAD_WAY_RIGHT &&
 		ae_bots_squad_make_way(0.8f, 0.9f) == AE_SQUAD_WAY_RIGHT && ae_bots_squad_make_way(0.5f, 0.5f) == AE_SQUAD_WAY_AHEAD);
 	/* the side a member made way to is kept, unless its room closed under AE_SQUAD_WAY_ROOM with more on the other side */
@@ -458,11 +474,22 @@ int main(void)
 	CHECK(ae_bots_squad_throttle(1.0f, 2.0f, 1.4f, 1.0f) == 1.0f && ae_bots_squad_throttle(1.0f, 2.0f, 0.5f, 2.8f) == 1.0f);
 	CHECK(fabs(ae_bots_squad_throttle(1.0f, 2.0f, 0.55f, 1.0f) - 0.6f) < 0.001f);
 	CHECK(ae_bots_squad_throttle(0.0f, 2.0f, 0.4f, 1.0f) == 0.3f && ae_bots_squad_throttle(1.0f, 2.0f, 0.3f, 1.0f) == 0.0f);
-	/* (a jump crumb is jumped within 0.6 of it, not on the way to it; one member crosses at a time: another waits while the one
-	crossing is within 1.0 of the crumb, 3 s at most) */
+	/* (a jump crumb is jumped within 0.6 of it, not on the way to it; one member crosses at a time: another waits until the one
+	crossing is within 0.3 of the far end of a 2.0 crossing, while it stays within 3.0 of the takeoff, 3 s at most; one held at
+	the face 1.1 along still holds the others back) */
 	CHECK(ae_bots_squad_cue_jump_now(0.6f) && !ae_bots_squad_cue_jump_now(0.7f));
-	CHECK(ae_bots_squad_crossing_waits(1, 0.9f, 10) && !ae_bots_squad_crossing_waits(1, 1.1f, 10) &&
-		!ae_bots_squad_crossing_waits(1, 0.5f, 90) && !ae_bots_squad_crossing_waits(0, 0.5f, 10));
+	/* (LINE UP: a member 0.5 off the player's line from (0, 0) to the crumb (2, 0) goes to 0.6 before the crumb on it first; 0.1
+	off, none; a line under 0.3 long, none) */
+	{
+		float x = 0.0f, y = 9.0f;
+
+		CHECK(ae_bots_squad_lineup_point(0.0f, 0.0f, 2.0f, 0.0f, 1.8f, 0.5f, &x, &y) && fabsf(x - 1.4f) < 0.01f && fabsf(y) < 0.01f);
+		CHECK(!ae_bots_squad_lineup_point(0.0f, 0.0f, 2.0f, 0.0f, 1.5f, 0.1f, &x, &y));
+		CHECK(!ae_bots_squad_lineup_point(1.9f, 0.0f, 2.0f, 0.0f, 1.8f, 0.5f, &x, &y));
+	}
+	CHECK(ae_bots_squad_crossing_waits(1, 0.9f, 2.0f, 0.9f, 10) && ae_bots_squad_crossing_waits(1, 1.1f, 2.0f, 1.2f, 10) &&
+		!ae_bots_squad_crossing_waits(1, 1.8f, 2.0f, 1.8f, 10) && !ae_bots_squad_crossing_waits(1, 0.5f, 2.0f, 3.1f, 10) &&
+		!ae_bots_squad_crossing_waits(1, 0.5f, 2.0f, 0.5f, 90) && !ae_bots_squad_crossing_waits(0, 0.5f, 2.0f, 0.5f, 10));
 	/* (the cost's 99th percentile from a histogram of tenths of a millisecond: 99 ticks at 0.3 and one at 9 give 0.3) */
 	{
 		long histogram[AE_SQUAD_COST_BUCKETS];
@@ -483,6 +510,31 @@ int main(void)
 	CHECK(!ae_bots_squad_stalled(0, 0, 0, 0, 0, 0) && !ae_bots_squad_stalled(1, 1, 1, 1, 0, 0) && !ae_bots_squad_stalled(1, 0, 1, 0, 1, 0));
 	/* (on an order away from the player (go here, attack, defend, watch) its walk is the order's: a warp to him would undo it) */
 	CHECK(!ae_bots_squad_stalled(1, 1, 1, 0, 0, 1));
+	/* AN ORDER'S POINT: two members side by side across the way they came, the next two a step behind */
+	{
+		float ax, ay, bx, by, cx, cy;
+
+		/* (the way of advance along +x: the point man at the point, the next back and left, the next back and right) */
+		ae_bots_squad_order_offset(0, 0.0f, &ax, &ay);
+		ae_bots_squad_order_offset(1, 0.0f, &bx, &by);
+		ae_bots_squad_order_offset(2, 0.0f, &cx, &cy);
+		CHECK(fabsf(ax) < 0.001f && fabsf(ay) < 0.001f);
+		CHECK(bx < -AE_SQUAD_ORDER_SPACING * 0.9f && cx < -AE_SQUAD_ORDER_SPACING * 0.9f && by * cy < 0.0f);
+		/* the point man stands for one strung out behind, not in a fight, not for ever */
+		CHECK(ae_bots_squad_order_waits(8.0f, 0, 0) && !ae_bots_squad_order_waits(5.0f, 0, 0));
+		CHECK(!ae_bots_squad_order_waits(8.0f, 0, 1) && !ae_bots_squad_order_waits(8.0f, AE_SQUAD_ORDER_WAIT_TICKS, 0));
+		/* out of a fight: it walks to its place and stands there, with no flip at the edge */
+		CHECK(ae_bots_squad_order_step(0, 5.0f, AE_SQUAD_ORDER_RADIUS, 0) == AE_SQUAD_ORDER_WALK);
+		CHECK(ae_bots_squad_order_step(0, 0.5f, AE_SQUAD_ORDER_RADIUS, 0) == AE_SQUAD_ORDER_STAND);
+		CHECK(ae_bots_squad_order_step(0, 0.5f, AE_SQUAD_ORDER_RADIUS, 1) == AE_SQUAD_ORDER_WALK);
+		CHECK(ae_bots_squad_order_step(0, 0.2f, AE_SQUAD_ORDER_RADIUS, 1) == AE_SQUAD_ORDER_STAND);
+		/* in a fight: its own moves inside the radius, back in from outside it; an ATTACK's radius is the wider */
+		CHECK(ae_bots_squad_order_step(1, 5.0f, ae_bots_squad_order_radius(0), 0) == AE_SQUAD_ORDER_FIGHT);
+		CHECK(ae_bots_squad_order_step(1, 7.0f, ae_bots_squad_order_radius(0), 0) == AE_SQUAD_ORDER_WALK);
+		CHECK(ae_bots_squad_order_step(1, 7.0f, ae_bots_squad_order_radius(1), 0) == AE_SQUAD_ORDER_FIGHT);
+		/* the leash to the player: only with no point order and no vehicle it was sent to */
+		CHECK(ae_bots_squad_on_leash(0, 0) && !ae_bots_squad_on_leash(1, 0) && !ae_bots_squad_on_leash(0, 1));
+	}
 	/* (a report line: written when its text changed, when AE_SQUAD_REPORT_QUIET_TICKS passed since it was last written, or when
 	the game's time went back (a new level); not otherwise) */
 	CHECK(ae_bots_squad_report_due("", "squad walk: follow ticks 0", -1, 0));
@@ -507,5 +559,87 @@ int main(void)
 	}
 	CHECK(ae_bots_squad_stuck_tick(1, 0.1f, 0) && !ae_bots_squad_stuck_tick(0, 0.1f, 0));
 	CHECK(!ae_bots_squad_stuck_tick(1, AE_SQUAD_STUCK_SPEED, 0) && !ae_bots_squad_stuck_tick(1, 0.1f, 1));
+	/* (a member at a lip past AE_SQUAD_LIP_PATIENCE_TICKS with its way not shrinking: its run-ups and standing are no progress) */
+	CHECK(!ae_bots_squad_lip_patience_over(-1) && !ae_bots_squad_lip_patience_over(AE_SQUAD_LIP_PATIENCE_TICKS - 1));
+	CHECK(ae_bots_squad_lip_patience_over(AE_SQUAD_LIP_PATIENCE_TICKS) && AE_SQUAD_LIP_PATIENCE_TICKS == 360);
+	/* (a door: a machine of the door kind, or a platform the level names a door (a10's doors); a lift or a gear is none) */
+	CHECK(ae_bots_squad_machine_is_door(AE_SQUAD_MACHINE_DOOR, "levels\\b30\\devices\\hatch"));
+	CHECK(ae_bots_squad_machine_is_door(AE_SQUAD_MACHINE_PLATFORM, "levels\\a10\\devices\\doors\\door small no glass\\door small no glass"));
+	CHECK(ae_bots_squad_machine_is_door(AE_SQUAD_MACHINE_PLATFORM, "levels\\a30\\devices\\Door Blast\\door blast"));
+	CHECK(!ae_bots_squad_machine_is_door(AE_SQUAD_MACHINE_PLATFORM, "levels\\b30\\devices\\lift\\lift"));
+	CHECK(!ae_bots_squad_machine_is_door(AE_SQUAD_MACHINE_PLATFORM, NULL));
+	CHECK(!ae_bots_squad_machine_is_door(2, "levels\\a10\\devices\\doors\\alert light"));
+	/* (a track crumb the member gained nothing on for AE_SQUAD_CRUMB_STALL_TICKS is passed over, unless he jumped there) */
+	CHECK(ae_bots_squad_crumb_unreachable(0, 1, AE_SQUAD_CRUMB_STALL_TICKS) &&
+		!ae_bots_squad_crumb_unreachable(0, 1, AE_SQUAD_CRUMB_STALL_TICKS - 1));
+	CHECK(!ae_bots_squad_crumb_unreachable(1, 1, 600) && AE_SQUAD_CRUMB_STALL_TICKS == 60);
+	/* (only a crumb in a door's reach: one on open ground or a barrier's top is the crossing's) */
+	CHECK(!ae_bots_squad_crumb_unreachable(0, 0, 600));
+	/* (AUTOMATIC FORMATIONS OFF: no formation picked, EVERY DOOR as ON ORDER, no moving as one on an order) */
+	CHECK(ae_bots_squad_formation_wanted(1, AE_SQUAD_FORMATION_WEDGE) == AE_SQUAD_FORMATION_WEDGE);
+	CHECK(ae_bots_squad_formation_wanted(0, AE_SQUAD_FORMATION_WEDGE) == AE_SQUAD_FORMATIONS);
+	CHECK(ae_bots_squad_door_every(1, 1) && !ae_bots_squad_door_every(0, 1) && !ae_bots_squad_door_every(1, 0));
+	CHECK(ae_bots_squad_moves_as_one(1) && !ae_bots_squad_moves_as_one(0));
+	/* (AUTOMATIC FORMATIONS: the pick, in order: a fight, an entry, a stack, a halt (still 2 s), then by the width about him) */
+	CHECK(ae_bots_squad_formation_pick(1, 1, 1, 90, 3.5f, 0) == AE_SQUAD_FORMATION_FIGHT);
+	CHECK(ae_bots_squad_formation_pick(0, 1, 1, 90, 3.5f, 0) == AE_SQUAD_FORMATION_ENTRY);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 1, 90, 3.5f, 0) == AE_SQUAD_FORMATION_STACK);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, AE_SQUAD_FORMATION_HALT_TICKS, 1.0f, 0) == AE_SQUAD_FORMATION_HALT);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, AE_SQUAD_FORMATION_HALT_TICKS - 1, 1.4f, 0) == AE_SQUAD_FORMATION_FILE);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, 0, 1.5f, 0) == AE_SQUAD_FORMATION_TIGHT);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, 0, 2.9f, 0) == AE_SQUAD_FORMATION_TIGHT);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, 0, 3.0f, 0) == AE_SQUAD_FORMATION_STAGGER);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, 0, 3.0f, 1) == AE_SQUAD_FORMATION_WEDGE);
+	CHECK(ae_bots_squad_formation_pick(0, 0, 0, 0, 2.0f, 1) == AE_SQUAD_FORMATION_TIGHT);
+	/* (a new pick is taken once it held AE_SQUAD_FORMATION_HOLD_TICKS; a fight, an entry or a stack at once) */
+	CHECK(ae_bots_squad_formation_hold(AE_SQUAD_FORMATION_FILE, AE_SQUAD_FORMATION_TIGHT, AE_SQUAD_FORMATION_HOLD_TICKS - 1) ==
+		AE_SQUAD_FORMATION_FILE);
+	CHECK(ae_bots_squad_formation_hold(AE_SQUAD_FORMATION_FILE, AE_SQUAD_FORMATION_TIGHT, AE_SQUAD_FORMATION_HOLD_TICKS) ==
+		AE_SQUAD_FORMATION_TIGHT);
+	CHECK(ae_bots_squad_formation_hold(AE_SQUAD_FORMATION_HALT, AE_SQUAD_FORMATION_STACK, 0) == AE_SQUAD_FORMATION_STACK);
+	CHECK(ae_bots_squad_formation_hold(AE_SQUAD_FORMATION_TIGHT, AE_SQUAD_FORMATION_FIGHT, 0) == AE_SQUAD_FORMATION_FIGHT);
+	/* (a formation's spot for each rank: along (behind him), across (left +); a halt's at least AE_SQUAD_HALT_NEAR from him,
+	inside the width; a file on his line; staggers on alternate sides; a fight, entry or stack none) */
+	{
+		float along, across;
+		int rank;
+
+		for (rank = 0; rank < 3; rank++)
+		{
+			CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_HALT, rank, 3.5f, &along, &across));
+			CHECK(along * along + across * across >= AE_SQUAD_HALT_NEAR * AE_SQUAD_HALT_NEAR - 0.01f);
+			CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_HALT, rank, 1.2f, &along, &across));
+			CHECK(fabsf(across) <= 0.3f && along * along + across * across >= AE_SQUAD_HALT_NEAR * AE_SQUAD_HALT_NEAR - 0.01f);
+			CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_FILE, rank, 1.2f, &along, &across));
+			CHECK(across == 0.0f && fabsf(along - AE_SQUAD_FILE_APART * (float)(rank + 1)) < 0.01f);
+		}
+		/* (staggers: the first two on both walls, the third behind them on his line; within the slots' ring) */
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_STAGGER, 0, 3.5f, &along, &across) && across > 0.5f &&
+			fabsf(along - AE_SQUAD_STAGGER_APART) < 0.01f);
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_STAGGER, 1, 3.5f, &along, &across) && across < -0.5f &&
+			fabsf(along - AE_SQUAD_STAGGER_APART) < 0.01f);
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_STAGGER, 2, 3.5f, &along, &across) && across == 0.0f &&
+			fabsf(along - 2.0f * AE_SQUAD_STAGGER_APART) < 0.01f);
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_TIGHT, 0, 2.0f, &along, &across) && across > 0.0f && across <= 0.6f);
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_TIGHT, 1, 2.0f, &along, &across) && across < 0.0f);
+		CHECK(ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_WEDGE, 0, 6.0f, &along, &across) && along >= 2.0f && across >= 2.0f);
+		CHECK(!ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_STACK, 0, 3.0f, &along, &across));
+		/* (the slots' ring per formation: a halt's from AE_SQUAD_HALT_NEAR less 0.2, each out to its farthest spot and 0.6;
+		without a spot the follow ring) */
+		{
+			float ring_in, ring_out;
+
+			ae_bots_squad_formation_ring(AE_SQUAD_FORMATION_HALT, &ring_in, &ring_out);
+			CHECK(fabsf(ring_in - (AE_SQUAD_HALT_NEAR - 0.2f)) < 0.01f && ring_out >= 2.5f);
+			ae_bots_squad_formation_ring(AE_SQUAD_FORMATION_STAGGER, &ring_in, &ring_out);
+			CHECK(ring_in == AE_SQUAD_RING_IN && fabsf(ring_out - (2.0f * AE_SQUAD_STAGGER_APART + 0.6f)) < 0.01f);
+			ae_bots_squad_formation_ring(AE_SQUAD_FORMATION_STACK, &ring_in, &ring_out);
+			CHECK(ring_in == AE_SQUAD_RING_IN && ring_out == AE_SQUAD_RING_OUT);
+			CHECK(ae_bots_squad_slot_ok_ring(2.5f, -1.0f, -1.0f, 1.0f, 0, 1, 0.7f, 3.6f) &&
+				!ae_bots_squad_slot_ok_ring(2.5f, -1.0f, -1.0f, 1.0f, 0, 1, AE_SQUAD_RING_IN, AE_SQUAD_RING_OUT) &&
+				!ae_bots_squad_slot_ok_ring(1.0f, -1.0f, -1.0f, 1.0f, 0, 0, 1.3f, 2.6f));
+		}
+		CHECK(!ae_bots_squad_formation_spot(AE_SQUAD_FORMATION_FIGHT, 0, 3.0f, &along, &across));
+	}
 	return 0;
 }

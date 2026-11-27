@@ -18,7 +18,7 @@ struct tag_block { long count; void *address; void *definition; };
 #include "types.inc"
 
 struct object_state {
-    real_point3d position;
+    real_point3d position, bounding_sphere_center;
     real_vector3d translational_velocity, angular_velocity, forward, up;
     struct location location;
     unsigned long flags;
@@ -52,6 +52,8 @@ static struct mass_point_definition mass_definitions[3];
 static real_vector3d up = {{0,0,1}}, down = {{0,0,-1}};
 static real_vector3d *global_up3d = &up, *global_down3d = &down;
 static real global_gravity = 0.0035651792f;
+/* (Arena Evolved) Forge (ae_forge_engine.h): out of every volume the force is left as the world's and the ground holds as before */
+static real ae_forge_physics_gravity(real_point3d const *at, real mass, real gravity, real_vector3d *force) { (void)at; (void)mass; (void)gravity; (void)force; return global_gravity; }
 static int loaded, calls, warned_about_physics_mass_points, warned_about_physics_inertial_matrix;
 static int debug_physics_disable_penetration_freeze;
 static real_matrix3x3 inertia[2];

@@ -41,6 +41,9 @@ def commands(build):
     compiles = [shlex.split(line) for line in lines if " -c " in line and not line.startswith(("python", '"'))
                 and "lp64_rewrite" not in line]
     link = shlex.split(lines[-1])
+    # (the linux64 build's link line goes on with a symbol check of the unsanitized binary: not part of this link)
+    if "&&" in link:
+        link = link[:link.index("&&")]
     return compiles, link
 
 

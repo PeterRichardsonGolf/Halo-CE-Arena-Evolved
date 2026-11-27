@@ -429,8 +429,11 @@ static struct
 
 long bots_wanted_count(void)
 {
+	extern int g_forge_session_enabled; /* AE hook */
 	long count = config_integer("bots.count");
 
+	if (g_forge_session_enabled) /* AE hook */
+		return 0;
 	count = ae_bots_round_cap(count); /* AE hook */
 	return count < 0 ? 0 : count > BOTS_MAXIMUM ? BOTS_MAXIMUM : count;
 }

@@ -304,6 +304,7 @@ symbols in this file:
 #include "randomizer.h" /* AE hook */
 #include "ae_spawners.h" /* AE hook */
 #include "ae_companion.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 /* network_game_globals.c's */
 boolean network_game_distributed_client(void);
@@ -1500,6 +1501,7 @@ static void player_spawn(
 				}
 				if (firefight_active())
 					unit_definition_index = firefight_resolve_player_biped_tag(player_index, unit_definition_index);
+				unit_definition_index = ae_forge_player_biped(player_index, unit_definition_index); /* AE hook */
 				unit_definition_index = ae_weapon_pack_player_biped(unit_definition_index); /* AE hook */
 				unit_definition_index = ae_tag_inject_player_biped(unit_definition_index); /* AE hook */
 
@@ -5220,6 +5222,7 @@ void players_update_before_game(
 						(NONE == control_data.zoom_level) || ((control_data.zoom_level >= 0)));
 					unit_control(player->unit_index, &control_data);
 					{ extern void firing_range_player_control(long unit_index, struct unit_control_data const *control); firing_range_player_control(player->unit_index, &control_data); } /* AE hook */
+					ae_forge_player_control(player->unit_index, &control_data); /* AE hook */
 				}
 				else if (unit->unit.swarm_actor_index == NONE &&
 					unit->unit.actor_index == NONE)

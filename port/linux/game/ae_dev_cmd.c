@@ -47,6 +47,7 @@ last name (sniper_rifle, "sniper rifle" or SNIPER RIFLE alike), else by a part o
 #include "units/vehicle_definitions.h"
 #include "../src/capture.h"
 #include "../src/port_config.h"
+#include "../src/ae_secret_settings.h"
 #include "../src/ae_config_players.h"
 #include "ae_glue_player_settings.h"
 
@@ -97,6 +98,7 @@ void main_goto_main_menu(void);
 #include "ae_glue_party_online.h"
 #include "ae_screen_party.h"
 #include "ae_glue_ce_archive.h"
+#include "ae_forge_dev.h"
 #include "ae_glue_bot_records.h"
 #include "ae_glue_profile_move.h"
 #include "ae_playlists_store.h"
@@ -122,6 +124,7 @@ void main_goto_main_menu(void);
 #include "ae_screen_leaderboard.h"
 #include "ae_screen_saved_games.h"
 #include "ae_screen_theater.h"
+#include "ae_screen_forge.h"
 #include "ae_screen_scoring.h"
 #include "ae_screen_randomizer.h"
 #include "ae_firefight_dev.h"
@@ -187,6 +190,8 @@ static void hitch_now(unsigned long milliseconds)
 }
 #include "ae_spawners.h"
 #include "ae_medals_glue.h"
+#include "ae_join_helper.h"
+#include "ae_setup_flow.h"
 
 extern struct game_variant game_variant_global;
 
@@ -292,9 +297,13 @@ static boolean state_kept = TRUE;
 /* the last answers given to a TEST RUN's lines (its setup lines, its reset): each with its number in the order they were
 given (1 up), so the runner finds the answer to the line it sent and sends the next one only then */
 #define TEST_RUN_ANSWERS 8
-static struct { long serial; boolean ok; boolean not_yet; char line[LINE]; char text[160]; } test_run_answers[TEST_RUN_ANSWERS];
+static struct { long serial; boolean ok; boolean not_yet; boolean being_made; char line[LINE]; char text[160]; } test_run_answers[TEST_RUN_ANSWERS];
 /* (answer_not_yet) the answer being given refuses its line for now */
 static boolean answering_not_yet;
+/* (answer_being_made) the answer being given refuses its line while what it needs is written */
+static boolean answering_being_made;
+/* (config of a secret setting, ae_secret_settings.h) the line as the log and the event stream show it: without its value */
+static char const *answering_shown;
 static long test_run_answer_serial;
 
 long ae_dev_cmd_test_run_answers(void)
@@ -317,7 +326,7 @@ int ae_dev_cmd_test_run_answer(const char *line, long after, int *ok, char *text
 	}
 	if (found < 0)
 		return 0;
-	*ok = test_run_answers[found].not_yet ? -1 : test_run_answers[found].ok != FALSE;
+	*ok = test_run_answers[found].being_made ? -2 : test_run_answers[found].not_yet ? -1 : test_run_answers[found].ok != FALSE;
 	if (text && size > 0)
 		snprintf(text, (size_t)size, "%s", test_run_answers[found].text);
 	return 1;
@@ -339,11 +348,12 @@ static void answer(int source, char const *line, boolean ok, char const *format,
 		test_run_answers[slot].serial = ++test_run_answer_serial;
 		test_run_answers[slot].ok = ok;
 		test_run_answers[slot].not_yet = !ok && answering_not_yet;
+		test_run_answers[slot].being_made = !ok && answering_being_made;
 		snprintf(test_run_answers[slot].line, sizeof test_run_answers[slot].line, "%s", line);
 		snprintf(test_run_answers[slot].text, sizeof test_run_answers[slot].text, "%s", text);
 	}
 	platform_log("dev cmd %s: %s -> %s %s", source >= 0 && source < AE_DEV_CMD_SOURCES ? source_names[source] : "?",
-		line, ok ? "ok" : "error", text);
+		answering_shown ? answering_shown : line, ok ? "ok" : "error", text);
 	/* (a plain line either way: a warning shows only while a typed command runs, and the queued ones run later, in
 	the tick) */
 	console_printf(FALSE, ok ? "%s" : "error: %s", text);
@@ -351,7 +361,7 @@ static void answer(int source, char const *line, boolean ok, char const *format,
 	{
 		char line_text[LINE + 64], answer_text[256];
 
-		ae_dev_event_text(line_text, sizeof line_text, line);
+		ae_dev_event_text(line_text, sizeof line_text, answering_shown ? answering_shown : line);
 		ae_dev_event_text(answer_text, sizeof answer_text, text);
 		ae_dev_event("cmd", "\"source\":\"%s\",\"line\":\"%s\",\"ok\":%s,\"text\":\"%s\"",
 			source >= 0 && source < AE_DEV_CMD_SOURCES ? source_names[source] : "?", line_text, ok ? "true" : "false",
@@ -366,6 +376,15 @@ static void answer_not_yet(int source, char const *line, char const *text)
 	answering_not_yet = TRUE;
 	answer(source, line, FALSE, "%s", text);
 	answering_not_yet = FALSE;
+}
+
+/* a line refused while what it needs is written (a tag pack built from the game's maps on its first use): a TEST RUN
+sends it again once a second, for minutes (ae_test_run_lines.h) */
+static void answer_being_made(int source, char const *line, char const *text)
+{
+	answering_being_made = TRUE;
+	answer(source, line, FALSE, "%s", text);
+	answering_being_made = FALSE;
 }
 
 static boolean is_bot(struct player_datum const *player);
@@ -966,6 +985,8 @@ static void command_spawn(struct ae_dev_cmd const *cmd, char const *line, int so
 	/* (powerup <item> [now] [<player>]: the player is the last word, after "now" or alone; powerup <item> ahead: no
 	player, the item lies in front of the host) */
 	char const *who = NULL;
+	/* (spawn <vehicle> flipped: ahead of the host, on its roof) */
+	boolean flipped = !powerup && cmd->words == 2 && !strcmp(cmd->word[1], "flipped");
 	boolean lies_ahead = powerup && ae_dev_cmd_powerup_place(cmd, &who) == AE_DEV_POWERUP_AHEAD;
 
 	definition_index = find_tag(powerup ? EQUIPMENT_DEFINITION_TAG : VEHICLE_DEFINITION_TAG, cmd->word[0], kind,
@@ -980,7 +1001,7 @@ static void command_spawn(struct ae_dev_cmd const *cmd, char const *line, int so
 		command_powerup_to(definition_index, who, line, source);
 		return;
 	}
-	if (!powerup && cmd->words == 2 && !door && strcmp(cmd->word[1], "here") && strcmp(cmd->word[1], "ahead"))
+	if (!powerup && cmd->words == 2 && !door && !flipped && strcmp(cmd->word[1], "here") && strcmp(cmd->word[1], "ahead"))
 	{
 		real yaw;
 
@@ -1038,7 +1059,17 @@ static void command_spawn(struct ae_dev_cmd const *cmd, char const *line, int so
 	else
 		ahead_of(unit_index, cmd->words == 2 && !strcmp(cmd->word[1], "here") ? SPAWN_AHEAD * 0.7f : SPAWN_AHEAD,
 			&at, &forward);
+	if (flipped)
+		at.z += 1.0f;
 	object_index = make_object(definition_index, &at, &forward);
+	if (flipped && object_index != NONE)
+	{
+		struct object_datum *made = object_get(object_index);
+
+		made->object.up.i = 0.0f;
+		made->object.up.j = 0.0f;
+		made->object.up.k = -1.0f;
+	}
 	if (object_index == NONE)
 	{
 		answer(source, line, FALSE, "%s could not be made", tag_get_name(definition_index));
@@ -2757,6 +2788,8 @@ static struct
 	real_point3d still_at;
 	long still_since;
 	int stuck_said;
+	long wait_until;    /* a point's wait: it stands until this tick */
+	real wait_yaw;      /* facing the point's face, else the way it came */
 } puppet;
 
 static void puppet_go(void)
@@ -2838,6 +2871,15 @@ int ae_dev_puppet_action(long absolute_player_index, struct player_action *actio
 		action->desired_facing.pitch = 0.0f;
 		return 1;
 	}
+	/* (a reached point's wait: it stands, facing as it was, and is not stuck) */
+	if (now < puppet.wait_until && now >= puppet.wait_until - 60 * 30)
+	{
+		action->desired_facing.yaw = puppet.wait_yaw;
+		action->desired_facing.pitch = 0.0f;
+		puppet.still_at = here;
+		puppet.still_since = now;
+		return 1;
+	}
 	point = &puppet.route.point[puppet.next];
 	/* (a teleport point: put there at once) */
 	if (point->teleport)
@@ -2871,9 +2913,20 @@ int ae_dev_puppet_action(long absolute_player_index, struct player_action *actio
 		}
 		puppet.next++;
 		platform_log("player route: %d of %d reached, %.1f s", puppet.next, puppet.route.count, (now - puppet.started) / 30.0);
+		if (point->wait > 0.0f)
+		{
+			puppet.wait_until = now + (long)(point->wait * 30.0f);
+			puppet.wait_yaw = point->faced ? (real)(point->face * 3.14159265358979 / 180.0) : yaw;
+			platform_log("player route: waits %.1f s at point %d", point->wait, puppet.next);
+		}
 		if (puppet.next >= puppet.route.count)
 		{
 			puppet.walking = FALSE;
+			return 1;
+		}
+		if (point->wait > 0.0f)
+		{
+			action->desired_facing.yaw = yaw;
 			return 1;
 		}
 		point = &puppet.route.point[puppet.next];
@@ -3569,7 +3622,8 @@ static void setting_keep(char const *key)
 static int setting_put_back(char const *key, char const *value, void *context)
 {
 	(void)context;
-	error(_error_silent, "dev settings: %s back to %s", key, value);
+	error(_error_silent, "dev settings: %s back to %s", key,
+		ae_setting_is_secret(key, (int)strlen(key)) ? "(a secret's value)" : value);
 	if (ae_config_player_setting(key))
 	{
 		char const *own;
@@ -3963,6 +4017,30 @@ static void command_fireteam(struct ae_dev_cmd const *cmd, char const *line, int
 		ae_bots_marks_heard(player, best != NONE ? AE_MARK_KIND_ITEM : AE_MARK_KIND_PLACE, best, &spot, AE_WHEEL_SMART);
 		answer(source, line, TRUE, "fireteam %ld: SMART tap on %s", fireteam, best != NONE ? "an object" : "a place");
 		return;
+	}
+	/* (the campaign squad: MOUNT and FALL IN as its wheel gives them) */
+	if (ae_fireteam_campaign_on() && has_here && (!strcmp(cmd->word[0], "mount") || !strcmp(cmd->word[0], "regroup")))
+	{
+		if (ae_companion_bodies() == 0)
+		{
+			answer_not_yet(source, line, "no companion has a body yet");
+			return;
+		}
+		ae_bots_marks_heard(player, AE_MARK_KIND_PLACE, NONE, &here, !strcmp(cmd->word[0], "mount") ? AE_WHEEL_RIDE : AE_WHEEL_REGROUP);
+		answer(source, line, TRUE, "fireteam %ld: %s", fireteam, !strcmp(cmd->word[0], "mount") ? "mount" : "fall in");
+		return;
+	}
+	if (!strcmp(cmd->word[0], "mount"))
+	{
+		answer(source, line, FALSE, "mount is the campaign squad's");
+		return;
+	}
+	/* (ahead <units>: the point that far along the host's facing; the squad takes the ground under it) */
+	if (cmd->words == 3 && has_here)
+	{
+		real_vector3d forward;
+
+		(void)ahead_of(player->unit_index, (real)cmd->number, &here, &forward);
 	}
 	for (index = 0; index < (short)(sizeof(orders) / sizeof(orders[0])); index++)
 		if (!strcmp(cmd->word[0], orders[index].name))
@@ -4594,14 +4672,23 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 		command_fireteam(cmd, line, source);
 		break;
 	case AE_DEV_CMD_CONFIG:
+	{
+		/* (a secret setting's value, ae_secret_settings.h, is in neither the log nor the event stream) */
+		int secret = ae_setting_is_secret(cmd->word[0], (int)strlen(cmd->word[0]));
+		char shown[LINE];
+
+		snprintf(shown, sizeof shown, "config %s (a secret's value)", cmd->word[0]);
+		answering_shown = secret ? shown : NULL;
 		setting_keep(cmd->word[0]);
 		/* (a per-player setting is player 1's own: the profile's value would win over config's) */
 		if (ae_config_player_setting(cmd->word[0]) ? ae_player_setting_put(0, cmd->word[0], cmd->rest) :
 			config_set(cmd->word[0], cmd->rest))
-			answer(source, line, TRUE, "%s = %s for this run", cmd->word[0], cmd->rest);
+			answer(source, line, TRUE, "%s = %s for this run", cmd->word[0], secret ? "(set)" : cmd->rest);
 		else
-			answer(source, line, FALSE, "no setting %s, or %s does not fit it", cmd->word[0], cmd->rest);
+			answer(source, line, FALSE, "no setting %s, or %s does not fit it", cmd->word[0], secret ? "the value" : cmd->rest);
+		answering_shown = NULL;
 		break;
+	}
 	case AE_DEV_CMD_MARK:
 		answer(source, line, TRUE, "marked");
 		break;
@@ -4636,6 +4723,58 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 	case AE_DEV_CMD_POINT:
 		command_point(cmd, line, source);
 		break;
+	case AE_DEV_CMD_FORGE:
+	{
+		char text[200];
+		int done;
+
+		if (!_stricmp(cmd->word[0], "start"))
+			done = ae_forge_dev_start(cmd->word[1], text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "mode"))
+			done = ae_forge_dev_mode(!_stricmp(cmd->word[1], "monitor"), text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "status"))
+			done = ae_forge_dev_status(text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "host"))
+			done = ae_forge_dev_host(cmd->word[1], cmd->words > 2 ? cmd->word[2] : "slayer", text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "join"))
+			done = ae_forge_dev_join(cmd->word[1], text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "ready"))
+			done = ae_forge_dev_ready(text, (int)sizeof(text));
+		else if (!_stricmp(cmd->word[0], "play"))
+			done = ae_forge_dev_play(cmd->word[1], cmd->word[2], text, (int)sizeof(text));
+		else
+		{
+			char const *edit = cmd->word[0];
+			int op = !_stricmp(edit, "place") ? AE_FORGE_DEV_PLACE : !_stricmp(edit, "copy") ? AE_FORGE_DEV_COPY :
+				!_stricmp(edit, "delete") ? AE_FORGE_DEV_DELETE : !_stricmp(edit, "grab") ? AE_FORGE_DEV_GRAB :
+				!_stricmp(edit, "snap") ? AE_FORGE_DEV_SNAP : !_stricmp(edit, "save") ? AE_FORGE_DEV_SAVE :
+				!_stricmp(edit, "gametype") ? AE_FORGE_DEV_GAMETYPE : !_stricmp(edit, "volume") ? AE_FORGE_DEV_VOLUME :
+				!_stricmp(edit, "testspawn") ? AE_FORGE_DEV_TESTSPAWN : !_stricmp(edit, "ai") ? AE_FORGE_DEV_AI :
+				!_stricmp(edit, "route") ? AE_FORGE_DEV_ROUTE : !_stricmp(edit, "kill") ? AE_FORGE_DEV_KILL :
+				!_stricmp(edit, "move") ? AE_FORGE_DEV_MOVE : !_stricmp(edit, "send") ? AE_FORGE_DEV_SEND :
+				!_stricmp(edit, "face") ? AE_FORGE_DEV_FACE : !_stricmp(edit, "where") ? AE_FORGE_DEV_WHERE :
+				!_stricmp(edit, "ff") ? (!_stricmp(cmd->word[1], "ammo") ? AE_FORGE_DEV_AMMO : AE_FORGE_DEV_FF) : AE_FORGE_DEV_LIST;
+			char const *tag = op == AE_FORGE_DEV_PLACE || op == AE_FORGE_DEV_SAVE || op == AE_FORGE_DEV_VOLUME || op == AE_FORGE_DEV_AI || op == AE_FORGE_DEV_SEND ? cmd->word[1] :
+				op == AE_FORGE_DEV_GAMETYPE ? cmd->word[2] : NULL;
+
+			/* (settings biped|hands <team> <name> | fog <atmosphere>) */
+			if (!_stricmp(edit, "settings"))
+			{
+				op = !_stricmp(cmd->word[1], "biped") ? AE_FORGE_DEV_BIPED : !_stricmp(cmd->word[1], "hands") ? AE_FORGE_DEV_HANDS :
+					AE_FORGE_DEV_FOG;
+				tag = op == AE_FORGE_DEV_FOG ? NULL : cmd->word[3];
+			}
+			done = ae_forge_dev_edit(op, tag, (int)cmd->number, cmd->has_position,
+				cmd->position, cmd->goal[0], text, (int)sizeof(text));
+		}
+
+		/* (forge start while Forge's tags are written: being made, so a TEST RUN's setup waits for them) */
+		if (done < 0)
+			answer_being_made(source, line, text);
+		else
+			answer(source, line, done ? TRUE : FALSE, "%s", text);
+		break;
+	}
 	case AE_DEV_CMD_BOTSKILL:
 		command_botskill(cmd, line, source);
 		break;
@@ -4880,6 +5019,23 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 		ae_ui_replace_menus();
 		answer(source, line, (boolean)ae_lobby_join_first_available().ok, "join_lan: searching the LAN");
 		break;
+	case AE_DEV_CMD_JOIN_CLOSED:
+	{
+		/* a join refused as closed (code 5, a host changing maps) over the menus: the join helper's waiting dialog and its
+		tries, each refused while refusals are left */
+		struct ae_flow_screen flow;
+
+		if (game_in_progress() && !main_menu_is_active())
+		{
+			answer(source, line, FALSE, "join_closed: from the menus only (leave this game first)");
+			break;
+		}
+		memset(&flow, 0, sizeof(flow));
+		ae_flow_full_density(&flow);
+		answer(source, line, (boolean)ae_join_helper_stage_closed((int)cmd->number, &flow.density),
+			"join_closed: the host refuses %ld tr%s as closed", cmd->number, cmd->number == 1 ? "y" : "ies");
+		break;
+	}
 	case AE_DEV_CMD_MENU:
 	{
 		/* (0.9.3 menu settings [player <n>] find <text>: SETTINGS' top level with the text in FIND A SETTING's field, from
@@ -4952,6 +5108,20 @@ static void run(struct ae_dev_cmd const *cmd, char const *line, int source)
 			}
 			menu_ok = (boolean)ae_screen_theater_open_staged(empty, delete_dialog);
 			answer(source, line, menu_ok, menu_ok ? "theater open" : "menu theater: did not open");
+			break;
+		}
+		/* (rc9: the FORGE doors, staged: menu forge [hub|building|needs|maps|keys]) */
+		if (!strcmp(cmd->word[0], "forge"))
+		{
+			boolean menu_ok;
+
+			if (game_in_progress() && !main_menu_is_active())
+			{
+				answer(source, line, FALSE, "menu: from the menus only (leave this game first)");
+				break;
+			}
+			menu_ok = (boolean)ae_screen_forge_open_staged(cmd->words > 1 ? cmd->word[1] : "hub");
+			answer(source, line, menu_ok, menu_ok ? "forge menu open" : "menu forge: did not open (this build has no Forge?)");
 			break;
 		}
 		/* (rc8: DAILY CHALLENGE, a staged scene: a made-up day, no server asked) */
@@ -5676,13 +5846,32 @@ the menus; all lists every version of a map, version <n> puts its version choice
 
 /* ---------- the way in */
 
+static int dev_cmd_line(const char *line, int source, struct ae_dev_cmd *parsed);
+
 int ae_dev_cmd_line(const char *line, int source)
 {
-	struct ae_dev_cmd cmd;
-	int gate;
+	static struct ae_dev_cmd cmd;
+	char shown[LINE];
+	int taken;
 
 	if (!ae_dev_cmd_parse(line, ae_dev_mode_on(), &cmd))
 		return FALSE;
+	/* (a secret setting's value, ae_secret_settings.h, is in no answer: not a refusal's either, whatever gate gives it) */
+	if (cmd.id == AE_DEV_CMD_CONFIG && cmd.words >= 1 && ae_setting_is_secret(cmd.word[0], (int)strlen(cmd.word[0])))
+	{
+		snprintf(shown, sizeof shown, "config %s (a secret's value)", cmd.word[0]);
+		answering_shown = shown;
+	}
+	taken = dev_cmd_line(line, source, &cmd);
+	answering_shown = NULL;
+	return taken;
+}
+
+static int dev_cmd_line(const char *line, int source, struct ae_dev_cmd *parsed)
+{
+	struct ae_dev_cmd cmd = *parsed;
+	int gate;
+
 	if (cmd.error[0])
 	{
 		answer(source, line, FALSE, "%s", cmd.error);

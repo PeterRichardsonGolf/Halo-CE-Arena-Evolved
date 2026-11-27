@@ -11,6 +11,7 @@ DEV MODE's command grammar (ae_dev_cmd_rules.h).
 #include <string.h>
 
 #include "ae_dev_cmd_rules.h"
+#include "ae_forge_rules.h"
 #include "../src/ae_ds5_rules.h"
 #include "ae_maps_hub_rules.h"
 #include "ae_steam_rules.h"
@@ -33,7 +34,7 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 {
 	{ "", "", 0 },
 	{ "give", "give <weapon>|all | give <weapon> to <bot|name>", 1 },
-	{ "spawn", "spawn <vehicle> [here|ahead|door|passdoor|<spot>]", 1 },
+	{ "spawn", "spawn <vehicle> [here|ahead|door|passdoor|flipped|<spot>]", 1 },
 	{ "bots", "bots <0-127> [even|against] [recruit|easy|normal|heroic|elite|legendary|demon]", 1 },
 	{ "powerup", "powerup <item> [now] [<player>] | powerup <item> ahead", 1 },
 	{ "respawn", "respawn [me|all]", 1 },
@@ -53,7 +54,7 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "config", "config <key> <value>", 1 },
 	{ "agent", "agent check <1-3> pass|fail|look|waiting [reason] | agent say <text> | agent clear", 1 },
 	{ "viewmodel", "viewmodel [<x> <y> <z> <scale>|place <right> <up> <forward> <yaw> <pitch> <roll> <scale>|probe|save|clear]", 1 },
-	{ "fireteam", "fireteam follow|regroup|attack|defend|watch|go|clear|status|smart | fireteam smart here|<name> | fireteam recruit [<bot>]", 1 },
+	{ "fireteam", "fireteam follow|regroup|attack|defend|watch|go|clear|status|smart|mount | fireteam attack|defend|watch|go ahead <1-60> | fireteam smart here|<name> | fireteam recruit [<bot>]", 1 },
 	{ "round", "round end|next|live", 1 },
 	{ "zone", "zone now|small|off | zone look a|b", 1 },
 	{ "down", "down <player> [here]", 1 },
@@ -75,7 +76,7 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "hitch", "hitch <50-5000> [after <1-600>]", 1 },
 	{ "join_lan", "join_lan", 1 },
 	{ "camera", "camera third|first [<1-4>]", 1 },
-	{ "menu", "menu settings [player <1-4>] find [<text>] | menu game_options <filter> [change <option>=<value> ...] | menu tournament [filter casual|comp] [focus <id>] | menu matchmaking [online] [focus <id>] | menu career [player <1-4>] [focus <id>] | menu challenges [player <1-4>] | menu skulls [questions] | menu randomizer hub|hub-off|ai|weapons|pickups|loadout|loadout-ae|loadout-set|setups|delete|itemset|name | menu skullrules [reset] | menu scoring [off|on] | menu coopoptions [changed] | menu saved [empty] [delete] | menu theater [empty] [delete] | menu leaderboard [<1-10>] [empty] | menu endcard [players <1-4>] [last] [best] | menu campaign [seat | players <2-4>] [error] [workshop [demo|fault|none|saved|damaged]] [save <1-10> <0-3>] [focus skip|continue|squad|down|dialog] [difficulty <0-3>] | menu coop [players <1-4>] | menu hostvote [lan] [now|join] | menu lan | menu steam <state> [<percent>] | menu playlist [edit <name>] | menu browser | menu gametype | menu tab | menu credits | menu network [reached|unreached|unknown] | menu bots [player <1-4>] [focus <name>] [sort games|last|record] | menu records [player <1-4>] | menu music [song|playlist] [mcc|standin|none] | menu maps [installed|required|browse|workshop|mods|sets] [<state>] | menu profiles [edit [colours|plain]] [walk <ms>] [turn <deg>] | menu profiles progress export|files|import | menu classic <page> | menu daily [today|past|online|unreached|unreached-custom|loading|empty|closed]", 1 },
+	{ "menu", "menu settings [player <1-4>] find [<text>] | menu game_options <filter> [change <option>=<value> ...] | menu tournament [filter casual|comp] [focus <id>] | menu matchmaking [online] [focus <id>] | menu career [player <1-4>] [focus <id>] | menu challenges [player <1-4>] | menu skulls [questions] | menu randomizer hub|hub-off|ai|weapons|pickups|loadout|loadout-ae|loadout-set|setups|delete|itemset|name | menu skullrules [reset] | menu scoring [off|on] | menu coopoptions [changed] | menu saved [empty] [delete] | menu theater [empty] [delete] | menu leaderboard [<1-10>] [empty] | menu endcard [players <1-4>] [last] [best] | menu campaign [seat | players <2-4>] [error] [workshop [demo|fault|none|saved|damaged]] [save <1-10> <0-3>] [focus skip|continue|squad|down|door|formations|dialog|items] [difficulty <0-3>] | menu coop [players <1-4>] | menu hostvote [lan] [now|join] | menu lan | menu steam <state> [<percent>] | menu playlist [edit <name>] | menu browser | menu gametype | menu tab | menu credits | menu network [reached|unreached|unknown] | menu bots [player <1-4>] [focus <name>] [sort games|last|record] | menu records [player <1-4>] | menu music [song|playlist] [mcc|standin|none] | menu maps [installed|required|browse|workshop|mods|sets] [<state>] | menu profiles [edit [colours|plain]] [walk <ms>] [turn <deg>] | menu profiles progress export|files|import | menu classic <page> | menu forge [hub|building|needs|maps|keys] | menu daily [today|past|online|unreached|unreached-custom|loading|empty|closed]", 1 },
 	{ "botskill", "botskill [<bot> <shooting> <movement>|<bot> clear|clear]", 1 },
 	{ "social", "social exp <id>|all <0-99999> | reset [<id>|all] | match <id> <0-4999>|tier <1-19> | mode <id> auto|<skill> | roster <id> [seed <n>] | pending <id> [crashed] | maps hide smp|<file>|none | calibration <profile|me> unset|new|some|alot | start <id> [map <name>] [seed <n>] [variant br|evo|magnum|protomag|singleshot|none] [now] | start <id> vote [seed <n>] [votes <a,b,c>] [left <0-10>] [party <1-4>] | start <id> postgame [result win|tie|loss|quit] | postgame win|tie|loss|rankup|place <p> <n> [<id>] [exp <n>] | career xp <n> | career rank <1-30> <1-11> | career games <playlist> <n> [<wins> [<ties>]] | career challenge done <1-6> | career last <xp> [rankup] [challenge] | career art auto|off | carnage <id> [seed <n>] [players <1-4>] [cursor <name>]  (each: [player <1-4>] where it applies)", 1 },
 	{ "botstyle", "botstyle [<bot> <style> [<weapon>]|<bot> clear|clear]", 1 },
@@ -114,6 +115,8 @@ static struct command const commands[AE_DEV_CMD_COUNT] =
 	{ "intro", "intro play", 1 },
 	{ "player", "player route <x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]>... | player go | player look <deg> | player stop", 1 },
 	{ "point", "point save|load <name>", 1 },
+	{ "forge", "forge ai <actor> <team> [goal [seconds]] | forge route <points> | forge start <map> | forge mode monitor|play | forge status | forge place <tag path> [x y z [yaw]] | forge copy <n> | forge delete <n> | forge grab <n> | forge snap off|15|45|90 | forge list | forge volume gravity|kill|damage|hurt|oneway [value [x y z]] | forge settings biped|hands red|blue|ffa <name> | forge settings fog default|clear|light|heavy|flood | forge testspawn red|blue|ffa | forge ff infantry|vehicles|vehicle|ghost|heavy|zone|pad|player [all|1-5 [1-3]] | forge ff generator|rack|drop | forge ff ammo <0-100> | forge kill ai | forge move <n> <x> <y> <z> | forge send <line> | forge host <map> [variant] | forge join <a.b.c.d:port> | forge ready | forge face | forge where <n>|last|all|ai", 1 },
+	{ "join_closed", "join_closed [<1-4>]", 1 },
 };
 
 static const char *const skills[] = { "recruit", "easy", "normal", "heroic", "elite", "legendary", "demon", NULL };
@@ -287,7 +290,8 @@ int ae_dev_cmd_gate(int id, int setting, int client)
 	if (id == AE_DEV_CMD_HELP)
 		return AE_DEV_CMD_ALLOWED;
 	/* (hitch stops only this machine: a client may, as the TEST RUN's joiner does) */
-	if (client && id != AE_DEV_CMD_HITCH)
+	/* (forge: a joined Forge game is edited from the joined machine too; its edits go through the host's checks, and the command refuses with no session) */
+	if (client && id != AE_DEV_CMD_HITCH && id != AE_DEV_CMD_FORGE)
 		return AE_DEV_CMD_CLIENT;
 	return setting ? AE_DEV_CMD_ALLOWED : AE_DEV_CMD_SETTING_OFF;
 }
@@ -561,13 +565,18 @@ static void check(struct ae_dev_cmd *cmd)
 	}
 	case AE_DEV_CMD_FIRETEAM:
 	{
-		static const char *const orders[] = { "follow", "regroup", "attack", "defend", "watch", "go", "clear", "status", "smart", NULL };
+		static const char *const orders[] = { "follow", "regroup", "attack", "defend", "watch", "go", "clear", "status", "smart", "mount",
+			NULL };
+		static const char *const point_orders[] = { "attack", "defend", "watch", "go", NULL };
 
 		if (n >= 1 && same_text(cmd->word[0], "recruit"))
 			bad = n > 2 || (n == 2 && !whole_number(cmd->word[1], 1, 127, &cmd->number));
 		/* (smart here: a tap on the host's own spot; smart <word>: on the nearest object whose tag's name has the word) */
 		else if (n == 2 && same_text(cmd->word[0], "smart"))
 			bad = !cmd->word[1][0];
+		/* (attack|defend|watch|go ahead <units>: the order's point that far ahead of the host, 1 to 60) */
+		else if (n == 3 && same_text(cmd->word[1], "ahead"))
+			bad = !one_of(cmd->word[0], point_orders) || !whole_number(cmd->word[2], 1, 60, &cmd->number);
 		else
 			bad = n != 1 || !one_of(cmd->word[0], orders);
 		break;
@@ -679,7 +688,9 @@ static void check(struct ae_dev_cmd *cmd)
 			same_text(cmd->word[0], "clear"))) ||
 			(n == 2 && same_text(cmd->word[0], "open")) ||
 			(n == 2 && same_text(cmd->word[0], "list") && whole_number(cmd->word[1], 0, 8, &cmd->number)) ||
-			(n == 3 && same_text(cmd->word[0], "take") && whole_number(cmd->word[1], 0, 8, &cmd->number)));
+			(n == 3 && same_text(cmd->word[0], "take") && whole_number(cmd->word[1], 0, 8, &cmd->number)) ||
+			(n == 3 && same_text(cmd->word[0], "body") && (same_text(cmd->word[1], "own") || same_text(cmd->word[1], "campaign") ||
+			same_text(cmd->word[1], "taken")) && (same_text(cmd->word[2], "spartan") || same_text(cmd->word[2], "own"))));
 		break;
 	case AE_DEV_CMD_RANDOMIZER:
 		/* (number = seed's value, 0 to 999999999) */
@@ -965,6 +976,12 @@ static void check(struct ae_dev_cmd *cmd)
 	case AE_DEV_CMD_LOBBY_FILL:
 		bad = n != 1 || !whole_number(cmd->word[0], 1, 4, &cmd->number);
 		break;
+	/* (join_closed [<1-4>]: the tries the staged host refuses; none given: 4, every try and the closed words after them) */
+	case AE_DEV_CMD_JOIN_CLOSED:
+		bad = n > 1 || (n == 1 && !whole_number(cmd->word[0], 1, 4, &cmd->number));
+		if (!bad && n == 0)
+			cmd->number = 4;
+		break;
 	case AE_DEV_CMD_MOTD_RESET:
 	case AE_DEV_CMD_MOTD_OFFLINE:
 	case AE_DEV_CMD_JOIN_LAN:
@@ -1141,6 +1158,23 @@ static void check(struct ae_dev_cmd *cmd)
 				bad = !(same_text(cmd->word[each], "empty") || same_text(cmd->word[each], "delete"));
 			break;
 		}
+		/* (menu forge [hub|building|needs|maps|keys]: the FORGE hub (the pack ready, being built at 40 %, or without the game's
+		maps), NEW MAP's list or FORGE KEYS, staged: nothing is started or written) */
+		if (n >= 1 && same_text(cmd->word[0], "forge"))
+		{
+			static const char *const scenes[] = { "hub", "building", "needs", "maps", "keys", "mymaps" };
+			size_t scene;
+
+			bad = n > 2;
+			if (n == 2)
+			{
+				bad = 1;
+				for (scene = 0; scene < sizeof(scenes) / sizeof(scenes[0]); scene++)
+					if (same_text(cmd->word[1], scenes[scene]))
+						bad = 0;
+			}
+			break;
+		}
 		/* (menu daily [today|past|online|unreached|unreached-custom|loading|empty|closed]: DAILY CHALLENGE as a staged scene, a made-up day, no server asked) */
 		if (n >= 1 && same_text(cmd->word[0], "daily"))
 		{
@@ -1183,7 +1217,9 @@ static void check(struct ae_dev_cmd *cmd)
 					each += 2;
 				else if (same_text(cmd->word[each], "focus") && each + 1 < n && (same_text(cmd->word[each + 1], "skip") ||
 					same_text(cmd->word[each + 1], "continue") || same_text(cmd->word[each + 1], "squad") ||
-					same_text(cmd->word[each + 1], "dialog") || same_text(cmd->word[each + 1], "down")))
+					same_text(cmd->word[each + 1], "dialog") || same_text(cmd->word[each + 1], "down") ||
+					same_text(cmd->word[each + 1], "items") || same_text(cmd->word[each + 1], "door") ||
+					same_text(cmd->word[each + 1], "formations")))
 					each++;
 				else if (same_text(cmd->word[each], "difficulty") && each + 1 < n && whole_number(cmd->word[each + 1], 0, 3, &scratch))
 					each++;
@@ -1546,6 +1582,172 @@ static void check(struct ae_dev_cmd *cmd)
 		bad = (n != 1 && n != 3) || !whole_number(cmd->word[0], 50, 5000, &cmd->number) ||
 			(n == 3 && (!same_text(cmd->word[1], "after") || !whole_number(cmd->word[2], 1, 600, &after)));
 		cmd->seed = (unsigned long)after;
+		break;
+	}
+	case AE_DEV_CMD_FORGE:
+	{
+		/* (forge place <tag path> [x y z [yaw]] | copy <n> | delete <n> | grab <n> | snap off|15|45|90 | list: editing as the
+		tools do it; number is the instance or the snap's degrees, position x y z with has_position, goal[0] the yaw) */
+		long value = 0;
+		int each;
+
+		/* (save <name>: a name Forge's save box makes, a-z 0-9 _ up to 48; play <name> <gametype>: a saved map played as a game;
+		gametype <n|last> <ctf|slayer|oddball|koth|race|all>: an object's gametypes, number the instance) */
+		static const char *const kinds[] = { "all", "ctf", "slayer", "oddball", "koth", "race", NULL };
+		int name_ok = n >= 2 && strlen(cmd->word[1]) >= 1 && strlen(cmd->word[1]) <= 48 &&
+			strspn(cmd->word[1], "abcdefghijklmnopqrstuvwxyz0123456789_") == strlen(cmd->word[1]);
+
+		if (same_text(cmd->word[0], "volume"))
+		{
+			/* (volume <kind> [value [x y z]]: a volume of that kind at the Monitor's feet, or at x y z; the value its strength or
+			its damage, in the kind's range; number is it, -1 when none was given) */
+			struct ae_forge_volume_made made;
+			int kind = n >= 2 ? ae_forge_rules_volume_kind(cmd->word[1]) : AE_FORGE_VOLUME_NONE;
+
+			bad = !(n == 2 || n == 3 || n == 6) || !ae_forge_rules_volume_made(kind, &made);
+			cmd->number = -1;
+			if (!bad && n >= 3)
+				bad = made.value_kind == 0 || !whole_number(cmd->word[2], (long)made.value_min, (long)made.value_max, &cmd->number);
+			if (!bad && n == 6)
+			{
+				for (each = 0; !bad && each < 3; each++)
+					bad = !real_number(cmd->word[3 + each], &cmd->position[each]);
+				cmd->has_position = !bad;
+			}
+		}
+		else if (same_text(cmd->word[0], "settings"))
+		{
+			/* (settings biped|hands <red|blue|ffa> <name>: the tag of the level whose last name has that in it, for a team's player;
+			settings fog <default|clear|light|heavy|flood>; number is the team's slot or the atmosphere) */
+			if (n == 4 && (same_text(cmd->word[1], "biped") || same_text(cmd->word[1], "hands")))
+			{
+				cmd->number = ae_forge_rules_team_slot(cmd->word[2]);
+				bad = cmd->number < 0 || strlen(cmd->word[3]) > 40;
+			}
+			else if (n == 3 && same_text(cmd->word[1], "fog"))
+			{
+				cmd->number = ae_forge_rules_atmosphere(cmd->word[2]);
+				bad = cmd->number < 0;
+			}
+			else
+				bad = 1;
+		}
+		else if (same_text(cmd->word[0], "ai"))
+		{
+			/* (ai <actor> <team> [goal [seconds]]: an AI spawn of the actor (a part of its variant's name) 5 world units ahead of the Monitor,
+			on that team, with that goal, and kept alive by respawning after that many seconds; number is the team, goal and respawn in one) */
+			int team = n >= 3 ? ae_forge_rules_ai_team(cmd->word[2]) : -1;
+			int goal = n >= 4 ? ae_forge_rules_ai_goal(cmd->word[3]) : 0;
+			long respawn = 0;
+
+			bad = n < 3 || n > 5 || strlen(cmd->word[1]) > 40 || team < 0 || goal < 0 ||
+				(n == 5 && !whole_number(cmd->word[4], 1, 600, &respawn));
+			if (!bad)
+				cmd->number = ae_forge_rules_ai_pack(team, goal, (int)respawn);
+		}
+		else if (same_text(cmd->word[0], "route"))
+		{
+			/* (route <points>: an AI route of that many points, 5 world units apart, ahead of the Monitor) */
+			bad = n != 2 || !whole_number(cmd->word[1], 2, 8, &cmd->number);
+		}
+		else if (same_text(cmd->word[0], "ff"))
+		{
+			/* (ff <kind> [round [wave 1-3]]: a Firefight marker or prop, for a round, a wave; ff ammo <0-100>: the weapon in hand's ammunition,
+			once the Spartan's mode is on; number is the kind, round and wave in one, or the percentage) */
+			long percent = 0, wave = 0;
+			int kind = n >= 2 ? ae_forge_rules_ff_kind(cmd->word[1]) : AE_FORGE_FF_NONE;
+			int round = n >= 3 ? ae_forge_rules_ff_round(cmd->word[2]) : 0;
+
+			if (n == 3 && same_text(cmd->word[1], "ammo"))
+			{
+				bad = !whole_number(cmd->word[2], 0, 100, &percent);
+				cmd->number = percent;
+			}
+			else
+			{
+				bad = n < 2 || n > 4 || kind == AE_FORGE_FF_NONE || round < 0 || (n == 4 && !whole_number(cmd->word[3], 1, 3, &wave)) ||
+					((kind == AE_FORGE_FF_RACK || kind == AE_FORGE_FF_DROP || kind == AE_FORGE_FF_GENERATOR) && n > 2);
+				if (!bad)
+					cmd->number = ae_forge_rules_ff_pack(kind, round, (int)wave);
+			}
+		}
+		else if (same_text(cmd->word[0], "kill"))
+		{
+			/* (kill ai: every AI unit dies, once the Spartan's mode is on and the AI stands: a respawn is judged from there) */
+			bad = n != 2 || !same_text(cmd->word[1], "ai");
+		}
+		else if (same_text(cmd->word[0], "move"))
+		{
+			/* (move <n> <x> <y> <z>: instance #n of forge list moved there, as a hand would, and said to the others) */
+			bad = n != 5 || !whole_number(cmd->word[1], 0, 4095, &cmd->number);
+			for (each = 0; !bad && each < 3; each++)
+				bad = !real_number(cmd->word[2 + each], &cmd->position[each]);
+			cmd->has_position = !bad;
+		}
+		else if (same_text(cmd->word[0], "send"))
+		{
+			/* (send <line>: a Forge line sent to the host as this machine's own, to see what the host does with it) */
+			bad = n != 2 || !ae_forge_rules_raw_line(cmd->word[1]);
+		}
+		else if (same_text(cmd->word[0], "host"))
+		{
+			/* (host <map> [variant]: a Forge game hosted on the level, as the network test hosts one; the variant a built-in gametype, slayer when none) */
+			bad = n < 2 || n > 3 || !ae_forge_rules_net_name(cmd->word[1]) || (n == 3 && !ae_forge_rules_net_name(cmd->word[2]));
+		}
+		else if (same_text(cmd->word[0], "join"))
+		{
+			/* (join <a.b.c.d:port>: the Forge game hosted there) */
+			bad = n != 2 || !ae_forge_rules_address(cmd->word[1]);
+		}
+		else if (same_text(cmd->word[0], "ready"))
+			bad = n != 1;
+		else if (same_text(cmd->word[0], "face"))
+		{
+			/* (face: the Monitor turned to the way the level leaves the most free ahead, so that what is placed ahead of it is in the open) */
+			bad = n != 1;
+		}
+		else if (same_text(cmd->word[0], "where"))
+		{
+			/* (where <n>|last|all|ai: a "forge dev: where" line for instance #n of forge list, the one placed last (number -1), or the AI's
+			units (number -2), or everything placed (-3): where it stands, its height over the ground, how far, which way and whether in sight) */
+			cmd->number = -1;
+			bad = n != 2;
+			if (!bad && same_text(cmd->word[1], "ai"))
+				cmd->number = -2;
+			else if (!bad && same_text(cmd->word[1], "all"))
+				cmd->number = -3;
+			else if (!bad && !same_text(cmd->word[1], "last"))
+				bad = !whole_number(cmd->word[1], 0, 4095, &cmd->number);
+		}
+		else if (same_text(cmd->word[0], "testspawn"))
+		{
+			/* (testspawn <red|blue|ffa>: MAP SETTINGS' TEST SPAWN of that team, begun once the Monitor leaves its mode) */
+			cmd->number = n == 2 ? ae_forge_rules_team_slot(cmd->word[1]) : -1;
+			bad = cmd->number < 0;
+		}
+		else
+		bad = !((n == 2 && same_text(cmd->word[0], "start")) ||
+			(n == 2 && same_text(cmd->word[0], "save") && name_ok) ||
+			(n == 3 && same_text(cmd->word[0], "play") && name_ok && strlen(cmd->word[2]) <= 40) ||
+			(n == 3 && same_text(cmd->word[0], "gametype") && one_of(cmd->word[2], kinds) &&
+				(same_text(cmd->word[1], "last") ? (cmd->number = -1, 1) : whole_number(cmd->word[1], 0, 4095, &cmd->number))) ||
+			(n == 2 && same_text(cmd->word[0], "mode") && (same_text(cmd->word[1], "monitor") || same_text(cmd->word[1], "play"))) ||
+			(n == 1 && (same_text(cmd->word[0], "status") || same_text(cmd->word[0], "list"))) ||
+			(n == 2 && (same_text(cmd->word[0], "copy") || same_text(cmd->word[0], "delete") || same_text(cmd->word[0], "grab")) &&
+				whole_number(cmd->word[1], 0, 4095, &cmd->number)) ||
+			(n == 2 && same_text(cmd->word[0], "snap") && (same_text(cmd->word[1], "off") ||
+				(whole_number(cmd->word[1], 0, 90, &value) && (value == 0 || value == 15 || value == 45 || value == 90)))) ||
+			(n >= 2 && n <= 6 && n != 3 && n != 4 && same_text(cmd->word[0], "place")));
+		if (!bad && same_text(cmd->word[0], "snap"))
+			cmd->number = value;
+		if (!bad && same_text(cmd->word[0], "place") && n >= 5)
+		{
+			for (each = 0; !bad && each < 3; each++)
+				bad = !real_number(cmd->word[2 + each], &cmd->position[each]);
+			cmd->has_position = !bad;
+			if (!bad && n == 6)
+				bad = !real_number(cmd->word[5], &cmd->goal[0]);
+		}
 		break;
 	}
 	case AE_DEV_CMD_POINT:
@@ -2151,6 +2353,41 @@ int ae_dev_puppet_parse(const char *text, struct ae_dev_puppet_route *route)
 			next.point[next.count - 1].save = 1;
 		else if (same_text(word, "revert"))
 			next.point[next.count - 1].revert = 1;
+		else if (same_text(word, "face"))
+		{
+			int take = 0;
+
+			while (*at == ' ' || *at == '\t')
+				at++;
+			while (at[take] && at[take] != ' ' && at[take] != '\t' && take < AE_DEV_CMD_WORD - 1)
+			{
+				word[take] = at[take];
+				take++;
+			}
+			word[take] = 0;
+			at += take;
+			if (!real_number(word, &value) || value < -360.0f || value > 360.0f)
+				return -1;
+			next.point[next.count - 1].faced = 1;
+			next.point[next.count - 1].face = value;
+		}
+		else if (same_text(word, "wait"))
+		{
+			int take = 0;
+
+			while (*at == ' ' || *at == '\t')
+				at++;
+			while (at[take] && at[take] != ' ' && at[take] != '\t' && take < AE_DEV_CMD_WORD - 1)
+			{
+				word[take] = at[take];
+				take++;
+			}
+			word[take] = 0;
+			at += take;
+			if (!real_number(word, &value) || value < 0.5f || value > 60.0f)
+				return -1;
+			next.point[next.count - 1].wait = value;
+		}
 		else if (same_text(word, "walk"))
 		{
 			int take = 0;

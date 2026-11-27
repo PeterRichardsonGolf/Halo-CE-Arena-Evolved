@@ -1757,7 +1757,10 @@ void network_replay_playback_frame(
 		if (playback.view == _playback_view_behind)
 			playback.behind_orbiting = FALSE;
 		else if (playback.view == _playback_view_free && !playback.free_placing)
+		{
 			playback.free_tracking = !playback.free_tracking;
+			platform_log("replay: free camera %s the player (the stick click)", playback.free_tracking ? "tracks" : "is let go of");
+		}
 	}
 	/* (the left stick's click: the free or cinematic camera placed behind the player again, as when it is chosen, once
 	a press, the next heard no sooner than PLAYBACK_CAMERA_RESET_MILLISECONDS after) */
@@ -1840,6 +1843,8 @@ void network_replay_view_free(
 	if (!playback.playing)
 		return;
 	playback.view = _playback_view_free;
+	/* (the free camera is placed behind the player on its first frame, which has it track them as Content Evolved's does) */
+	playback.free_tracking = FALSE;
 	playback_views_begin();
 }
 
@@ -1897,6 +1902,18 @@ char const *network_replay_view_name(
 	boolean capitals)
 {
 	return playback_view_name(next ? (short)((playback.view + 1) % NUMBER_OF_PLAYBACK_VIEWS) : playback.view, capitals);
+}
+
+int network_replay_camera_view(
+	void)
+{
+	return network_replay_playing() ? (int)playback.view : -1;
+}
+
+boolean network_replay_camera_tracking(
+	void)
+{
+	return network_replay_playing() && playback.view == _playback_view_free && playback.free_tracking && !playback.free_placing;
 }
 
 /* a view chosen: the free and cinematic cameras are placed behind the player, behind's turns round behind them */

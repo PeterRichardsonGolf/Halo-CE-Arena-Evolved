@@ -206,8 +206,8 @@ static boolean ae_bots_fight_teammate_near(struct bots_bot *bot, struct bots_tic
 	long vehicle_index = tick->object->object.parent_object_index;
 	struct unit_datum const *vehicle = vehicle_index != NONE ?
 		(struct unit_datum const *)object_try_and_get_and_verify_type(vehicle_index, _object_mask_unit) : NULL;
-	/* (a vehicle's gunner: its turret's rounds cannot hit the vehicle's own driver, who never blocks its fire) */
-	long driver = vehicle && vehicle->unit.gunner_object_index == tick->player->unit_index ? vehicle->unit.driver_object_index : NONE;
+	/* (a vehicle's gunner: its turret's rounds cannot hit the vehicle's own driver or riders, who never block its fire) */
+	long gunned = vehicle && vehicle->unit.gunner_object_index == tick->player->unit_index ? vehicle_index : NONE;
 
 	/* (HALO_BOTS_FRIENDLY_FIRE=1: no holds, for the before and after of a test) */
 	if ((!campaign && !game_engine_has_teams()) || getenv("HALO_BOTS_FRIENDLY_FIRE"))
@@ -225,7 +225,7 @@ static boolean ae_bots_fight_teammate_near(struct bots_bot *bot, struct bots_tic
 		}
 		object = object_get(teammate->unit_index);
 		if (TEST_FLAG(object->object.damage_flags, _object_dead_bit) ||
-			(!grenade && driver != NONE && teammate->unit_index == driver))
+			(!grenade && gunned != NONE && object->object.parent_object_index == gunned))
 		{
 			continue;
 		}

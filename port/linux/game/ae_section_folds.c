@@ -68,6 +68,8 @@ int ae_section_folds_read(struct ae_section_folds *folds, const char *text)
 	{
 		const char *end = strchr(line, '\n'), *tab;
 		size_t length = end ? (size_t)(end - line) : strlen(line);
+		/* (the next line, before a carriage return is taken off: a last line ending in one is passed whole) */
+		const char *next = end ? end + 1 : line + length;
 		char picker[AE_SECTION_FOLDS_PICKER], key[AE_SECTION_FOLDS_KEY];
 
 		if (length && line[length - 1] == '\r')
@@ -82,7 +84,7 @@ int ae_section_folds_read(struct ae_section_folds *folds, const char *text)
 			key[length - (size_t)(tab - line) - 1] = 0;
 			ae_section_folds_set(folds, picker, key, 1);
 		}
-		line = end ? end + 1 : line + length;
+		line = next;
 	}
 	return 1;
 }

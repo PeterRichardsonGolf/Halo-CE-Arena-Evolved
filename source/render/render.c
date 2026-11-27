@@ -101,6 +101,7 @@ void ae_config_player_leave(int previous); /* AE hook */
 #include "halo_perf_log.h" /* port: console.perf_log */
 #include "../../port/linux/src/ae_dynamic_resolution_gl.h" /* AE hook */
 #include "ae_blood.h" /* AE hook */
+#include "ae_forge_engine.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -545,6 +546,7 @@ static void render_player_frame(
 		&camera->position,
 		&render.fog);
 	structure_get_planar_fog((short)render.cluster_index, &render.fog);
+	if (ae_forge_fog(window->local_player_index, render.visible_sky_index == NONE, &render.fog)) render.visible_sky_model = FALSE; /* AE hook */
 
 	if (render.fog.atmospheric_maximum_distance != 0.0f &&
 		render.visible_sky_index == NONE &&

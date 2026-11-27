@@ -225,6 +225,7 @@ enum _message_client_loaded 24
 enum _message_client_map_is_precached_pregame 19
 enum _message_client_ping 1
 enum _message_client_player_settings_request 16
+enum _message_client_randomizer_capability 35
 enum _message_client_remove_player_request_ingame 27
 enum _message_client_remove_player_request_postgame 32
 enum _message_client_remove_player_request_pregame 14
@@ -266,6 +267,7 @@ fields client_loaded 678699dea271
 fields client_map_is_precached_pregame 0073b9d65051
 fields client_ping 0d113e26a89a
 fields client_player_settings_request 06ff007a9b35
+fields client_randomizer_capability 08343eff0b9e
 fields client_remove_player_request_ingame 06ff007a9b35
 fields client_remove_player_request_postgame 06ff007a9b35
 fields client_remove_player_request_pregame 06ff007a9b35
@@ -304,6 +306,7 @@ size message_client_loaded 0x04
 size message_client_map_is_precached_pregame 0x100
 size message_client_ping 0x08
 size message_client_player_settings_request 0x20
+size message_client_randomizer_capability 0x01
 size message_client_remove_player_request_ingame 0x20
 size message_client_remove_player_request_postgame 0x20
 size message_client_remove_player_request_pregame 0x20

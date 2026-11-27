@@ -1,0 +1,52 @@
+# FORGE, step 2 (editing and the door): Content Evolved's in-game tools as it has them (grab, turn with the rotation snap, copy, delete)
+# and the way in from the main menu. `forge place` stands the palette's tag 5 world units ahead of the Monitor once it flies;
+# `forge snap 45` sets the rotation snap. Forge's tags are built from the game's maps once (the hub says when they are ready).
+list forge-s2
+revision 5
+title FORGE: EDIT AND THE DOOR
+
+test grab-rotate
+title GRAB: the Warthog turns by 45 degrees and stays
+check Grab the vehicle ahead, turn it 45 degrees, let go: it stays
+expect 1 log forge dev: rotation snap 45
+expect 1 log forge dev: placed vehicles\warthog\warthog
+expect 1 log forge dev: where #
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge snap 45
+setup forge place vehicles\warthog\warthog
+setup forge where last
+setup forge ready
+
+test copy-delete
+title COPY and DELETE: the copy goes, the Warthog stays
+check Copy the vehicle, hold DELETE on the copy: only it goes
+expect 1 log forge dev: placed vehicles\warthog\warthog
+expect 1 log forge dev: where #
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge place vehicles\warthog\warthog
+setup forge where last
+setup forge ready
+
+test door
+title FORGE > NEW MAP > BLOODGULCH opens a Forge session
+check NEW MAP, BLOODGULCH, A: you fly as the Monitor over it
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup menu forge

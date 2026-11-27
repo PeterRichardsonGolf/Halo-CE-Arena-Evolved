@@ -57,6 +57,62 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               row of the last list downloaded into custom_maps (never over a map there); cancel: the
 	                               download stops. AE_CE_ARCHIVE_BASE=http://127.0.0.1:<port> with AE_CE_ARCHIVE_TEST_KEY=<64
 	                               hex digits> in the environment points it at a made-up archive on this machine
+	forge start <map> | mode monitor|play | status
+	                               (rc9) Content Evolved's Forge: start: a Forge session on a level alone from the menus (<map>: a
+	                               level's leaf name, bloodgulch or b30, or its path; Forge's tags must be built); mode: the
+	                               Monitor entered or left; status: the mode, what is placed, the base map's tag count and the
+	                               network version. Only the 64-bit Linux build has Forge
+	forge place <tag path> [x y z [yaw]] | copy <n> | delete <n> | grab <n> | snap off|15|45|90 | list
+	                               (rc9) Forge's editing as its tools do it, carried out at the next Forge update once the Monitor
+	                               flies (the result is a "forge dev:" line in the log): place stands the palette's tag at x y z
+	                               (yaw in degrees), else 5 world units ahead of the Monitor, as the instance #n of forge list;
+	                               copy makes a second one beside #n; delete removes #n; grab holds #n as a click on it does;
+	                               snap sets the rotation snap (off, 15, 45 or 90 degrees); list names what is placed
+	forge save <name> | play <name> <gametype> | gametype <n|last> <all|ctf|slayer|oddball|koth|race>
+	                               (rc9) save writes the session's map as Forge's SAVE MAP does (a name of a-z, 0-9 and _, up to 48;
+	                               it is MY MAPS' list's next map, and its picture and text are in the file); play starts a game of
+	                               the saved map with the gametype (a built-in one's name, or a saved one's) from the menus, as a
+	                               TEST RUN's setup starts one: the map's objects of that gametype only; gametype sets which
+	                               gametype the placed object #n (forge list; last: the one placed last) is for (all: every gametype)
+	forge move <n> <x> <y> <z> | send <line>
+	                               (rc9) move puts instance #n of forge list at x y z as a hand would (and tells the other machines); send sends the Forge
+	                               line (!FM:.. as typed, up to 63 letters, digits, : . -) to the host as this machine's own, to see what the host does with it
+	                               (a hosted game's joined machine only)
+	forge host <map> [variant] | join <a.b.c.d:port>
+	                               (rc9) a hosted Forge game on one machine, as the network test starts them: host hosts a Forge game on the level
+	                               (a multiplayer map's name, bloodgulch; the variant a built-in gametype, slayer when none), join joins the Forge game
+	                               hosted at that address; both from the menus (a Forge session's flag is on, its version is Forge's own, and the game
+	                               starts from the main menu, 25 seconds after for a host, so that a machine can join first); the host's address is that of its network (HALO_NET_ADDRESS) and port 5150
+	forge ready                    (rc9) answers ok once a staged Forge scene is up: the session on, Forge up on the level, every edit carried out and the
+	                               last mode asked for taken; until then it answers that it is being made (a TEST RUN setup line waits on it)
+	forge face | where <n>|last|all|ai
+	                               (rc9) face turns the Monitor to the way the level leaves the most free ahead (a "forge dev: facing" line), so that
+	                               what is placed ahead is in the open; where says in a "forge dev: where" line where instance #n of forge list (last: the one
+	                               placed last; all: each thing placed; ai: each living AI unit) stands: its place, whether it rests on the ground or hovers over it, its distance and
+	                               bearing from the viewer (the Monitor, or the player on foot; 0 degrees ahead, positive to the left) and whether the level's
+	                               walls leave it in sight; it waits for a mode asked for to be taken. Things placed with no position rest on the ground
+	forge ai <actor> <team> [none|patrol|route|hunt [seconds]] | route <points>
+	                               (rc9) Forge's AI, carried out as the other edits (a "forge dev:" line): ai places a spawn of the actor (a part of its variant's
+	                               name: elite, grunt) 5 world units ahead of the Monitor, on a team (own, player, human, covenant, flood, sentinel,
+	                               players: ALL PLAYERS, red, blue), with a goal (patrol and route go to the lowest numbered AI PATROL volume or route
+	                               there is), kept alive by respawning that many seconds after a death (1 to 600) when the seconds are given; route makes an AI route of 2 to 8
+	                               points, 5 world units apart, in a line across the view 8 ahead of the Monitor; a hunting spawn stands 20 world units ahead, in sight
+	forge ff infantry|vehicles|vehicle|ghost|heavy|zone|pad|player [all|1-5 [1-3]] | generator | rack | drop | ammo <0-100>
+	                               (rc9) Forge's Firefight markers and props, carried out as the other edits (a "forge dev:" line): a marker of that spawn
+	                               type for that round and wave (all when none): infantry, infantry and vehicles, a vehicle, a Ghost, a heavy vehicle, an
+	                               enemy drop point (zone), a player vehicle pad, a player spawn; generator is a generator's marker; rack the props'
+	                               resupply rack and drop the props' drop area. A marker stands 9 world units ahead of the Monitor, the next beside it (to its left and right in turn, 2.5 apart),
+	                               the drop area 5 ahead and 2.5 aside, the rack 1.2 ahead (within its reach), all on the ground; ammo sets the weapon in hand's ammunition to that percentage, once forge mode play
+	                               has put the Spartan on foot
+	forge kill ai                  (rc9) every AI unit dies once the Spartan's mode is on and the AI stands (a RESPAWN is judged from there)
+	forge volume gravity|kill|damage|hurt|oneway|patrol [value [x y z]] | settings biped|hands red|blue|ffa <name> | settings fog default|clear|light|heavy|flood | testspawn red|blue|ffa
+	                               (rc9) volumes and map settings, carried out at the next Forge update once the Monitor flies (a "forge dev:" line
+	                               in the log; forge mode play after them waits for them): volume makes a box of that kind where the Monitor's feet
+	                               would stand, or with its feet at x y z (gravity a column over the feet, its value the strength in hundredths of the
+	                               world's gravity, 0 to 1000, 25 when not given; kill; damage CONSTANT DAMAGE and hurt APPLY DAMAGE, their value a
+	                               percentage of health, 1 to 100, 25; oneway a slab whose top is a floor from above); settings sets a team's
+	                               player biped or hands to the level's tag with <name> in its last name, or the atmosphere (default is the map's own);
+	                               testspawn is MAP SETTINGS' TEST SPAWN for the team: the player spawns as its biped once forge mode play leaves the Monitor
 	help [command]                 (dev help only)
 	list weapons|vehicles|items|spots|options
 	biped [list|use <1-4>|off|check <1-4>]
@@ -122,7 +178,10 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               tune layer: tools/weapon_pack/apply_tune.py)
 	tune reset                     the held weapon's changed numbers back as the map loaded them
 	reset                          the group's start state back (TEST RUN)
-	fireteam follow|regroup|attack|defend|watch|go|clear|status
+	fireteam follow|regroup|attack|defend|watch|go|clear|status|mount
+	fireteam attack|defend|watch|go ahead <1-60>   the order's point that many units ahead of the host, on the ground there (none:
+	                               at the host's feet); mount: the campaign squad's MOUNT (the nearest vehicle with a seat, or out
+	                               of its seats); regroup in a campaign game is the squad's FALL IN
 	fireteam recruit [<bot>]       the host player's fireteam takes an order (attack, defend, watch and go at the host's
 	                               feet) or a bot (its number in the logs, 1 up; none: the first of the team in another fireteam) from
 	                               another fireteam; status logs the roles. In a campaign game with the AI squad the squad is
@@ -166,13 +225,14 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               infection_form, carrier_form, sentinel; marine and crew are allies: a penalty) scored for
 	                               player 1 with that style (regular, one_shot, headshot, melee, backsmack; joined with +), as
 	                               a real kill is: needs game.campaign_score on and a campaign level
-	inject status|maps|open <level>|list <category>|take <category> <number|name>|close|on|off|clear
+	inject status|maps|open <level>|list <category>|take <category> <number|name>|body <own|campaign|taken> <spartan|own>|close|on|off|clear
 	                               tags taken out of a Custom Edition map (its file's name, in maps\ce) or an MCC map
 	                               (its identity, <name>@mcc or <name>@ws<item id>) into the profile ae_dev: open a
 	                               map, list a category (0 weapons, 1 AI, 2 equipment, 3 vehicles, 4 bipeds, 5
 	                               scenery, 6 devices, 7 skies, 8 hands; the paths go to the log), take one by its
 	                               number or a part of its path; on adds the profile's tags to each level loaded after (a biped taken is
-	                               the player's), off stops that, clear empties the profile
+	                               the player's), off stops that, clear empties the profile; body makes the profile a set whose YOUR BODY is the biped last
+	                               taken, with the hands (own, campaign, or the hands last taken) and the movement (spartan or own) the set's file keeps
 	profile_move list | sample [<name> [<games>]] | export <name> | preview|import <file> <name> [merge|replace] | undo <name>
 	                               a profile's progress file (PROFILES > EXPORT / IMPORT PROGRESS): list the exports folder's
 	                               files; sample: a made-up profile's file (never the record files) to import; export: the
@@ -312,6 +372,10 @@ The command's name and its fixed words are lowercase; matching ignores case.
 	                               options, folder, delete, in-use, loading, empty, unreadable; required: missing, found; browse:
 	                               consent, results, download, offline, disk-full, bad-list, failed; workshop: list, signed-out;
 	                               mods: list, moving, restart
+	menu forge [hub|building|needs|maps|keys|mymaps]
+	                               (rc9) the FORGE doors, from the menus: hub (the real hub, as the FORGE row opens it); the made-up
+	                               scenes start and write nothing: building (the pack at 40 %), needs (the game's maps missing),
+	                               maps (NEW MAP's list), keys (FORGE KEYS); mymaps: MY MAPS from this PC's saved maps, as they are. Only the 64-bit Linux build has Forge
 	menu steam <state> [<percent>]
 	                               (1.0) STEAM ACCOUNT staged with no Steam traffic, from the menus: signed-out, typing (a name
 	                               and a password typed), guard-code, guard-app, missing (signed in, MCC's shared files not
@@ -497,6 +561,8 @@ enum ae_dev_cmd_id
 	AE_DEV_CMD_INTRO, /* a TEST RUN campaign test's setup line: the level's intro plays (ae_test_start.h) */
 	AE_DEV_CMD_PLAYER, /* player route <x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]>... | go | look <deg> | stop: the host's player walks a route by itself */
 	AE_DEV_CMD_POINT, /* point save|load <name>: the level's state saved to a named file, or loaded from it (a test's start) */
+	AE_DEV_CMD_FORGE, /* forge start <map> | mode monitor|play | status: a Forge session on a level, the Monitor entered, what is placed */
+	AE_DEV_CMD_JOIN_CLOSED, /* join_closed [<1-4>]: a join refused as closed (code 5, a host changing maps) staged that many tries running, in the menus */
 	AE_DEV_CMD_COUNT
 };
 
@@ -600,13 +666,16 @@ struct ae_dev_puppet_point
 	int teleport; /* put there at once, not walked */
 	int save;     /* reached: the level's state saved (a checkpoint) */
 	int revert;   /* reached: the level reverted to its last save */
+	float wait;   /* reached: seconds stood there (0.5-60), 0 none */
+	int faced;    /* the wait faces face (degrees, world), not the way it came */
+	float face;
 };
 struct ae_dev_puppet_route
 {
 	int count;
 	struct ae_dev_puppet_point point[AE_DEV_PUPPET_POINTS];
 };
-/* appends text's points ("x y z [jump] [crouch] [walk <0.1-1>] [teleport] [save] [revert]" each) to the route: how many, -1 when the text is bad or
+/* appends text's points ("x y z [jump] [crouch] [walk <0.1-1>] [wait <0.5-60>] [face <degrees>] [teleport] [save] [revert]" each) to the route: how many, -1 when the text is bad or
 the route would hold more than AE_DEV_PUPPET_POINTS (the route is then as it was) */
 int ae_dev_puppet_parse(const char *text, struct ae_dev_puppet_route *route);
 /* a step toward point (tx, ty, tz) from (px, py, pz): 1 when it is reached; else 0, *yaw (radians, world) toward it and the

@@ -56,6 +56,7 @@ symbols in this file:
 #include "scenario/scenario_definitions.h"
 #include "units/unit_definitions.h"
 #include "units/units.h"
+#include "ae_forge_engine.h" /* AE hook */
 
 /* ---------- constants */
 
@@ -152,6 +153,7 @@ void action_alert_control(
 		actor->orders.move.stationary_crouch = TRUE;
 		actor->orders.move.moving_crouch = TRUE;
 	}
+	if (!actor->meta.swarm && ae_forge_ai_runs(actor_index)) { actor->orders.move.override_movement_type = _actor_movement_type_combat; actor->orders.move.stationary_crouch = FALSE; actor->orders.move.moving_crouch = FALSE; } /* AE hook */
 
 	return;
 }
@@ -222,6 +224,11 @@ static short action_alert_next_position(
 {
 	struct actor_datum *actor = actor_get(actor_index);
 	short result = NONE;
+	boolean forge_handled = FALSE; /* AE hook */
+	short forge_next = actor->input.vehicle_passenger || move_position_order == _move_position_order_none ? NONE : ae_forge_ai_route(actor_index, move_position_order, current_position_index, &forge_handled); /* AE hook */
+
+	if (forge_handled) /* AE hook */
+		return forge_next; /* AE hook */
 
 	if (actor->input.vehicle_passenger ||
 		move_position_order == _move_position_order_none)

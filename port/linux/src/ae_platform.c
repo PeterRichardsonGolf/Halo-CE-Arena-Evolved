@@ -601,7 +601,7 @@ int ae_platform_keys(void)
 		keys |= AE_KEY_ESCAPE;
 	if (input.keys[SDL_SCANCODE_SLASH])
 		keys |= AE_KEY_SLASH;
-	if (input.keys[SDL_SCANCODE_F2])
+	if (input.keys[SDL_SCANCODE_F2] && !ae_platform_forge_key_taken(SDL_SCANCODE_F2)) /* AE hook */
 		keys |= AE_KEY_F2;
 	if (input.keys[SDL_SCANCODE_DELETE])
 		keys |= AE_KEY_DELETE;
@@ -1121,6 +1121,15 @@ static void test_verdict(int pass)
 	platform_request_quit();
 }
 #endif
+
+/* (game/ae_forge_dev.c: a key Forge binds in a Forge session) */
+int ae_forge_dev_key_taken(int vk);
+
+int ae_platform_forge_key_taken(int scancode)
+{
+	return scancode >= SDL_SCANCODE_F1 && scancode <= SDL_SCANCODE_F12 &&
+		ae_forge_dev_key_taken(0x70 + (scancode - SDL_SCANCODE_F1));
+}
 
 int ae_platform_test_verdict_key(int scancode)
 {

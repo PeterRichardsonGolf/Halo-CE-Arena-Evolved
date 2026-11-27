@@ -406,6 +406,8 @@ void ae_rejoin_test_drop(struct network_connection *connection); /* AE hook */
 #include "ae_net_extensions.h" /* AE hook */
 #include "ae_silent.h" /* AE hook */
 #include "ae_join_helper.h" /* AE hook */
+#include "ae_ce_host.h" /* AE hook */
+#include "ae_ce_host_rules.h" /* AE hook */
 #include "map_share.h" /* port: port/linux/game/map_share.c */
 #include "delta.h" /* port: DELTA_ADVERTISED_FLAG for a join by address */
 
@@ -861,6 +863,8 @@ static struct
 	host plays after them, port/linux/include/delta.h) */
 	byte reserved[0x1A];
 	byte kind;
+	/* AE: what a host that signed itself modded is (ae_ce_host_rules.h's AE_CE_HOST_*); 0 for every other */
+	byte ce_class;
 } network_game_client_advertised_versions[MAXIMUM_NETWORK_ADVERTISED_GAMES];
 
 /* the joined game's host's network version, as it advertised it (0xFFFF: not
@@ -1013,6 +1017,7 @@ void network_game_client_dispose(
 	struct network_game_client *client)
 {
 	network_replay_playback_stop(); /* AE hook */
+	ae_ce_host_left(); /* AE hook */
 	if (client)
 	{
 		mcc_identity_disconnect(); /* port: discard the MCC session's local binding */
@@ -2305,6 +2310,7 @@ boolean network_game_client_initiate_join_game(
 			if (wire && wire < 32)
 				network_game_client_joined_version = 0xFFFF;
 		}
+		ae_ce_host_joining(advertised_index >= 0 && advertised_index < MAXIMUM_NETWORK_ADVERTISED_GAMES ? (int)network_game_client_advertised_versions[advertised_index].ce_class : -1); /* AE hook */
 	}
 	/* (an advertised game's flags; a game joined by its address (a host's own,
 	through 127.0.0.1, or a typed one) is no advertised one: Delta is tried,
@@ -2879,6 +2885,7 @@ static boolean add_advertised_game(
 				(advertisement->__unknown5A[HALO_PORT_ADVERTISED_VERSION_OFFSET + 1] << 8));
 			network_game_client_advertised_versions[game_index].flags =
 				advertisement->__unknown5A[HALO_PORT_ADVERTISED_FLAGS_OFFSET];
+			network_game_client_advertised_versions[game_index].ce_class = ae_ce_host_advertised(network_game_client_advertised_versions[game_index].version, advertisement->__unknown5A, network_game_client_advertised_versions[game_index].flags, &network_game_client_advertised_versions[game_index].version); /* AE hook */
 			ae_lobby_advertised(network_game_client_advertised_versions[game_index].version, network_game_client_advertised_versions[game_index].flags); /* AE hook */
 			csmemcpy(network_game_client_advertised_versions[game_index].reserved,
 				advertisement->__unknown5A,
@@ -2903,7 +2910,7 @@ static boolean add_advertised_game(
 		}
 		advertised_game->game_name[NETWORK_GAME_NAME_LENGTH - 1] = L'\0';
 
-		advertised_game->engine_type = advertisement->engine_type;
+		advertised_game->engine_type = ae_ce_host_engine(network_game_client_advertised_versions[advertised_game - available_games].ce_class, advertisement->engine_type); /* AE hook */
 
 		csmemcpy(
 			&advertised_game->map,
@@ -3284,6 +3291,7 @@ static boolean network_game_client_idle_joining(
 						join_game_request.link_pass, join_game_request.link_proof);
 				}
 
+				ae_ce_host_capability(client->connection); /* AE hook */
 				message = create_network_game_message(
 					_message_client_join_game_request,
 					&join_game_request,
@@ -3365,6 +3373,7 @@ static boolean network_game_client_idle_pregame(
 			(boolean)network_connection_connected(client->connection))
 		{
 			network_game_client_update_precache_status(client);
+			ae_ce_host_capability(client->connection); /* AE hook */
 
 			/* (port: no timeout on the host, network_game_client_connection_timeout) */
 			if (!(success = network_connection_idle(client->connection, network_game_client_connection_timeout(15000), NULL)))
@@ -3681,6 +3690,7 @@ void network_game_client_tell_version(
 int delta_peer_advertised_wire_matches(unsigned char const *reserved, int size, char *theirs, int theirs_size);
 #endif
 #include "delta.h" /* AE hook */
+#include "ae_forge_net_rules.h" /* AE hook */
 #include "../../port/linux/src/ae_delta_wire.h" /* AE hook */
 
 /* whether this client can join the advertised game (its host's network
@@ -3699,6 +3709,7 @@ boolean network_game_client_advertised_game_compatible(
 
 	if (game_index < 0 || game_index >= MAXIMUM_NETWORK_ADVERTISED_GAMES)
 		return FALSE;
+	if (!ae_ce_host_join_check(network_game_client_advertised_versions[game_index].ce_class, network_game_client_advertised_versions[game_index].flags, network_game_client_advertised_versions[game_index].reserved, tell)) return FALSE; /* AE hook */
 #ifdef HALO_GAME_BROWSER
 	{
 		unsigned int theirs = network_game_client_advertised_versions[game_index].version;
@@ -3709,7 +3720,7 @@ boolean network_game_client_advertised_game_compatible(
 		int matches = delta_peer_advertised_wire_matches(network_game_client_advertised_versions[game_index].reserved,
 			(int)sizeof(network_game_client_advertised_versions[game_index].reserved), wire, (int)sizeof(wire));
 
-		if (matches > 0 && distributed)
+		if (matches > 0 && distributed && ae_forge_net_rules_delta_shortcut(delta_forge_session_on())) /* AE hook */
 		{
 			network_event("joining a Delta host of this machine's wire (network version %u; this machine's is %u)",
 				theirs, ours);

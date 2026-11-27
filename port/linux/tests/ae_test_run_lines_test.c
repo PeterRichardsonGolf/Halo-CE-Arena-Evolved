@@ -121,6 +121,37 @@ static void not_yet_tests(void)
 	CHECK(now >= AE_TEST_RUN_LINES_NOT_YET_FOR_MS && now < AE_TEST_RUN_LINES_NOT_YET_FOR_MS + 400);
 }
 
+/* a line answered being made (a tag pack written on its first use) is sent again once a second for minutes, then accepted */
+static void being_made_tests(void)
+{
+	unsigned long now;
+	int sends = 0;
+
+	ae_test_run_lines_start(&lines, 2, 0, 0);
+	CHECK(step(1, 0, 0, 0) == AE_TEST_RUN_LINES_SEND && line == 0);
+	/* (being made, far past a not yet line's time: still under way, sent about once a second) */
+	for (now = 33; now < AE_TEST_RUN_LINES_NOT_YET_FOR_MS * 3; now += 33)
+	{
+		enum ae_test_run_lines_action action = step(1, lines.out, -2, now);
+
+		CHECK(action != AE_TEST_RUN_LINES_FAILED);
+		sends += action == AE_TEST_RUN_LINES_SEND;
+	}
+	CHECK(sends >= 50 && sends <= AE_TEST_RUN_LINES_NOT_YET_FOR_MS * 3 / AE_TEST_RUN_LINES_BEING_MADE_MS + 1);
+	while (!lines.out && ae_test_run_lines_pending(&lines) && now < 400000)
+		step(1, 0, -2, now += 33);
+	CHECK(step(1, 1, 1, now += 33) == AE_TEST_RUN_LINES_SEND && line == 1);
+	/* (the line after it is back at a refused line's pace and time) */
+	CHECK(step(1, 1, 0, now += 33) != AE_TEST_RUN_LINES_FAILED && !lines.slow);
+	/* (being made every time: failed once its own time is up, refused, at that line) */
+	ae_test_run_lines_start(&lines, 1, 0, 0);
+	CHECK(step(1, 0, 0, 0) == AE_TEST_RUN_LINES_SEND);
+	for (now = 33; now < 400000 && ae_test_run_lines_pending(&lines); now += 33)
+		step(1, lines.out, -2, now);
+	CHECK(!ae_test_run_lines_pending(&lines) && lines.why == AE_TEST_RUN_LINES_REFUSED && line == 0);
+	CHECK(now >= AE_TEST_RUN_LINES_BEING_MADE_FOR_MS && now < AE_TEST_RUN_LINES_BEING_MADE_FOR_MS + 1200);
+}
+
 /* a line with no answer fails the setup at that line */
 static void answer_tests(void)
 {
@@ -142,6 +173,7 @@ int main(void)
 	retry_tests();
 	answer_tests();
 	not_yet_tests();
+	being_made_tests();
 	if (failures)
 		return 1;
 	printf("ae_test_run_lines: ok\n");

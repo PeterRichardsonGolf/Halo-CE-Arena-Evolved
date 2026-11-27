@@ -53,6 +53,7 @@ skips what it does not know.
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include "../game/ae_forge_net_rules.h" /* AE hook */
 
 #define DELTA_LEGACY_FORMAT 1
 #define DELTA_SIGNATURE_SIZE 64
@@ -956,6 +957,19 @@ void delta_legacy_start(void)
 #endif
 }
 
+/* a Forge session answers with its own version (ae_forge_net_rules.h): the build with Forge says whether one is on */
+static int (*delta_forge_probe)(void);
+
+void delta_forge_probe_set(int (*probe)(void))
+{
+	delta_forge_probe = probe;
+}
+
+int delta_forge_session_on(void)
+{
+	return delta_forge_probe ? delta_forge_probe() : 0;
+}
+
 int delta_legacy_announce(void)
 {
 	int number;
@@ -964,7 +978,7 @@ int delta_legacy_announce(void)
 	pthread_mutex_lock(&delta_lock);
 	number = delta.announce;
 	pthread_mutex_unlock(&delta_lock);
-	return number;
+	return ae_forge_net_rules_announce(delta_forge_session_on(), number); /* AE hook */
 }
 
 int delta_legacy_minimum(void)
@@ -975,7 +989,7 @@ int delta_legacy_minimum(void)
 	pthread_mutex_lock(&delta_lock);
 	number = delta.minimum;
 	pthread_mutex_unlock(&delta_lock);
-	return number;
+	return ae_forge_net_rules_minimum(delta_forge_session_on(), number); /* AE hook */
 }
 
 int delta_legacy_maximum(void)
@@ -986,7 +1000,7 @@ int delta_legacy_maximum(void)
 	pthread_mutex_lock(&delta_lock);
 	number = delta.maximum;
 	pthread_mutex_unlock(&delta_lock);
-	return number;
+	return ae_forge_net_rules_maximum(delta_forge_session_on(), number); /* AE hook */
 }
 
 unsigned int delta_legacy_serial(void)

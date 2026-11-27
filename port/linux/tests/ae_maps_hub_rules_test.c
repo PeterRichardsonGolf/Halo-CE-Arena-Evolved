@@ -35,11 +35,12 @@ int main(void)
 	CHECK(ae_hub_tab_step(99, 1, 1) == AE_HUB_TAB_INSTALLED);
 	for (tab = 0; tab < AE_HUB_TABS; tab++)
 		CHECK(ae_hub_tab_step(ae_hub_tab_step(tab, 1, 1), -1, 1) == tab);
-	/* ITEM SETS is absent outside DEV MODE: requests fall back and page cycling passes from MODS to INSTALLED. */
-	CHECK(!ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 0) && ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 1));
-	CHECK(ae_hub_tab_resolve(AE_HUB_TAB_ITEM_SETS, 0) == AE_HUB_TAB_INSTALLED);
-	CHECK(ae_hub_tab_step(AE_HUB_TAB_MODS, 1, 0) == AE_HUB_TAB_INSTALLED &&
-		ae_hub_tab_step(AE_HUB_TAB_INSTALLED, -1, 0) == AE_HUB_TAB_MODS);
+	/* (ITEM SETS is shown to everyone, DEV MODE or not) */
+	CHECK(ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 0) && ae_hub_tab_visible(AE_HUB_TAB_ITEM_SETS, 1));
+	CHECK(ae_hub_tab_resolve(AE_HUB_TAB_ITEM_SETS, 0) == AE_HUB_TAB_ITEM_SETS);
+	CHECK(ae_hub_tab_step(AE_HUB_TAB_MODS, 1, 0) == AE_HUB_TAB_ITEM_SETS &&
+		ae_hub_tab_step(AE_HUB_TAB_INSTALLED, -1, 0) == AE_HUB_TAB_ITEM_SETS);
+	CHECK(ae_hub_tabs_shown(0) == AE_HUB_TABS && ae_hub_tabs_shown(1) == AE_HUB_TABS);
 
 	/* DEV MODE's names: any case, a page and its own states only */
 	CHECK(ae_hub_tab_find("Browse") == AE_HUB_TAB_BROWSE && ae_hub_tab_find("mods") == AE_HUB_TAB_MODS && ae_hub_tab_find("maps") == -1);

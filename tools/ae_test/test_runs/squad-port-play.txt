@@ -7,14 +7,14 @@
 # through the first door that opens for you. Bot events are on: the squad logs where you and each member walk every half
 # second, so a later test can walk your own way.
 list squad-port-play
-revision 3
+revision 5
 title CAMPAIGN AI SQUAD: PLAYED
 
 group a10
 map a10
 gametype coop
 set game.campaign_skip_training true
-set game.companions_door_stack "every"
+set game.companions_door_stack every
 set debug.bot_events true
 
 test a10-start
@@ -38,7 +38,7 @@ check Neither stands in a doorway or in your way
 group b30
 map b30
 gametype coop
-set game.companions_door_stack "every"
+set game.companions_door_stack every
 set debug.bot_events true
 
 test b30-beach
@@ -46,7 +46,7 @@ title Silent Cartographer: up the beach
 fresh
 setup companion 3
 check They keep up behind you, apart, no swinging
-check In a fight they shoot, then fall back in
+check In a fight they shoot, then come back to you
 check Run and jump down rocks: none warps
 
 test b30-faster
@@ -55,4 +55,4 @@ fresh
 setup companion 2
 check Jump up where they cannot: they find a way
 check Sprint far ahead: they catch up out of sight
-check None falls to its death following you
+check None dies following you

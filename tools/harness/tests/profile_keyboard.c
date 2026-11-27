@@ -18,6 +18,8 @@ typedef struct { unsigned short wButtons; BYTE bAnalogButtons[8]; SHORT sThumbLX
 #define SDL_BUTTON_X1 4
 /* Arena Evolved: keyboard_gamepad notes the keyboard and mouse's use for the HUD's key prompts (ae_platform.c) */
 #define ae_platform_note_keyboard_input(keys, mouse_buttons, mouse_live) ((void)0)
+/* Arena Evolved: a key Forge binds in a Forge session is not the keyboard's (ae_platform.c): none is taken out of a Forge session */
+#define ae_platform_forge_key_taken(scancode) (0)
 static BOOL text_typing, text_typing_enter_armed, text_typing_keyboard, text_typing_field;
 /* Arena Evolved (from ChupathingyCE): the Enter that finished typing is held
 off the menu below until it is let go of (xinput_sdl.c) */

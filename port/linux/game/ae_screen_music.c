@@ -1406,6 +1406,20 @@ static void order_move(int direction)
 	}
 }
 
+/* the held song put back where it was, or as near as the list now goes: a song taken out while it was held leaves
+the list shorter, and a move at its end moves nothing */
+static void order_put_back(void)
+{
+	while (pick.order.list.focus != pick.moving_from)
+	{
+		short before = pick.order.list.focus;
+
+		order_move(pick.order.list.focus > pick.moving_from ? -1 : 1);
+		if (pick.order.list.focus == before)
+			break;
+	}
+}
+
 static void filter_step(int direction)
 {
 	int next = pick.filter + direction, total = pick.game_count + 1;
@@ -1472,11 +1486,7 @@ static int songs_handle(struct ae_screen *instance, struct ae_event const *event
 		case AE_ACTION_BACK:
 			if (pick.moving >= 0)
 			{
-				/* (put back where it was) */
-				while (pick.order.list.focus > pick.moving_from)
-					order_move(-1);
-				while (pick.order.list.focus < pick.moving_from)
-					order_move(1);
+				order_put_back();
 				pick.moving = -1;
 				return 1;
 			}
@@ -1602,6 +1612,8 @@ static void songs_pointer(struct ae_screen *instance, struct ae_pointer const *p
 	item = ae_list_view_pointer(&pick.songs, pointer, HIT_SONG_ITEMS);
 	if (item >= 0 && item < pick.item_count && !pick.items[item].header && pointer->left_clicks)
 	{
+		/* (a click in the songs lets go of a held song: it may be the one the click takes out) */
+		pick.moving = -1;
 		pick.pane = PANE_SONGS;
 		ae_list_set_focus(&pick.songs.list, item);
 		songs_accept();
