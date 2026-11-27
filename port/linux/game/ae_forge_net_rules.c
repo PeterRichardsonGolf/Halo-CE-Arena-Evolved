@@ -189,9 +189,9 @@ static int real_range(char const *text, float low, float high, float *value, int
 	}
 	if (negative)
 		number = -number;
-	if (!isfinite(number) || number < (double)low || number > (double)high)
+	if (!__builtin_isfinite(number) || number < (double)low || number > (double)high)
 	{
-		*reason = isfinite(number) ? AE_FORGE_NET_RANGE : AE_FORGE_NET_FINITE;
+		*reason = __builtin_isfinite(number) ? AE_FORGE_NET_RANGE : AE_FORGE_NET_FINITE;
 		return 0;
 	}
 	*value = (float)number;
