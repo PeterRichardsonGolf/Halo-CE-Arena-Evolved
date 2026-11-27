@@ -1,0 +1,67 @@
+# FORGE, step 3 (save, load, play): Forge's SAVE MAP writes the session's map as custom_maps\<name>.map (the picture and the saved state are in the
+# file); MY MAPS lists it; a game of the saved map plays its objects by gametype. `forge place` stands the palette's tag 5 world units ahead of
+# the Monitor, or at x y z; `forge gametype last <kind>` sets which gametype the object placed last is for; `forge save <name>` writes the map; `forge play
+# <name> <gametype>` starts a game of it from the main menu (the last two tests start it as a TEST RUN starts a game: map, gametype). The first test writes
+# s3test, which the rest use: play them in order.
+list forge-s3
+revision 5
+title FORGE: SAVE, LOAD, PLAY
+
+test save-map
+retest 5
+title SAVE MAP: s3test is written and named in the pause
+check Pause: SAVE MAP reads S3TEST, the head FORGE - PAUSED
+expect 1 log forge dev: save s3test: saved
+expect 1 log forge dev: placed objective\ctf_flag_red
+expect 1 log forge dev: placed vehicles\warthog\warthog
+expect 1 log forge dev: placed vehicles\ghost\ghost
+expect 1 log forge dev: where all: 3 placed
+expect 1 no log hovers
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge place objective\ctf_flag_red 44 -81 1.7 0
+setup forge place vehicles\warthog\mp_warthog 44 -76 1.7 0
+setup forge gametype last ctf
+setup forge place vehicles\ghost\ghost 47 -81 0.2 0
+setup forge gametype last ctf
+setup forge where all
+setup forge save s3test
+setup forge ready
+
+test my-maps
+retest 5
+title MY MAPS lists s3test with its picture
+check MY MAPS: S3TEST on the list, its picture on the card
+check The card: BLOODGULCH, 3 objects, SAVED just now
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup menu forge mymaps
+
+test play-ctf
+retest 5
+title CTF on s3test: the flag and both objects are there
+check The red flag stands where you put it
+check The Warthog and the Ghost are there (CTF only)
+expect 1 log saved map: 1
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+map s3test
+gametype ctf
+setup goto 38 -81 1.7 facing 0
+
+test play-slayer
+retest 5
+title SLAYER on s3test: the CTF-only objects are gone
+check No Warthog and no Ghost on the roof ahead
+expect 1 log saved map: 1
+expect 1 log vehicles\warthog\warthog is for gametypes 1: not in this game
+expect 1 log vehicles\ghost\ghost is for gametypes 1: not in this game
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+map s3test
+gametype slayer
+setup goto 38 -81 1.7 facing 0

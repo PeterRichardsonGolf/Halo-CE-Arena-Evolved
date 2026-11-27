@@ -1,0 +1,398 @@
+{
+  "_about": [
+    "The campaign's scoring values (game.campaign_score: ae_campaign_score.c).",
+    "tools/campaign_score_values.py writes campaign_score_values.c from this file;",
+    "configure.py runs it, and ninja reruns configure.py when this file changes,",
+    "so editing a value and building is enough.",
+    "",
+    "A kill is worth: its base points x its style x the difficulty x the skulls,",
+    "rounded to a whole point. Penalties are taken as they are (no multipliers).",
+    "The level's total is multiplied by the time's multiplier when it is won.",
+    "",
+    "'match' lists words looked for in a tag's name (any case: an actor variant's",
+    "for enemies and allies, a vehicle's for vehicles); the first entry with a",
+    "word in the name gives the points, else the actor's 'default'."
+  ],
+  "difficulty": {
+    "easy": 0.5,
+    "normal": 1.0,
+    "heroic": 2.0,
+    "legendary": 4.0
+  },
+  "time": {
+    "_about": [
+      "par_times are in minutes (15: 15:00; 15.5: 15:30), for normal: par_difficulty multiplies them by the difficulty,",
+      "and daily_challenge_par again in a daily challenge's run. The level's time over that par time:",
+      "the first bracket it is within (up to and including 'up_to_par'; null: any) gives the multiplier.",
+      "A level with no par time (a Custom Edition map) is x1."
+    ],
+    "brackets": [
+      {
+        "up_to_par": 0.50,
+        "multiplier": 4.0
+      },
+      {
+        "up_to_par": 0.60,
+        "multiplier": 3.0
+      },
+      {
+        "up_to_par": 0.80,
+        "multiplier": 2.0
+      },
+      {
+        "up_to_par": 1.00,
+        "multiplier": 1.0
+      },
+      {
+        "up_to_par": 1.50,
+        "multiplier": 0.8
+      },
+      {
+        "up_to_par": null,
+        "multiplier": 0.5
+      }
+    ],
+    "par_difficulty": {
+      "easy": 0.8,
+      "normal": 1.0,
+      "heroic": 1.3,
+      "legendary": 1.8
+    },
+    "daily_challenge_par": 1.2,
+    "par_times": {
+      "a10": 15,
+      "a30": 20,
+      "a50": 30,
+      "b30": 15,
+      "b40": 25,
+      "c10": 12,
+      "c20": 30,
+      "c40": 25,
+      "d20": 15,
+      "d40": 25
+    }
+  },
+  "style": {
+    "_about": [
+      "A kill's style: regular, or any of the others that apply ('multiply': all of them multiplied; 'highest': the highest).",
+      "A backsmack (a melee hit from behind) is not a melee too.",
+      "One shot, one kill: the enemy was hurt by nothing before the blow that killed it."
+    ],
+    "combine": "multiply",
+    "regular": 1.0,
+    "one_shot_one_kill": 1.25,
+    "headshot": 1.25,
+    "melee": 1.25,
+    "backsmack": 1.5
+  },
+  "enemies": {
+    "grunt": {
+      "default": 10,
+      "variants": [
+        {
+          "match": [
+            "specops"
+          ],
+          "points": 10
+        },
+        {
+          "match": [
+            "major"
+          ],
+          "points": 10
+        },
+        {
+          "match": [
+            "minor"
+          ],
+          "points": 10
+        }
+      ]
+    },
+    "jackal": {
+      "default": 15,
+      "variants": [
+        {
+          "match": [
+            "major"
+          ],
+          "points": 20
+        },
+        {
+          "match": [
+            "minor"
+          ],
+          "points": 15
+        }
+      ]
+    },
+    "elite": {
+      "default": 30,
+      "variants": [
+        {
+          "match": [
+            "commander"
+          ],
+          "points": 75
+        },
+        {
+          "match": [
+            "stealth",
+            "specops"
+          ],
+          "points": 50
+        },
+        {
+          "match": [
+            "major"
+          ],
+          "points": 40
+        },
+        {
+          "match": [
+            "minor"
+          ],
+          "points": 30
+        }
+      ]
+    },
+    "hunter": {
+      "default": 150,
+      "variants": [
+        {
+          "match": [
+            "major"
+          ],
+          "points": 175
+        }
+      ]
+    },
+    "engineer": {
+      "default": 10
+    },
+    "assassin": {
+      "default": 30
+    },
+    "combat_form": {
+      "default": 10,
+      "variants": [
+        {
+          "match": [
+            "floodcombat elite"
+          ],
+          "points": 15
+        }
+      ]
+    },
+    "carrier_form": {
+      "default": 10
+    },
+    "infection_form": {
+      "default": 1
+    },
+    "sentinel": {
+      "default": 5,
+      "variants": [
+        {
+          "match": [
+            "shielded major"
+          ],
+          "points": 15
+        },
+        {
+          "match": [
+            "shielded",
+            "major"
+          ],
+          "points": 10
+        }
+      ]
+    }
+  },
+  "vehicles": [
+    {
+      "match": [
+        "wraith"
+      ],
+      "points": 200
+    },
+    {
+      "match": [
+        "banshee"
+      ],
+      "points": 100
+    },
+    {
+      "match": [
+        "ghost"
+      ],
+      "points": 100
+    },
+    {
+      "match": [
+        "c gun turret"
+      ],
+      "points": 50
+    }
+  ],
+  "penalties": {
+    "_about": [
+      "Points taken (negative). Going back to a checkpoint takes nothing from the score or the time: these penalties are its only cost.",
+      "death: a player's death",
+      "betrayal: a player killing another",
+      "checkpoint_revert: Revert to Checkpoint from the pause menu."
+    ],
+    "death": -25,
+    "betrayal": -50,
+    "checkpoint_revert": -25,
+    "allies": {
+      "_about": [
+        "Captain Keyes is of the marine type (characters\\captain)",
+        "a 'major' marine is a sergeant",
+        "marine_armored are the armoured marines."
+      ],
+      "marine": {
+        "default": -50,
+        "variants": [
+          {
+            "match": [
+              "captain"
+            ],
+            "points": -100
+          },
+          {
+            "match": [
+              "armored"
+            ],
+            "points": -100
+          },
+          {
+            "match": [
+              "major"
+            ],
+            "points": -100
+          }
+        ]
+      },
+      "crew": {
+        "default": -50
+      }
+    }
+  },
+  "skulls": {
+    "_about": [
+      "Each skull on multiplies a kill's points ('multiply': together; 'highest': the highest of those on).",
+      "A skull not listed is 'default' (tools/test_campaign_score_values.py wants every skull listed)."
+    ],
+    "combine": "multiply",
+    "default": 1.0,
+    "multipliers": {
+      "anger": 1.1,
+      "armistice": 1.1,
+      "assassins": 1.2,
+      "bandanna": 0.5,
+      "black_eye": 1.1,
+      "blind": 1.1,
+      "boom": 1.0,
+      "catch": 1.1,
+      "confetti_party": 1.0,
+      "efficient": 0.9,
+      "envy": 0.5,
+      "eye_patch": 1.1,
+      "famine": 1.2,
+      "floor_is_lava": 1.3,
+      "fog": 1.1,
+      "foreign": 1.1,
+      "ghost": 1.0,
+      "give_and_take": 1.2,
+      "grunt_birthday_party": 1.0,
+      "grunt_funeral": 1.0,
+      "iron": 1.3,
+      "johnny_ammo": 1.1,
+      "leadhead": 1.2,
+      "m_rating": 1.0,
+      "malfunction": 1.0,
+      "mythic": 1.2,
+      "need_glasses": 1.2,
+      "outbreak": 1.1,
+      "pinata": 1.0,
+      "protected": 1.2,
+      "recession": 1.2,
+      "rip_and_tear": 1.1,
+      "scarab": 0.5,
+      "sputnik": 1.0,
+      "streaking": 1.2,
+      "swarm": 1.0,
+      "thats_just_wrong": 1.1,
+      "thunderstorm": 1.2,
+      "tough_luck": 1.1,
+      "woe_is_me": 1.2
+    }
+  },
+  "medals": {
+    "_about": [
+      "Medals (ae_campaign_medals_rules.c), always given with the scoring (Settings > Gameplay > Scoring's MEDAL POPUPS shows those just won): each is worth its points,",
+      "times the difficulty and the skulls when 'scaled' (as a kill is). The time's multiplier applies to them at",
+      "the level's end, as to every point. multi_kill_seconds: a kill within this of the last is a multi-kill.",
+      "perfection_kills: Perfection's kills (won without dying). close_call_health: Close Call's health (0 to 1),",
+      "the shield down. history: how many of the last medals the panel shows. popup_seconds: how long each new",
+      "medal is shown at the center left.",
+      "'weapons': words of the killing blow's damage effect's name that tell its weapon",
+      "(python3 tools/campaign_score_values.py --pack shows the actors; the damage effects are the jpt! tags:",
+      "weapons\\sniper rifle\\sniper bullet, weapons\\plasma grenade\\attached, globals\\vehicle_killed_unit, ...)."
+    ],
+    "multi_kill_seconds": 4,
+    "perfection_kills": 15,
+    "close_call_health": 0.25,
+    "history": 12,
+    "popup_seconds": 3,
+    "scaled": true,
+    "weapons": {
+      "sniper": ["sniper rifle\\sniper bullet"],
+      "shotgun": ["shotgun\\pellet"],
+      "flame": ["flamethrower\\explosion", "flaming_death"],
+      "grenade_stick": ["plasma grenade\\attached"],
+      "splatter": ["vehicle_killed_unit", "vehicle_collision"]
+    },
+    "points": {
+      "double_kill": 25,
+      "triple_kill": 50,
+      "overkill": 75,
+      "killtacular": 100,
+      "killtrocity": 125,
+      "killimanjaro": 150,
+      "killtastrophe": 175,
+      "killpocalypse": 200,
+      "killionaire": 250,
+      "killing_spree": 50,
+      "killing_frenzy": 100,
+      "running_riot": 150,
+      "rampage": 200,
+      "untouchable": 250,
+      "invincible": 300,
+      "inconceivable": 350,
+      "unfriggenbelievable": 400,
+      "shotgun_spree": 50,
+      "open_season": 100,
+      "sniper_spree": 50,
+      "sharpshooter": 100,
+      "splatter_spree": 50,
+      "vehicular_manslaughter": 100,
+      "stick_spree": 50,
+      "beat_down": 10,
+      "assassin": 20,
+      "headshot": 10,
+      "sniper_kill": 10,
+      "grenade_stick": 20,
+      "splatter": 15,
+      "incineration": 10,
+      "death_from_the_grave": 50,
+      "close_call": 25,
+      "first_strike": 25,
+      "revenge": 25,
+      "avenger": 25,
+      "wheelman": 15,
+      "perfection": 500
+    }
+  }
+}

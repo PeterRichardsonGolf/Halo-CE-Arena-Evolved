@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<!-- halo.exe's manifest (port/windows/halo.rc). The process's ANSI code page
+is UTF-8 (Windows 10 1903 and later): the game's narrow file calls (fopen,
+FindFirstFileA, the registry's A calls) take a Steam library, a Windows user
+name or a map folder in any language, as the UTF-8 that libraryfolders.vdf
+and SDL already give. An older Windows keeps its own code page, as before.
+The common controls 6 dependency (owner 11-11): SDL's message boxes (the first start's disc question, the crash and
+update questions) are then Windows' task dialog, which wraps the text and sizes its buttons at any display scaling;
+without it SDL drew its old dialog, whose buttons cut their labels off on a scaled laptop screen -->
+<assembly xmlns="urn:schemas-microsoft-com:asm.v1" manifestVersion="1.0">
+  <trustInfo xmlns="urn:schemas-microsoft-com:asm.v3">
+    <security>
+      <requestedPrivileges>
+        <requestedExecutionLevel level="asInvoker" uiAccess="false"/>
+      </requestedPrivileges>
+    </security>
+  </trustInfo>
+  <dependency>
+    <dependentAssembly>
+      <assemblyIdentity type="win32" name="Microsoft.Windows.Common-Controls" version="6.0.0.0"
+        processorArchitecture="*" publicKeyToken="6595b64144ccf1df" language="*"/>
+    </dependentAssembly>
+  </dependency>
+  <application xmlns="urn:schemas-microsoft-com:asm.v3">
+    <windowsSettings>
+      <activeCodePage xmlns="http://schemas.microsoft.com/SMI/2019/WindowsSettings">UTF-8</activeCodePage>
+    </windowsSettings>
+  </application>
+</assembly>

@@ -1,0 +1,118 @@
+# ITEM SETS, rc9 phase 2: the first screen's HOW SETS PLAY, campaign swaps (their list, a swap's page, a slot's picks), a set's firing range row, and the
+# campaign lobby's ITEM SETS row and picker. Each test opens on its scene from made-up data (DEV MODE's `menu maps sets <scene>`, `menu campaign focus
+# items`): nothing is read from this PC and nothing is written. A swap plays in a campaign level played alone, in the randomizer's place.
+list item-sets-rc9-p2
+revision 1
+title ITEM SETS: SWAPS AND THE LOBBY PICKER
+
+test home
+title HOW SETS PLAY on the first screen
+check CAMPAIGN SWAPS shows 3 and a chevron; the card lists them
+check MULTIPLAYER SWAPS (down one) says COMES WITH FORGE
+check A on CAMPAIGN SWAPS opens the list of swaps
+menus
+setup menu maps sets home
+
+test swaps
+title The list of campaign swaps
+check Spirit Run says IN USE; Old Run says SET MISSING (red-blue)
+check NEW SWAP is the last row; the card says what a swap does
+check Footer: Open, New swap, Delete, Back
+menus
+setup menu maps sets swaps
+
+test swaps-empty
+title No swap yet
+check The list says YOUR SWAPS NONE and a sentence
+check NEW SWAP is focused; the card has the three steps
+check Footer: New swap (A), Back
+menus
+setup menu maps sets swaps-empty
+
+test swap-weapons
+title A swap's weapons
+check The weapon rows show: ASSAULT RIFLE to ENERGY SWORD
+check PISTOL says 2 PICKED; the card names the picks
+check Left on HOW THEY'RE PICKED: the weapon rows go
+menus
+setup menu maps sets swap-weapons
+
+test swap-enemies
+title A swap's enemies and body
+check Enemy rows show; ELITE says MAJOR: 3 PICKED
+check BIPED is focused: CHOICES and the set's cyborg_mp
+check HANDS and MOVEMENT say COMES NEXT
+menus
+setup menu maps sets swap-enemies
+
+test swap-ranks
+title An enemy with ranks
+check ELITE opens its ranks: MINOR to STEALTH
+check MAJOR says 3 PICKED; the card lists each rank
+check A on MAJOR opens its slot
+menus
+setup menu maps sets swap-ranks
+
+test swap-slot
+title ELITE MAJOR's picks
+check REPLACED BY: THE MISSION'S OWN, then the set's AI
+check ARMED WITH: THEIR OWN, the set's weapons, the campaign's
+check A turns a pick on or off; its box fills
+menus
+setup menu maps sets swap-slot
+
+test swap-delete
+title Deleting a swap
+check The question says Spirit Kit stays as it is
+check CANCEL has the focus; DELETE is in the red frame
+check B cancels and the list is as it was
+menus
+setup menu maps sets swap-delete
+
+test swap-new
+title A new swap picks its set
+check The sets with an item on are listed, Spirit Kit first
+check Test Bench (no item on) is not offered
+check A makes the swap and opens its page
+menus
+setup menu maps sets swap-new
+
+test range
+title A set's firing range row
+check Row 2 reads TRY IT ON THE FIRING RANGE with a chevron
+check The card says what the range does
+check Footer: Try it, Add items, Back
+menus
+setup menu maps sets range
+
+test range-wait
+title The firing range row waits
+check The row reads NOTHING ON (Test Bench has no item on)
+check The card and the help line say why
+check A shows the notice and starts nothing
+menus
+setup menu maps sets range-wait
+
+test picker
+title The lobby's ITEM SETS picker
+check NONE, CAMPAIGN SWAPS and WITH THE RANDOMIZER heads
+check Spirit Run says IN USE; no arrows on any row
+check A on another row picks it and returns to the lobby
+menus
+setup menu maps sets picker
+
+test picker-waits
+title Rows of the picker that wait
+check The sets read NEEDS RANDOMIZER (the randomizer is off)
+check Test Bench says NO ITEMS ON; Old Run says SET MISSING
+check A on a waiting row nudges and picks nothing
+menus
+setup menu maps sets picker-waits
+
+test lobby-row
+title The campaign lobby's ITEM SETS row
+check ITEM SETS sits between SKULLS and RANDOMIZER: SPIRIT RUN
+check RANDOMIZER reads SWAP PLAYS INSTEAD; A says why
+check The RULES fact on the right starts with SPIRIT RUN
+menus
+setup menu campaign focus items

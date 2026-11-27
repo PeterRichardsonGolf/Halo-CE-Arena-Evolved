@@ -1,0 +1,18 @@
+# rc6 rejoin after a drop, the GUEST's list: a LAN game must be up on another machine first (a dedicated server or a
+# player hosting a multiplayer game). The test joins it from the menus and, 20 s into the game, drops this machine's
+# connection (debug.network_test_drop): with REJOIN AFTER A DROP on (the default) the game joins again by itself. The
+# setting off (the error at once) is tools/test_dedicated_server.py's test_a_dropped_client_with_rejoin_off_shows_the_error.
+list rejoin-rc6
+revision 1
+title Rejoin after a drop (a LAN game must be up)
+
+test drop-rejoins
+title A dropped connection joins the game again by itself
+menus
+set debug.network_test_drop 20:reset
+setup join_lan
+check At 20 s it drops: RECONNECTING, Rejoining (try 1 of 3)
+check Back in the same game soon: same team, same score
+check Chat line: Rejoined the game after the connection dropped.
+expect 1 log rejoin: try 1 of 3
+expect 2 log rejoin: back in the game

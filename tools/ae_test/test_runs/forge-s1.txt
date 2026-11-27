@@ -1,0 +1,48 @@
+# FORGE, step 1 (Content Evolved's Forge, port/forge, in the 64-bit Linux build): the session starts from DEV MODE's `forge start <map>`
+# on a level alone and the Monitor (the 343 Guilty Spark model, flown with the keys or the pad) is entered with `forge mode monitor`.
+# Forge's tags are built from the game's maps once (the main menu says when they are ready); the start is refused until then.
+# In a Forge session the keys Forge binds (F1 mode, F2 palette, F4 third person, F5 quick save) are Forge's: TEST RUN's NOTE, SKIP and
+# RELOAD keys and the menus' BACK and START do not read them; BACK+X, BACK+Y on the pad and F7 / F8 still pass, skip and fail a test.
+list forge-s1
+revision 4
+title FORGE: THE MONITOR FLIES
+
+test monitor
+title MONITOR: you fly, Forge's prompts show
+check You fly as the Monitor (move, look, up and down)
+check The HUD shows Forge's prompts for its keys
+expect 1 log forge dev: facing
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ready
+
+test body
+title F4: the Monitor's body shows
+retest 2
+check F4: the Monitor's body shows, no NOTE box opens
+check F4 again: the view is the Monitor's own
+expect 1 log forge dev: facing
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ready
+
+test campaign-level
+title B30: a campaign level loads with no cutscene
+check The level loads with no cutscene, and you fly
+check The campaign's scripts do not run (no dialogue, no waves)
+expect 1 log forge dev: facing
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+menus
+setup forge start b30
+setup forge mode monitor
+setup forge face
+setup forge ready

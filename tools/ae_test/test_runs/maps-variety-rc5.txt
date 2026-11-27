@@ -1,0 +1,36 @@
+# MAP VARIETY (rc5): each playlist remembers its last maps (a third of the playable ones, at most 8, a Workshop map and its stand-in
+# counting as one) and its picks and map votes leave them out while enough others remain. SAME AGAIN in the rematch vote is the one
+# explicit way to replay a map. DEV `social recent set <id> <map,...>` presets the memory (newest first), `social recent show <id>`
+# reads it back. Each test opens on its scene.
+list maps-variety-rc5
+revision 1
+title MAP VARIETY: RECENT MAPS
+
+test vote-skips-recent
+title The vote offers no recent map
+check None of ASCETIC, BLAMITEMINES, CO2, WARREN is on the vote
+check The log says: recent maps team-slayer ... skipped
+menus
+setup social maps hide none
+setup social recent set team-slayer ascetic,blamitemines,co2,warren,gothra
+setup social start team-slayer vote seed 11 left 8 hold 0
+expect 1 log ae social: recent maps team-slayer
+
+test same-again-recent
+title SAME AGAIN replays a recent map
+check Tile A is SAME AGAIN with the map just played
+check B and C are maps not in the memory
+menus
+setup social maps hide none
+setup social recent set team-slayer hektik,sympathy,gridiron
+setup social start team-slayer postgame bots 1 seed 11 hold 0
+expect 1 log ae social: recent maps team-slayer
+
+test memory-cleared
+title Clearing the memory brings them back
+check The log reads skipped none
+menus
+setup social maps hide none
+setup social recent clear all
+setup social start team-slayer vote seed 11 left 8 hold 0
+expect 1 log ae social: recent maps team-slayer

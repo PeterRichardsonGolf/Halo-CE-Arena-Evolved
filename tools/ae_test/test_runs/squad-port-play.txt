@@ -1,0 +1,58 @@
+# CAMPAIGN AI SQUAD, PLAYED: the squad as it walks with you. Each member walks to a place behind you picked on the ground
+# about you (out of doors' way), or on your own track indoors, over your jumps one at a time and down your drops; it steps
+# aside or walks on ahead when you come its way, lines up beside a closed door you wait at (every door here) and goes in
+# when you go through, and comes back to you only when it is stuck out of sight. Each test starts you some way before the
+# part it checks: walk in as you would play. The a10 start plays the level's intro, so the squad is with you from the start
+# as in a game; the doors test starts from the saved point after Keyes (core/point-keyes.bin): walk out of the bridge and
+# through the first door that opens for you. Bot events are on: the squad logs where you and each member walk every half
+# second, so a later test can walk your own way.
+list squad-port-play
+revision 5
+title CAMPAIGN AI SQUAD: PLAYED
+
+group a10
+map a10
+gametype coop
+set game.campaign_skip_training true
+set game.companions_door_stack every
+set debug.bot_events true
+
+test a10-start
+title Pillar of Autumn: out of cryo and over the pipes
+fresh
+setup intro play
+setup companion 3
+check They follow you out, apart, not on top of you
+check Over the pipes one at a time, none warps
+check Turn back past them: they let you by
+
+test a10-doors
+title Pillar of Autumn: the first door after Keyes
+fresh
+setup point load keyes
+setup companion 2
+check Wait at the first shut door: they line up by it
+check Walk through it: they follow, none left behind
+check Neither stands in a doorway or in your way
+
+group b30
+map b30
+gametype coop
+set game.companions_door_stack every
+set debug.bot_events true
+
+test b30-beach
+title Silent Cartographer: up the beach
+fresh
+setup companion 3
+check They keep up behind you, apart, no swinging
+check In a fight they shoot, then come back to you
+check Run and jump down rocks: none warps
+
+test b30-faster
+title Silent Cartographer: faster than they are
+fresh
+setup companion 2
+check Jump up where they cannot: they find a way
+check Sprint far ahead: they catch up out of sight
+check None dies following you

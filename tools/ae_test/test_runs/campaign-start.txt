@@ -1,0 +1,25 @@
+# CAMPAIGN START POINT (ae_test_start.h): a campaign level's tests open at first control after the intro, not after the ride.
+# The first load of a level plays its intro and takes the level's game state then (a file in the profile folder, ae-test-start-*);
+# the next loads read it (a few seconds). Two loads of the same level: the second test is `fresh`. A test with the setup line
+# `intro play` loads the level again and plays the real ride (the CAMPAIGN screen's own start is the b30-intro test of the
+# companions-campaign list).
+list campaign-start
+revision 1
+title CAMPAIGN START POINT
+
+group b30
+map b30
+gametype coop
+
+test b30-start-a
+title Silent Cartographer: the first load
+setup goto -62.4 20.7 1.6
+check You stand on the beach with control
+expect 1 log the start point is taken now
+
+test b30-start-b
+title Silent Cartographer: the load from the start point
+fresh
+setup goto -62.4 20.7 1.6
+check The load ends on the beach, no Pelican ride
+expect 1 log opened at the level's start point

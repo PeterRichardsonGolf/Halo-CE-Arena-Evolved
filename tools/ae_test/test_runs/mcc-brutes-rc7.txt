@@ -1,0 +1,21 @@
+# Every Canyon Plus (CE+) brute was drawn stretched. Its model has 47 nodes, more than the renderer skins at once
+# (43), and its parts name their bones from a short list of their own; on such a model that list was never applied, so
+# each part was drawn on the wrong bones. Each vertex now names the model's own bone, and a finger's tip past the 43
+# moves with its knuckle. You start in the open at the level's first valley (DEV `goto`) with a brute placed 6 ahead
+# and facing you (DEV `actor`); it fights, so kill it before it kills you. RAGDOLL AI stays yours.
+list mcc-brutes-rc7
+revision 2
+title BRUTES DRAWN WHOLE
+
+group canyon-plus
+map mcc_maps\3007701381\canyon-plus
+gametype coop
+
+test brute
+title A brute alive, then dead
+setup goto -16.4 -40.0 -8.0 facing 145
+setup actor brute_minor_needler 6
+check The brute in front: the body is whole, no stretched limbs
+check As it moves and fights: arms, legs and armour stay on it
+check Kill it: the body lies whole, no stretched limbs
+expect 1 cmd actor ok

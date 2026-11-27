@@ -1,0 +1,81 @@
+# FORGE, step 6 (Firefight markers): Forge's FIREFIGHT category places the markers Firefight reads (enemy spawns by kind, round and wave, drop
+# points, player vehicle pads, player spawns, generators) and the game's own props: a resupply rack that refills the ammunition of whoever uses it
+# with action, and a drop area. `forge ff <kind> [round [wave]]` places one 5 world units ahead of the Monitor, each a step to the left of the last
+# (the rack at its feet); `forge ff ammo <0-100>` sets the weapon in hand's ammunition once `forge mode play` has put the Spartan on foot.
+list forge-s6
+revision 3
+title FORGE: FIREFIGHT MARKERS
+
+test rack
+title The resupply rack refills your ammunition
+check The HUD says to press action at the rack
+check Action: the weapon in hand has all its ammunition again
+expect 1 log forge dev: firefight kind 9
+expect 1 log forge dev: where #
+expect 1 hud Weapon rack
+expect 1 log forge dev: the weapon in hand has 10 percent
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ff rack
+setup forge where last
+setup forge mode play
+setup forge ff ammo 10
+setup forge ready
+
+test markers
+title FIREFIGHT markers: five kinds in a row
+check Five markers in a row to your left, each its own look
+check Hold a marker button: Object Settings with kind, round
+expect 1 log forge dev: firefight kind 0 round 1
+expect 1 log forge dev: firefight kind 5
+expect 1 log forge dev: firefight kind 6
+expect 1 log forge dev: firefight kind 7
+expect 1 log forge dev: firefight kind 8
+expect 1 log forge dev: where all: 5 placed
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ff infantry 1
+setup forge ff zone
+setup forge ff pad
+setup forge ff player
+setup forge ff generator
+setup forge where all
+setup forge ready
+
+test props
+title The game's props: a weapon rack and a pod's area
+check A weapon rack stands just ahead of you
+check A pod stands 5 steps ahead
+expect 1 log forge dev: firefight kind 9
+expect 1 log forge dev: firefight kind 10
+expect 1 log forge dev: where all: 2 placed
+expect 1 no log no clear way ahead anywhere
+expect 1 no log EXCEPTION assert
+expect 1 no log cannot be read
+expect 1 no log walled off
+expect 1 no log out of view
+expect 1 no log hovers
+menus
+setup forge start bloodgulch
+setup forge mode monitor
+setup forge face
+setup forge ff rack
+setup forge ff drop
+setup forge where all
+setup forge ready

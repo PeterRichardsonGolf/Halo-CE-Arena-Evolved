@@ -1,0 +1,79 @@
+# Staging spots on b30 (campaign level, collision BSP 0). Numbers below the name are measured by `spots.py fill b30`.
+# quiet = 18: the level's scripts place waves from ~280 enemy squad starts, so every spot has one inside 40 units; a spot
+# is "quiet" when none is within 18. The beach landing fight starts at beach_lz around (-56, 2); the player starts at
+# (-66.7, 18).
+map = "b30"
+geometry_bsp = 0
+quiet = 18
+need = 9
+ally = 12
+
+[[spot]]
+name = "b30-plateau-west"
+x = -32
+y = -22
+z = 20.73
+facing = 315
+bsp = 0
+flat_room = 20.0
+enemy_dist = 31.7
+ally_dist = 64.0
+ground_dz = 0.1
+rating = "GOOD"
+notes = "Flat high ground west of the central plateau, 20 units of clear floor to the north-west, 34 from the beach landing fight."
+
+[[spot]]
+name = "b30-plateau-north"
+x = -34
+y = 4
+z = 20.1
+facing = 90
+bsp = 0
+flat_room = 18.0
+enemy_dist = 24.1
+ally_dist = 43.4
+ground_dz = 0.1
+rating = "GOOD"
+notes = "Plateau edge north of the landing beach, floor clear to the north."
+
+[[spot]]
+name = "b30-plateau-south"
+x = -10
+y = -34
+z = 19.98
+facing = 180
+bsp = 0
+flat_room = 23.5
+enemy_dist = 23.8
+ally_dist = 79.6
+ground_dz = 0.1
+rating = "GOOD"
+notes = "South plateau, long flat run to the west, furthest of the set from the landing beach."
+
+[[spot]]
+name = "b30-cliff-south-west"
+x = -50
+y = -44
+z = 16.16
+facing = 315
+bsp = 0
+flat_room = 13.5
+enemy_dist = 23.3
+ally_dist = 75.2
+ground_dz = 0.1
+rating = "GOOD"
+notes = "Lower step of the south-western cliff, 13 units of clear floor ahead."
+
+[[spot]]
+name = "b30-shore-south"
+x = -60
+y = -70
+z = 0.09
+facing = 0
+bsp = 0
+flat_room = 24.0
+enemy_dist = 33.7
+ally_dist = 97.9
+ground_dz = 0.1
+rating = "GOOD"
+notes = "Beach at the far south-west, open sand eastward, 68 units from the landing beach."

@@ -1,0 +1,42 @@
+# CALLOUTS: ITEMS + COUNTDOWN, a talking clock of the time left in a game with a time limit. The minute's beep 5 minutes
+# and 1 minute before the end with "five minutes" / "one minute" half a second later, the tick's beep 30 seconds before
+# it with "thirty seconds left" half a second later, then "ten" to "one" on the last ten seconds, in the callout voice.
+# The item calls stay as ITEMS has them. ITEMS + CLOCK still counts the minutes played. AE TEAM SLY has a 15-minute
+# time limit; DEV MODE's time sets the time left (the plan follows it). Each call logs its clip ("callouts: tick ...").
+list countdown-rc6
+revision 1
+title CALLOUTS: ITEMS + COUNTDOWN
+
+group testbox
+map testbox@ce
+gametype AE TEAM SLY
+set bots.count 0
+set game.callouts items_countdown
+
+test five-minutes
+title Five minutes left
+setup time 5:10
+check At 5:00 left: a beep, then "five minutes"
+check No "six minutes" or count up before it
+expect 1 cmd time ok
+expect 1 log five_minutes
+
+test last-minute
+title The last minute down to the end
+fresh
+setup time 1:10
+check At 1:00 left: a beep, then "one minute"
+check At 0:30: a beep, then "thirty seconds left"
+check Last ten seconds: "ten" down to "one"
+expect 1 cmd time ok
+expect 1 log one_minute
+expect 1 log thirty_seconds_left
+
+test clock-stays
+title ITEMS + CLOCK still counts up
+fresh
+setup config game.callouts items_clock
+check At 1:00 played: a beep, then "one minute"
+check At 1:30 played: "thirty seconds left"
+expect 1 cmd config ok
+expect 1 log one_minute

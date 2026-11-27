@@ -1,0 +1,27 @@
+# 0.9.4 SMG VIEW: the SMG and the SUPPRESSED SMG move as one piece with the arms 6 units toward the camera and half a
+# unit down, the TACTICAL SMG's numbers (all three hold the same arms in the same animations). Each test starts with
+# that SMG on every life (debug.network_test_cache_weapon), a dummy in front. Staged only: nothing here waits for
+# something to happen.
+list smg-view-094
+revision 1
+title SMG VIEW
+
+test smg-view
+title SMG: the tactical SMG's place
+setup dummy 1 6
+check The SMG sits where the TACTICAL SMG sits
+check Fire and reload: nothing clips or leaves view
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 2
+
+test smg-silenced-view
+title Suppressed SMG: the same place
+setup dummy 1 6
+check The SUPPRESSED SMG sits there too
+check Fire and reload: nothing clips or leaves view
+map octagon_b
+gametype AE BR TS
+set bots.count 0
+set debug.network_test_cache_weapon 3

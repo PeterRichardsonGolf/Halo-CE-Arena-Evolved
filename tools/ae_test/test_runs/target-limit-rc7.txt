@@ -1,0 +1,39 @@
+# TARGET FRAMERATE and FRAME RATE LIMIT adjust together (V-SYNC off): a target above the limit raises the limit to it,
+# and your own limit comes back when the target goes down or OFF; a limit set below a target brings the target down to
+# its highest value under the limit (OFF under 60). NONE never moves; with V-SYNC on nothing moves.
+# Each test opens on the menus with the rows set by its setup lines; the rows are in SETTINGS > VIDEO (TARGET
+# FRAMERATE under PERFORMANCE, V-SYNC and FRAME RATE LIMIT under DISPLAY). The rows and the kept limit
+# (display.max_fps_own) go back to yours at each test's end.
+list target-limit-rc7
+revision 1
+title TARGET FRAMERATE and FRAME RATE LIMIT together
+
+group raise
+menus
+
+test raise
+title A target above the limit raises it
+setup config display.vsync false
+setup config display.max_fps_own -2
+setup config display.max_fps 100
+setup config display.target_framerate off
+check TARGET FRAMERATE 144: FRAME RATE LIMIT shows 144
+check TARGET FRAMERATE OFF: FRAME RATE LIMIT is 100 again
+
+test lower
+title A lower limit brings the target down
+setup config display.vsync false
+setup config display.max_fps_own -2
+setup config display.max_fps 240
+setup config display.target_framerate 144
+check FRAME RATE LIMIT 100: TARGET FRAMERATE shows 90
+check FRAME RATE LIMIT 50: TARGET FRAMERATE shows OFF
+
+test vsync-on
+title With V-SYNC on nothing moves
+setup config display.vsync true
+setup config display.max_fps_own -2
+setup config display.max_fps 60
+setup config display.target_framerate off
+check TARGET FRAMERATE 144: FRAME RATE LIMIT stays 60
+check V-SYNC OFF: FRAME RATE LIMIT shows 144

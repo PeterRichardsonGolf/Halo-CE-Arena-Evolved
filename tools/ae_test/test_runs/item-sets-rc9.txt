@@ -1,0 +1,61 @@
+# ITEM SETS, rc9 phase 1: a set's items with Content Evolved's keys (A opens an item's settings, left and right turn it on or off), the item's
+# settings page, and YOUR BODY: a biped's PLAY AS IT, HANDS and MOVEMENT, and the card when it does not fit a player. Each test opens on its scene
+# from made-up data (DEV MODE's `menu maps sets <scene>`): nothing is read from this PC and nothing is written. A set's body plays in a campaign
+# level played alone, through the randomizer; a campaign swap's choice, when one plays, wins over it.
+list item-sets-rc9
+revision 2
+title ITEM SETS: SETTINGS AND YOUR BODY
+
+test keys
+retest 2
+title A set's items: A opens the settings
+check Footer: Settings, d-pad On / off, Remove, Add, Back
+check Left or right turn it ON or OFF; so does its box
+check A opens its settings page
+menus
+setup menu maps sets contents
+
+test settings-weapon
+retest 2
+title A weapon's settings
+check Rows: NAME, ON, then FACTION, WEAPON CLASS, GROUP NAME
+check HUD DRAWN AS, TAKES THE CAMPAIGN'S PLACE, then REMOVE (red)
+check FACTION reads AUTO: HUMAN; left or right turn the choice
+menus
+setup menu maps sets settings
+
+test settings-typed
+retest 2
+title Typing a group name
+check Two down: GROUP NAME. A opens the text entry
+check Type Spirit Group, A keeps it: the row shows it
+check Y asks to remove the item; CANCEL has the focus
+menus
+setup menu maps sets settings
+
+test body-card
+retest 2
+title A biped that is your body
+check The row says YOUR BODY; the card: BIPED, ON, YOUR BODY IN
+check FITS A PLAYER Yes; YOU PLAY AS IT Yes; HANDS, MOVEMENT
+check The help line says it is your body while the set plays
+menus
+setup menu maps sets body-card
+
+test body-settings
+retest 2
+title PLAY AS IT, HANDS, MOVEMENT
+check PLAY AS IT is ON; HANDS and MOVEMENT say COMES NEXT
+check A on PLAY AS IT turns it OFF: HANDS and MOVEMENT go
+check A again turns it ON; the card lists size, seats, weapons
+menus
+setup menu maps sets body
+
+test body-nofit
+retest 2
+title A biped that does not fit a player
+check PLAY AS IT reads DOESN'T FIT A PLAYER; A does nothing
+check The card has the stripe and says why in plain words
+check The failing facts are lit; WHAT TO DO is at the end
+menus
+setup menu maps sets body-nofit

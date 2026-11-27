@@ -1,0 +1,88 @@
+# RUMBLE on a pad that is not a DualSense (a Steam Controller, an Xbox pad): the DualSense's events on the two motors, from the
+# same table: a human weapon's round on the left motor, a Covenant weapon's on the right, the battle rifle on both, the
+# magazine going in, the shotgun's pump, a grenade leaving the hand, the plasma pistol's charge as a ramp. TRIGGER STRENGTH
+# (SETTINGS > CONTROLS) scales the motors: LIGHT is softer, STRONG harder. VIBRATION off keeps them still. Needs the pad itself:
+# what the motors feel like is the tester's word. DEV MODE's `pad pulse <event>` fires one event's pulse by name.
+list steam-controller-rumble
+revision 1
+title RUMBLE ON TWO-MOTOR PADS
+
+group pulses
+menus
+
+test pulse-human
+title DEV pulse: a human weapon's round
+setup pad reset
+setup pad pulse pistol
+setup pad open controls
+check Menu only: one short tick in the LEFT (heavy) motor now
+check Nothing loads; this is the pistol's round, strength as set
+check Reopen the test to feel it again
+
+test pulse-covenant
+title DEV pulse: a Covenant weapon's round
+setup pad reset
+setup pad pulse plasma
+setup pad open controls
+check Menu only: one short tick in the RIGHT (light) motor now
+check Nothing loads; this is the plasma pistol's round
+check Reopen the test to feel it again
+
+test pulse-br
+title DEV pulse: the battle rifle's round
+setup pad reset
+setup pad pulse br
+setup pad open controls
+check Menu only: one firm pulse in BOTH motors now
+check Nothing loads; this is one burst of the battle rifle
+check Reopen the test to feel it again
+
+group in-game
+set bots.count 0
+
+test game-br
+title Fire the battle rifle
+map octagon_b
+gametype AE BR TS
+setup give br
+check Each burst pulses both motors, left firmer
+check Reload: a small bump as the magazine goes in
+check Throw a grenade: a light tick as it leaves the hand
+
+test game-shotgun
+title Fire the shotgun
+map octagon_b
+gametype AE BR TS
+setup give shotgun
+check Each shot is a heavy tick in the left motor
+check After a shot the pump gives a second, firmer tick
+check Reload: a small bump per shell going in
+
+test game-plasma
+title Plasma pistol: taps and the charge
+map octagon_b
+gametype AE BR TS
+setup give plasma_pistol
+check A tap is a light tick in the right motor
+check Hold the trigger: the motors build up with the charge
+check Release when full: a stronger blast
+
+test game-light
+title TRIGGER STRENGTH LIGHT
+map octagon_b
+gametype AE BR TS
+setup give br
+setup config input.trigger_strength light
+check Fire the battle rifle: softer than at NORMAL
+check The pump, the reload bump and a grenade are softer too
+check Settings > Controls > TRIGGER STRENGTH says LIGHT
+
+test game-strong
+title TRIGGER STRENGTH STRONG
+map octagon_b
+gametype AE BR TS
+setup give br
+setup config input.trigger_strength strong
+check Fire the battle rifle: harder than at NORMAL
+check The pump, the reload bump and a grenade are harder too
+check Settings > Controls > TRIGGER STRENGTH says STRONG

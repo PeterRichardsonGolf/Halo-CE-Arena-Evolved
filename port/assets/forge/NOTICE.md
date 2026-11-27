@@ -1,0 +1,3 @@
+# Forge marker meshes
+
+forge_markers.bin (1.2 MB, "FGMK" version 1, 8 zlib-packed .ftag meshes: spawn, teleporter origin and destination, race flag, oddball skull, CTF flag pole, hill, beam) is Halo Content Evolved's file (Watanoge, AGPL-3.0-or-later), taken as it ships there. Forge (port/forge/src/forge_runtime_tags.c) draws a marker's mesh in the map editor with it, and writes each mesh out of it where the game keeps Forge's tags. The file's own meshes' authors are not named in Halo Content Evolved's tree; Forge's authors are Motalev (SutlabSol), from Content Extended Additions, with the tag profile system and later work by Watanoge. Credited in port/assets/credits.txt.

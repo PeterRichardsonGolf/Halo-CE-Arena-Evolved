@@ -1,0 +1,97 @@
+# 0.9.4 INPUT PARITY: the menus work the same on a pad and on mouse + keyboard. Each test is checked on the pad first, then on
+# mouse + keyboard (the footer's words change with the last device used). Keyboard START is F2 (Tab on the main menu and the TAB
+# menu); F1 is SELECT. A small mouse brush (under 8 px) no longer takes the focus and the prompts from a pad. Every test opens on
+# its scene from its setup lines (menus tests start on the main menu; `menu ...` opens the screen). Scenes that have no dev command
+# yet (SERVER BROWSER, SERVER LOBBY roster, PLAYLIST, CHANGE GAMETYPE) are checked from the main menu by the shown path.
+list ux-parity-094
+revision 1
+title INPUT PARITY
+
+test main-keys
+title MAIN MENU: START, Tab and the footer
+check Pad: footer shows the START glyph for Menu; START: TAB menu
+check Keys: Menu cap reads Tab; Tab or F2 opens it, Tab closes
+check Keys: no "Tab / Shift+Tab move" in the footer hint
+menus
+
+test mouse-brush
+title MAIN MENU: a touchpad brush keeps the pad
+check Pad: move down a row; glyphs show, focus on that row
+check Brush the mouse 3 px: glyphs stay, the focus stays
+check Mouse 40 px: key caps show; hover moves the focus
+menus
+
+test party-seat-text
+title PARTY: the add-a-player text
+setup lobby_fill 2
+check Pad: X opens MY PARTY; ADD A PLAYER names the pad's START
+check Keys: the text names F2 or Enter and says keyboard is 1
+check A on ADD A PLAYER: Press START (or A) on a free pad
+menus
+
+test matchmaking-start
+title AE TOURNAMENT: START by pad and by F2
+setup menu matchmaking
+check Pad: START joins the focused playlist; B cancels
+check Keys: footer cap reads F2; F2 joins, Esc cancels
+check Mouse: click the START chip in the footer joins too
+menus
+
+test tournament-wheel
+title AE TOURNAMENT at 150 %: wheel and rows
+setup menu tournament focus team-slayer
+set display.arena_menus_scale 150
+check Pad: Down walks the rows; the list scrolls with it
+check Mouse wheel steps the focus and scrolls the rows
+check Hover alone never moves the focus past the window
+menus
+
+test browser-lan
+title SERVER BROWSER: paging, filters, one click
+check MULTIPLAYER > JOIN LAN GAMES: LT / RT (PgUp / PgDn) page
+check EMPTY / FULL: click, or Up from row 1 and A (canon)
+check Mouse: one click on a game row joins it; chips click
+menus
+
+test lobby-roster
+title SERVER LOBBY: the roster scrolls
+check Past the room: "+ N MORE"; Down scrolls it with the focus
+check Mouse wheel over THIS SERVER scrolls the people
+check The focus never rests on a person that is not drawn
+menus
+
+test playlist-reorder
+title PLAYLIST: reorder by pad, keys and mouse
+setup playlists demo
+setup menu playlist edit 4V4 ARENA
+check A held on a game, then up or down moves it
+check Keys: Shift with Up or Down moves it; the help line says so
+check Mouse: drag a game to a new row; the order is kept
+menus
+
+test typing-right-click
+title JOIN BY ADDRESS: right-click while typing
+check Type a few letters in the field; right-click: text stays
+check Esc cancels the typing; a click outside keeps the text
+check Not typing: right-click is BACK as before
+menus
+
+test gametype-delete-cap
+title CHANGE GAMETYPE: the Delete prompt's cap
+check Keys: a game of your own, the prompt cap reads F1
+check Pad: SELECT glyph (PS: CREATE); A deletes after asking
+check F1 deletes (asks first), as the pad's SELECT does
+menus
+
+group pause-bots
+map bloodgulch
+gametype AE TEAM SLY
+set bots.count 4
+set bots.skill normal
+
+test pause-bots-mouse
+title PAUSE > BOTS: the arrows go both ways
+check Esc or START, BOTS: click the left arrow: count goes down
+check Click the right arrow: it goes up; pad left / right same
+check Click a value body of the focused row: steps up
+# Not listed: item 14 (HUD STYLE CLASSIC glyphs for a Nintendo / Deck / universal pad): needs such a pad.

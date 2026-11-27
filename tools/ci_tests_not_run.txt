@@ -1,0 +1,119 @@
+# Top-level tools/test_*.py that .github/workflows/build.yml does not run.
+# One 'file reason' per line. Reasons: needs a built binary, needs game data, needs a built binary and game data, manual, unknown.
+# Classified from what each file reads (a build dir, a headless run, game data paths); 'unknown' = no such signal, not yet checked.
+# tools/test_ci_coverage.py keeps this list exact: a file that gains a workflow runner must leave it.
+
+test_ae_banned.py needs a built binary
+test_ae_bots.py needs a built binary and game data
+test_ae_builtin_gametypes.py needs a built binary
+test_ae_cache_reader.py needs a built binary
+test_ae_ce_archive.py needs game data
+test_ae_ce_maps.py needs a built binary and game data
+test_ae_change_gametype.py needs a built binary
+test_ae_change_map.py needs a built binary and game data
+test_ae_community.py needs a built binary
+test_ae_create_game.py needs a built binary and game data
+test_ae_crosshair_editor.py needs a built binary
+test_ae_crosshair_screen.py needs a built binary
+test_ae_custom_layout.py needs a built binary
+test_ae_dev_cmd.py needs a built binary and game data
+test_ae_ds5.py needs game data
+test_ae_errors.py needs a built binary and game data
+test_ae_gallery.py needs a built binary
+test_ae_game_options.py needs a built binary
+test_ae_host_server.py needs a built binary
+test_ae_key_bindings.py needs a built binary
+test_ae_lan_lobby.py needs a built binary
+test_ae_lobby.py needs a built binary
+test_ae_main_menu.py needs a built binary
+test_ae_map_folders.py needs a built binary and game data
+test_ae_map_share_all.py needs a built binary and game data
+test_ae_master_listing.py needs a built binary and game data
+test_ae_matchmaking.py needs a built binary
+test_ae_mcc.py needs a built binary and game data
+test_ae_menus.py needs a built binary
+test_ae_menus_swap.py needs a built binary and game data
+test_ae_motd.py needs a built binary
+test_ae_party.py needs a built binary
+test_ae_party_online.py needs a built binary
+test_ae_pause.py needs a built binary
+test_ae_postgame.py needs a built binary
+test_ae_postgame_game.py needs a built binary
+test_ae_server_lobby.py needs a built binary
+test_ae_server_pause.py needs a built binary
+test_ae_settings.py needs a built binary
+test_ae_silent.py needs a built binary
+test_ae_smoke.py needs a built binary and game data
+test_ae_test_list_index.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_ae_vote.py needs a built binary
+test_bots.py needs a built binary and game data
+test_cache_file_formats.py needs a built binary and game data
+test_checkpoint_timing.py not a pytest file (no tests collected: a program or unittest module)
+test_compare_stock_maps.py needs game data
+test_config_upgrade.py skips every test without game data
+test_death_timing.py not a pytest file (no tests collected: a program or unittest module)
+test_map_fuzz.py needs game data
+test_map_library_game.py needs a built binary and game data
+test_map_names.py needs game data
+test_mcc_bitmap_flags.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_cache_format.py needs game data
+test_mcc_cameras.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_campaign.py skips every test without game data
+test_mcc_damage_tags.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_geometry.py needs game data
+test_mcc_hud.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_hud_layout.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_hud_meter_render.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_identity.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_keyboard_glyphs.py skips every test without game data
+test_mcc_lifecycle.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_loading.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_local_package.py needs game data
+test_mcc_maps.py needs game data
+test_mcc_media.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_menu.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_metadata_importer.py needs a built binary
+test_mcc_movement.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_network.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_parameters.py skips every test without game data
+test_mcc_pause.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_pause_runtime.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_precache.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_projectiles.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_recordings.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_resources.py needs game data
+test_mcc_saved_games.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_scripts.py skips every test without game data
+test_mcc_shader_channels.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_share_menu.py skips every test without game data
+test_mcc_sprites.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_syntax.py skips every test without game data
+test_mcc_tag_validation.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_texture_bridge.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_ui.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_ui_network.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_ui_teams.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mcc_validation.py needs game data
+test_mcc_vorbis.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_memory_watch.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_model_obscurer.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_mods.py needs a built binary and game data
+test_network_messages.py not a pytest file (no tests collected: a program or unittest module)
+test_player_key.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_powerup_bounds.py not a pytest file (no tests collected: a program or unittest module)
+test_server_ingame.py needs a built binary and game data
+test_text_filter_terms.py needs game data
+test_update_install.py needs a built binary and game data
+test_weapon_cache_base_pixels.py needs game data
+test_weapon_pack_add.py needs a built binary
+test_weapon_pack_checks.py needs a built binary and game data
+test_weapon_pack_digsite_looks.py needs game data
+test_weapon_pack_dmr.py needs game data
+test_weapon_pack_gate.py fails with no game data: its C fixtures or imports no longer match the current sources (checked, not fixed)
+test_weapon_pack_gravity_hammer.py needs game data
+test_weapon_pack_look.py needs a built binary
+test_weapon_pack_needler.py needs game data
+test_weapon_pack_recipe_from_map.py needs game data
+test_weapon_pack_rifle.py needs a built binary
+test_weapon_pack_sniper_bolt.py needs game data
+test_weapon_pack_storage.py skips every test without game data

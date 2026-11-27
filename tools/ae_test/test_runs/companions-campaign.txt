@@ -1,0 +1,128 @@
+# CAMPAIGN AI SQUAD (DEV MODE `companion [<1-4>|off|reset|kill|revert|won]`, and the CAMPAIGN screen's AI SQUAD row): allied
+# Spartans of a campaign level that the multiplayer bots' brain plays (game.companions_brain bot, the default; `actor` is the
+# level's own AI on a leash, for a comparison; game.companions_skill is the bots' level, heroic by default). Each joins as a
+# co-op player (a name, the team, the co-op spawn beside you) as the level starts, and takes its place beside you when co-op lets
+# the players after the first spawn. Not in a level's intro: each appears behind you, out of view, on walkable ground, once you
+# have control on foot (riding the intro's vehicle is kept for the levels whose intro is checked). The enemies are the
+# level's AI: they aim by the bots' level, strafe, throw grenades, strike close up, stay 3.5-6 wu from you (a step further
+# for each next one), come back to you when a fight takes them past 15 wu, come back after a death, ride in the free seats
+# of a vehicle you sit in and get out when you do, and hold fire while you or another of them is in the line.
+#
+# The tests open at the level's start point: the level at first control after its intro, taken by the first load that plays
+# the intro and read by the later ones (a few seconds, not the ride), with no squad in it: the squad joins in the level, as each
+# test's `companion` line sends it. The b30-intro test starts the level from the CAMPAIGN screen and plays the real ride; a map
+# test that wants the ride has the setup line `intro play`.
+list companions-campaign
+revision 8
+title CAMPAIGN AI SQUAD
+
+group b30
+map b30
+gametype coop
+
+test b30-follow
+title Silent Cartographer beach: they walk after you
+setup companion 2
+setup goto -62.4 20.7 1.6
+check Spartans walk up the beach to you, no sliding
+check They stop 3-6 steps from you, not on top of you
+check Walk 10 steps away: they follow again
+expect 1 log companion: 2 joined the game in progress
+
+test b30-spread
+title Three companions stand apart
+setup companion 3
+setup goto -62.4 20.7 1.6
+check Three Spartans stand round you, not in one spot
+check Turn and walk: they stay behind you, apart
+expect 1 log companion: 3 joined the game in progress
+
+test b30-fight
+title Silent Cartographer beach: they fire at once
+setup companion 2
+setup goto -61.4 38.9 0.8
+check Stay put: they fire the moment a Covenant is in sight
+check They stay near you, not far up the beach
+expect 1 log brain:
+
+test b30-move
+title They strafe and move in a fight
+setup companion 2
+setup goto -61.4 38.9 0.8
+check In a fight they sidestep and shift, not rooted
+check A fight draws them 15 steps off: they come back
+
+test b30-grenade
+title They throw grenades and strike close up
+setup companion 2
+setup goto -61.4 38.9 0.8
+check A Spartan throws a grenade at a group or at cover
+check A Covenant that reaches a Spartan is struck
+expect 1 log blows
+
+test b30-run
+title They keep up when you run
+setup companion 2
+setup goto -62.4 20.7 1.6
+check Run up the beach: both run after you, beside you
+check Run back: they turn and follow at once
+
+test b30-death
+title A dead companion comes back
+setup companion 2
+setup companion kill
+check Both Spartans fall, then stand beside a player again
+check They follow and fight as before
+expect 1 log companion: 2 joined the game in progress
+
+test b30-warthog
+title They ride in the Warthog and get out
+set network.vehicle_riding true
+setup goto -62.4 20.7 1.6
+setup companion 2
+setup spawn warthog here
+setup seat driver
+check You drive: a Spartan takes the gun, one the passenger seat
+check Stop and get out: both get out and stand by you
+expect 1 log companion: 1 takes seat
+
+test b30-revert
+title A checkpoint revert keeps them
+setup companion 2
+setup companion revert
+check After the revert both Spartans are with you
+check They follow and fight as before
+expect 1 log companion: 2 joined the game in progress
+
+group d20
+map d20
+gametype coop
+
+test d20-spawn
+title Keyes (no marines): companions still join
+setup companion 2
+check Two Spartans stand beside you
+check Walk ahead: they follow you
+expect 1 log companion: 2 joined the game in progress
+
+group intro
+
+test b30-intro
+title Silent Cartographer: the squad enters after the intro
+check No Spartan in the Pelican with you in the intro
+check On the beach: they appear behind you, on the sand
+check They are armed and follow; none stuck in the hull
+expect 1 log companion: 1 enters behind the player
+expect 1 no log spawned into seat
+menus
+setup config game.companions 2
+setup campaign 4
+
+group menu
+
+test menu-row
+title CAMPAIGN screen: the AI SQUAD row
+check AI SQUAD sits under SPLIT SCREEN and says OFF
+check Left / right step OFF, 1, 2, 3; the next level has them
+menus
+setup menu campaign
